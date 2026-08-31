@@ -2,6 +2,9 @@ packages:
   - "packages/*"
   - "apps/*"
 
+allowBuilds:
+  esbuild: set this to true or false
+
 # esbuild ships prebuilt platform binaries via @esbuild/* optional deps, so its
 # postinstall is a no-op for the JS API (Vite/Vitest). pnpm 11.24 does not honor
 # onlyBuiltDependencies from this file to silence the notice, and its pre-run deps
