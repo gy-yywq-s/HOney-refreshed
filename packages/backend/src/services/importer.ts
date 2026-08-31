@@ -4,6 +4,7 @@ import type { Lesson } from "@honey/shared";
 import { PortalApi, joinLessons, retrySafeRead } from "@honey/portal-connector";
 import { portalWeekIndex } from "@honey/shared";
 import type { AccountService } from "./accounts.js";
+import type { EntityRegistry } from "../experiences/entities.js";
 
 // Timetable import (Band 4 → Band 3 handoff): pulls upstream weeks with the
 // stored portal token, normalizes into canonical entities, records the user's
@@ -27,6 +28,7 @@ export class ImportService {
     private readonly db: DatabaseSync,
     private readonly accounts: AccountService,
     private readonly api: PortalApi,
+    private readonly registry?: EntityRegistry,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
@@ -70,6 +72,7 @@ export class ImportService {
     }
 
     const counts = this.upsertLessons(honeyId, lessons);
+    this.registry?.syncOrganic(); // organic entity accrual (decisions doc)
     this.accounts.markSynced(honeyId);
     return { ...counts, status: "ok" };
   }

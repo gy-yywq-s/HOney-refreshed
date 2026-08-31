@@ -5,6 +5,9 @@ import type { HoneyConfig } from "./config.js";
 import type { AccountService, HoneyUserRow } from "./services/accounts.js";
 import type { ImportService } from "./services/importer.js";
 import type { TimetableService } from "./services/timetable.js";
+import type { EntityRegistry } from "./experiences/entities.js";
+import type { ExperienceService } from "./experiences/service.js";
+import type { SettingsService } from "./experiences/settings.js";
 
 // Assembled per-app dependency context. Routes receive this instead of
 // importing singletons, so tests wire mock portals in freely.
@@ -16,6 +19,9 @@ export interface AppContext {
   accounts: AccountService;
   importer: ImportService;
   timetable: TimetableService;
+  entities: EntityRegistry;
+  experiences: ExperienceService;
+  settings: SettingsService;
   requireAuth: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
   bearerToken: (req: FastifyRequest) => string;
   userOf: (req: FastifyRequest) => HoneyUserRow;

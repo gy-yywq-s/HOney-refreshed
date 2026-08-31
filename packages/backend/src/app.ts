@@ -9,6 +9,11 @@ import { ImportService } from "./services/importer.js";
 import { TimetableService } from "./services/timetable.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerDataRoutes } from "./routes/data.js";
+import { registerExperienceRoutes } from "./routes/experiences.js";
+import { registerAdminRoutes } from "./routes/admin.js";
+import { EntityRegistry } from "./experiences/entities.js";
+import { ExperienceService } from "./experiences/service.js";
+import { SettingsService } from "./experiences/settings.js";
 
 // Honey Core backend (Bands 3 & 4). UI-agnostic domain API only — no screen
 // shapes here (spec §14). The server-side connector never holds a school
@@ -42,8 +47,11 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   const connector = new HoneyPortalConnector({ baseUrl: config.portalBaseUrl, vault: emptyVault });
   const portalApi = new PortalApi(new PortalHttp({ baseUrl: config.portalBaseUrl }));
   const accounts = new AccountService(db, config);
-  const importer = new ImportService(db, accounts, portalApi);
+  const entities = new EntityRegistry(db);
+  const importer = new ImportService(db, accounts, portalApi, entities);
   const timetable = new TimetableService(db);
+  const settings = new SettingsService(db, config.sealKey);
+  const experiences = new ExperienceService(db, entities, settings, config.sealKey);
 
   const ctx: AppContext = {
     db,
@@ -52,6 +60,9 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
     accounts,
     importer,
     timetable,
+    entities,
+    experiences,
+    settings,
     ...makeAuthHelpers(accounts),
   };
 
@@ -61,6 +72,8 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   app.get("/api/health", async () => ({ status: "ok", service: "honey-backend" }));
   registerAuthRoutes(app, ctx);
   registerDataRoutes(app, ctx);
+  registerExperienceRoutes(app, ctx);
+  registerAdminRoutes(app, ctx);
 
   app.addHook("onClose", async () => {
     db.close();
