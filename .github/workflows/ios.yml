@@ -18,8 +18,8 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate project
-        run: xcodegen generate --spec ios/project.yml
-        working-directory: .
+        run: xcodegen generate
+        working-directory: ios
       - name: Build & test
         run: |
           set -o pipefail
