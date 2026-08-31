@@ -67,9 +67,23 @@ Spot-checked 12 clauses across §3.6, §5.3, §7.1–7.2, §9.3, §10.1, §11.4,
 clauses are treated as in-scope per the "implement everything including may" directive; the
 enumerated 59 `may` clauses map to shipped behavior or an explicit correct-absence.
 
+## design-is scoring (Gary's ≥22 bar)
+
+A subagent design audit (Rams 10-principle, 0–3, max 30) scored **Web 25/30** and **iOS 23/30** —
+both clear ≥22. Refinements then applied and verified: web (focus-visible on all interactive
+surfaces, prefers-reduced-motion, 44px touch targets, unified uppercase labels → ~28) and iOS
+(real school-connection status replacing a hardcoded "Connected", reduce-motion gate, wired
+reactions, and a new **Report flow** — the one genuinely-new safety component the audit flagged).
+Remaining iOS polish (Dynamic Type, badge unification) is optional; the bar is already met.
+
+## CI
+
+**iOS CI is green** on GitHub Actions (macOS 15 / Xcode 16): `xcodegen generate` + `xcodebuild
+test` build the app and pass `HOneyTests` on the simulator. The TypeScript CI is green.
+
 ## Net
 
-Backend + connector are spec-complete and green on every hard invariant. Web is complete. iOS is
-authored and lands last; once present, the remaining work is (1) the design-is ≥22 scoring/polish
-pass across all UI, (2) iOS CI green on a macOS runner, and (3) confirming live-portal facts with a
-school test account. No requirement is left in "doesn't contradict" limbo.
+Backend + connector + web + iOS are all implemented and tested (88 TS tests + iOS unit tests, all
+green); backend + web are deployed live. Remaining work is external: (1) confirming live-portal
+facts (token TTL, door-open envelope, Web-Access CORS) with a **school test account**, (2) Gary
+picking the generated brand wordmark/icon, and (3) App-Store operational steps. No requirement is left in "doesn't contradict" limbo.
