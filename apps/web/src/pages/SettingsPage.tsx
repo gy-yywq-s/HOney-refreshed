@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
 import { ReconnectDialog } from "../components/ReconnectDialog";
 import { timeAgo } from "../lib/format";
+import { ownershipKeys } from "../lib/ownershipKeys";
 
 type PendingConfirm = "disconnect" | "delete-data" | "delete-account" | null;
 
@@ -145,16 +146,34 @@ export function SettingsPage() {
       <section className="card settings-section" aria-label="Experiences and privacy">
         <h2 className="section-title">Experiences &amp; privacy</h2>
         <p className="muted">
-          Experiences are anonymous by construction: posts are stored without any author identity,
-          and there is no way — for anyone, including admins — to look up who wrote a post.
+          Experiences are anonymous by construction, not by promise. What that means concretely:
         </p>
-        <p className="muted">
-          You still control your own posts through per-post ownership keys held by this device.
-        </p>
-        <div className="banner banner--warning">
-          Ownership keys live only on this device — clearing them means losing control of those
-          posts. Key management tools arrive with the Experiences release.
-        </div>
+        <ul className="privacy-list muted">
+          <li>
+            <strong>Public posts have no author field.</strong> The server stores the text, its
+            lesson/entity context and a moderation status — nothing that identifies who wrote it.
+            No one, including admins, can look up an author.
+          </li>
+          <li>
+            <strong>Your control is a device-held key.</strong> Each submission returns a one-time
+            ownership key stored only in this browser; the server keeps a hash. Presenting the key
+            is the only way to see, revoke or reconfirm your post.
+          </li>
+          <li>
+            <strong>One-review-per-scope uses unlinkable HMAC marks.</strong> A keyed hash prevents
+            duplicate reviews and duplicate reactions without recording who reviewed what — the
+            marks join to nothing.
+          </li>
+          <li>
+            <strong>Public dates are coarse.</strong> Posts show a calendar day only; exact
+            timestamps are never published.
+          </li>
+          <li>
+            <strong>Private notes never leave this device</strong> and are encrypted at rest in
+            this browser.
+          </li>
+        </ul>
+        <KeyManagement onFeedback={setFeedback} />
       </section>
 
       {confirm === "disconnect" && (
@@ -220,6 +239,70 @@ export function SettingsPage() {
           onReconnected={() => void refreshMe()}
         />
       )}
+    </div>
+  );
+}
+
+function KeyManagement({
+  onFeedback,
+}: {
+  onFeedback: (f: { tone: "success" | "danger"; text: string } | null) => void;
+}) {
+  const [count, setCount] = useState(() => ownershipKeys.count());
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function exportKeys() {
+    const blob = new Blob([ownershipKeys.exportJson()], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "HOney-ownership-keys.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importKeys(file: File) {
+    try {
+      const added = ownershipKeys.importJson(await file.text());
+      setCount(ownershipKeys.count());
+      onFeedback({
+        tone: "success",
+        text: added > 0 ? `Imported ${added} new ownership key${added > 1 ? "s" : ""}.` : "No new keys — everything in that file is already here.",
+      });
+    } catch {
+      onFeedback({ tone: "danger", text: "That file is not a HOney ownership-key export." });
+    }
+  }
+
+  return (
+    <div className="setting-row">
+      <div className="setting-row__main">
+        <span>Ownership keys on this device</span>
+        <span className="caption">
+          {count === 0
+            ? "None yet — keys appear here when you publish an experience."
+            : `${count} key${count > 1 ? "s" : ""}. Export a backup before clearing site data or switching browsers.`}
+        </span>
+      </div>
+      <div className="card-actions" style={{ marginTop: 0 }}>
+        <button className="btn btn--ghost" onClick={exportKeys} disabled={count === 0}>
+          Export
+        </button>
+        <button className="btn btn--ghost" onClick={() => fileRef.current?.click()}>
+          Import…
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void importKeys(file);
+            e.target.value = "";
+          }}
+        />
+      </div>
     </div>
   );
 }

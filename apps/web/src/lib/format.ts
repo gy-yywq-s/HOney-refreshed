@@ -65,3 +65,33 @@ export function isStale(timestamp: string | null, maxMinutes = 60): boolean {
   if (!timestamp) return true;
   return Date.now() - new Date(timestamp).getTime() > maxMinutes * 60000;
 }
+
+/**
+ * Renders a coarse day bucket (days since epoch — the only public time
+ * granularity Experiences has; exact timestamps never exist publicly).
+ */
+export function formatDayBucket(day: number): string {
+  return new Date(day * 86_400_000).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** Coarse (date-only) rendering of an epoch-ms timestamp. */
+export function formatCoarseDate(ms: number): string {
+  return new Date(ms).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** "3 h 12 min" style remaining-time label for cooldown countdowns. */
+export function formatRemaining(ms: number): string {
+  const totalMin = Math.max(1, Math.ceil(ms / 60_000));
+  const h = Math.floor(totalMin / 60);
+  const min = totalMin % 60;
+  if (h === 0) return `${min} min`;
+  return min === 0 ? `${h} h` : `${h} h ${min} min`;
+}

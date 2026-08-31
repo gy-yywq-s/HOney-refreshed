@@ -4,14 +4,29 @@
 // `onSessionLost` fires (the app shell redirects to /login).
 
 import type {
+  AdminImportResult,
+  AdminLlmTestResponse,
+  AdminOverview,
+  AdminReportsResponse,
   DirectoryResponse,
+  EntitiesResponse,
+  EntityType,
+  ExperiencesFeedParams,
+  ExperiencesFeedResponse,
   HistoryParams,
   HistoryResponse,
+  KillSwitchName,
   LoginInput,
   LoginResponse,
   Me,
+  MyExperiencesResponse,
   NextLessonResponse,
+  ReconfirmResponse,
+  ReportCategory,
   SessionTokens,
+  StandaloneMode,
+  SubmitExperienceInput,
+  SubmitExperienceResponse,
   SyncResponse,
   TimetableResponse,
 } from "./types";
@@ -120,6 +135,99 @@ export class ApiClient {
 
   directory(): Promise<DirectoryResponse> {
     return this.request("GET", "/api/directory");
+  }
+
+  // ---- Experiences (community) ----
+
+  entities(type?: EntityType, q?: string): Promise<EntitiesResponse> {
+    const query = new URLSearchParams();
+    if (type) query.set("type", type);
+    if (q) query.set("q", q);
+    const qs = query.toString();
+    return this.request("GET", qs ? `/api/entities?${qs}` : "/api/entities");
+  }
+
+  experiencesFeed(params: ExperiencesFeedParams = {}): Promise<ExperiencesFeedResponse> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== "") query.set(key, String(value));
+    }
+    const qs = query.toString();
+    return this.request("GET", qs ? `/api/experiences?${qs}` : "/api/experiences");
+  }
+
+  submitExperience(input: SubmitExperienceInput): Promise<SubmitExperienceResponse> {
+    return this.request("POST", "/api/experiences", input);
+  }
+
+  /** Own submissions, proved by client-held keys (any status). */
+  myExperiences(keys: string[]): Promise<MyExperiencesResponse> {
+    return this.request("POST", "/api/experiences/mine", { keys });
+  }
+
+  reconfirmExperience(ownershipKey: string): Promise<ReconfirmResponse> {
+    return this.request("POST", "/api/experiences/reconfirm", { ownershipKey });
+  }
+
+  revokeExperience(ownershipKey: string): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/experiences/revoke", { ownershipKey });
+  }
+
+  reactToExperience(id: string, value: 1 | -1 | 0): Promise<{ ok: boolean }> {
+    return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/react`, { value });
+  }
+
+  reportExperience(id: string, category: ReportCategory, note?: string): Promise<{ ok: boolean }> {
+    return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/report`, {
+      category,
+      ...(note ? { note } : {}),
+    });
+  }
+
+  // ---- Admin dash (isAdmin only) ----
+
+  adminOverview(): Promise<AdminOverview> {
+    return this.request("GET", "/api/admin/overview");
+  }
+
+  adminSetKillSwitch(name: KillSwitchName, on: boolean): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/admin/kill-switch", { name, on });
+  }
+
+  adminSetStandaloneMode(scope: string, mode: StandaloneMode): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/admin/standalone-mode", { scope, mode });
+  }
+
+  adminImportEntities(items: { type: EntityType; name: string }[]): Promise<AdminImportResult> {
+    return this.request("POST", "/api/admin/entities/import", { items });
+  }
+
+  adminSetEntityActive(entityKey: string, active: boolean): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/admin/entities/active", { entityKey, active });
+  }
+
+  adminFreezeEntity(entityKey: string, frozen: boolean): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/admin/freeze-entity", { entityKey, frozen });
+  }
+
+  adminInvite(entityKey: string, studentId: string): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/admin/invite", { entityKey, studentId });
+  }
+
+  adminSetLlm(input: { apiKey?: string; model?: string }): Promise<{ ok: boolean; configured: boolean }> {
+    return this.request("POST", "/api/admin/llm", input);
+  }
+
+  adminTestLlm(): Promise<AdminLlmTestResponse> {
+    return this.request("POST", "/api/admin/llm/test");
+  }
+
+  adminReports(): Promise<AdminReportsResponse> {
+    return this.request("GET", "/api/admin/reports");
+  }
+
+  adminSetReactionMinCount(minCount: number): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/admin/reaction-min-count", { minCount });
   }
 
   disconnectSchool(): Promise<void> {
