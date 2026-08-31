@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct RootView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -20,7 +21,7 @@ struct RootView: View {
                 MainTabView()
             }
         }
-        .animation(.easeInOut(duration: Theme.Motion.standard), value: model.phase)
+        .animation(reduceMotion ? nil : .easeInOut(duration: Theme.Motion.standard), value: model.phase)
         .task {
             if model.phase == .loading {
                 await model.bootstrap()

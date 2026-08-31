@@ -51,13 +51,28 @@ struct SettingsView: View {
 
     private var schoolSection: some View {
         Section {
-            LabeledContent("Status", value: "Connected")
+            let connection = model.profile?.connection
+            LabeledContent("Status", value: schoolStatus(connection))
+            if let synced = connection?.lastSyncedAt {
+                LabeledContent("Last synced", value: synced.formatted(date: .abbreviated, time: .shortened))
+            }
             Text("HOney signs in with your OASIS school account. Access and the School Portal use this connection directly; it is kept separate from your HOney data.")
                 .font(Theme.Typography.caption)
                 .foregroundStyle(Theme.Palette.textSecondary)
+            if connection?.connected == true {
+                Button("Disconnect school account", role: .destructive) {
+                    Task { await model.disconnectSchool() }
+                }
+            }
         } header: {
             Text("School connection")
         }
+        .task { await model.refreshProfile() }
+    }
+
+    private func schoolStatus(_ c: HoneyConnection?) -> String {
+        guard let c, c.connected else { return "Not connected" }
+        return c.portalTokenValid ? "Connected" : "Reconnect needed"
     }
 
     private var importedDataSection: some View {

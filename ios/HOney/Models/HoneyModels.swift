@@ -18,11 +18,18 @@ struct HoneyConsent: Codable, Sendable, Equatable {
     var timetable: Bool
 }
 
+struct HoneyConnection: Codable, Sendable, Equatable {
+    let connected: Bool
+    let lastSyncedAt: Date?
+    let portalTokenValid: Bool
+}
+
 struct HoneyProfile: Codable, Sendable, Equatable {
     let honeyId: String
     let displayName: String
     let isAdmin: Bool
     var consent: HoneyConsent
+    var connection: HoneyConnection?
 }
 
 struct LoginResponse: Codable, Sendable {
@@ -34,7 +41,7 @@ struct LoginResponse: Codable, Sendable {
     let session: HoneySession
 
     var profile: HoneyProfile {
-        HoneyProfile(honeyId: honeyId, displayName: displayName, isAdmin: isAdmin, consent: consent)
+        HoneyProfile(honeyId: honeyId, displayName: displayName, isAdmin: isAdmin, consent: consent, connection: nil)
     }
 }
 
@@ -43,9 +50,10 @@ struct MeResponse: Codable, Sendable {
     let displayName: String
     let isAdmin: Bool
     let consent: HoneyConsent
+    let connection: HoneyConnection?
 
     var profile: HoneyProfile {
-        HoneyProfile(honeyId: honeyId, displayName: displayName, isAdmin: isAdmin, consent: consent)
+        HoneyProfile(honeyId: honeyId, displayName: displayName, isAdmin: isAdmin, consent: consent, connection: connection)
     }
 }
 

@@ -81,6 +81,17 @@ final class AppModel {
         }
     }
 
+    /// Re-fetch the profile (incl. live school-connection state) from the server.
+    func refreshProfile() async {
+        guard let me = try? await services.honeyAPI.me() else { return }
+        phase = .signedIn(me.profile)
+    }
+
+    func disconnectSchool() async {
+        try? await services.honeyAPI.disconnectSchool()
+        await refreshProfile()
+    }
+
     func signOut() async {
         await services.honeyAPI.logout()
         await services.ownershipKeyStore.clear()
@@ -90,7 +101,7 @@ final class AppModel {
     /// Account deletion is a server operation; here we clear local state and drop
     /// to signed-out. (The backend delete endpoint is invoked server-side.)
     func deleteAccount() async {
-        await services.honeyAPI.logout()
+        try? await services.honeyAPI.deleteAccount()
         await services.sessionStore.clear()
         await services.ownershipKeyStore.clear()
         phase = .signedOut

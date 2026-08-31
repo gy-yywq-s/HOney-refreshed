@@ -143,6 +143,14 @@ actor HoneyAPI {
     }
 
     /// Push a client-obtained portal token for server-side sync.
+    func disconnectSchool() async throws {
+        try await sendNoContent("POST", "/api/school/disconnect", authed: true)
+    }
+
+    func deleteAccount() async throws {
+        try await sendNoContent("DELETE", "/api/account", authed: true)
+    }
+
     func pushPortalToken(_ token: String) async throws {
         struct Body: Encodable { let token: String }
         try await sendNoContent("POST", "/api/portal/token", body: Body(token: token), authed: true)
