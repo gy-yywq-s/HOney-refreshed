@@ -11,7 +11,16 @@
     "noEmit": true,
     "types": [
       "vite/client"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@honey/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@honey/shared/*": [
+        "../../packages/shared/src/*"
+      ]
+    }
   },
   "include": [
     "src"
