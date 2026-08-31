@@ -1,14 +1,22 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { buildApp } from "./app.js";
 
+// Bind to $PORT on the host hostd expects (loopback in production). Default web
+// dist resolves relative to the working directory (the repo root at runtime),
+// so a single Node service serves both API and web with no extra config.
 const port = Number(process.env.PORT ?? 8080);
-const host = process.env.HOST ?? "0.0.0.0";
+const host = process.env.HOST ?? "127.0.0.1";
 
-const app = buildApp();
+const defaultWebDist = resolve(process.cwd(), "apps/web/dist");
+const webDist = process.env.HONEY_WEB_DIST ?? (existsSync(defaultWebDist) ? defaultWebDist : undefined);
+
+const app = buildApp(webDist ? { webDist } : {});
 app
   .listen({ port, host })
   .then((addr) => {
     // eslint-disable-next-line no-console
-    console.log(`honey-backend listening on ${addr}`);
+    console.log(`honey-backend listening on ${addr}${webDist ? ` (serving web from ${webDist})` : ""}`);
   })
   .catch((err) => {
     // eslint-disable-next-line no-console

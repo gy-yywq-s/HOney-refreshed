@@ -1,4 +1,7 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
+import fastifyStatic from "@fastify/static";
 import { HoneyPortalConnector, PortalApi, PortalHttp } from "@honey/portal-connector";
 import type { CredentialVault } from "@honey/portal-connector";
 import { loadConfig, type HoneyConfig } from "./config.js";
@@ -33,6 +36,8 @@ export interface BuildAppOptions {
   /** Override the portal base URL (tests point at the mock portal). */
   portalBaseUrl?: string;
   dbPath?: string;
+  /** Absolute path to the built web app; when present, served with SPA fallback. */
+  webDist?: string;
 }
 
 export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: AppContext } {
@@ -74,6 +79,19 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   registerDataRoutes(app, ctx);
   registerExperienceRoutes(app, ctx);
   registerAdminRoutes(app, ctx);
+
+  // Single-origin production deployment: the backend serves the built web app
+  // and falls back to index.html for client-side routes (deep links §6.3).
+  const webDist = opts.webDist ?? process.env.HONEY_WEB_DIST;
+  if (webDist && existsSync(join(webDist, "index.html"))) {
+    void app.register(fastifyStatic, { root: webDist });
+    app.setNotFoundHandler((req, reply) => {
+      if (req.url.startsWith("/api/")) {
+        return reply.code(404).send({ error: "not_found" });
+      }
+      return reply.sendFile("index.html");
+    });
+  }
 
   app.addHook("onClose", async () => {
     db.close();

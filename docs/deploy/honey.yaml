@@ -1,0 +1,36 @@
+# HOney deployment manifest for hostd (Croft).
+#
+# This file is the canonical artifact. To deploy, copy it to the CONTROL repo
+# gy-yywq-s/droplet-hosting as `sites/honey.yaml` and push with a fresh
+# `hostd-code:` trailer (a 6-digit code from Gary's hostd-deploy authenticator),
+# OR use the Croft client `croft.deploy(<this as dict>, code="NNNNNONE")`.
+#
+# Before the first deploy, Gary sets the secret VALUES on the droplet:
+#   hostd secret set honey HONEY_SECRET           # a long random string
+#   hostd secret set honey OPENROUTER_API_KEY     # production OpenRouter key
+#                                                 # (test key: ~honey/.secrets/openrouter.env)
+name: honey
+repo: https://github.com/gy-yywq-s/HOney-refreshed
+ref: main
+domain: honey.gaelisus.com
+runtime: node
+
+# pnpm workspace build (npx pins pnpm; the build env has no ambient pnpm).
+install: npx --yes pnpm@11.24.0 install --frozen-lockfile
+build: npx --yes pnpm@11.24.0 -r build && npx --yes pnpm@11.24.0 --filter @honey/web build
+start: node packages/backend/dist/server.js
+
+health_path: /api/health
+health_timeout: 120
+
+env:
+  NODE_ENV: production
+  HONEY_ADMIN_STUDENT_ID: "0088"
+  # HONEY_DB_PATH defaults to $HOSTD_DATA_DIR/honey.db (persists across deploys);
+  # HONEY_WEB_DIST defaults to <release>/apps/web/dist. Neither needs setting.
+
+secrets:
+  - HONEY_SECRET
+  - OPENROUTER_API_KEY
+
+notes: HOney V1 — single Node service serving API + web SPA; SQLite in HOSTD_DATA_DIR.

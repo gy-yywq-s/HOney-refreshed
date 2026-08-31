@@ -1,3 +1,56 @@
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthContext";
+import { RequireAuth } from "./components/AppLayout";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { DashPage } from "./pages/DashPage";
+import {
+  ExperienceEntityPage,
+  ExperiencesComposePage,
+  ExperiencesPage,
+} from "./pages/ExperiencesPages";
+import { HistoryPage } from "./pages/HistoryPage";
+import { HomePage } from "./pages/HomePage";
+import { LoginPage } from "./pages/LoginPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { TimetablePage } from "./pages/TimetablePage";
+
 export function App() {
-  return <main><h1>HOney</h1><p>Web shell — scaffold.</p></main>;
+  return (
+    <BrowserRouter>
+      <ErrorBoundary>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<RequireAuth />}>
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/timetable" element={<TimetablePage />} />
+              <Route path="/history" element={<HistoryPage />} />
+              {/* Deep-link reserved by spec §6.3; renders the list for now. */}
+              <Route path="/history/lesson/:id" element={<HistoryPage />} />
+              <Route path="/experiences" element={<ExperiencesPage />} />
+              <Route path="/experiences/compose" element={<ExperiencesComposePage />} />
+              <Route
+                path="/experiences/teacher/:id"
+                element={<ExperienceEntityPage kind="teacher" />}
+              />
+              <Route
+                path="/experiences/course/:id"
+                element={<ExperienceEntityPage kind="course" />}
+              />
+              <Route
+                path="/experiences/place/:id"
+                element={<ExperienceEntityPage kind="place" />}
+              />
+              <Route path="/experiences/food/:id" element={<ExperienceEntityPage kind="food" />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/dash" element={<DashPage />} />
+            </Route>
+            <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AuthProvider>
+      </ErrorBoundary>
+    </BrowserRouter>
+  );
 }

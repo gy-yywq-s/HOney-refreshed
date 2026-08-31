@@ -17,8 +17,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HoneyConfig {
   if (!secret && env.NODE_ENV === "production") {
     throw new Error("HONEY_SECRET is required in production");
   }
+  // On hostd the only path that survives a deploy is $HOSTD_DATA_DIR.
+  const defaultDb = env.HOSTD_DATA_DIR ? `${env.HOSTD_DATA_DIR}/honey.db` : "./honey.db";
   return {
-    dbPath: env.HONEY_DB_PATH ?? "./honey.db",
+    dbPath: env.HONEY_DB_PATH ?? defaultDb,
     // scrypt turns the deploy secret into a stable 32-byte seal key.
     sealKey: scryptSync(secret || "honey-dev-secret", "honey-seal-v1", 32),
     portalBaseUrl: env.PORTAL_BASE_URL ?? "https://www.huayaopudong.com",

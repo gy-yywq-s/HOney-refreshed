@@ -12,7 +12,7 @@ const ENTITY_TITLES: Record<EntityKind, string> = {
   food: "Food experiences",
 };
 
-function ComingSoon({ note }: { note?: string }) {
+function ComingSoon({ note }: { note?: string | undefined }) {
   return (
     <div className="card placeholder">
       <h2 className="section-title">Experiences arrive with the community backend</h2>
