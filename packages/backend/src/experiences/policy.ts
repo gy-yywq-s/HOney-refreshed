@@ -6,7 +6,7 @@ import type { LlmFeatures } from "./llm.js";
 // accepts nothing but this engine's output. No single confidence scalar; every
 // serious lane fails closed.
 
-export const POLICY_VERSION = 1;
+export const POLICY_VERSION = 2;
 
 export type ActionState =
   | "publish"
@@ -71,12 +71,21 @@ export function decide(input: PolicyInput): PolicyDecision {
     return { action: "blocked_out_of_scope", reasons: ["llm:privacy_invasion"], policyVersion: POLICY_VERSION };
   }
 
-  // 5. Manipulation & unresolved uncertainty → ask for a direct rephrase (§13.4, §15).
+  // 5. Correctable violations → ask for a direct rephrase (§13.4, EDIT_REQUIRED):
+  // hearsay stated as fact, profanity aimed at a person, or a manipulation attempt.
+  if (f.hearsay) {
+    return { action: "rephrase_required", reasons: ["llm:hearsay"], policyVersion: POLICY_VERSION };
+  }
+  if (f.targeted_profanity) {
+    return { action: "rephrase_required", reasons: ["llm:targeted_profanity"], policyVersion: POLICY_VERSION };
+  }
   if (f.injection_attempt) {
     return { action: "rephrase_required", reasons: ["llm:injection_attempt"], policyVersion: POLICY_VERSION };
   }
+  // Unresolved semantic uncertainty → rephrase directly (§13.7 UNCERTAIN_REPHRASE),
+  // distinct from an extractor OUTAGE (llm:null above) which is failed_closed.
   if (f.uncertain) {
-    return { action: "failed_closed", reasons: ["llm:uncertain"], policyVersion: POLICY_VERSION };
+    return { action: "rephrase_required", reasons: ["llm:uncertain"], policyVersion: POLICY_VERSION };
   }
 
   // 6. High-arousal ordinary opinion → 24 h private cooldown with reconfirm (§13.3).

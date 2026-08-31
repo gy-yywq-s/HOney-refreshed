@@ -72,9 +72,10 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     "/api/experiences/reconfirm",
     { preHandler: ctx.requireAuth },
     async (req, reply) => {
+      const user = ctx.userOf(req);
       const key = req.body?.ownershipKey;
       if (!key) return reply.code(400).send({ error: "ownershipKey required" });
-      const result = ctx.experiences.reconfirm(key);
+      const result = await ctx.experiences.reconfirm(user.honey_id, key);
       if (!result.ok) return reply.code(422).send({ error: result.error });
       return reply.send(result);
     },

@@ -20,6 +20,8 @@ const CLEAN: LlmFeatures = {
   slur_or_dehumanizing: false,
   privacy_invasion: false,
   high_arousal: false,
+  hearsay: false,
+  targeted_profanity: false,
   injection_attempt: false,
   uncertain: false,
 };
@@ -38,7 +40,7 @@ describe("policy engine (deterministic)", () => {
   it("slur → blocked serious; injection → rephrase; uncertain/outage → failed closed", () => {
     expect(decide({ ...base, llm: { ...CLEAN, slur_or_dehumanizing: true } }).action).toBe("blocked_serious");
     expect(decide({ ...base, llm: { ...CLEAN, injection_attempt: true } }).action).toBe("rephrase_required");
-    expect(decide({ ...base, llm: { ...CLEAN, uncertain: true } }).action).toBe("failed_closed");
+    expect(decide({ ...base, llm: { ...CLEAN, uncertain: true } }).action).toBe("rephrase_required");
     expect(decide({ ...base, llm: null }).action).toBe("failed_closed");
   });
   it("high arousal → 24h cooldown", () => {
@@ -129,14 +131,15 @@ describe("publication pipeline", () => {
     expect(r.body.status).toBe("pending"); // async: responds before moderation
     await settle();
 
-    const feed = await app.inject({
-      method: "GET",
-      url: "/api/experiences?entityKey=" + encodeURIComponent(`lesson:${lessonId}`),
-      headers: auth,
-    });
+    // Lesson posts are NOT queryable by raw lesson id (C1); browse the feed.
+    const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
     const experiences = (feed.json() as { experiences: Record<string, unknown>[] }).experiences;
     expect(experiences).toHaveLength(1);
     expect(experiences[0]!.body).toBe(text); // raw-first: byte-for-byte
+    // The public record exposes no raw lesson id and no exact timestamp (C1/S5).
+    expect(experiences[0]!.lesson_id).toBeUndefined();
+    expect(experiences[0]!.published_at).toBeUndefined();
+    expect(typeof experiences[0]!.publishedDay).toBe("number");
     expect(experiences[0]!.provenance).toBe("verified_lesson");
     // No author-ish field in the response…
     const keys = Object.keys(experiences[0]!);

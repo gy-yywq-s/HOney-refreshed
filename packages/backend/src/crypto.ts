@@ -2,6 +2,7 @@ import {
   createCipheriv,
   createDecipheriv,
   createHash,
+  hkdfSync,
   randomBytes,
   randomInt,
   timingSafeEqual,
@@ -52,4 +53,13 @@ export function open(sealed: Buffer, key: Buffer): string {
   const decipher = createDecipheriv("aes-256-gcm", key, iv);
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(enc), decipher.final()]).toString("utf8");
+}
+
+/**
+ * Domain-separated 32-byte subkey from the master seal key (HKDF-SHA256). One
+ * key compromise should not simultaneously break signing, dedup-mark
+ * unlinkability, and at-rest encryption — so each purpose gets its own subkey.
+ */
+export function deriveKey(master: Buffer, label: string): Buffer {
+  return Buffer.from(hkdfSync("sha256", master, Buffer.alloc(0), `honey/${label}`, 32));
 }

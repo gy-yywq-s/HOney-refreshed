@@ -1,7 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AppContext } from "../context.js";
 import type { KillSwitch, StandaloneMode } from "../experiences/settings.js";
-import { markHash } from "../experiences/pass.js";
 import { POLICY_VERSION } from "../experiences/policy.js";
 
 // Admin dash API (Gary: studentId 0088 ⇒ admin). Ops only: kill switches,
@@ -128,7 +127,7 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
       if (!row) return reply.code(404).send({ error: "student_not_found" });
       ctx.db
         .prepare("INSERT INTO invite_marks (entity_key, mark_hash) VALUES (?, ?) ON CONFLICT DO NOTHING")
-        .run(entityKey, markHash(ctx.config.sealKey, row.honey_id, `invite:${entityKey}`));
+        .run(entityKey, ctx.experiences.inviteMark(row.honey_id, entityKey));
       return { ok: true };
     },
   );

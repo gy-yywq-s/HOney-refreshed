@@ -1,36 +1,26 @@
 # Deploying HOney
 
-HOney ships as **one Node service** (the backend serves `/api/*` and the built web
-SPA with client-side-routing fallback). Target: **honey.gaelisus.com** on the droplet
-via hostd/Croft.
+HOney runs as **one Node service** (API + built web SPA) **directly under the linux user
+`honey`** on the droplet — a standalone deployment, not a hostd-managed site (Gary's call,
+2026-08-31). hostd is only touched for the shared Cloudflare tunnel route (the documented
+`config.base.yml` + `hostd tunnel-sync` path for non-hostd services).
 
-## One-time, by Gary
+## Layout
 
-1. Set secret values on the droplet:
-   ```
-   hostd secret set honey HONEY_SECRET          # long random string
-   hostd secret set honey OPENROUTER_API_KEY    # production OpenRouter key
-   ```
-2. Deploy by copying [`honey.yaml`](honey.yaml) into the control repo
-   `gy-yywq-s/droplet-hosting` as `sites/honey.yaml` and pushing a commit whose message
-   carries a fresh `hostd-code:` trailer (6 digits from the **hostd-deploy** authenticator),
-   or `croft.deploy({...}, code="NNNNNN")`.
+| What | Where |
+|---|---|
+| Production checkout | `/home/honey/app` (clone of this repo, branch `main`) |
+| Persistent data (SQLite) | `/home/honey/data/honey.db` |
+| Secrets env | `/home/honey/.secrets/honey.env` (0600: HONEY_SECRET, OPENROUTER_API_KEY, admin id, PORT=8871) |
+| Service | systemd `honey.service`, `User=honey`, binds `127.0.0.1:8871` |
+| Ingress | `honey.gaelisus.com` → tunnel rule in `/etc/cloudflared/config.base.yml` |
 
-Then check `status/honey.json` in the control repo — `ok` means live.
+## Update to a new version
 
-## What the manifest guarantees
-
-- **Persistence**: SQLite lives in `$HOSTD_DATA_DIR` (survives deploys); nothing else does.
-- **Port contract**: the service binds `127.0.0.1:$PORT` (hostd sets `$PORT`).
-- **Single origin**: web + API share `honey.gaelisus.com`, so the browser makes only
-  same-origin calls — no CORS to configure. (This is unrelated to the school-portal CORS
-  question, which still gates Web Access — see the spec §11.4.)
-- **Admin**: `HONEY_ADMIN_STUDENT_ID=0088` → studentId 0088 is the dash admin.
-
-## Local production check
-
+```bash
+sudo -u honey bash -lc 'cd /home/honey/app && git pull &&   npx --yes pnpm@11.24.0 install --frozen-lockfile &&   npx --yes pnpm@11.24.0 -r build && npx --yes pnpm@11.24.0 --filter @honey/web build'
+sudo systemctl restart honey && sleep 1 && curl -s https://honey.gaelisus.com/api/health
 ```
-pnpm install && pnpm -r build && pnpm --filter @honey/web build
-HONEY_DB_PATH=/tmp/honey.db node packages/backend/dist/server.js
-# → serves API + web on http://127.0.0.1:8080
-```
+
+The production OpenRouter key is swapped later via the admin dash (sealed in the DB) or by
+editing the secrets env. The historical hostd manifest draft lives in git history only.

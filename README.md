@@ -72,7 +72,8 @@ Per-stage documentation lives in [`docs/architecture/`](docs/architecture/):
 | M0 | [`m0-foundation.md`](docs/architecture/m0-foundation.md) | Monorepo layout, toolchain, CI |
 | M1 | [`m1-portal-connector.md`](docs/architecture/m1-portal-connector.md) | Portal auth state machine, endpoints, failure matrix |
 | M2 | [`m2-honey-core.md`](docs/architecture/m2-honey-core.md) | Accounts, sessions, consent, data API |
-| M3 | [`m3-experiences.md`](docs/architecture/m3-experiences.md) | Anonymity model, moderation pipeline, ops |
+| M3 | [`m3-experiences.md`](docs/architecture/m3-experiences.md) | Anonymity model, entities, ops |
+| ★ | [`moderation-pipeline.md`](docs/architecture/moderation-pipeline.md) | **The moderation pipeline** — layers, LLM constraints, pass mechanics |
 | M5 | [`m5-web-and-deploy.md`](docs/architecture/m5-web-and-deploy.md) | Web app, admin dash, single-origin deploy |
 | M4/M6 | *(added as each milestone lands)* | |
 
