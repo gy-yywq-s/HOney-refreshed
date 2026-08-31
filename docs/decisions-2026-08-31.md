@@ -37,3 +37,10 @@ These are binding refinements on top of `honey_master_spec_v1.md`. Where silent,
 
 ## Ops
 - GitHub Actions: use freely (billing is fine per Gary) — push branches, let CI run.
+
+## HOney account provisioning (Gary, later same night)
+- No standalone signup: **school-portal login + import IS signup**. On first successful login,
+  assign a random **honeyId** (6 chars, unambiguous alphabet, collision-checked) as the user's
+  Honey identity.
+- Engineering standard: optimal solution within feasible/no-high-cost range for every technical
+  detail; standard library first (`node:sqlite` for storage, `node:crypto` for ids/tokens/crypto).

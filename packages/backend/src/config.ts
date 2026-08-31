@@ -1,0 +1,29 @@
+import { scryptSync } from "node:crypto";
+
+export interface HoneyConfig {
+  dbPath: string;
+  /** 32-byte key for sealing portal tokens at rest (AES-256-GCM). */
+  sealKey: Buffer;
+  portalBaseUrl: string;
+  /** Honey access-token TTL (ms). */
+  accessTtlMs: number;
+  /** Honey refresh-token TTL (ms). */
+  refreshTtlMs: number;
+  adminStudentId: string;
+}
+
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): HoneyConfig {
+  const secret = env.HONEY_SECRET ?? "";
+  if (!secret && env.NODE_ENV === "production") {
+    throw new Error("HONEY_SECRET is required in production");
+  }
+  return {
+    dbPath: env.HONEY_DB_PATH ?? "./honey.db",
+    // scrypt turns the deploy secret into a stable 32-byte seal key.
+    sealKey: scryptSync(secret || "honey-dev-secret", "honey-seal-v1", 32),
+    portalBaseUrl: env.PORTAL_BASE_URL ?? "https://www.huayaopudong.com",
+    accessTtlMs: 60 * 60 * 1000,
+    refreshTtlMs: 30 * 24 * 60 * 60 * 1000,
+    adminStudentId: env.HONEY_ADMIN_STUDENT_ID ?? "0088",
+  };
+}

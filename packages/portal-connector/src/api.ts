@@ -6,11 +6,12 @@ import type {
 } from "@honey/shared";
 import {
   credentialsRejected,
+  operationRejected,
   schemaIncompatible,
   serverUnavailable,
   userActionRequired,
 } from "./errors.js";
-import type { PortalHttp } from "./http.js";
+import { looksLikeMaintenance, type PortalHttp } from "./http.js";
 
 // Typed wrappers for the 8 confirmed V1 portal endpoints. Success convention
 // is inconsistent upstream and handled per endpoint:
@@ -63,8 +64,9 @@ export class PortalApi {
     if (resp.httpStatus >= 500) throw serverUnavailable(resp.httpStatus);
     if (resp.httpStatus === 401) throw credentialsRejected();
     if (resp.body === undefined) {
-      // Login returning non-JSON usually means an interactive challenge
-      // (CAPTCHA/MFA page) or a changed login contract.
+      // Maintenance windows must NEVER surface as a password prompt (the
+      // zero-manual-login invariant); only a real interactive challenge may.
+      if (looksLikeMaintenance(resp.rawText)) throw serverUnavailable(resp.httpStatus);
       throw userActionRequired("unknown");
     }
     const env = asEnvelope(resp.body, "/api/login");
@@ -132,7 +134,9 @@ export class PortalApi {
   async doorList(token: string): Promise<DoorOptionWire[]> {
     const resp = await this.http.request({ method: "GET", path: "/api/user/get_door_list", token });
     const env = asEnvelope(this.http.triage(resp, "/api/user/get_door_list"), "/api/user/get_door_list");
-    if (env.status !== 1 || !Array.isArray(env.message)) return [];
+    // status!==1 is a degraded endpoint (failure matrix: "temporarily
+    // unavailable, no open attempt") — distinct from a genuine empty list.
+    if (env.status !== 1 || !Array.isArray(env.message)) throw serverUnavailable();
     return (env.message as DoorOptionWire[]).filter(
       (d) => typeof d?.key === "string" && typeof d?.value === "string",
     );
@@ -153,8 +157,11 @@ export class PortalApi {
     });
     const env = asEnvelope(this.http.triage(resp, "/api/exit/update_door_flag"), "/api/exit/update_door_flag");
     const code = (env as { code?: unknown }).code;
-    if (env.status === 0 || env.status === 1 || code === 200) return;
-    throw schemaIncompatible("/api/exit/update_door_flag");
+    // Success is ONLY status 0 / code 200 (doc 07). status===1 is the success
+    // quirk of a DIFFERENT endpoint (door list) — a nonzero status here means
+    // the portal refused to open the gate, and must never read as success.
+    if (env.status === 0 || code === 200) return;
+    throw operationRejected("/api/exit/update_door_flag", typeof env.status === "number" ? env.status : undefined);
   }
 
   /** POST /api/exit/add_record — create an exit permit request. Explicit user action only. */
@@ -169,7 +176,7 @@ export class PortalApi {
     const env = asEnvelope(this.http.triage(resp, "/api/exit/add_record"), "/api/exit/add_record");
     const code = (env as { code?: unknown }).code;
     if (env.status === 0 || code === 200) return;
-    throw schemaIncompatible("/api/exit/add_record");
+    throw operationRejected("/api/exit/add_record", typeof env.status === "number" ? env.status : undefined);
   }
 
   /** POST /api/exit/delete_record — destructive; explicit user action only, never retried. */
@@ -184,7 +191,7 @@ export class PortalApi {
     const env = asEnvelope(this.http.triage(resp, "/api/exit/delete_record"), "/api/exit/delete_record");
     const code = (env as { code?: unknown }).code;
     if (env.status === 0 || code === 200) return;
-    throw schemaIncompatible("/api/exit/delete_record");
+    throw operationRejected("/api/exit/delete_record", typeof env.status === "number" ? env.status : undefined);
   }
 
   /** POST /api/logout — never retried; callers clear local state even if this fails. */

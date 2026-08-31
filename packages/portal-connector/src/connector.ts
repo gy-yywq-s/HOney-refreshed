@@ -13,7 +13,6 @@ import { PortalApi } from "./api.js";
 import { PortalHttp, retrySafeRead, type HttpOptions } from "./http.js";
 import { joinLessons, sortLessons } from "./normalize.js";
 import { PortalSessionCoordinator, type CredentialVault } from "./coordinator.js";
-import { schemaIncompatible } from "./errors.js";
 
 /**
  * Band-4 connector implementation. Raw upstream payloads live only inside
@@ -71,7 +70,8 @@ export class HoneyPortalConnector implements PortalConnector {
 
       const firstWeek = portalWeekIndex(from);
       const lastWeek = portalWeekIndex(to);
-      if (lastWeek - firstWeek > 60) throw schemaIncompatible("weekly-range");
+      // Caller error, not a portal-taxonomy error (cap at 60 weekly fetches).
+      if (lastWeek - firstWeek + 1 > 60) throw new RangeError("lesson range exceeds 60 weeks");
       const weeks: number[] = [];
       for (let w = firstWeek; w <= lastWeek; w++) weeks.push(w);
 

@@ -42,6 +42,13 @@ export const userActionRequired = (
   reason: "captcha" | "mfa" | "passwordChanged" | "unknown",
 ) => new PortalError({ kind: "userActionRequired", reason });
 
+export const operationRejected = (endpoint: string, status?: number) =>
+  new PortalError(
+    status === undefined
+      ? { kind: "operationRejected", endpoint }
+      : { kind: "operationRejected", endpoint, status },
+  );
+
 export const schemaIncompatible = (endpoint: string) =>
   new PortalError({ kind: "schemaIncompatible", endpoint });
 

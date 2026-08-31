@@ -109,6 +109,8 @@ export type ConnectorError =
   | { kind: "sessionExpired"; retryable: true }
   | { kind: "credentialsRejected"; retryable: false }
   | { kind: "userActionRequired"; reason: "captcha" | "mfa" | "passwordChanged" | "unknown" }
+  /** Well-formed envelope, but the portal refused the operation (NOT a schema problem). */
+  | { kind: "operationRejected"; endpoint: string; status?: number }
   | { kind: "schemaIncompatible"; endpoint: string };
 
 export interface PortalConnector {

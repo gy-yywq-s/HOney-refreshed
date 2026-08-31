@@ -40,6 +40,8 @@ export class PortalSessionCoordinator {
   private stateValue: PortalSessionState = { state: "restoring" };
   private reauthInFlight: Promise<AuthSession> | null = null;
   private loginCallCount = 0;
+  /** Bumped by signOut/forget: in-flight reauths from an older epoch discard their result. */
+  private epoch = 0;
 
   constructor(
     private readonly api: PortalApi,
@@ -106,8 +108,15 @@ export class PortalSessionCoordinator {
       return await operation(session.token);
     } catch (e) {
       if (!isPortalError(e) || e.kind !== "sessionExpired") throw e;
-      await this.invalidateSession();
-      const fresh = await this.reauthenticateSingleFlight();
+      // A LATE 401 may arrive after another caller already repaired the
+      // session; never wipe a token newer than the one that failed.
+      let fresh: AuthSession;
+      if (this.session && this.session.token !== session.token) {
+        fresh = this.session;
+      } else {
+        await this.invalidateSession();
+        fresh = await this.reauthenticateSingleFlight();
+      }
       if (replay === "safeRead") return await operation(fresh.token);
       // Fresh session obtained, but the caller must explicitly re-issue the
       // mutation (e.g. re-present the door-open confirmation).
@@ -121,6 +130,7 @@ export class PortalSessionCoordinator {
   }
 
   async signOut(): Promise<void> {
+    this.epoch += 1; // any in-flight reauth result is now stale
     const token = this.session?.token;
     this.session = null;
     this.stateValue = { state: "noCredentials" };
@@ -130,6 +140,7 @@ export class PortalSessionCoordinator {
 
   /** Full local wipe ("Forget school login"): session + credentials. */
   async forgetEverything(): Promise<void> {
+    this.epoch += 1; // any in-flight reauth must not resurrect the session
     this.session = null;
     this.stateValue = { state: "noCredentials" };
     await this.vault.deleteSession();
@@ -146,13 +157,35 @@ export class PortalSessionCoordinator {
     if (this.session && this.isFresh(this.session)) return this.session;
     if (!this.session) {
       const saved = await this.vault.loadSession();
-      if (saved && this.isFresh(saved)) {
+      if (saved) {
         this.session = saved;
-        this.stateValue = { state: "authenticated", session: saved };
-        return saved;
+        if (this.isFresh(saved)) {
+          this.stateValue = { state: "authenticated", session: saved };
+          return saved;
+        }
       }
     }
-    return this.reauthenticateSingleFlight();
+    // Inside the safety window (or beyond): try to renew proactively, but if
+    // silent recovery is impossible (no creds) or the portal is unreachable
+    // while the current token is STILL clock-valid, keep using it until a real
+    // 401 (doc 03: "continue until 401 rather than blocking the feature").
+    const stillValid =
+      this.session !== null && this.session.expiresAt.getTime() > this.now().getTime();
+    try {
+      return await this.reauthenticateSingleFlight();
+    } catch (e) {
+      if (
+        stillValid &&
+        isPortalError(e) &&
+        (e.kind === "sessionExpired" ||
+          e.kind === "networkUnavailable" ||
+          e.kind === "serverUnavailable" ||
+          e.kind === "timeout")
+      ) {
+        return this.session as AuthSession;
+      }
+      throw e;
+    }
   }
 
   private async invalidateSession(): Promise<void> {
@@ -170,6 +203,7 @@ export class PortalSessionCoordinator {
   }
 
   private async doReauthenticate(): Promise<AuthSession> {
+    const startEpoch = this.epoch;
     const creds = await this.vault.loadAuthorizedCredentialsSilently();
     if (!creds) {
       // No authorized credential material → cannot recover silently.
@@ -184,6 +218,12 @@ export class PortalSessionCoordinator {
         expiresAt: new Date(info.exp * 1000),
         studentId: String(info.id),
       };
+      if (this.epoch !== startEpoch) {
+        // User signed out / forgot login while we were re-authenticating:
+        // do not resurrect anything; discard the fresh token upstream too.
+        await this.api.logout(session.token);
+        throw sessionExpired();
+      }
       await this.vault.saveSession(session);
       this.session = session;
       this.stateValue = { state: "authenticated", session };

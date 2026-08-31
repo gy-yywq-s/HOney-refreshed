@@ -164,9 +164,10 @@ describe("PortalSessionCoordinator", () => {
       .catch((e: unknown) => e);
     expect(isPortalError(err) && err.kind === "timeout").toBe(true);
     expect(isPortalError(err) && err.info.kind === "timeout" && err.info.outcomeUnknown).toBe(true);
-    // The hang swallowed one call; absolutely no retry was issued.
+    // Exactly one request reached the portal; absolutely no retry was issued.
     await new Promise((r) => setTimeout(r, 700));
-    expect(state.openDoorCalls.length).toBe(0); // request never completed server-side
+    expect(state.doorRequestCount).toBe(1);
+    expect(state.openDoorCalls.length).toBe(0); // and it never completed server-side
   });
 
   it("door open after session expiry → fresh session but NO auto-replay of the mutation", async () => {
@@ -187,6 +188,30 @@ describe("PortalSessionCoordinator", () => {
     await c.openDoor({ permitRecordId: 501, doorKey: "door-back-02" });
     expect(state.openDoorCalls.length).toBe(1);
     expect(state.loginCount).toBe(2); // initial + one silent repair
+  });
+
+  it("door-open rejection (status 1) is operationRejected, NEVER success (C2)", async () => {
+    const vault = new MemoryVault();
+    vault.creds = { ...GOOD };
+    const c = connectorWith(vault);
+    await c.getDoors();
+    state.mode = "doorRejects";
+    const err = await c
+      .openDoor({ permitRecordId: -2, doorKey: "door-front-01" })
+      .then(() => null)
+      .catch((e: unknown) => e);
+    expect(isPortalError(err) && err.kind === "operationRejected").toBe(true);
+  });
+
+  it("maintenance page during silent re-login → temporarilyUnavailable, NOT a password prompt (C3)", async () => {
+    const vault = new MemoryVault();
+    vault.creds = { ...GOOD };
+    vault.session = null;
+    state.mode = "loginMaintenanceHtml";
+    const c = connectorWith(vault);
+    const st = await c.coordinator.restore();
+    expect(st.state).toBe("temporarilyUnavailable");
+    expect(vault.creds).not.toBeNull();
   });
 
   it("commuter door open sends record_id -2 with door_id === indexcode", async () => {

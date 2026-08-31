@@ -13,6 +13,8 @@ export interface MockPortalState {
   studentId: number;
   tokenTtlSeconds: number;
   loginCount: number;
+  /** Counts every openDoor HTTP request that passed auth — including hangs. */
+  doorRequestCount: number;
   openDoorCalls: Array<{ record_id: number; door_id: string; indexcode: string }>;
   /** Behavior switches for failure-matrix tests. */
   mode:
@@ -21,7 +23,9 @@ export interface MockPortalState {
     | "maintenanceHtml"
     | "unknownHtml"
     | "loginChallengeHtml"
-    | "openDoorHang";
+    | "openDoorHang"
+    | "doorRejects"
+    | "loginMaintenanceHtml";
   now: () => number;
 }
 
@@ -36,6 +40,7 @@ export function makeMockPortal(overrides?: Partial<MockPortalState>): {
     studentId: 88,
     tokenTtlSeconds: 86_400,
     loginCount: 0,
+    doorRequestCount: 0,
     openDoorCalls: [],
     mode: "normal",
     now: () => Math.floor(Date.now() / 1000),
@@ -71,6 +76,9 @@ export function makeMockPortal(overrides?: Partial<MockPortalState>): {
   app.post("/api/login", async (req, reply) => {
     if (state.mode === "loginChallengeHtml") {
       return reply.code(200).type("text/html").send("<html>CAPTCHA required</html>");
+    }
+    if (state.mode === "loginMaintenanceHtml") {
+      return reply.code(200).type("text/html").send("<html><body>系统维护中</body></html>");
     }
     const body = (req.body ?? {}) as { username?: string; password?: string };
     state.loginCount += 1;
@@ -213,6 +221,10 @@ export function makeMockPortal(overrides?: Partial<MockPortalState>): {
   app.post("/api/exit/update_door_flag", async (req, reply) => {
     const tok = authed(req as never);
     if (!tok) return reply.code(401).send(unauthorized);
+    state.doorRequestCount += 1;
+    if (state.mode === "doorRejects") {
+      return reply.send({ status: 1, message: "no permission", data: {} });
+    }
     if (state.mode === "openDoorHang") {
       // Respond far later than any client timeout: simulates unknown outcome
       // (kept short enough that server teardown stays fast in tests).
