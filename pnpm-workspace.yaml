@@ -2,14 +2,8 @@ packages:
   - "packages/*"
   - "apps/*"
 
+# esbuild postinstall is approved (it only wires its prebuilt platform binary).
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
 
-# esbuild ships prebuilt platform binaries via @esbuild/* optional deps, so its
-# postinstall is a no-op for the JS API (Vite/Vitest). pnpm 11.24 does not honor
-# onlyBuiltDependencies from this file to silence the notice, and its pre-run deps
-# check mis-fires on that benign ignored build — so we skip the pre-run check.
-# No dangerouslyAllowAllBuilds: only esbuild has a script and we do not run it.
-onlyBuiltDependencies:
-  - esbuild
 verifyDepsBeforeRun: false
