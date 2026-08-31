@@ -6,7 +6,7 @@ import type { LlmFeatures } from "./llm.js";
 // accepts nothing but this engine's output. No single confidence scalar; every
 // serious lane fails closed.
 
-export const POLICY_VERSION = 2;
+export const POLICY_VERSION = 3;
 
 export type ActionState =
   | "publish"
@@ -93,7 +93,12 @@ export function decide(input: PolicyInput): PolicyDecision {
     return { action: "cooldown_24h", reasons: ["llm:high_arousal"], policyVersion: POLICY_VERSION };
   }
 
-  // 7. Ordinary content — publish. (Nudge lane reserved; low-harm vague content
-  // gets at most an optional nudge per App A §27.7.)
+  // 7. Low-harm vague content → publish, but with an OPTIONAL nudge to add a
+  // detail (§13.2 / §27.7). It still publishes; the nudge is advisory only.
+  if (f.low_information) {
+    return { action: "publish_nudge", reasons: ["llm:low_information"], policyVersion: POLICY_VERSION };
+  }
+
+  // 8. Ordinary content — publish.
   return { action: "publish", reasons, policyVersion: POLICY_VERSION };
 }

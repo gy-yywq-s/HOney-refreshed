@@ -22,6 +22,7 @@ const CLEAN: LlmFeatures = {
   high_arousal: false,
   hearsay: false,
   targeted_profanity: false,
+  low_information: false,
   injection_attempt: false,
   uncertain: false,
 };
