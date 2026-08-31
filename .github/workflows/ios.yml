@@ -13,8 +13,23 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Show toolchain
+      - name: Toolchain
         run: xcodebuild -version && swift --version
-      # Real build/test wired in M6 once the Xcode project exists under ios/.
-      - name: Placeholder
-        run: echo "iOS project not yet present; M6 wires xcodebuild build+test here."
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate --spec ios/project.yml
+        working-directory: .
+      - name: Build & test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project ios/HOney.xcodeproj \
+            -scheme HOney \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            CODE_SIGNING_ALLOWED=NO | xcpretty || \
+          xcodebuild test \
+            -project ios/HOney.xcodeproj \
+            -scheme HOney \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            CODE_SIGNING_ALLOWED=NO

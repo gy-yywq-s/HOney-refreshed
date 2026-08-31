@@ -160,25 +160,40 @@ struct ExperienceReactions: Codable, Sendable, Equatable {
 struct Experience: Codable, Sendable, Identifiable, Equatable {
     let id: String
     let entityKey: String
-    let lessonId: String?
-    let ctxSubjectName: String?
-    let ctxTeacherName: String?
-    let ctxCourseName: String?
-    let ctxRoomName: String?
-    let ctxDishName: String?
-    let body: String
+    // Filter-time association context (ids, not names). Names are resolved at
+    // the view layer via the directory when available.
+    let ctxTeacherId: String?
+    let ctxCourseId: String?
+    let ctxRoomId: String?
+    /// Nullable: rejected/failed/revoked rows carry no body (see /experiences/mine).
+    let body: String?
     let rating: Int?
     let provenance: String?
     let status: String?
-    let publishedAt: Date?
+    /// Coarse public date bucket (days since the Unix epoch); no exact timestamp exists.
+    let publishedDay: Int?
     let reactions: ExperienceReactions?
 
-    /// True when this record is a private note (visually distinct from public).
+    /// Display body, empty when the server withheld it.
+    var bodyText: String { body ?? "" }
+
+    /// True when this record is a client-side private note (visually distinct from public).
     var isPrivate: Bool { status?.lowercased() == "private" }
 
-    /// Best-effort context label for feed rows.
-    var contextLabel: String? {
-        ctxDishName ?? ctxCourseName ?? ctxTeacherName ?? ctxRoomName ?? ctxSubjectName
+    /// Human provenance label.
+    var provenanceLabel: String? {
+        switch provenance {
+        case "verified_lesson": return "Verified lesson experience"
+        case "verified_retrospective": return "Verified retrospective"
+        case "verified_member": return "Verified school member"
+        default: return provenance
+        }
+    }
+
+    /// Coarse published date from the day bucket (midnight UTC of that day).
+    var publishedDate: Date? {
+        guard let d = publishedDay else { return nil }
+        return Date(timeIntervalSince1970: Double(d) * 86_400)
     }
 }
 

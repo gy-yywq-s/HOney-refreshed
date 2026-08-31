@@ -20,8 +20,13 @@ struct HoneyWordmark: View {
 // MARK: - Card
 
 struct Card<Content: View>: View {
-    var padding: CGFloat = Theme.Spacing.lg
-    @ViewBuilder var content: Content
+    private let padding: CGFloat
+    private let content: Content
+
+    init(padding: CGFloat = Theme.Spacing.lg, @ViewBuilder content: () -> Content) {
+        self.padding = padding
+        self.content = content()
+    }
 
     var body: some View {
         content
@@ -40,8 +45,8 @@ struct Card<Content: View>: View {
 
 struct SectionHeader: View {
     let title: String
-    var actionTitle: String?
-    var action: (() -> Void)?
+    var actionTitle: String? = nil
+    var action: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
@@ -78,9 +83,9 @@ struct LoadingView: View {
 struct EmptyStateView: View {
     let systemImage: String
     let title: String
-    var message: String?
-    var actionTitle: String?
-    var action: (() -> Void)?
+    var message: String? = nil
+    var actionTitle: String? = nil
+    var action: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: Theme.Spacing.md) {
@@ -134,7 +139,7 @@ enum BannerKind {
 struct Banner: View {
     let kind: BannerKind
     let message: String
-    var onDismiss: (() -> Void)?
+    var onDismiss: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .top, spacing: Theme.Spacing.sm) {
@@ -164,9 +169,9 @@ struct Banner: View {
 
 struct ListRow: View {
     let title: String
-    var subtitle: String?
-    var systemImage: String?
-    var trailingText: String?
+    var subtitle: String? = nil
+    var systemImage: String? = nil
+    var trailingText: String? = nil
     var showsChevron: Bool = false
 
     var body: some View {
