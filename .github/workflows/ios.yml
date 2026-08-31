@@ -1,0 +1,17 @@
+name: iOS
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+jobs:
+  build:
+    name: xcodebuild (macOS runner)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: xcodebuild -version && swift --version
+      # Real build/test wired in M6 once the Xcode project exists under ios/.
+      - name: Placeholder
+        run: echo "iOS project not yet present; M6 wires xcodebuild build+test here."
