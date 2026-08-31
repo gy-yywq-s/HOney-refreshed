@@ -160,6 +160,16 @@ const MIGRATIONS: string[] = [
     value TEXT NOT NULL
   ) STRICT;
   `,
+  // 004 — abuse restriction (App A §21): count high-confidence prohibited
+  // publication attempts per account WITHOUT storing the text or any post link.
+  `
+  CREATE TABLE abuse_counters (
+    honey_id TEXT PRIMARY KEY REFERENCES honey_users(honey_id) ON DELETE CASCADE,
+    blocked_attempts INTEGER NOT NULL DEFAULT 0,
+    last_blocked_at INTEGER,
+    suspended_until INTEGER
+  ) STRICT;
+  `,
 ];
 
 export function openDatabase(path: string): DatabaseSyncType {

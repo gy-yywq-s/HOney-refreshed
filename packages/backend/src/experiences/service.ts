@@ -117,6 +117,14 @@ export class ExperienceService {
     if (this.settings.killSwitch("DISABLE_NEW_PUBLICATIONS") || this.settings.killSwitch("PRIVATE_NOTES_ONLY_MODE")) {
       return { ok: false, error: "publications_disabled" };
     }
+    // Abuse restriction (§21): a repeatedly-prohibited account is suspended from
+    // NEW publications. Enforced on the identity, never by linking to any post.
+    const suspended = this.db
+      .prepare("SELECT suspended_until FROM abuse_counters WHERE honey_id = ?")
+      .get(input.honeyId) as unknown as { suspended_until: number | null } | undefined;
+    if (suspended?.suspended_until && suspended.suspended_until > this.now()) {
+      return { ok: false, error: "temporarily_suspended" };
+    }
     const body = (input.body ?? "").trim();
     if (!body || body.length > 5000) return { ok: false, error: "body_invalid" };
     const rating = input.rating ?? null;
@@ -218,7 +226,7 @@ export class ExperienceService {
 
     // Async moderation: the submitter gets an immediate response; the pipeline
     // runs in the background and the post appears when the pass is issued.
-    void this.moderate(id, entityKey, entityType, body, rating, ctx, mark).catch(() => {
+    void this.moderate(input.honeyId, id, entityKey, entityType, body, rating, ctx, mark).catch(() => {
       this.setStatus(id, "failed_closed", "pipeline_error");
       this.releaseMark(mark);
       this.clearBody(id);
@@ -229,6 +237,7 @@ export class ExperienceService {
 
   /** Run the full pipeline once and apply the deterministic decision. */
   private async moderate(
+    honeyId: string,
     id: string,
     entityKey: string,
     entityType: string,
@@ -239,6 +248,29 @@ export class ExperienceService {
   ): Promise<void> {
     const decision = await this.computeDecision(body, entityType, rating);
     this.applyDecision(id, decision, { body, rating, entityKey, ctx }, mark);
+    // §21: count high-confidence prohibited attempts on the ACCOUNT (no text,
+    // no post id) and suspend new publications past a threshold.
+    if (decision.action === "blocked_serious") this.recordProhibitedAttempt(honeyId);
+  }
+
+  private recordProhibitedAttempt(honeyId: string): void {
+    const THRESHOLD = 3;
+    const SUSPEND_MS = 7 * 24 * 3600 * 1000;
+    const row = this.db
+      .prepare("SELECT blocked_attempts FROM abuse_counters WHERE honey_id = ?")
+      .get(honeyId) as unknown as { blocked_attempts: number } | undefined;
+    const count = (row?.blocked_attempts ?? 0) + 1;
+    const suspendUntil = count >= THRESHOLD ? this.now() + SUSPEND_MS : null;
+    this.db
+      .prepare(
+        `INSERT INTO abuse_counters (honey_id, blocked_attempts, last_blocked_at, suspended_until)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(honey_id) DO UPDATE SET
+           blocked_attempts = excluded.blocked_attempts,
+           last_blocked_at = excluded.last_blocked_at,
+           suspended_until = COALESCE(excluded.suspended_until, abuse_counters.suspended_until)`,
+      )
+      .run(honeyId, count, this.now(), suspendUntil);
   }
 
   /** normalize → lexical → (LLM unless lexical hard-block) → deterministic decide. */
@@ -398,6 +430,14 @@ export class ExperienceService {
     if ((row.cooldown_until ?? 0) > this.now()) return { ok: false, error: "cooldown_active" };
     if (this.settings.killSwitch("DISABLE_NEW_PUBLICATIONS") || this.settings.killSwitch("PRIVATE_NOTES_ONLY_MODE")) {
       return { ok: false, error: "publications_disabled" };
+    }
+    // Abuse restriction (§21): a repeatedly-prohibited account is suspended from
+    // NEW publications. Enforced on the identity, never by linking to any post.
+    const suspended = this.db
+      .prepare("SELECT suspended_until FROM abuse_counters WHERE honey_id = ?")
+      .get(honeyId) as unknown as { suspended_until: number | null } | undefined;
+    if (suspended?.suspended_until && suspended.suspended_until > this.now()) {
+      return { ok: false, error: "temporarily_suspended" };
     }
     if (row.body === null) return { ok: false, error: "body_gone" };
     const entityType = row.entity_key.split(":")[0] ?? "lesson";

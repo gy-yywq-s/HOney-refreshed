@@ -354,6 +354,26 @@ describe("reactions, kill switches, admin gate", () => {
     expect((feed.json() as { experiences: unknown[] }).experiences).toHaveLength(0);
   });
 
+  it("repeated prohibited attempts suspend the account (§21), no text/link stored", async () => {
+    app.ctx.experiences.llmRunner = async () => ({ ...({ ok: true } as const), features: { ...CLEAN, slur_or_dehumanizing: true } });
+    const lessonId = await myLessonId();
+    // Three high-confidence prohibited attempts (each blocked + text purged).
+    for (let i = 0; i < 3; i++) {
+      const r = await submit({ lessonId, body: `prohibited attempt ${i}` });
+      // First is accepted for processing then blocked; dedup mark is released so
+      // the same lesson can be retried (that is what lets abuse accumulate).
+      await settle();
+      expect([200, 422]).toContain(r.status);
+    }
+    // Now the account is suspended from NEW publications.
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN } });
+    const blocked = await submit({ lessonId, body: "a perfectly fine note now" });
+    expect(blocked.body.error).toBe("temporarily_suspended");
+    // The abuse counter holds counts only — no body, no post id.
+    const cols = app.ctx.db.prepare("PRAGMA table_info(abuse_counters)").all() as unknown as { name: string }[];
+    expect(cols.map((c) => c.name).sort()).toEqual(["blocked_attempts", "honey_id", "last_blocked_at", "suspended_until"]);
+  });
+
   it("admin routes reject non-admins", async () => {
     const nonAdminApp = buildApp({
       portalBaseUrl: app.ctx.config.portalBaseUrl,
