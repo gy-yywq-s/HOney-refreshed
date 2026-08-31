@@ -55,6 +55,10 @@ final class ExperiencesViewModel {
         try? await services.honeyAPI.react(experienceId: experience.id, value: value)
     }
 
+    func report(_ experience: Experience, category: String, note: String) async {
+        try? await services.honeyAPI.report(experienceId: experience.id, category: category, note: note)
+    }
+
     /// Raw provenance is surfaced first, preserving the server's per-group order.
     private func rawFirst(_ items: [Experience]) -> [Experience] {
         let raw = items.filter { $0.provenance?.lowercased() == "raw" }

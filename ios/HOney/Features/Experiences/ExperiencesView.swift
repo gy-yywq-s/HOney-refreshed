@@ -68,7 +68,7 @@ struct ExperiencesView: View {
                     )
                 } else {
                     ForEach(vm.experiences) { experience in
-                        Card { ExperienceRow(experience: experience) }
+                        Card { InteractiveExperienceRow(experience: experience, services: model.services) }
                     }
                 }
             }

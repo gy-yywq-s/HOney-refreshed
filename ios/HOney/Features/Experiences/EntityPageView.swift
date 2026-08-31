@@ -43,7 +43,7 @@ struct EntityPageView: View {
                     )
                 } else {
                     ForEach(experiences) { experience in
-                        Card { ExperienceRow(experience: experience) }
+                        Card { InteractiveExperienceRow(experience: experience, services: model.services) }
                     }
                 }
             }

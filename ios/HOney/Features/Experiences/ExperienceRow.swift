@@ -8,6 +8,7 @@ import SwiftUI
 struct ExperienceRow: View {
     let experience: Experience
     var showsPrivacyBadge: Bool = false
+    var showsReactions: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
@@ -35,7 +36,7 @@ struct ExperienceRow: View {
                 .font(Theme.Typography.body)
                 .foregroundStyle(Theme.Palette.textPrimary)
             HStack(spacing: Theme.Spacing.md) {
-                if let reactions = experience.reactions {
+                if showsReactions, let reactions = experience.reactions {
                     Label("\(reactions.likes)", systemImage: "hand.thumbsup")
                     Label("\(reactions.dislikes)", systemImage: "hand.thumbsdown")
                 }
