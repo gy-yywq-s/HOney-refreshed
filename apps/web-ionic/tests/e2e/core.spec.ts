@@ -105,3 +105,34 @@ test("declining timetable import enters the account instead of looping to consen
   await expect(page).toHaveURL(/\/home/);
   await expect(page.getByRole("heading", { name: /Hi, Gary/ })).toBeVisible();
 });
+
+test("successful sign-in transitions into the app shell without a reload", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const session = {
+    accessToken: "test-access",
+    accessExpiresAt: "2099-01-01T00:00:00.000Z",
+    refreshToken: "test-refresh",
+    refreshExpiresAt: "2099-02-01T00:00:00.000Z",
+  };
+  await page.route("**/api/auth/login", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ honeyId: "h-test", displayName: "Route Test", created: false, isAdmin: false, consent: { timetable: true }, session }),
+  }));
+  await page.route("**/api/me", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ honeyId: "h-test", displayName: "Route Test", isAdmin: false, consent: { timetable: true, grantedAt: null }, connection: { connected: true, lastSyncedAt: null, portalTokenValid: true } }),
+  }));
+  await page.route("**/api/next-lesson", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ nextLesson: null, lastSyncedAt: null }) }));
+  await page.route("**/api/experiences/feed**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [], nextCursor: null }) }));
+
+  await page.goto("/login");
+  await page.locator("#school-username input").fill("route-test");
+  await page.locator("#school-password input").fill("route-test");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(page).toHaveURL(/\/home/);
+  await expect(page.getByRole("heading", { name: "Hi, Route Test" })).toBeVisible();
+  await expect(page.locator(".login-form")).toHaveCount(0);
+});

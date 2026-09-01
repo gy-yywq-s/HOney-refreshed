@@ -15,7 +15,7 @@ import {
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
 import { calendarOutline, homeOutline, peopleOutline, personCircleOutline } from "ionicons/icons";
-import { Navigate, Route, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { Wordmark } from "./components/Wordmark";
 import { AccessPage } from "./pages/AccessPage";
@@ -36,11 +36,11 @@ import { TimetablePage } from "./pages/TimetablePage";
 import { WhyPage } from "./pages/WhyPage";
 
 export function App() {
-  return <IonApp><IonReactRouter><AuthProvider><a className="skip-link" href="#main-view">Skip to content</a><IonRouterOutlet>
+  return <IonApp><IonReactRouter><AuthProvider><a className="skip-link" href="#main-view">Skip to content</a><Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/consent" element={<ConsentPage />} />
     <Route path="/*" element={<AuthenticatedApp />} />
-  </IonRouterOutlet></AuthProvider></IonReactRouter></IonApp>;
+  </Routes></AuthProvider></IonReactRouter></IonApp>;
 }
 
 function AuthenticatedApp() {

@@ -46,4 +46,16 @@ describe("Ionic live API adapter", () => {
       code: "network_error",
     });
   });
+
+  it("bounds a stalled sign-in and reports a specific timeout", async () => {
+    const fetchFn: FetchLike = (_input, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+    });
+    const client = new LiveClient(fetchFn, 5, 5);
+
+    await expect(client.login({ username: "student", password: "test-only" })).rejects.toMatchObject({
+      status: 0,
+      code: "request_timeout",
+    });
+  });
 });

@@ -1,17 +1,19 @@
 import { useRef, useState } from "react";
 import { IonButton, IonContent, IonHeader, IonInput, IonPage, IonText, IonTitle, IonToolbar } from "@ionic/react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { Wordmark } from "../components/Wordmark";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, loading, error, fixtureMode } = useAuth();
+  const { me, login, loading, error, fixtureMode } = useAuth();
   const usernameInput = useRef<HTMLIonInputElement>(null);
   const passwordInput = useRef<HTMLIonInputElement>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
+
+  if (me) return <Navigate to="/home" replace />;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();

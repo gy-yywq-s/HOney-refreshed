@@ -74,14 +74,18 @@ export class LiveClient implements HoneyClient {
   onSessionLost: (() => void) | null = null;
   private refreshing: Promise<boolean> | null = null;
 
-  constructor(private readonly fetchFn: FetchLike = (input, init) => fetch(input, init)) {}
+  constructor(
+    private readonly fetchFn: FetchLike = (input, init) => fetch(input, init),
+    private readonly requestTimeoutMs = 20_000,
+    private readonly loginTimeoutMs = 60_000,
+  ) {}
 
   hasSession(): boolean {
     return this.session !== null;
   }
 
   async login(input: LoginInput): Promise<LoginResponse> {
-    const result = await this.request<LoginResponse>("POST", "/api/auth/login", input, { auth: false });
+    const result = await this.request<LoginResponse>("POST", "/api/auth/login", input, { auth: false, timeoutMs: this.loginTimeoutMs });
     this.storeSession(result.session);
     return result;
   }
@@ -170,9 +174,9 @@ export class LiveClient implements HoneyClient {
     method: string,
     path: string,
     body?: unknown,
-    options: { auth?: boolean; retryOn401?: boolean } = {},
+    options: { auth?: boolean; retryOn401?: boolean; timeoutMs?: number } = {},
   ): Promise<T> {
-    const { auth = true, retryOn401 = true } = options;
+    const { auth = true, retryOn401 = true, timeoutMs = this.requestTimeoutMs } = options;
     const headers: Record<string, string> = { Accept: "application/json" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (auth) {
@@ -182,20 +186,26 @@ export class LiveClient implements HoneyClient {
     }
 
     let response: Response;
+    const controller = new AbortController();
+    const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
     try {
       response = await this.fetchFn(path, {
         method,
         headers,
+        signal: controller.signal,
         ...(auth ? {} : { credentials: "omit" as const }),
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
     } catch {
+      if (controller.signal.aborted) throw new ApiError(0, "request_timeout");
       throw new ApiError(0, "network_error");
+    } finally {
+      globalThis.clearTimeout(timeout);
     }
 
     if (response.status === 401 && auth) {
       if (retryOn401 && (await this.refreshSession())) {
-        return this.request(method, path, body, { auth, retryOn401: false });
+        return this.request(method, path, body, { auth, retryOn401: false, timeoutMs });
       }
       this.clearSession();
       this.onSessionLost?.();
@@ -252,6 +262,8 @@ export function describeApiError(error: unknown): string {
   if (!(error instanceof ApiError)) return "Something went wrong. Please try again.";
   const copy: Record<string, string> = {
     network_error: "Could not reach HOney. Check your connection and try again.",
+    request_timeout: "HOney did not receive a response in time. Try again.",
+    backend_timeout: "The HOney service did not respond in time. Try again.",
     not_authenticated: "Continue with your school account to use HOney.",
     session_expired: "Your HOney session has expired. Sign in again.",
     school_credentials_rejected: "The school portal rejected that username or password.",
