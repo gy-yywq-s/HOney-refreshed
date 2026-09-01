@@ -1,5 +1,5 @@
 {
-  "policyVersion": 5,
+  "policyVersion": 6,
   "note": "Versioned human-authored regression + adversarial corpus (App A §24/§26), deliberately BALANCED across benign / nuanced / serious classes — not merely more harmful examples. `lexical` cases must be caught by the deterministic normalize+lexicon layer ALONE (no LLM). `features` cases assert the deterministic policy engine over a feature vector (the LLM's only job is to produce that vector). Both halves run hermetically in CI. `live` cases carry real text checked against the ACTUAL LLM only when OPENROUTER_API_KEY is set; CI never depends on the network. The §26.2 launch gates are asserted over this set. Claim supported: \"zero misses in the versioned critical regression suite\" — NOT \"zero serious content can ever publish\".",
   "lexical": [
     {
@@ -127,6 +127,42 @@
       "text": "someone is sharing nude pics of a minor",
       "expect": "blocked_serious",
       "reason": "minor sexual context variant"
+    },
+    {
+      "id": "slur-trailing-bang",
+      "text": "he is a retard!",
+      "expect": "blocked_serious",
+      "reason": "boundary regression: trailing ! deleets into a letter; the neighbour must be judged on the pre-deleet folded text"
+    },
+    {
+      "id": "slur-trailing-pipe",
+      "text": "such a retard| honestly",
+      "expect": "blocked_serious",
+      "reason": "boundary regression: trailing | deleets into a letter neighbour; must still flag"
+    },
+    {
+      "id": "slur-trailing-at",
+      "text": "that faggot@ again",
+      "expect": "blocked_serious",
+      "reason": "boundary regression: trailing @ deleets into a letter neighbour; must still flag"
+    },
+    {
+      "id": "slur-trailing-dollar",
+      "text": "those spics$ everywhere",
+      "expect": "blocked_serious",
+      "reason": "boundary regression: trailing $ deleets into a letter the plural suffix cannot absorb; must still flag"
+    },
+    {
+      "id": "slur-adjacent-space",
+      "text": "he shouted chink spic at them",
+      "expect": "blocked_serious",
+      "reason": "adjacent blocked terms joined by squeezing: the greedy plural suffix must not swallow the second term and skip both"
+    },
+    {
+      "id": "slur-adjacent-comma",
+      "text": "the wall said chink,spic",
+      "expect": "blocked_serious",
+      "reason": "adjacent blocked terms across a comma: overlapping candidates re-tested after a boundary rejection"
     }
   ],
   "lexicalBenign": [
@@ -164,6 +200,11 @@
       "id": "benign-spicy-zh",
       "text": "这道菜很spicy但是我喜欢",
       "reason": "must-not-false-positive: zh/en mixed sentence where the embedded English word contains a blocked substring"
+    },
+    {
+      "id": "benign-spicy-bang-en",
+      "text": "the soup was spicy!",
+      "reason": "must-not-false-positive: benign containing word plus trailing confusable punctuation must stay clean under the pre-deleet boundary"
     }
   ],
   "features": [

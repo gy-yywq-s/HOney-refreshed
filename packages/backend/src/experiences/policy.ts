@@ -6,7 +6,7 @@ import type { LlmFeatures } from "./llm.js";
 // accepts nothing but this engine's output. No single confidence scalar; every
 // serious lane fails closed.
 
-export const POLICY_VERSION = 5;
+export const POLICY_VERSION = 6;
 
 export type ActionState =
   | "publish"
