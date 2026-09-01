@@ -1,0 +1,33 @@
+[Unit]
+Description=HOney Ionic fidelity PWA (frontend-only)
+After=network.target
+
+[Service]
+Type=simple
+User=honey
+Group=honey
+WorkingDirectory=/home/honey/ionic-app
+Environment=PORT=8902
+Environment=PUBLIC_ORIGIN=https://ionic.gaelisus.com
+Environment=HONEY_BACKEND_PORT=8871
+ExecStart=/usr/bin/node apps/web-ionic/server.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
