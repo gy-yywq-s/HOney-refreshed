@@ -529,6 +529,10 @@ a.btn:hover {
 .view {
   width: min(100%, 1080px);
   margin: 0 auto;
+  /* Route-level settle: every view change eases up into place. fill-mode is
+     BACKWARDS on purpose: `both` kept an identity transform after the
+     animation, making .view the containing block for every fixed overlay. */
+  animation: settle 0.46s var(--ease) backwards;
   /* FIT/FRAMED screens (timetable, compose) flex to the visible height;
      document screens simply grow past it. min-height resolves against
      .main's content box — the area inside the shell's padding. */

@@ -256,14 +256,6 @@ p.text-4 {
   }
 }
 
-/* Route-level settle: every view change eases up into place.
-   fill-mode is BACKWARDS on purpose (design-is r1, move 2): `both` kept an
-   identity transform after the animation, which made .view the containing
-   block for every position:fixed overlay — modals rendered inside the
-   content box and the bottom nav stayed tappable behind them. */
-.view {
-  animation: settle 0.46s var(--ease) backwards;
-}
 
 /* Staggered entrances: index-based delay, capped at 8 (set by markup). */
 .stagger {
