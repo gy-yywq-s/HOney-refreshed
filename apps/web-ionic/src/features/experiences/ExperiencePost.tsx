@@ -23,7 +23,7 @@ const PROVENANCE_LINE: Record<string, string> = {
 };
 
 const REACTION_EXPLAINER =
-  "Reactions show whether this matches the experience of students with relevant exposure. They do not verify a post as fact.";
+  "Reactions come from students whose school data shows the same class, teacher, course or place; for food, HOney confirms only school membership. They do not verify a post as fact.";
 
 function entityHref(e: EntitySummary): string | null {
   if (e.type === "lesson") return null; // lessons have no public page

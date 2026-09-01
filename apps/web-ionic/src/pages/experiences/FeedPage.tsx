@@ -90,10 +90,16 @@ export function ExperiencesFeedPage() {
             if (next === "my_classes" || next === "school") switchScope(next);
           }}
         >
-          <IonSegmentButton value="my_classes">
+          <IonSegmentButton
+            className={scope === "my_classes" ? "scope-option scope-option--selected" : "scope-option"}
+            value="my_classes"
+          >
             <IonLabel>Your classes</IonLabel>
           </IonSegmentButton>
-          <IonSegmentButton value="school">
+          <IonSegmentButton
+            className={scope === "school" ? "scope-option scope-option--selected" : "scope-option"}
+            value="school"
+          >
             <IonLabel>Around school</IonLabel>
           </IonSegmentButton>
         </IonSegment>

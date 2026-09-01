@@ -83,7 +83,8 @@ export function SettingsPage() {
             <span>Delete account</span>
             <span className="caption">
               Removes your HOney account and everything imported with it. Published experiences
-              stay — they carry no author ID and are controlled only by the keys on your devices.
+              stay — they carry no author ID. A signed-in HOney session and a post-control key held
+              on one of your devices are both required to find or revoke them.
             </span>
           </div>
           <button className="btn btn--danger" onClick={() => setConfirm("delete-account")}>
@@ -199,8 +200,8 @@ export function SettingsPage() {
         <h2 className="section-title">How privacy works</h2>
         <p className="muted">
           The plain version: HOney checks you actually have the relevant experience, published posts
-          are not attached to your school account, and your device holds the control needed to
-          remove your own post. The detail, honestly:
+          are not attached to your school account, and your signed-in session plus a key held by
+          your device let you remove your own post. The detail, honestly:
         </p>
         <ul className="privacy-list muted">
           <li>
@@ -210,9 +211,10 @@ export function SettingsPage() {
             words themselves can still make you recognisable to people who know the situation.
           </li>
           <li>
-            <strong>Your control is a device-held key.</strong> Each publish returns a one-time
-            ownership key stored only in this browser; the server keeps only a hash. Presenting the
-            key is the only way to find or revoke your post.
+            <strong>Your control uses a device-held post-control key.</strong> Each publish returns
+            a one-time key stored only in this browser; the server keeps only a hash. While you are
+            signed in to HOney, presenting the key is required to find or revoke your post; neither
+            the signed-in session nor the stored hash is enough by itself.
           </li>
           <li>
             <strong>Public dates are coarse.</strong> Posts show a calendar day only; exact
@@ -228,10 +230,12 @@ export function SettingsPage() {
             moderation service.
           </li>
           <li>
-            <strong>Private notes stay on this device.</strong> They are scrambled at rest, so a
-            casual look at browser storage won't read them — but the key sits on this device too.
-            That protects against casual dumps, not against scripts running on this site or someone
-            with full access to this browser. Treat them as private-on-this-device.
+            <strong>Private-note storage stays on this device.</strong> Saving a private note stores
+            it only in this browser. If you choose Keep private after starting a safety check, its
+            text was already sent for that check. Notes are scrambled at rest, so a casual look at
+            browser storage won't read them — but the key sits on this device too. That protects
+            against casual dumps, not against scripts running on this site or someone with full
+            access to this browser. Treat them as private-on-this-device.
           </li>
         </ul>
         <KeyManagement onFeedback={setFeedback} />
@@ -321,7 +325,7 @@ function KeyManagement({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "HOney-ownership-keys.json";
+    a.download = "HOney-post-control-keys.json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -332,17 +336,17 @@ function KeyManagement({
       setCount(ownershipKeys.count());
       onFeedback({
         tone: "success",
-        text: added > 0 ? `Imported ${added} new ownership key${added > 1 ? "s" : ""}.` : "No new keys — everything in that file is already here.",
+        text: added > 0 ? `Imported ${added} new post-control key${added > 1 ? "s" : ""}.` : "No new keys — everything in that file is already here.",
       });
     } catch {
-      onFeedback({ tone: "danger", text: "That file is not a HOney ownership-key export." });
+      onFeedback({ tone: "danger", text: "That file is not a HOney post-control-key export." });
     }
   }
 
   return (
     <div className="setting-row">
       <div className="setting-row__main">
-        <span>Ownership keys on this device</span>
+        <span>Post-control keys on this device</span>
         <span className="caption">
           {count === 0
             ? "None yet — keys appear here when you publish an experience."

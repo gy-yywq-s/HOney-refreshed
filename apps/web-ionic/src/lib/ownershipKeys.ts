@@ -169,7 +169,7 @@ export class OwnershipKeyStore {
 }
 
 // ---------------------------------------------------------------------------
-// Private notes (AES-GCM encrypted at rest; never sent anywhere)
+// Private-note records (AES-GCM encrypted at rest; stored only in this browser)
 // ---------------------------------------------------------------------------
 
 interface NotesBlob {

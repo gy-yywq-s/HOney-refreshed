@@ -114,6 +114,7 @@
   --card: rgba(255, 255, 255, 0.7);
   --soft: rgba(31, 50, 47, 0.05);
   --line: rgba(28, 40, 38, 0.14);
+  --ink-3: #636f77; /* 4.57:1 on Mist for 12–13px tertiary text */
 }
 :root[data-surface="night"] {
   color-scheme: dark;

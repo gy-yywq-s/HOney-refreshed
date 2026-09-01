@@ -88,7 +88,6 @@
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   pointer-events: none;
   transition: width 1s var(--ease);
-  animation: pulse-soft 5.5s ease-in-out infinite; /* ambient: the wash breathes */
 }
 .nextlesson > :not(.nextlesson__wash) {
   position: relative;
@@ -346,7 +345,6 @@
   border-radius: 50%;
   background: var(--danger);
   flex: none;
-  animation: pulse-soft 2.4s ease-in-out infinite;
 }
 .timeline__now::after {
   content: "";
@@ -664,6 +662,8 @@
   flex: 1 1 auto;
   min-height: 0;
   margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
 }
 .compose-target {
   display: flex;
@@ -681,6 +681,7 @@
 .compose-textarea {
   resize: none;
   flex: 1 1 auto;
+  height: 100%;
   min-height: 120px;
   line-height: 1.55;
   border-radius: 14px;
@@ -789,11 +790,15 @@
 
   /* Composer: the editor already fills the screen; actions go full-width. */
   .compose-actions {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: stretch;
   }
   .compose-actions .btn {
     width: 100%;
+  }
+  .compose-actions .btn:first-child {
+    grid-column: 1 / -1;
   }
 
   /* Nudge / cooldown panels present as slide-up bottom sheets. */

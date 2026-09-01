@@ -1,0 +1,10 @@
+# R2 verdict
+
+**REFINE:** R2 reaches 25/30 and clears the numeric quality gate with the visual, structural, accessibility, and public-weight defects corrected, but the candidate still needs a narrow honesty pass because three over-absolute privacy/storage claims do not match all current behavior paths.
+
+## Highest-leverage moves
+
+1. **Principle #6 — Honest:** Replace `never sent anywhere` / `Private notes never leave this device` with path-accurate copy that distinguishes a local private-note record from text already sent through an optional safety check; put the external-processing fact beside the Share action. Evidence: `apps/web-ionic/src/pages/experiences/ComposePage.tsx:160-168,302-305,329-351` and `apps/web-ionic/src/pages/experiences/useComposer.ts:117-132`.
+2. **Principle #6 — Honest:** Replace every bare `Nothing was stored` / `Nothing was kept` with `Nothing was published or stored on the HOney server; your draft remains saved in this browser`, preserving the actual autosave guarantee. Evidence: `apps/web-ionic/src/pages/experiences/useComposer.ts:44-47,65-81,111-112` and `apps/web-ionic/src/pages/experiences/ComposePage.tsx:379-380`.
+3. **Principles #6 and #4 — Honest + Understandable:** Rename `ownership key` to `post-control key` in ordinary-user copy and state the current operational truth: managing/revoking requires both a signed-in HOney session and the device-held key; replace `relevant exposure` with a plain first-hand-context explanation. Evidence: `apps/web-ionic/src/pages/SettingsPage.tsx:213-216,345-348`, `apps/web-ionic/src/pages/experiences/ComposePage.tsx:303-304`, and `apps/web-ionic/src/pages/experiences/WhyPage.tsx:63-65`.
+4. **Principle #9 — Environmentally friendly:** Reduce the authenticated initial App path below 500 KiB raw without weakening the public/auth split or route behavior, and record a fresh signed-in cold-load chunk/waterfall measurement. Evidence: current build `App-CbaASB99.js` = 970.93 KiB raw / 214.71 KiB gzip plus 153.58/49.54 KiB shared entry (`DESIGN-IS-2026-09-01-R2/01-evidence.md#weight-and-friction-lane`).

@@ -75,7 +75,10 @@ function AppLayout() {
 
   return (
     <IonSplitPane className="app-frame" contentId="ionic-main" when="(min-width: 961px)">
-      <IonMenu className="honey-rail" contentId="ionic-main" type="reveal">
+      <a className="skip-link" href="#ionic-main">
+        Skip to content
+      </a>
+      <IonMenu className="honey-rail" contentId="ionic-main" type="overlay">
         <aside className="rail">
           <Link to="/home" className="brand" aria-label="HOney Home">
             <WordmarkHOney height={26} />
@@ -116,9 +119,6 @@ function AppLayout() {
       </IonMenu>
 
       <div id="ionic-main" className="ionic-main" tabIndex={-1}>
-        <a className="skip-link" href="#ionic-main">
-          Skip to content
-        </a>
         <IonTabs>
           <IonRouterOutlet animated>
             <Route path="/home" element={<IonicRoutePage model="COMPACT_OVERFLOW"><RouteView><HomePage /></RouteView></IonicRoutePage>} />

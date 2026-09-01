@@ -1,11 +1,27 @@
-import { IonApp } from "@ionic/react";
+import { useEffect } from "react";
+import { IonApp, setupIonicReact } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { RequireAuth } from "./components/AppLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { IonicRoutePage } from "./components/IonicRoutePage";
-import { LoginPage } from "./pages/LoginPage";
+import "@ionic/react/css/core.css";
+import "@ionic/react/css/normalize.css";
+import "@ionic/react/css/structure.css";
+import "@ionic/react/css/typography.css";
+import "./styles/ionic.css";
+
+// Ionic owns authenticated navigation, route/overlay lifecycle, safe areas,
+// and every signed-in screen's scroll container. The public Login doorway is
+// intentionally a separate, lighter bundle (PublicApp.tsx).
+setupIonicReact({ mode: "md", swipeBackEnabled: true });
+
+function ReturnToPublicDoorway() {
+  useEffect(() => {
+    window.location.replace("/login");
+  }, []);
+  return <div className="fullscreen-note" role="status">Returning to sign in…</div>;
+}
 
 export function App() {
   return (
@@ -14,16 +30,8 @@ export function App() {
         <ErrorBoundary>
           <AuthProvider>
             <Routes>
-              <Route
-                path="/login"
-                element={
-                  <IonicRoutePage model="FIT" refreshable={false} publicScreen>
-                    <LoginPage />
-                  </IonicRoutePage>
-                }
-              />
+              <Route path="/login" element={<ReturnToPublicDoorway />} />
               <Route path="/*" element={<RequireAuth />} />
-              <Route path="*" element={<Navigate to="/home" replace />} />
             </Routes>
           </AuthProvider>
         </ErrorBoundary>

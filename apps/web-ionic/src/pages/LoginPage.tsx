@@ -14,10 +14,11 @@ import { portalCredentials } from "../lib/portalCredentials";
 
 type Phase = "signin" | "consent";
 
-export function LoginPage() {
+export function LoginPage({ onAuthenticated }: { onAuthenticated?: () => void } = {}) {
   const navigate = useNavigate();
   const { refreshMe } = useAuth();
   const [phase, setPhase] = useState<Phase>("signin");
+  const finish = onAuthenticated ?? (() => navigate("/home", { replace: true }));
   // Held in memory only, for the consent step's "stay connected" opt-in.
   const credsRef = useRef<{ username: string; password: string } | null>(null);
 
@@ -47,7 +48,7 @@ export function LoginPage() {
                   // asked once, as an active choice; a returning account that
                   // already granted it goes straight in (iOS parity).
                   if (result.consent.timetable) {
-                    navigate("/home", { replace: true });
+                    finish();
                   } else {
                     setPhase("consent");
                   }
@@ -61,7 +62,7 @@ export function LoginPage() {
             </p>
           </>
         ) : (
-          <ImportConsentStep creds={credsRef.current} onDone={() => navigate("/home", { replace: true })} />
+          <ImportConsentStep creds={credsRef.current} onDone={finish} />
         )}
       </div>
     </div>

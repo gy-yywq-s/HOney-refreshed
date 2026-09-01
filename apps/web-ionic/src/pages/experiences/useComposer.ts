@@ -41,9 +41,11 @@ export type ComposerStatus =
   | { kind: "cooldown"; retryAt: number; reasons: string[] }
   | { kind: "published"; ownershipKey: string; experienceId: string };
 
-const EDIT_REQUIRED = "This version needs a change before it can be shared. Nothing was kept — your draft is still here.";
+const EDIT_REQUIRED =
+  "This version needs a change before it can be shared. It was not published or stored on the HOney server; your draft remains saved in this browser.";
 const OUT_OF_SCOPE = "This sounds more serious than something HOney Experiences is designed to publish. HOney will not post it or send it to the school. You can keep it privately instead.";
-const BLOCKED = "This can't be published under the community rules. Nothing was stored — your draft is still here if you want to reshape it.";
+const BLOCKED =
+  "This can't be published under the community rules. It was not published or stored on the HOney server; your draft remains saved in this browser if you want to reshape it.";
 const FAILED_CLOSED = "The safety check couldn't run just now, and nothing publishes unchecked. Your draft is safe — please try again in a moment.";
 
 export function useComposer(target: ComposerTarget | null) {

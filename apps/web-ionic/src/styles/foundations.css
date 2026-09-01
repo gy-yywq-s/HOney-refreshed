@@ -31,6 +31,11 @@ body {
   height: 100%;
 }
 
+.public-route {
+  height: 100%;
+  overflow: hidden;
+}
+
 .app-frame {
   height: 100%;
 }
@@ -74,6 +79,12 @@ select:focus-visible,
 summary:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
+}
+
+ion-segment-button.ion-focused::part(native),
+ion-tab-button.ion-focused::part(native) {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
 }
 
 /* Buttons respond to the hand: pressed = slight scale (addendum, pointer response). */

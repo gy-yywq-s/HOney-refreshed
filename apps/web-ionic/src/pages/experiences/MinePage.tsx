@@ -1,7 +1,7 @@
 // Scroll model: FRAMED_SCROLL (§16.14.2).
 // /experiences/mine — the user's own contributions: server-side submissions
-// (proved by device-held ownership keys) merged with local private notes.
-// Private notes are visually distinct; they never left this browser.
+// (proved by device-held post-control keys) merged with local private notes.
+// Private-note records are visually distinct and stored only in this browser.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -137,8 +137,8 @@ export function ExperiencesMinePage() {
 
       {keys.length > 0 && (
         <div role="status" className="banner banner--warning">
-          Your ownership keys exist only in this browser. Clearing site data permanently removes
-          your control over these posts.
+          Your post-control keys exist only in this browser. Clearing site data permanently removes
+          this browser's ability to find or revoke these posts.
         </div>
       )}
       {feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>}
@@ -148,9 +148,10 @@ export function ExperiencesMinePage() {
           <h2 className="section-title">Nothing here yet</h2>
           <p className="muted">
             Published experiences are stored without an author ID. Each one hands this browser a
-            one-time ownership key — that key is the only control over the post that exists, and it
-            is how this page finds and revokes your posts. Private notes live here too, scrambled at
-            rest, without ever leaving the device.
+            one-time post-control key. While you are signed in to HOney, that key is required for
+            this page to find or revoke the post. Private notes are saved in this browser and
+            scrambled at rest; starting a safety check sends the draft text for processing before
+            any later choice to keep it private.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/compose">

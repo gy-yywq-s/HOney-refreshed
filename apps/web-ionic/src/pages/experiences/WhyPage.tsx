@@ -60,9 +60,12 @@ export function ExperiencesWhyPage() {
       <section>
         <h2>What verification means.</h2>
         <p>
-          HOney verifies relevant exposure where possible — that a post about a class comes from
-          someone who took it. It does not verify every interpretation as fact. Reactions show
-          resonance among students with relevant experience; they are not a truth vote.
+          Where school data can support it, HOney checks a first-hand connection: the class appears
+          in the writer's history, or that history includes the teacher, course or place. For food
+          and some open or invited topics, HOney can confirm only school membership or the invite.
+          It does not verify an interpretation as fact. Reactions come from students whose school
+          data shows the same context; for food, they confirm only school membership. They are not
+          a truth vote.
         </p>
       </section>
 

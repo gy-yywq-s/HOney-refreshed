@@ -137,9 +137,9 @@ export function ExperiencesComposePage() {
             field, and the publish request carried no ordinary account identity.
           </p>
           <p className="text-3">
-            This browser keeps a private control key so you can manage or revoke the post later.
-            Keep it: what you wrote may still make you recognisable to people who know the
-            situation.
+            This browser keeps a private post-control key. While you are signed in to HOney, the
+            key lets this browser find or revoke the post. Keep it: what you wrote may still make
+            you recognisable to people who know the situation.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/mine">
@@ -160,8 +160,10 @@ export function ExperiencesComposePage() {
         <h1 className="page-title">Kept private</h1>
         <section className="card card--hero">
           <p>
-            The note stays only on this device — it was never sent anywhere. You can edit, delete or
-            publish it later from Your notes &amp; posts.
+            The private note was saved only in this browser; it was not published or stored on the
+            HOney server. If you started a safety check first, the draft text had already been
+            processed for that check. You can edit, delete or publish it later from Your notes
+            &amp; posts.
           </p>
           <p className="text-3">
             It is scrambled at rest so a casual look at browser storage won't read it, but the key
@@ -300,8 +302,10 @@ export function ExperiencesComposePage() {
           )}
 
           <p className="text-4" style={{ marginBottom: 0 }}>
-            Publishing runs a safety check first. Published posts carry no author ID; your only
-            control is a key kept in this browser. Private notes never leave this device.{" "}
+            Sharing sends the draft text through a safety check; an external moderation model may
+            process it. Published posts carry no author ID. Managing or revoking one later requires
+            both a signed-in HOney session and this browser&apos;s post-control key. Keeping private
+            saves the note only in this browser, but cannot undo a safety check already run.{" "}
             <Link to="/settings">How privacy works</Link>
           </p>
         </section>
@@ -376,8 +380,9 @@ function CooldownPanel({
     <section className="card nudge" aria-label="Cooling off">
       <span className="eyebrow">Publishing can wait</span>
       <p style={{ marginTop: 0 }}>
-        This can still be your experience. Nothing was stored and your draft is safe — after the
-        cooling period you can decide again, with the same words if you still mean them.
+        This can still be your experience. It was not published or stored on the HOney server; your
+        draft remains saved in this browser. After the cooling period you can decide again, with
+        the same words if you still mean them.
       </p>
       <div className="card-actions compose-actions">
         <button className="btn btn--primary" disabled={!ready} onClick={onRecheck}>

@@ -31,6 +31,7 @@ describe("Ionic screen composition (§16.14)", () => {
 
   it("uses Ionic navigation primitives for one responsive architecture", () => {
     const shell = read("../components/AppLayout.tsx");
+    const ionic = read("../styles/ionic.css");
     for (const primitive of [
       "IonSplitPane",
       "IonMenu",
@@ -41,6 +42,8 @@ describe("Ionic screen composition (§16.14)", () => {
     ]) {
       expect(shell).toContain(primitive);
     }
+    expect(shell).toContain('type="overlay"');
+    expect(ionic).toMatch(/ion-split-pane\.app-frame\s*{[^}]*--side-width:\s*var\(--rail\)/s);
   });
 
   it("declares every core route scroll model at the route boundary", () => {
@@ -60,13 +63,17 @@ describe("Ionic screen composition (§16.14)", () => {
       const route = new RegExp(`path="${path.replaceAll("/", "\\/")}"[^\\n]*model="${model}"`);
       expect(shell, `${path} must declare ${model}`).toMatch(route);
     }
-    expect(read("../App.tsx")).toMatch(/path="\/login"[\s\S]*model="FIT"/);
+    expect(read("../PublicApp.tsx")).toContain('path="/login"');
   });
 
-  it("login delegates keyboard overflow to IonContent", () => {
-    const ionic = read("../styles/ionic.css");
-    expect(ionic).toMatch(/\.route-page--public \.login\s*{[^}]*overflow-y:\s*visible/s);
-    expect(read("../App.tsx")).toContain("publicScreen");
+  it("keeps the public login doorway outside the authenticated Ionic bundle", () => {
+    const main = read("../main.tsx");
+    const publicApp = read("../PublicApp.tsx");
+    expect(main).toContain('import("./App")');
+    expect(main).toContain('import("./PublicApp")');
+    expect(publicApp).toContain('<main className="public-route"');
+    expect(publicApp).not.toContain("@ionic/react");
+    expect(read("../App.tsx")).toContain("setupIonicReact");
     expect(read("../pages/LoginPage.tsx")).not.toContain("<main");
   });
 
@@ -74,6 +81,21 @@ describe("Ionic screen composition (§16.14)", () => {
     const features = read("../styles/features.css");
     expect(features).toContain("@media (max-height: 700px)");
     expect(features).toMatch(/max-height: 700px[^@]*home-voices__row:nth-child\(n \+ 2\)\s*{\s*display:\s*none/s);
+  });
+
+  it("reserves the mobile tab-bar footprint and keeps primary Feed controls touch sized", () => {
+    const ionic = read("../styles/ionic.css");
+    expect(ionic).toMatch(/max-width:\s*960px[\s\S]*--padding-bottom:\s*calc\(96px/);
+    expect(ionic).toMatch(/\.feed-tool\s*{[^}]*min-height:\s*44px/s);
+    expect(ionic).toMatch(/ion-segment\.scope-switch ion-segment-button\s*{[^}]*min-height:\s*44px/s);
+  });
+
+  it("has no infinite Home or Timetable idle pulse", () => {
+    const features = read("../styles/features.css");
+    const homeWash = features.match(/\.nextlesson__wash\s*{([^}]*)}/)?.[1] ?? "";
+    const nowDot = features.match(/\.timeline__now::before\s*{([^}]*)}/)?.[1] ?? "";
+    expect(homeWash).not.toContain("animation:");
+    expect(nowDot).not.toContain("animation:");
   });
 
   it("PWA cache never intercepts API requests", () => {
