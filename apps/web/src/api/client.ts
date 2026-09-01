@@ -18,6 +18,10 @@ import type {
   ExperienceEligibilityResponse,
   ExperiencesFeedParams,
   ExperiencesFeedResponse,
+  FeedPage,
+  FeedParams,
+  FeedScope,
+  FeedUpdatesResponse,
   FromMyClassesParams,
   HistoryParams,
   HistoryResponse,
@@ -180,6 +184,21 @@ export class ApiClient {
     }
     const qs = query.toString();
     return this.request("GET", qs ? `/api/experiences?${qs}` : "/api/experiences");
+  }
+
+  /** Cursor-paged social stream (review v3 §12.6). Cursors are opaque — pass back verbatim. */
+  feedPage(params: FeedParams): Promise<FeedPage> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== "") query.set(key, String(value));
+    }
+    return this.request("GET", `/api/experiences/feed?${query.toString()}`);
+  }
+
+  /** Quiet new-content probe — never moves the reader (§9.6C). */
+  feedUpdates(scope: FeedScope, head: string): Promise<FeedUpdatesResponse> {
+    const query = new URLSearchParams({ scope, head });
+    return this.request("GET", `/api/experiences/feed/updates?${query.toString()}`);
   }
 
   /** Domain query (audit §4.2): posts relevant to my verified exposure. */

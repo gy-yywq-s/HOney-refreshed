@@ -5,7 +5,9 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { DashPage } from "./pages/DashPage";
 import { ExperiencesComposePage } from "./pages/experiences/ComposePage";
 import { ExperienceEntityPage } from "./pages/experiences/EntityPage";
-import { ExperiencesHubPage } from "./pages/experiences/HubPage";
+import { ExperiencesFeedPage } from "./pages/experiences/FeedPage";
+import { ExperiencesExplorePage } from "./pages/experiences/ExplorePage";
+import { ExperiencesWhyPage } from "./pages/experiences/WhyPage";
 import { ExperiencesMinePage } from "./pages/experiences/MinePage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { HomePage } from "./pages/HomePage";
@@ -27,7 +29,9 @@ export function App() {
               <Route path="/history" element={<HistoryPage />} />
               {/* Deep-link reserved by spec §6.3; renders the list for now. */}
               <Route path="/history/lesson/:id" element={<HistoryPage />} />
-              <Route path="/experiences" element={<ExperiencesHubPage />} />
+              <Route path="/experiences" element={<ExperiencesFeedPage />} />
+              <Route path="/experiences/explore" element={<ExperiencesExplorePage />} />
+              <Route path="/experiences/why" element={<ExperiencesWhyPage />} />
               <Route path="/experiences/mine" element={<ExperiencesMinePage />} />
               <Route path="/experiences/compose" element={<ExperiencesComposePage />} />
               <Route
