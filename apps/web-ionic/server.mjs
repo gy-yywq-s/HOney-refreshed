@@ -25,9 +25,11 @@ const server = createServer((incoming, outgoing) => {
   let file = join(root, safe === "/" ? "index.html" : safe);
   if (!file.startsWith(root) || !existsSync(file) || statSync(file).isDirectory()) file = join(root, "index.html");
   const type = mime[extname(file)] ?? "application/octet-stream";
+  const isServiceWorker = file.endsWith("sw.js");
   outgoing.writeHead(200, {
     "Content-Type": type,
-    "Cache-Control": file.endsWith("index.html") || file.endsWith("sw.js") ? "no-cache" : "public, max-age=31536000, immutable",
+    "Cache-Control": isServiceWorker ? "no-store, no-cache, must-revalidate" : file.endsWith("index.html") ? "no-cache, no-transform" : "public, max-age=31536000, immutable",
+    ...(isServiceWorker ? { "CDN-Cache-Control": "no-store", "Cloudflare-CDN-Cache-Control": "no-store", Expires: "0", "Service-Worker-Allowed": "/" } : {}),
     "Content-Security-Policy": "default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self' https://www.huayaopudong.com",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Strict-Transport-Security": hsts,

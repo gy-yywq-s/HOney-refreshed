@@ -31,8 +31,8 @@ export function EntityPage({ type }: { type: EntityType }) {
   return (
     <IonPage data-scroll-model="FRAMED_SCROLL">
       <IonHeader><IonToolbar><IonButtons slot="start"><IonBackButton defaultHref="/experiences/explore" /></IonButtons><IonTitle>{name}</IonTitle><IonButtons slot="end"><IonButton routerLink={`/experiences/compose?entity=${encodeURIComponent(entityKey)}`} aria-label={`Share your experience of ${name}`}><IonIcon slot="icon-only" icon={addOutline} /></IonButton></IonButtons></IonToolbar></IonHeader>
-      <IonContent className="screen-content" id="main-view">
-        <main className="feed-column entity-feed" data-scroll-owner="entity-feed">
+      <IonContent className="screen-content">
+        <div className="feed-column entity-feed" data-scroll-owner="entity-feed">
           <header className="entity-head">
             <p className="eyebrow">{labels[type]}</p>
             <h1 className="page-title">{name}</h1>
@@ -43,7 +43,7 @@ export function EntityPage({ type }: { type: EntityType }) {
           {result.error && <ErrorState message={result.error} retry={() => void result.refresh()} />}
           {result.data && result.data.page.items.length === 0 && <EmptyState title="Nothing has been shared here yet" body="A short thought can be enough to begin a fuller picture." />}
           {result.data?.page.items.map((item) => <ExperiencePost key={item.id} experience={item} />)}
-        </main>
+        </div>
       </IonContent>
     </IonPage>
   );

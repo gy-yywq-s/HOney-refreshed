@@ -79,9 +79,9 @@ export function ExperiencesPage() {
           <IonSegmentButton value="school">Around school</IonSegmentButton>
         </IonSegment>
       </IonHeader>
-      <IonContent ref={content} className="screen-content feed-scroll" scrollEvents>
+      <IonContent ref={content} className="screen-content feed-scroll" scrollEvents onIonScroll={(event) => snapshots.set(scope, { items, cursor, offset: event.detail.scrollTop })}>
         <IonRefresher slot="fixed" onIonRefresh={(event) => void load(false).finally(() => event.detail.complete())}><IonRefresherContent /></IonRefresher>
-        <main className="feed-column" id="main-view" data-scroll-owner="experiences-feed">
+        <div className="feed-column" data-scroll-owner="experiences-feed">
           {loading && <LoadingState lines={8} label="Loading Experiences" />}
           {error && <ErrorState message={error} retry={() => void load(false)} />}
           {!loading && !error && items.length === 0 && <EmptyState title={scope === "my_classes" ? "Nothing from your classes yet" : "Nothing has been shared yet"} body={scope === "my_classes" ? "When someone shares an Experience connected to a class you’ve taken, it will appear here." : "A short thought is enough to begin."} action={<IonButton routerLink="/experiences/compose">Share the first one</IonButton>} />}
@@ -90,7 +90,7 @@ export function ExperiencesPage() {
             {(index + 1) % 7 === 0 && <aside className="share-invitation"><strong>Anything from school you want to put into words?</strong><IonButton fill="outline" size="small" routerLink="/experiences/compose">Share an experience</IonButton></aside>}
           </div>)}
           {cursor && <div className="feed-more"><IonButton fill="clear" disabled={loadingMore} onClick={() => void load(true)}>{loadingMore ? "Loading…" : "Read more"}</IonButton></div>}
-        </main>
+        </div>
       </IonContent>
     </IonPage>
   );

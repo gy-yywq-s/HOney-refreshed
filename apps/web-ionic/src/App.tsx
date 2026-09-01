@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import {
   IonApp,
   IonContent,
@@ -18,29 +19,30 @@ import { calendarOutline, homeOutline, peopleOutline, personCircleOutline } from
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { Wordmark } from "./components/Wordmark";
-import { AccessPage } from "./pages/AccessPage";
-import { ComposePage } from "./pages/ComposePage";
-import { ConsentPage } from "./pages/ConsentPage";
-import { EntityPage } from "./pages/EntityPage";
-import { ExperiencesPage } from "./pages/ExperiencesPage";
-import { ExplorePage } from "./pages/ExplorePage";
-import { HistoryPage } from "./pages/HistoryPage";
-import { HomePage } from "./pages/HomePage";
-import { LessonDetailPage } from "./pages/LessonDetailPage";
 import { LoginPage } from "./pages/LoginPage";
-import { MinePage } from "./pages/MinePage";
-import { NotFoundPage } from "./pages/NotFoundPage";
-import { PrivacyPage } from "./pages/PrivacyPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { TimetablePage } from "./pages/TimetablePage";
-import { WhyPage } from "./pages/WhyPage";
+import { ConsentPage } from "./pages/ConsentPage";
+
+const AccessPage = lazy(() => import("./pages/AccessPage").then((module) => ({ default: module.AccessPage })));
+const ComposePage = lazy(() => import("./pages/ComposePage").then((module) => ({ default: module.ComposePage })));
+const EntityPage = lazy(() => import("./pages/EntityPage").then((module) => ({ default: module.EntityPage })));
+const ExperiencesPage = lazy(() => import("./pages/ExperiencesPage").then((module) => ({ default: module.ExperiencesPage })));
+const ExplorePage = lazy(() => import("./pages/ExplorePage").then((module) => ({ default: module.ExplorePage })));
+const HistoryPage = lazy(() => import("./pages/HistoryPage").then((module) => ({ default: module.HistoryPage })));
+const HomePage = lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage })));
+const LessonDetailPage = lazy(() => import("./pages/LessonDetailPage").then((module) => ({ default: module.LessonDetailPage })));
+const MinePage = lazy(() => import("./pages/MinePage").then((module) => ({ default: module.MinePage })));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then((module) => ({ default: module.NotFoundPage })));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage").then((module) => ({ default: module.PrivacyPage })));
+const SettingsPage = lazy(() => import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage })));
+const TimetablePage = lazy(() => import("./pages/TimetablePage").then((module) => ({ default: module.TimetablePage })));
+const WhyPage = lazy(() => import("./pages/WhyPage").then((module) => ({ default: module.WhyPage })));
 
 export function App() {
-  return <IonApp><IonReactRouter><AuthProvider><a className="skip-link" href="#main-view">Skip to content</a><Routes>
+  return <IonApp><IonReactRouter><AuthProvider><a className="skip-link" href="#main-view">Skip to content</a><main id="main-view" className="route-main" tabIndex={-1}><Suspense fallback={<div className="app-loading" role="status">Opening this page…</div>}><Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/consent" element={<ConsentPage />} />
     <Route path="/*" element={<AuthenticatedApp />} />
-  </Routes></AuthProvider></IonReactRouter></IonApp>;
+  </Routes></Suspense></main></AuthProvider></IonReactRouter></IonApp>;
 }
 
 function AuthenticatedApp() {

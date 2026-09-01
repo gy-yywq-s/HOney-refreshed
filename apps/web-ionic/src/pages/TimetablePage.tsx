@@ -35,14 +35,14 @@ export function TimetablePage() {
   return (
     <IonPage data-scroll-model="FRAMED_SCROLL">
       <IonHeader><IonToolbar><IonTitle>Timetable</IonTitle><IonButtons slot="end"><IonButton routerLink="/history"><IonIcon slot="start" icon={calendarOutline} />History</IonButton></IonButtons></IonToolbar><div className="date-nav"><IonButton fill="clear" aria-label="Previous day" onClick={() => move(-1)}><IonIcon slot="icon-only" icon={chevronBack} /></IonButton><div><strong>{formatShortDay(date)}</strong>{iso(date) === iso(new Date()) && <span>Today</span>}</div><IonButton fill="clear" aria-label="Next day" onClick={() => move(1)}><IonIcon slot="icon-only" icon={chevronForward} /></IonButton></div></IonHeader>
-      <IonContent className="screen-content" id="main-view">
+      <IonContent className="screen-content">
         <IonRefresher slot="fixed" onIonRefresh={(event) => void result.refresh().finally(() => event.detail.complete())}><IonRefresherContent /></IonRefresher>
-        <main className="screen-inner timetable-scroll" data-scroll-owner="day-timeline">
+        <div className="screen-inner timetable-scroll" data-scroll-owner="day-timeline">
           {result.loading && <LoadingState lines={7} />}
           {result.error && <ErrorState message={result.error} retry={() => void result.refresh()} />}
           {result.data?.lessons.length === 0 && <EmptyState title="Nothing scheduled" body="There are no imported lessons on this day." />}
           {result.data && <IonList className="timeline" lines="none">{result.data.lessons.map((lesson) => <LessonRow key={lesson.id} lesson={lesson} now={now} onOpen={() => setSelected(lesson)} />)}</IonList>}
-        </main>
+        </div>
       </IonContent>
       <LessonModal lesson={selected} onDismiss={() => setSelected(null)} />
     </IonPage>

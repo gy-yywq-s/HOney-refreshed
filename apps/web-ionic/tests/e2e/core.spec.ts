@@ -136,3 +136,105 @@ test("successful sign-in transitions into the app shell without a reload", async
   await expect(page.getByRole("heading", { name: "Hi, Route Test" })).toBeVisible();
   await expect(page.locator(".login-form")).toHaveCount(0);
 });
+
+test("active app exposes one focusable main landmark and 44px feed actions", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openFixture(page, "/experiences");
+
+  await expect(page.locator("main")).toHaveCount(1);
+  await page.locator(".skip-link").focus();
+  await page.keyboard.press("Enter");
+  await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main-view");
+
+  const sizes = await page.locator(".experience-actions ion-button").evaluateAll((buttons) => buttons.map((button) => {
+    const box = button.getBoundingClientRect();
+    return { width: box.width, height: box.height };
+  }));
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const size of sizes) {
+    expect(size.width).toBeGreaterThanOrEqual(44);
+    expect(size.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test("compact fixture disclosure avoids the title and desktop composition shares one spine", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await openFixture(page, "/experiences");
+  const compact = await page.evaluate(() => {
+    const strip = document.querySelector(".demo-strip")!.getBoundingClientRect();
+    const title = document.querySelector("ion-toolbar ion-title")!.getBoundingClientRect();
+    return !(strip.right <= title.left || strip.left >= title.right || strip.bottom <= title.top || strip.top >= title.bottom);
+  });
+  expect(compact).toBe(false);
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/experiences/explore?demo=1");
+  await expect(page.getByRole("heading", { name: "Find something at school" })).toBeVisible();
+  const desktop = await page.evaluate(() => {
+    const rail = document.querySelector("ion-menu")!.getBoundingClientRect();
+    const control = document.querySelector(".explore-control")!.getBoundingClientRect();
+    const results = document.querySelector(".explore-content")!.getBoundingClientRect();
+    return { railWidth: rail.width, controlWidth: control.width, resultWidth: results.width, deltaLeft: Math.abs(control.left - results.left) };
+  });
+  expect(desktop.railWidth).toBeCloseTo(222, 0);
+  expect(desktop.controlWidth).toBeLessThanOrEqual(712);
+  expect(desktop.resultWidth).toBeLessThanOrEqual(712);
+  expect(desktop.deltaLeft).toBeLessThanOrEqual(2);
+});
+
+test("Composer lists lessons, persists honestly, and resumes a cooldown draft", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openFixture(page, "/experiences/compose");
+  await expect(page.getByText("Recent lessons")).toBeVisible();
+  await page.locator(".picker-list ion-item").first().click();
+  await page.getByText("Fixture moderation scenarios").click();
+  await page.getByRole("button", { name: "Timing" }).click();
+
+  await expect(page.getByText("Draft saved on this device")).toBeVisible();
+  const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem("HOney.ionic.composer-draft") ?? "null") as { body?: string } | null);
+  expect(persisted?.body).toContain("[cooldown]");
+
+  await page.getByRole("button", { name: "Share anonymously" }).click();
+  await expect(page.getByRole("heading", { name: "Publishing can wait." })).toBeVisible();
+  await page.getByRole("button", { name: "Keep private" }).click();
+  await expect(page).toHaveURL(/\/experiences\/mine/);
+  await page.getByRole("button", { name: "Continue draft" }).click();
+  await expect(page).toHaveURL(/\/experiences\/compose/);
+  await expect(page.locator("ion-textarea textarea")).toHaveValue(/\[cooldown\]/);
+});
+
+test("published outcome stays truthful when the device cannot save its control key", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openFixture(page, "/experiences/compose");
+  await page.getByText("Ms Lin", { exact: true }).click();
+  await page.evaluate(() => {
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key === "HOney.ionic.ownership-keys") throw new DOMException("Storage full", "QuotaExceededError");
+      return setItem.call(this, key, value);
+    };
+  });
+  await page.locator("ion-textarea textarea").fill("A detailed school experience long enough to pass the fixture boundary and publish without an extra wording nudge today.");
+  await page.getByRole("button", { name: "Share anonymously" }).click();
+
+  await expect(page.getByRole("heading", { name: "Shared, but the control key was not saved." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try saving the control key again" })).toBeVisible();
+  await expect(page.getByText("The Experience is already public.")).toBeVisible();
+});
+
+test("Composer reports a local draft persistence failure instead of claiming Saved", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openFixture(page, "/experiences/compose");
+  await page.getByText("Ms Lin", { exact: true }).click();
+  await page.evaluate(() => {
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key === "HOney.ionic.composer-draft") throw new DOMException("Storage full", "QuotaExceededError");
+      return setItem.call(this, key, value);
+    };
+  });
+  await page.locator("ion-textarea textarea").fill("A draft whose local persistence must fail visibly.");
+
+  await expect(page.getByText("This draft could not be saved on this device.")).toBeVisible();
+  await expect(page.getByText("Draft saved on this device")).toHaveCount(0);
+});

@@ -100,10 +100,10 @@ export function ExperiencePost({ experience }: { experience: PublicExperience })
       {shouldClamp && <button className="text-action" onClick={() => setExpanded(true)}>Read more</button>}
       <div className="experience-actions">
         <IonButton fill="clear" size="small" aria-label="Matches my experience" aria-pressed={reaction === 1} disabled={busy} onClick={() => void react(1)}>
-          <IonIcon slot="start" icon={thumbsUpOutline} />{counts ? counts.likes : "Match"}
+          <IonIcon icon={thumbsUpOutline} /><span>Match</span>{counts && <small>{counts.likes}</small>}
         </IonButton>
         <IonButton fill="clear" size="small" aria-label="Does not match my experience" aria-pressed={reaction === -1} disabled={busy} onClick={() => void react(-1)}>
-          <IonIcon slot="start" icon={thumbsDownOutline} />{counts ? counts.dislikes : "Different"}
+          <IonIcon icon={thumbsDownOutline} /><span>Different</span>{counts && <small>{counts.dislikes}</small>}
         </IonButton>
         <IonButton fill="clear" size="small" routerLink={`/experiences/compose?entity=${encodeURIComponent(experience.entity_key)}`} aria-label="Add your experience">
           <IonIcon slot="icon-only" icon={addOutline} />

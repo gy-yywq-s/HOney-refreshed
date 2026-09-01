@@ -29,12 +29,12 @@ export function HomePage() {
     <IonPage data-scroll-model="COMPACT_OVERFLOW">
       <IonHeader>
         <IonToolbar>
-          <IonTitle><Wordmark /></IonTitle>
+          <IonTitle className="home-wordmark"><Wordmark /></IonTitle>
           <IonButtons slot="end"><IonButton routerLink="/settings" aria-label="Account and settings"><IonIcon slot="icon-only" icon={personCircleOutline} /></IonButton></IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="screen-content home-content" id="main-content">
-        <main className="screen-inner home-composition" id="main-view">
+      <IonContent className="screen-content home-content">
+        <div className="screen-inner home-composition">
           <header className="home-greeting">
             <h1 className="page-title">Hi, {me?.displayName ?? "there"}</h1>
             <p>{formatDay(new Date())}</p>
@@ -42,7 +42,7 @@ export function HomePage() {
           {dashboard.loading && <LoadingState lines={5} label="Loading your school day" />}
           {dashboard.error && <ErrorState message={dashboard.error} retry={() => void dashboard.refresh()} />}
           {dashboard.data && <HomeLoaded lesson={dashboard.data.lesson} voices={dashboard.data.voices} />}
-        </main>
+        </div>
       </IonContent>
     </IonPage>
   );

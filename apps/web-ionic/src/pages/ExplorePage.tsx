@@ -42,13 +42,13 @@ export function ExplorePage() {
     <IonPage data-scroll-model="FRAMED_EDITOR">
       <IonHeader>
         <IonToolbar><IonButtons slot="start"><IonBackButton defaultHref="/experiences" /></IonButtons><IonTitle>Explore</IonTitle></IonToolbar>
-        <IonSearchbar className="honey-search" value={query} onIonInput={(event) => setQuery(event.detail.value ?? "")} placeholder="Find teachers, courses, places, or food" debounce={100} />
-        <IonSegment scrollable value={category} onIonChange={(event) => setCategory(event.detail.value as EntityType | "all")}>
+        <IonSearchbar className="honey-search explore-control" value={query} onIonInput={(event) => setQuery(event.detail.value ?? "")} placeholder="Find teachers, courses, places, or food" debounce={100} />
+        <IonSegment className="explore-control" scrollable value={category} onIonChange={(event) => setCategory(event.detail.value as EntityType | "all")}>
           <IonSegmentButton value="all">All</IonSegmentButton>
           {sections.map((section) => <IonSegmentButton key={section.type} value={section.type}>{section.label}</IonSegmentButton>)}
         </IonSegment>
       </IonHeader>
-      <IonContent className="screen-content" id="main-view">
+      <IonContent className="screen-content">
         <div className="screen-inner explore-content" data-scroll-owner="explore-results">
           <header className="explore-intro"><h1 className="page-title">Find something at school</h1><p>Search narrows the complete directory; it does not search students’ words.</p></header>
           {result.loading && <LoadingState lines={7} />}

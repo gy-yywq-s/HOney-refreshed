@@ -4,7 +4,7 @@ export function WhyPage() {
   return (
     <IonPage data-scroll-model="DOCUMENT">
       <IonHeader><IonToolbar><IonButtons slot="start"><IonBackButton defaultHref="/experiences" /></IonButtons><IonTitle>Why this space exists</IonTitle></IonToolbar></IonHeader>
-      <IonContent className="screen-content" id="main-view">
+      <IonContent className="screen-content">
         <article className="document-inner">
           <p className="eyebrow">Experiences</p>
           <h1 className="page-title">For students, between students.</h1>
