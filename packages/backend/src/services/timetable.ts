@@ -28,7 +28,8 @@ const LESSON_SELECT = `
   SELECT li.id, li.subject_name AS subjectName, li.topic_name AS topicName,
          li.teacher_id AS teacherId, t.display_name AS teacherName,
          li.course_id AS courseId, c.name AS courseName,
-         li.room_id AS roomId, r.name AS roomName,
+         li.room_id AS roomId,
+         CASE WHEN r.name IS NULL OR lower(trim(r.name)) IN ('not selected', '') THEN NULL ELSE r.name END AS roomName,
          li.starts_at AS startsAt, li.ends_at AS endsAt
   FROM user_lesson_exposures e
   JOIN lesson_instances li ON li.id = e.lesson_instance_id
@@ -135,7 +136,8 @@ export class TimetableService {
       .prepare(
         `SELECT DISTINCT r.id, r.name FROM user_lesson_exposures e
          JOIN lesson_instances li ON li.id = e.lesson_instance_id
-         JOIN rooms r ON r.id = li.room_id WHERE e.honey_id = ? ORDER BY r.name`,
+         JOIN rooms r ON r.id = li.room_id
+         WHERE e.honey_id = ? AND lower(trim(r.name)) NOT IN ('not selected', '') ORDER BY r.name`,
       )
       .all(honeyId) as unknown as { id: string; name: string }[];
     return { teachers, courses, rooms };

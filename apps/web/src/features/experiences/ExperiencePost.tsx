@@ -6,7 +6,7 @@
 // (post__body--feature) — the words are always the figure. No avatars, no
 // anonymous badges, no verification shields.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../../api/client";
 import type { EntitySummary, PublicExperience, ReportCategory } from "../../api/types";
@@ -22,7 +22,7 @@ const PROVENANCE_LINE: Record<string, string> = {
 };
 
 const REACTION_EXPLAINER =
-  "Reactions show whether this matches the experience of students with relevant exposure. They do not verify a post as fact.";
+  "Reactions show whether this matches the experience of students who have had the same class or place. They do not verify a post as fact.";
 
 function entityHref(e: EntitySummary): string | null {
   if (e.type === "lesson") return null; // lessons have no public page
@@ -100,6 +100,30 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
   // when the menu closes, so Modal's restore would land on <body> (a11y
   // audit) — return focus to the persistent overflow trigger instead.
   const moreBtnRef = useRef<HTMLButtonElement>(null);
+  const overflowRef = useRef<HTMLDivElement>(null);
+  const firstItemRef = useRef<HTMLButtonElement>(null);
+  const menuId = `post-menu-${exp.id}`;
+  // Menu behaviour (a11y audit r3): focus lands on the first item; Escape
+  // and an outside pointer close it and hand focus back to the trigger.
+  useEffect(() => {
+    if (!menuOpen) return;
+    firstItemRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        moreBtnRef.current?.focus();
+      }
+    };
+    const onPointer = (e: PointerEvent) => {
+      if (!overflowRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [menuOpen]);
 
   const parts = contextParts(exp);
   const provenance = PROVENANCE_LINE[exp.provenance] ?? PROVENANCE_LINE.verified_member;
@@ -190,22 +214,25 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           <ThumbDownIcon />
           {counts && <span className="react-btn__count">{counts.dislikes}</span>}
         </button>
-        <div className="post__overflow">
+        <div className="post__overflow" ref={overflowRef}>
           <button
             type="button"
             className="react-btn react-btn--more"
             ref={moreBtnRef}
             aria-label="More options"
+            aria-haspopup="menu"
             aria-expanded={menuOpen}
+            aria-controls={menuId}
             onClick={() => setMenuOpen((v) => !v)}
           >
             ···
           </button>
           {menuOpen && (
-            <div className="post__menu" role="menu">
+            <div className="post__menu" role="menu" id={menuId}>
               <button
                 type="button"
                 role="menuitem"
+                ref={firstItemRef}
                 onClick={() => {
                   setMenuOpen(false);
                   setReporting(true);

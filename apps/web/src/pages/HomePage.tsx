@@ -14,7 +14,7 @@ import { useFromYourClasses } from "./experiences/shared";
 
 export function HomePage() {
   const { me } = useAuth();
-  const { data, error, loading } = useApi(() => api.nextLesson(), [], "next-lesson");
+  const { data, error, loading, reload } = useApi(() => api.nextLesson(), [], "next-lesson");
   const fromClasses = useFromYourClasses(10);
   const now = useNowTick(1000);
 
@@ -73,7 +73,12 @@ export function HomePage() {
         {loading ? (
           <Skeleton lines={2} />
         ) : error ? (
-          <div role="alert" className="banner banner--danger">{error}</div>
+          <div role="alert" className="banner banner--danger">
+          <span>{error}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => reload()}>
+            Try again
+          </button>
+        </div>
         ) : next ? (
           <>
             <span className="nextlesson__state">{stateChip}</span>

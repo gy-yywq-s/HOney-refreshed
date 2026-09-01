@@ -1,12 +1,13 @@
 // Scroll model: FRAMED_SCROLL (§16.14.7) — sticky date nav frame; the day timeline scrolls.
 import { Skeleton } from "../lib/motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import type { Lesson, SyncResponse } from "../api/types";
 import { Modal } from "../components/Modal";
 import { ReconnectDialog } from "../components/ReconnectDialog";
 import { apiCache, useApi } from "../lib/useApi";
+import { portalCredentials } from "../lib/portalCredentials";
 import {
   formatDayHeading,
   formatTime,
@@ -31,6 +32,7 @@ export function TimetablePage() {
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
   const [showReconnect, setShowReconnect] = useState(false);
+  const pickerRef = useRef<HTMLInputElement>(null);
 
   async function runSync() {
     setSyncBusy(true);
@@ -67,18 +69,30 @@ export function TimetablePage() {
           >
             &lsaquo;
           </button>
-          <span className="daynav__date">
+          <button
+            type="button"
+            className="daynav__date"
+            aria-label={`Pick a date (${formatStepperDate(date)})`}
+            onClick={() => {
+              const el = pickerRef.current;
+              if (!el) return;
+              // One visible affordance, one Tab stop: the native picker opens
+              // from the button; the input itself stays out of the tab order.
+              if (typeof el.showPicker === "function") el.showPicker();
+              else el.click();
+            }}
+          >
             {formatStepperDate(date)}
-            {/* The native picker rides invisibly on the label — tapping the
-                date opens it; no second date control competes. */}
-            <input
-              className="daynav__picker"
-              type="date"
-              aria-label="Pick a date"
-              value={date}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
-            />
-          </span>
+          </button>
+          <input
+            ref={pickerRef}
+            className="daynav__picker"
+            type="date"
+            tabIndex={-1}
+            aria-hidden="true"
+            value={date}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+          />
           <button
             className="daynav__arrow"
             aria-label="Next day"
@@ -101,7 +115,7 @@ export function TimetablePage() {
           onClick={() => void runSync()}
           disabled={syncBusy}
         >
-          {syncBusy ? "Syncing…" : "Sync"}
+          {syncBusy ? "Syncing…" : "Sync now"}
         </button>
       </div>
 
@@ -128,7 +142,12 @@ export function TimetablePage() {
       {loading ? (
         <Skeleton lines={4} />
       ) : error ? (
-        <div role="alert" className="banner banner--danger">{error}</div>
+        <div role="alert" className="banner banner--danger">
+          <span>{error}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => reload()}>
+            Try again
+          </button>
+        </div>
       ) : (
         <>
           <DayTimeline
@@ -139,6 +158,8 @@ export function TimetablePage() {
           {data?.lastSyncedAt && (
             <p className="caption" style={{ marginTop: "var(--space-md)" }}>
               Last synced {timeAgo(data.lastSyncedAt)}
+              {portalCredentials.isAuthorized() &&
+                " · Sync signs in again with your saved school login if the portal session expired."}
             </p>
           )}
         </>

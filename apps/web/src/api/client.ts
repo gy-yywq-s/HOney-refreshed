@@ -118,10 +118,6 @@ export class ApiClient {
     return this.request("GET", "/api/me");
   }
 
-  setConsent(timetable: boolean): Promise<void> {
-    return this.request("POST", "/api/consent", { timetable });
-  }
-
   sync(): Promise<SyncResponse> {
     return this.request("POST", "/api/sync");
   }

@@ -105,7 +105,12 @@ export function HistoryPage() {
       {history.loading ? (
         <Skeleton lines={4} />
       ) : history.error ? (
-        <div role="alert" className="banner banner--danger">{history.error}</div>
+        <div role="alert" className="banner banner--danger">
+          <span>{history.error}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => history.reload()}>
+            Try again
+          </button>
+        </div>
       ) : groups.length === 0 ? (
         <p className="card empty">No lessons match.</p>
       ) : (

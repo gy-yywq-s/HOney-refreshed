@@ -22,7 +22,10 @@ export function LoginPage() {
   if (api.hasSession()) return <Navigate to="/home" replace />;
 
   return (
-    <main className="login">
+    <main className="login" id="main">
+      <a className="skip-link" href="#school-username">
+        Skip to sign-in
+      </a>
       <div className="login__doorway">
         <h1 className="login__wordmark">
           <WordmarkHOney height={54} />
@@ -39,20 +42,23 @@ export function LoginPage() {
               navigate("/home", { replace: true });
               void refreshMe();
             }}
+            beforeSubmit={
+              <label className="stay-connected">
+                <input
+                  type="checkbox"
+                  checked={stayConnected}
+                  onChange={(e) => setStayConnected(e.target.checked)}
+                />
+                <span>
+                  <strong>Stay connected on this device.</strong> Keeps you signed in to the
+                  school portal so HOney can re-sync on its own when the portal times out. Your
+                  login is encrypted and kept only on this device (a browser is less protected
+                  than a phone’s secure storage). Turn it off any time in Settings.
+                </span>
+              </label>
+            }
           />
         </div>
-        <label className="stay-connected">
-          <input
-            type="checkbox"
-            checked={stayConnected}
-            onChange={(e) => setStayConnected(e.target.checked)}
-          />
-          <span>
-            <strong>Stay connected on this device.</strong> Keeps you signed in to the school
-            portal so HOney can re-sync on its own when the portal times out. Your login is
-            encrypted and kept only on this device. Turn it off any time in Settings.
-          </span>
-        </label>
         <p className="text-4 login__footnote">
           There is no separate sign-up — your school account is your HOney account, created on
           first sign-in. Your timetable comes along with it.

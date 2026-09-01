@@ -66,7 +66,7 @@ export const SUBMIT_ERROR_COPY: Record<string, string> = {
   rating_invalid: "Stars are whole numbers from 1 to 5.",
   lesson_not_yours:
     "That lesson isn't in your imported history, so this account can't review it. Pick a lesson from your own History.",
-  entity_unknown: "This entry isn't in the registry any more — it may have been removed.",
+  entity_unknown: "This entry isn't listed any more — it may have been removed.",
   entity_frozen: "New experiences for this entry are paused by the moderators right now.",
   standalone_closed: "Reviews for this entry are closed right now.",
   not_invited: "This entry is invite-only, and this account hasn't been invited to review it.",

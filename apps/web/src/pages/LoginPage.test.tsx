@@ -31,7 +31,6 @@ vi.mock("../api/client", () => ({
         },
       };
     }),
-    setConsent: vi.fn(async () => undefined),
     sync: vi.fn(async () => ({ status: "ok", lessons: 0, teachers: 0, courses: 0, rooms: 0 })),
   },
   describeApiError: () => "error",

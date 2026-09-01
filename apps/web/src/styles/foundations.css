@@ -171,6 +171,11 @@ a.btn:active {
   font-size: var(--fs-caption);
   line-height: 1.4;
 }
+/* Captions/helpers carry their own rhythm; the UA <p> margin is not it. */
+p.caption,
+p.text-4 {
+  margin-block: 0;
+}
 :root[data-surface="night"] .text-4 {
   color: var(--muted);
 }
@@ -292,11 +297,6 @@ a.btn:active {
   color: inherit;
   font-weight: 600;
 }
-.primary .action-cta {
-  border: 0;
-  background: var(--glacier);
-  color: var(--ink);
-}
 
 /* Hairline list rows (History, entities, Mine, Settings rows). */
 .hairline-list {
@@ -326,15 +326,6 @@ a.btn:active {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-@keyframes pulse-soft {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
   }
 }
 

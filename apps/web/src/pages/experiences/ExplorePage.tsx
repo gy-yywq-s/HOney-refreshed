@@ -46,10 +46,10 @@ export function ExperiencesExplorePage() {
     const dir = directory.data;
     if (!dir) return new Set<string>();
     const known = new Set((entities.data?.entities ?? []).map((e) => e.entity_key));
-    const refs: { key: string }[] = [];
-    for (const t of dir.teachers) if (known.has(`teacher:${t.id}`)) refs.push({ key: `teacher:${t.id}` });
-    for (const c of dir.courses) if (known.has(`course:${c.id}`)) refs.push({ key: `course:${c.id}` });
-    return new Set(refs.map((r) => r.key));
+    const mine = new Set<string>();
+    for (const t of dir.teachers) if (known.has(`teacher:${t.id}`)) mine.add(`teacher:${t.id}`);
+    for (const c of dir.courses) if (known.has(`course:${c.id}`)) mine.add(`course:${c.id}`);
+    return mine;
   }, [directory.data, entities.data]);
 
   return (
@@ -75,7 +75,14 @@ export function ExperiencesExplorePage() {
         onChange={(e) => setQ(e.target.value)}
       />
 
-      {entities.error && <div role="alert" className="banner banner--danger">{entities.error}</div>}
+      {entities.error && (
+        <div role="alert" className="banner banner--danger">
+          <span>{entities.error}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => entities.reload()}>
+            Try again
+          </button>
+        </div>
+      )}
       {entities.loading ? (
         <Skeleton lines={6} />
       ) : (
@@ -104,6 +111,9 @@ function ExploreSection({
   filtered: boolean;
   mine: Set<string>;
 }) {
+  // The mark only earns its place where it distinguishes: if every row in the
+  // section is from the student's own classes, nothing is marked (r3).
+  const markable = items.some((e) => mine.has(e.entity_key)) && items.some((e) => !mine.has(e.entity_key));
   // The COMPLETE listing, always (rule 4f). Letter groups keep it scannable.
   const grouped = useMemo(() => {
     if (items.length < GROUP_THRESHOLD) return null;
@@ -130,7 +140,7 @@ function ExploreSection({
             <span className="explore-letter__mark">{letter}</span>
             <ul className="entity-list">
               {list.map((e) => (
-                <ExploreRow key={e.entity_key} entity={e} mine={mine.has(e.entity_key)} />
+                <ExploreRow key={e.entity_key} entity={e} mine={markable && mine.has(e.entity_key)} />
               ))}
             </ul>
           </div>
@@ -138,7 +148,7 @@ function ExploreSection({
       ) : (
         <ul className="entity-list">
           {items.map((e) => (
-            <ExploreRow key={e.entity_key} entity={e} mine={mine.has(e.entity_key)} />
+            <ExploreRow key={e.entity_key} entity={e} mine={markable && mine.has(e.entity_key)} />
           ))}
         </ul>
       )}
@@ -151,7 +161,11 @@ function ExploreRow({ entity, mine }: { entity: EntityRef; mine: boolean }) {
     <li>
       <Link className="entity-row" to={entityPath(entity)}>
         <span>{entity.name}</span>
-        {mine && <span className="caption">from your classes</span>}
+        {mine && (
+          <span className="caption">
+            <span className="visually-hidden">, </span>from your classes
+          </span>
+        )}
       </Link>
     </li>
   );

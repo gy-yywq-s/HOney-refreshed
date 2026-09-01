@@ -130,9 +130,11 @@ export function ExperiencesMinePage() {
         {/* "My submissions/contributions" is administrative language (review v3
             §10.5) — this page is the user's own notes & posts. */}
         <h1 className="page-title">Your notes &amp; posts</h1>
-        <Link className="btn btn--primary" to="/experiences/compose">
-          Share an experience
-        </Link>
+        {!empty && (
+          <Link className="btn btn--primary" to="/experiences/compose">
+            Share an experience
+          </Link>
+        )}
       </header>
 
       {keys.length > 0 && (
@@ -150,7 +152,7 @@ export function ExperiencesMinePage() {
             Published experiences are stored without an author ID. Each one hands this browser a
             one-time ownership key — that key is the only control over the post that exists, and it
             is how this page finds and removes your posts. Private notes live here too, scrambled at
-            rest, without ever leaving the device.
+            rest (unreadable without this device’s key), without ever leaving the device.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/compose">
@@ -161,7 +163,12 @@ export function ExperiencesMinePage() {
       ) : mine.loading || notes === null ? (
         <Skeleton lines={3} />
       ) : mine.error ? (
-        <div role="alert" className="banner banner--danger">{mine.error}</div>
+        <div role="alert" className="banner banner--danger">
+          <span>{mine.error}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => mine.reload()}>
+            Try again
+          </button>
+        </div>
       ) : (
         <div className="stack">
           {items.map((item) =>

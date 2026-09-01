@@ -23,10 +23,8 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
       const identity = await ctx.connector.validate(portalSession);
       const result = ctx.accounts.provisionFromPortal(identity, portalSession);
 
-      // Login NEVER mutates import consent (review v3 §12.15A): any
-      // consent-looking field in the payload is ignored outright. The only
-      // consent mutation path is POST /api/consent, and the initial sync runs
-      // only from that explicit action.
+      // The login payload never touches the consent row (consent-looking
+      // fields are ignored); import is part of the account since 2026-09-01.
       const consent = ctx.accounts.getConsent(result.user.honey_id);
       if (result.created) {
         // First sign-in = first import, in the background. Later sign-ins

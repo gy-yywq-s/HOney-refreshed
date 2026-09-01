@@ -1,15 +1,18 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import type { FormEvent } from "react";
 import { api, describeApiError } from "../api/client";
 import type { LoginResponse } from "../api/types";
 
 interface SchoolLoginFormProps {
-  /** Only changes the button label; import consent is a separate, later step. */
+  /** Only changes the button label. */
   mode: "login" | "reconnect";
   onSuccess: (result: LoginResponse, credentials: { username: string; password: string }) => void;
+  /** Rendered inside the form, before the submit — options that belong to the sign-in. */
+  beforeSubmit?: ReactNode;
 }
 
-export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
+export function SchoolLoginForm({ mode, onSuccess, beforeSubmit }: SchoolLoginFormProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -20,8 +23,6 @@ export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
     setBusy(true);
     setError(null);
     try {
-      // Signing in never imports the timetable. Import is a separate, active
-      // choice on the next step (audit §3.2) — the request carries no consent.
       const result = await api.login({ username, password });
       onSuccess(result, { username, password });
     } catch (err) {
@@ -60,6 +61,7 @@ export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
           required
         />
       </div>
+      {beforeSubmit}
       <button className="btn btn--primary btn--block" type="submit" disabled={busy}>
         {busy ? "Signing in…" : mode === "login" ? "Continue with school account" : "Reconnect"}
       </button>

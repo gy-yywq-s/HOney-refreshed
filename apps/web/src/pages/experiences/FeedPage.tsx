@@ -5,7 +5,7 @@
 // invitation, and the persistent student-to-student identity line.
 // Scroll model: FRAMED_SCROLL (web-lab.md).
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
 import { useFeedController } from "../../features/experiences/useFeedController";
@@ -28,8 +28,9 @@ export function ExperiencesFeedPage() {
   }
 
   const sentinel = useLoadMoreSentinel(feed.loadMore);
-  // The empty states carry their own share CTA — one per screen (r2).
-  const showHeaderShare = feed.loading || feed.error !== null || feed.items.length > 0;
+  const streamRef = useRef<HTMLDivElement>(null);
+  // The empty and error states carry their own action — one per screen.
+  const showHeaderShare = feed.loading || (feed.error === null && feed.items.length > 0);
 
   return (
     <div className="feed-screen">
@@ -99,13 +100,16 @@ export function ExperiencesFeedPage() {
         </button>
       )}
 
-      <div className="feed-stream" aria-live="polite">
+      <div className="feed-stream" aria-live="polite" ref={streamRef} tabIndex={-1}>
         {feed.loading ? (
           <Skeleton lines={6} />
         ) : feed.error ? (
           <div role="alert" className="banner banner--danger">
             <span>{feed.error}</span>
-            <button className="btn btn--ghost btn--small" onClick={() => void feed.refresh()}>
+            <button
+              className="btn btn--ghost btn--small"
+              onClick={() => void feed.refresh().then(() => streamRef.current?.focus())}
+            >
               Try again
             </button>
           </div>

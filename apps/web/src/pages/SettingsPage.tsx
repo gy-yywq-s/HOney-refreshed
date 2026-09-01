@@ -19,7 +19,11 @@ export function SettingsPage() {
   useEffect(() => {
     const id = window.location.hash.slice(1);
     if (!id) return;
-    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
+    requestAnimationFrame(() => {
+      const el = document.getElementById(id);
+      el?.scrollIntoView({ block: "start" });
+      el?.focus();
+    });
   }, []);
   const { me, refreshMe, signOut } = useAuth();
   const navigate = useNavigate();
@@ -110,6 +114,8 @@ export function SettingsPage() {
                 : connection.lastSyncedAt
                   ? `Last synced ${timeAgo(connection.lastSyncedAt)}`
                   : "Never synced"}
+              {stayConnected &&
+                " · Sync signs in again with your saved school login if the portal session expired."}
             </span>
           </div>
           <div className="card-actions" style={{ marginTop: 0 }}>
@@ -160,8 +166,8 @@ export function SettingsPage() {
             <span>Stay connected on this device</span>
             <span className="caption">
               {stayConnected
-                ? "On — routine portal time-outs reconnect on their own. Your login is encrypted and kept only on this device."
-                : "Off — you'll re-enter your school password when the portal session ends."}
+                ? "On — routine portal time-outs reconnect on their own. Your login is encrypted and kept only on this device (a browser is less protected than a phone’s secure storage)."
+                : "Off — you'll re-enter your school password when the portal session ends. Saving it asks for your login once."}
             </span>
           </div>
           <div className="card-actions" style={{ marginTop: 0 }}>
@@ -177,7 +183,7 @@ export function SettingsPage() {
               </button>
             ) : (
               <button className="btn btn--ghost" onClick={() => setShowReconnect(true)}>
-                Turn on
+                Save school login…
               </button>
             )}
           </div>
@@ -186,6 +192,15 @@ export function SettingsPage() {
 
       <section className="card settings-section" aria-label="Imported data">
         <h2 className="section-title">Imported data</h2>
+        <div className="setting-row">
+          <div className="setting-row__main">
+            <span>Timetable import</span>
+            <span className="caption">
+              On for every HOney account since 1 September 2026 — your timetable and history come
+              from the school portal when you sign in. Delete them below at any time.
+            </span>
+          </div>
+        </div>
         <div className="setting-row">
           <div className="setting-row__main">
             <span>Delete imported data</span>
@@ -200,7 +215,9 @@ export function SettingsPage() {
       </section>
 
       <section className="card settings-section" aria-label="Experiences and privacy">
-        <h2 className="section-title" id="privacy">How privacy works</h2>
+        <h2 className="section-title" id="privacy" tabIndex={-1}>
+          How privacy works
+        </h2>
         <p className="muted">
           The plain version: HOney checks you actually have the relevant experience, published posts
           are not attached to your school account, and your device holds the control needed to
@@ -214,7 +231,7 @@ export function SettingsPage() {
             words themselves can still make you recognisable to people who know the situation.
           </li>
           <li>
-            <strong>Your control is a device-held key.</strong> Each publish returns a one-time
+            <strong>Your control is an ownership key.</strong> Each publish returns a one-time
             ownership key stored only in this browser; the server keeps only a hash. Presenting the
             key is the only way to find or remove your post.
           </li>

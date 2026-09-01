@@ -82,9 +82,11 @@ export function ExperiencesComposePage() {
       );
       const type = effectiveEntityKey.split(":")[0] ?? "";
       return {
-        // Never flash the raw key while the registry loads (r2 visual).
-        label: entity?.name ?? (entities.data ? effectiveEntityKey : "Loading…"),
-        detail: type === "room" ? "Place" : type === "dish" ? "Food" : "Teacher",
+        // Never flash the raw key while the registry loads (r2 visual); an
+        // unknown key after load is handled below (no editor).
+        label: entity?.name ?? "Loading…",
+        detail:
+          type === "room" ? "Place" : type === "dish" ? "Food" : type === "course" ? "Course" : "Teacher",
         entityKey: effectiveEntityKey,
         isDish: (entity?.type ?? type) === "dish",
       };
@@ -138,7 +140,7 @@ export function ExperiencesComposePage() {
             field, and the publish request carried no ordinary account identity.
           </p>
           <p className="text-3">
-            This browser keeps a private control key so you can manage or remove the post later.
+            This browser keeps a one-time ownership key so you can manage or remove the post later.
             Keep it: what you wrote may still make you recognisable to people who know the
             situation.
           </p>
@@ -183,6 +185,27 @@ export function ExperiencesComposePage() {
 
   const busy = status.kind === "checking";
   const canAct = body.trim().length > 0 && !busy;
+  // A key the registry no longer lists (deduped room, placeholder, typo URL):
+  // say so, like the entity page does — never an editor the server refuses.
+  const unlisted =
+    !!effectiveEntityKey &&
+    !!entities.data &&
+    !entities.data.entities.some((e) => e.entity_key === effectiveEntityKey);
+  if (unlisted) {
+    return (
+      <div className="stack">
+        <h1 className="page-title">Share an experience</h1>
+        <section className="card">
+          <p className="text-3">This entry is no longer listed, so nothing can be shared about it.</p>
+          <div className="card-actions">
+            <Link className="btn btn--primary" to="/experiences/explore">
+              Find someone or something
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="compose-screen">
@@ -248,9 +271,7 @@ export function ExperiencesComposePage() {
                   </ul>
                 )}
                 {notice.suggestKeepPrivate && (
-                  <p className="text-4" style={{ margin: "6px 0 0" }}>
-                    You can keep it as a private note instead.
-                  </p>
+                  <p className="text-4 compose-notice-alt">You can keep it as a private note instead.</p>
                 )}
               </div>
             </div>
