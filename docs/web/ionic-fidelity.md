@@ -6,7 +6,7 @@
 - Exact base: `integration/product-v2` at `3d91cb3f3981f282268dbd598f1106c2fd53732c`.
 - Previous-agent commits found on this branch: none. The branch pointed directly at the base SHA.
 - Previous-agent files preserved: the 10 reference screenshots under `docs/web/evidence/ionic-fidelity/reference/`.
-- Publicly deployed code revision: `c83bd11581fe5e3716c9802b69d1e12f80087f49`.
+- Publicly deployed application-code revision: `85f4ec63ad96b72c88eb1f6ac6a02d6926e15765`.
 - Gary's explicit follow-up requires the existing Web to remain. Therefore the Ionic implementation is isolated at `apps/web-ionic`; `apps/web` is unchanged.
 - Backend, shared source, database, iOS, and the deployed `/home/honey/app` checkout are unchanged.
 
@@ -22,6 +22,8 @@
 The implementation is a separate Ionic shell around the current product logic, rather than a rewrite of tested behaviors.
 
 - App root: `IonApp` and `IonReactRouter`.
+- Public/auth boundary: the unauthenticated Login doorway is a separate React root and does not
+  load Ionic or the authenticated `App` chunk. An authenticated session loads the Ionic shell.
 - Responsive shell: one `IonSplitPane`; desktop uses `IonMenu` as the existing quiet rail, while mobile uses `IonTabs`, `IonRouterOutlet`, `IonTabBar`, and `IonTabButton`.
 - Route boundary: every route is wrapped by `IonicRoutePage`, which provides one `IonPage` and one `IonContent`.
 - Refresh: eligible routes use `IonRefresher`; it emits the existing refresh event and clears the frontend cache. There is no document-level touch interception or custom scroll physics.
@@ -67,7 +69,9 @@ Feed snapshots now read and restore the active Ionic scroll owner rather than `w
 These changes are intentionally not pixel copies:
 
 - Mobile Experiences actions use three compact icon controls. Reason: the previous controls wrapped and consumed too much of the first viewport.
-- Desktop Home is capped at 940 px. Reason: preserve the progress wash's now/remaining meaning while reducing wide-screen dead area.
+- Desktop Home is capped at 820 px and centered inside a 1,080 px content view after the 216 px
+  rail. Reason: preserve the progress wash's now/remaining meaning while removing the previous
+  right-heavy desktop composition.
 - Desktop feed is capped at 760 px. Reason: retain readable post line length and the existing feed rhythm.
 - Scope switching uses a quiet themed `IonSegment`; it keeps every finite option visible.
 - The mobile tab bar participates in Ionic safe-area/viewport geometry and uses HOney colors rather than stock Ionic blue.
@@ -75,6 +79,28 @@ These changes are intentionally not pixel copies:
 - Compact-height Home hides the second preview before overflowing, matching the documented content priority.
 
 No product meaning, privacy statement, feed scope, provenance, reaction rule, report category, composer behavior, or navigation destination was intentionally changed.
+
+Privacy wording was corrected where the previous labels exceeded the behavior. The current copy
+distinguishes browser draft storage from HOney-server storage, discloses that a safety check may use
+an external moderation model, and states that finding or revoking a post requires both a signed-in
+HOney session and the device-held post-control key.
+
+## Design-Is review and refinement
+
+One independent Design-Is orchestrator managed structural, visual, copy/honesty,
+weight/performance, and accessibility evidence agents in every round. Root implementation resumed
+only after each consolidated handoff.
+
+| Round | Score | Mechanical verdict | Result |
+| --- | ---: | --- | --- |
+| R1 | 20/30 | REFINE | Found Feed state, mobile terminal spacing, focus/contrast, idle-motion, desktop-balance, and public-weight defects. |
+| R2 | 25/30 | REFINE | Visual/structural gate passed; found three over-absolute privacy and control claims. |
+| R3 | 26/30 | REFINE | Main claims corrected; found one remaining key-only sentence in Settings. |
+| R4 | 27/30 | REFINE | Honest reached 3/3; numeric gate passed and no truth defect blocks development deployment. |
+
+Review artifacts are preserved in `DESIGN-IS-2026-09-01-R1/` through
+`DESIGN-IS-2026-09-01-R4/`. The remaining REFINE items are non-blocking: plain-language cleanup in
+the admin Dash, authenticated bundle weight, and a reproducible signed-in performance trace.
 
 ## PWA and standalone serving
 
@@ -96,8 +122,9 @@ Target: `https://ionic.gaelisus.com`.
 Process completed on the droplet:
 
 1. Pushed `web/ionic-fidelity`.
-2. Created the separate checkout `/home/honey/ionic-app`; the deployed code revision is `c83bd11581fe5e3716c9802b69d1e12f80087f49`.
-3. Ran locked install, shared type build, and `@honey/web-ionic` production build.
+2. Fast-forwarded the separate checkout `/home/honey/ionic-app`; the deployed application-code revision is
+   `85f4ec63ad96b72c88eb1f6ac6a02d6926e15765`.
+3. Ran the `@honey/web-ionic` production typecheck/build and restarted the isolated service.
 4. Installed the reviewable `docs/deploy/honey-ionic-fidelity.service`.
 5. Started and enabled `honey-ionic-fidelity.service` on `127.0.0.1:8902`.
 6. Added only the `ionic.gaelisus.com` ingress to `/etc/cloudflared/config.base.yml` and regenerated the tunnel config.
@@ -120,6 +147,11 @@ Public deployment status: complete.
 - Service worker: HTTPS 200 with no-store headers and `Service-Worker-Allowed: /`; clean Chromium reports it activated at the origin root scope.
 - `/api/health`: HTTPS 200 from the existing backend through the same-origin proxy.
 - Public browser: secure context, latest deployed asset, one main landmark on Login, no horizontal/root overflow, and no runtime boot error.
+- Public cold browser after revision `85f4ec6`: `/home` redirects to `/login`; the loaded JavaScript
+  is `index-Bvu0H-ry.js`, `PublicApp-in7W47O8.js`, `ErrorBoundary-BcEuE1lg.js`, and
+  `SchoolLoginForm-DBA7nMGy.js`. No authenticated `App-*.js` is requested. Chromium reports one
+  main, one scroll owner, a 390 px root in a 390 px viewport, a 3 px solid first-Tab focus outline,
+  an active root-scope service worker, and zero console errors or warnings.
 
 The existing `honey.gaelisus.com` service, checkout, backend, and tunnel rule were not changed. The older `honey.gaelis.cc` hostd Ionic experiment was also not overwritten.
 
@@ -129,7 +161,10 @@ Current focused results:
 
 - `pnpm exec eslint apps/web-ionic`: pass.
 - `pnpm --filter @honey/web-ionic typecheck`: pass.
-- `pnpm --filter @honey/web-ionic test`: 7 files, 32 tests passed.
+- `pnpm --filter @honey/web-ionic test`: 8 files, 42 tests passed.
+- `pnpm --filter @honey/web-ionic audit:copy`: pass; 407 direct surface strings and a 1,512-string
+  non-import literal superset are recorded in
+  `docs/web/evidence/ionic-fidelity/copy-inventory.json`.
 - `pnpm --filter @honey/web-ionic build`: pass.
 - Clean deployment checkout install/build: pass.
 - Production browser against both the built local server and public HTTPS origin: booted with an activated service worker and no boot error.
@@ -141,7 +176,9 @@ Current focused results:
 - Responsive sweep: 320×568, 375×667, 390×844, 430×932, 844×390, and 1440×900; no root or horizontal overflow.
 - Root `pnpm lint` is not green because the base branch already contains invalid `react-hooks/exhaustive-deps` disable directives and unused imports in the preserved `apps/web` and backend. Those unrelated files were not changed. The new Ionic package passes its scoped lint gate.
 
-Build note: route splitting produces separate page chunks, but Ionic's shared shell chunk remains about 1,152 kB (273 kB gzip), so Vite still emits its 500 kB chunk-size advisory.
+Build note: the public cold path is approximately 61 kB gzip and excludes Ionic. The authenticated
+`App` chunk remains 970.93 kB raw / 214.70 kB gzip, so Vite still emits its 500 kB chunk-size
+advisory.
 
 ## Screenshot evidence
 
@@ -153,7 +190,12 @@ Final Ionic set:
 
 - `docs/web/evidence/ionic-fidelity/ionic/`
 
-Both directories contain the same 10-state matrix:
+Design-Is refinement sets:
+
+- `docs/web/evidence/ionic-fidelity/r2-candidate/`
+- `docs/web/evidence/ionic-fidelity/r3-candidate/`
+
+The reference and final Ionic directories contain the same 10-state matrix:
 
 - mobile 390×844: Home, Experiences, Explore, Compose, Timetable
 - compact 375×667: Home, Experiences
@@ -163,7 +205,10 @@ Both directories contain the same 10-state matrix:
 
 - No physical iOS Safari/Android Chrome install test was run; Chromium validated responsive and standalone PWA behavior.
 - The current service proxies to the development backend, so its availability depends on the existing `honey.service`.
-- Vite's shared Ionic chunk-size advisory remains.
+- The authenticated Ionic chunk-size advisory remains; R4 did not obtain a fresh signed-in request
+  count, TTI, or INP trace.
+- A few admin-only Dash labels remain technical (`Moderation LLM`, `entity key`); R4 treats this as
+  a non-blocking understandability refinement.
 - This document records implementation facts only and does not decide whether Ionic should replace the current Web.
 
 ## Backend and shared changes
