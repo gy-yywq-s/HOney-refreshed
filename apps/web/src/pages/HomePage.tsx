@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
-import { formatDayBucket, formatTime, isStale, timeAgo } from "../lib/format";
+import { formatDayBucket, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
 
@@ -29,10 +29,18 @@ export function HomePage() {
     next && next.temporalState === "now"
       ? Math.min(1, Math.max(0, (now - next.startsAt) / Math.max(1, next.endsAt - next.startsAt)))
       : null;
-  const minutesToNext =
-    next && next.temporalState !== "now"
-      ? Math.max(0, Math.ceil((next.startsAt - now) / 60_000))
-      : null;
+  // Humanized: "In 45 min" same-day, "Tomorrow · 13:30" / "Thursday · 13:30"
+  // beyond — never "In 618 min" (Gary + copy audit 2026-09-01).
+  const stateChip = (() => {
+    if (!next) return null;
+    if (next.temporalState === "now") return "Now";
+    const start = new Date(next.startsAt);
+    const sameDay = start.toDateString() === new Date(now).toDateString();
+    if (sameDay) return `In ${formatRemaining(next.startsAt - now)}`;
+    const tomorrow = start.toDateString() === new Date(now + 86_400_000).toDateString();
+    const day = tomorrow ? "Tomorrow" : start.toLocaleDateString("en-GB", { weekday: "long" });
+    return `${day} · ${formatTime(next.startsAt)}`;
+  })();
 
   const today = new Date(now).toLocaleDateString("en-GB", {
     weekday: "long",
@@ -68,11 +76,7 @@ export function HomePage() {
           <div role="alert" className="banner banner--danger">{error}</div>
         ) : next ? (
           <>
-            <span className="nextlesson__state">
-              {next.temporalState === "now"
-                ? "Now"
-                : `In ${minutesToNext ?? next.minutesUntilStart} min`}
-            </span>
+            <span className="nextlesson__state">{stateChip}</span>
             <div className="nextlesson__subject">{next.subjectName}</div>
             <p className="muted">
               {formatTime(next.startsAt)}–{formatTime(next.endsAt)}
@@ -85,7 +89,7 @@ export function HomePage() {
           </>
         ) : (
           <>
-            <p className="empty">Nothing else is scheduled today.</p>
+            <p className="empty">No upcoming lessons in your imported timetable.</p>
             <Link className="caption" to="/timetable">
               Open timetable
             </Link>

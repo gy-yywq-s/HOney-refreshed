@@ -1,7 +1,7 @@
 # 00 — Scope (design-is audit, HOney, 2026-09-01, r1)
 
 ## Audited artifact
-- The DEPLOYED web app at https://honey.gaelisus.com — branch `integration/product-v2`, commit `5289dbb` ("web: overnight fix round from Gary's product-v2 feedback (a-f + feed bug)").
+- The DEPLOYED web app at https://honey.gaelisus.com — branch `integration/product-v2`, commit `c80ead4` ("web: post footer stays one line"; a deploy landed mid-audit — early probes ran on `5289dbb`, bundle sizes within 0.1%).
 - Source at `/home/honey/HOney-refreshed/apps/web`:
   - styles: `src/styles/` (tokens.css, foundations.css, components.css, features.css, admin.css)
   - pages: `src/pages/` (HomePage, TimetablePage, DashPage, HistoryPage, SettingsPage, LoginPage, NotFoundPage, experiences/{FeedPage, ExplorePage, ComposePage, EntityPage, MinePage, WhyPage})
