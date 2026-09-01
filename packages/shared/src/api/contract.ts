@@ -158,6 +158,11 @@ export interface PublicExperience {
   publishedDay: number | null;
   /** null means counts are hidden (below the small-cohort threshold). */
   reactions: ReactionCounts | null;
+  /**
+   * The authenticated viewer's own reaction (0 = none). Restored server-side
+   * from the unlinkable dedup mark — public identity never exists (§12.15C).
+   */
+  myReaction?: 1 | -1 | 0;
 }
 
 export interface ExperiencesFeedParams {
@@ -319,6 +324,14 @@ export type ReportCategory =
 
 export interface ReportExperienceInput {
   category: ReportCategory;
+}
+
+/** POST /api/experiences/:id/react → the authoritative state to render. */
+export interface ReactResponse {
+  ok: true;
+  value: 1 | -1 | 0;
+  /** null = counts hidden (small cohort). Roll optimistic UI back on error. */
+  reactions: ReactionCounts | null;
 }
 
 // ---------------------------------------------------------------------------

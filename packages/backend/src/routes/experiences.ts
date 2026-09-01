@@ -24,7 +24,7 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     };
   }>("/api/experiences", { preHandler: ctx.requireAuth }, async (req) => {
     const { entityKey, teacherId, courseId, roomId, q, sort, before, limit } = req.query;
-    const opts: Parameters<typeof ctx.experiences.feed>[0] = {};
+    const opts: Parameters<typeof ctx.experiences.feed>[0] = { viewer: ctx.userOf(req).honey_id };
     if (entityKey) opts.entityKey = entityKey;
     if (teacherId) opts.teacherId = teacherId;
     if (courseId) opts.courseId = courseId;

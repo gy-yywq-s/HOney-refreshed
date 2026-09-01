@@ -584,6 +584,8 @@ export class ExperienceService {
     sort?: "newest" | "oldest";
     before?: number;
     limit?: number;
+    /** Authenticated viewer — lets the projection restore `myReaction`. */
+    viewer?: string;
   }): PublicExperience[] {
     if (this.settings.killSwitch("HIDE_PUBLIC_EXPERIENCES")) return [];
     const clauses = ["status = 'published'"];
@@ -618,7 +620,7 @@ export class ExperienceService {
       params.push(before);
     }
     const order = opts.sort === "oldest" ? "ASC" : "DESC"; // allowed sorts only
-    return this.selectPublic(clauses.join(" AND "), params, order, opts.limit);
+    return this.selectPublic(clauses.join(" AND "), params, order, opts.limit, opts.viewer);
   }
 
   /**
@@ -669,11 +671,17 @@ export class ExperienceService {
       clauses.push("published_at < ?");
       params.push(before);
     }
-    return this.selectPublic(clauses.join(" AND "), params, "DESC", opts.limit);
+    return this.selectPublic(clauses.join(" AND "), params, "DESC", opts.limit, honeyId);
   }
 
   /** Shared public projection: frozen-entity filter, reaction hiding, day bucket. */
-  private selectPublic(where: string, params: (string | number)[], order: "ASC" | "DESC", rawLimit?: number): PublicExperience[] {
+  private selectPublic(
+    where: string,
+    params: (string | number)[],
+    order: "ASC" | "DESC",
+    rawLimit?: number,
+    viewer?: string,
+  ): PublicExperience[] {
     const limit = Math.min(Math.max(Math.trunc(Number.isFinite(rawLimit) ? (rawLimit as number) : 50), 1), 200);
     const rows = this.db
       .prepare(
@@ -691,6 +699,9 @@ export class ExperienceService {
     const countStmt = this.db.prepare(
       "SELECT SUM(value = 1) AS likes, SUM(value = -1) AS dislikes FROM reactions WHERE experience_id = ?",
     );
+    const myStmt = this.db.prepare(
+      "SELECT value FROM reactions WHERE experience_id = ? AND dedup_hash = ?",
+    );
     return rows
       // Hide posts whose primary or context entity is frozen (S2).
       .filter((r) => !this.frozenAnywhere(r.entity_key, r.ctx_teacher_id, r.ctx_room_id))
@@ -699,6 +710,16 @@ export class ExperienceService {
         const likes = c.likes ?? 0;
         const dislikes = c.dislikes ?? 0;
         const reactions = likes + dislikes >= minCount ? { likes, dislikes } : null;
+        // The viewer's own reaction survives refresh/devices: the dedup mark is
+        // recomputable from (viewer, post), so no separate account-linked state
+        // is stored (review v3 §9.9 Option A, with the HMAC construction kept).
+        let myReaction: 1 | -1 | 0 = 0;
+        if (viewer) {
+          const mine = myStmt.get(r.id, markHash(this.markKey, viewer, `react:${r.id}`)) as unknown as
+            | { value: number }
+            | undefined;
+          if (mine?.value === 1 || mine?.value === -1) myReaction = mine.value;
+        }
         // Publicly expose only a coarse day bucket, never exact ms (S5); the raw
         // lesson token is omitted entirely (C1), as are all internal fields.
         const { published_at, ...pub } = r;
@@ -707,13 +728,18 @@ export class ExperienceService {
           provenance: r.provenance as PublicExperience["provenance"],
           publishedDay: published_at ? this.dayBucket(published_at) : null,
           reactions,
+          myReaction,
         };
       });
   }
 
   // ---------- reactions (§10) ----------
 
-  react(honeyId: string, experienceId: string, value: 1 | -1 | 0): { ok: boolean; error?: string } {
+  react(
+    honeyId: string,
+    experienceId: string,
+    value: 1 | -1 | 0,
+  ): { ok: true; value: 1 | -1 | 0; reactions: { likes: number; dislikes: number } | null } | { ok: false; error: string } {
     if (this.settings.killSwitch("DISABLE_REACTIONS")) return { ok: false, error: "reactions_disabled" };
     const row = this.db
       .prepare("SELECT id, entity_key, lesson_id, ctx_teacher_id FROM experiences WHERE id = ? AND status = 'published'")
@@ -733,14 +759,15 @@ export class ExperienceService {
     // (the lesson's teacher, or the standalone entity itself).
     let eligible = false;
     if (row.lesson_id) {
+      // row.lesson_id is the OPAQUE lesson token (C1) — never compare it to a
+      // raw lesson_instance_id (different namespaces; review v3 §12.15C). Match
+      // via the teacher context or by re-deriving tokens from OUR exposures.
       eligible = !!(
         (row.ctx_teacher_id &&
           this.db
             .prepare("SELECT 1 FROM user_lesson_exposures WHERE honey_id = ? AND teacher_id = ? LIMIT 1")
             .get(honeyId, row.ctx_teacher_id)) ||
-        this.db
-          .prepare("SELECT 1 FROM user_lesson_exposures WHERE honey_id = ? AND lesson_instance_id = ?")
-          .get(honeyId, row.lesson_id)
+        this.userLessonTokens(honeyId).has(row.lesson_id)
       );
     } else {
       const entity = this.registry.get(row.entity_key);
@@ -753,15 +780,35 @@ export class ExperienceService {
       this.db
         .prepare("DELETE FROM reactions WHERE experience_id = ? AND dedup_hash = ?")
         .run(experienceId, dedup);
-      return { ok: true };
+    } else {
+      this.db
+        .prepare(
+          `INSERT INTO reactions (experience_id, dedup_hash, value, created_at) VALUES (?, ?, ?, ?)
+           ON CONFLICT(experience_id, dedup_hash) DO UPDATE SET value = excluded.value`,
+        )
+        .run(experienceId, dedup, value, this.now());
     }
-    this.db
-      .prepare(
-        `INSERT INTO reactions (experience_id, dedup_hash, value, created_at) VALUES (?, ?, ?, ?)
-         ON CONFLICT(experience_id, dedup_hash) DO UPDATE SET value = excluded.value`,
-      )
-      .run(experienceId, dedup, value, this.now());
-    return { ok: true };
+    // Authoritative echo (review v3 §12.15C): the caller renders THIS, and
+    // rolls its optimistic UI back to it on failure.
+    return { ok: true, value, reactions: this.reactionCounts(experienceId) };
+  }
+
+  /** Opaque lesson tokens for every lesson this user was exposed to. */
+  private userLessonTokens(honeyId: string): Set<string> {
+    const rows = this.db
+      .prepare("SELECT lesson_instance_id AS id FROM user_lesson_exposures WHERE honey_id = ?")
+      .all(honeyId) as unknown as { id: string }[];
+    return new Set(rows.map((r) => this.lessonToken(r.id)));
+  }
+
+  /** Public counts with the small-cohort threshold applied (null = hidden). */
+  private reactionCounts(experienceId: string): { likes: number; dislikes: number } | null {
+    const c = this.db
+      .prepare("SELECT SUM(value = 1) AS likes, SUM(value = -1) AS dislikes FROM reactions WHERE experience_id = ?")
+      .get(experienceId) as unknown as { likes: number | null; dislikes: number | null };
+    const likes = c.likes ?? 0;
+    const dislikes = c.dislikes ?? 0;
+    return likes + dislikes >= this.settings.reactionMinCount() ? { likes, dislikes } : null;
   }
 
   // ---------- reports (§22 + review v3 §12.15B): category-only, tri-state ----------

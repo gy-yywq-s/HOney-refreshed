@@ -29,6 +29,7 @@ import type {
   NextLessonResponse,
   PublishExperienceInput,
   PublishExperienceResponse,
+  ReactResponse,
   ReportCategory,
   SessionTokens,
   StandaloneMode,
@@ -222,7 +223,7 @@ export class ApiClient {
     return this.request("POST", "/api/experiences/revoke", { ownershipKey });
   }
 
-  reactToExperience(id: string, value: 1 | -1 | 0): Promise<{ ok: boolean }> {
+  reactToExperience(id: string, value: 1 | -1 | 0): Promise<ReactResponse> {
     return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/react`, { value });
   }
 

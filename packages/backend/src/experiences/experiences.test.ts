@@ -618,6 +618,44 @@ describe("reactions, kill switches, abuse, admin gate", () => {
     expect((hidden.json() as { experiences: { reactions: unknown }[] }).experiences[0]!.reactions).toBeNull();
   });
 
+  it("react echoes authoritative value+counts; feed restores myReaction (§12.15C)", async () => {
+    const lessonId = await myLessonId();
+    await fullPublish({ lessonId }, "Useful lesson overall, again.");
+    const feed0 = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
+    const expId = (feed0.json() as { experiences: { id: string }[] }).experiences[0]!.id;
+
+    const r1 = await app.inject({
+      method: "POST", url: `/api/experiences/${expId}/react`, headers: auth, payload: { value: 1 },
+    });
+    expect(r1.statusCode).toBe(200);
+    const body = r1.json() as { ok: boolean; value: number; reactions: { likes: number; dislikes: number } | null };
+    expect(body.value).toBe(1);
+    expect(body.reactions).toEqual({ likes: 1, dislikes: 0 });
+
+    // A fresh feed fetch (new device / refresh) knows the viewer's reaction.
+    const feed1 = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
+    const mine = (feed1.json() as { experiences: { id: string; myReaction: number }[] }).experiences.find(
+      (e) => e.id === expId,
+    )!;
+    expect(mine.myReaction).toBe(1);
+  });
+
+  it("lesson-linked reaction eligibility never compares opaque and raw ids (§12.15C)", async () => {
+    const lessonId = await myLessonId();
+    await fullPublish({ lessonId }, "Teacher-less lesson comment.");
+    const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
+    const expId = (feed.json() as { experiences: { id: string }[] }).experiences[0]!.id;
+    // Strip the teacher context: eligibility must still resolve via the OPAQUE
+    // lesson-token namespace (previously this compared token vs raw id and
+    // wrongly rejected the author's own classmates).
+    app.ctx.db.prepare("UPDATE experiences SET ctx_teacher_id = NULL WHERE id = ?").run(expId);
+    const r = await app.inject({
+      method: "POST", url: `/api/experiences/${expId}/react`, headers: auth, payload: { value: 1 },
+    });
+    expect(r.statusCode).toBe(200);
+    expect((r.json() as { value: number }).value).toBe(1);
+  });
+
   it("kill switches: publications off blocks check AND publish; feed hidden", async () => {
     const lessonId = await myLessonId();
     // Obtain valid artifacts first, then flip the switch: publish must refuse.

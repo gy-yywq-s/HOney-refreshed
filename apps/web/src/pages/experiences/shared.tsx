@@ -204,9 +204,11 @@ export function ExperienceCard({
   names: NameMaps;
   showContext?: boolean;
 }) {
-  // My reaction lives only in this session; the server stores an unlinkable
-  // dedup mark, so it cannot tell us what we previously pressed.
-  const [myValue, setMyValue] = useState<1 | -1 | 0>(0);
+  // The feed carries the viewer's own reaction (restored server-side from the
+  // unlinkable dedup mark), so refresh/devices agree. Optimistic press, then
+  // reconcile to the server's authoritative echo; roll back on failure.
+  const [myValue, setMyValue] = useState<1 | -1 | 0>(exp.myReaction ?? 0);
+  const [counts, setCounts] = useState(exp.reactions);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
@@ -215,13 +217,20 @@ export function ExperienceCard({
 
   async function react(value: 1 | -1) {
     if (busy) return;
+    const prev = myValue;
+    const prevCounts = counts;
     const next: 1 | -1 | 0 = myValue === value ? 0 : value;
     setBusy(true);
     setNote(null);
+    setMyValue(next); // optimistic
     try {
-      await api.reactToExperience(exp.id, next);
-      setMyValue(next);
+      const result = await api.reactToExperience(exp.id, next);
+      // Authoritative echo (review v3 §12.15C): render what the server states.
+      setMyValue(result.value);
+      setCounts(result.reactions);
     } catch (err) {
+      setMyValue(prev); // rollback
+      setCounts(prevCounts);
       if (err instanceof ApiError && err.code === "reactions_disabled") {
         setNote("Reactions are paused right now.");
       } else if (err instanceof ApiError && err.code === "not_eligible") {
@@ -233,15 +242,6 @@ export function ExperienceCard({
       setBusy(false);
     }
   }
-
-  // Counts arrive as a snapshot; overlay my in-session change so the buttons
-  // feel live without pretending to know server state.
-  const counts = exp.reactions
-    ? {
-        likes: exp.reactions.likes + (myValue === 1 ? 1 : 0),
-        dislikes: exp.reactions.dislikes + (myValue === -1 ? 1 : 0),
-      }
-    : null;
 
   return (
     <article className="card exp-card">
