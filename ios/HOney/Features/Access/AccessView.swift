@@ -242,6 +242,9 @@ struct AccessView: View {
                         .accessibilityLabel("Dismiss message")
                     }
             }
+            if let doorsError = vm.doorsError, vm.banner == nil {
+                AppBanner(text: doorsError, style: .warning)
+            }
         }
         .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
     }
@@ -312,6 +315,10 @@ struct AccessView: View {
     }
 
     private func beginGateFlow(route: AccessRoute) {
+        guard viewModel?.didLoadDoors == true else {
+            viewModel?.banner = (.warning, viewModel?.doorsError ?? "Gate names are unavailable. Refresh Access and try again.")
+            return
+        }
         pendingRoute = route
         withAnimation(reduceMotion ? nil : AppTheme.Motion.standard) {
             isGatePickerExpanded = true

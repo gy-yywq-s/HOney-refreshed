@@ -20,6 +20,9 @@ final class AccessViewModel {
     var isLoading = false
     var isWorking = false
     var didLoadPermits = false
+    var didLoadDoors = false
+    var permitsError: String?
+    var doorsError: String?
     var banner: (kind: AppBanner.Style, message: String)?
 
     init(services: AppServices) {
@@ -29,26 +32,39 @@ final class AccessViewModel {
 
     var approvedPermits: [PortalPermitRow] { permits.filter { $0.isApproved } }
 
-    func refresh() async {
+    func refresh(preservingBanner: Bool = false) async {
         isLoading = true
         defer { isLoading = false }
+        if !preservingBanner { banner = nil }
         await coordinator.restore()
         connectionState = await coordinator.currentState()
 
-        do {
-            async let permitsResult = coordinator.withAuthentication(replay: .safeRead) { [api] token in
-                try await api.permits(token: token)
-            }
-            async let doorsResult = coordinator.withAuthentication(replay: .safeRead) { [api] token in
-                try await api.doorList(token: token)
-            }
-            permits = try await permitsResult
-            doors = try await doorsResult
+        async let permitsAttempt = fetchPermits()
+        async let doorsAttempt = fetchDoors()
+        let (permitResult, doorResult) = await (permitsAttempt, doorsAttempt)
+
+        switch permitResult {
+        case .success(let rows):
+            permits = rows
             didLoadPermits = true
-            banner = nil
-        } catch {
+            permitsError = nil
+        case .failure(let error):
             didLoadPermits = false
-            handle(error, context: "load")
+            permitsError = message(for: error, fallback: "Permits are temporarily unavailable.")
+        }
+
+        switch doorResult {
+        case .success(let loadedDoors):
+            doors = loadedDoors
+            didLoadDoors = true
+            doorsError = nil
+        case .failure(let error):
+            didLoadDoors = false
+            doorsError = message(for: error, fallback: "Gate names are temporarily unavailable.")
+        }
+
+        if !preservingBanner, let permitsError, let doorsError {
+            banner = (.error, permitsError + " " + doorsError)
         }
         connectionState = await coordinator.currentState()
     }
@@ -67,7 +83,10 @@ final class AccessViewModel {
             let response = try await api.applyPermit(request, token: token)
             if response.isSuccess {
                 banner = (.success, response.displayMessage.isEmpty ? "Permit submitted." : response.displayMessage)
-                await refresh()
+                await refresh(preservingBanner: true)
+                if permitsError != nil {
+                    banner = (.success, "Permit submitted, but the permit list could not refresh.")
+                }
             } else {
                 banner = (.warning, response.displayMessage.isEmpty ? "Permit could not be submitted." : response.displayMessage)
             }
@@ -98,6 +117,22 @@ final class AccessViewModel {
 
     func dismissBanner() { banner = nil }
 
+    private func fetchPermits() async -> Result<[PortalPermitRow], Error> {
+        do {
+            return .success(try await coordinator.withAuthentication(replay: .safeRead) { [api] token in
+                try await api.permits(token: token)
+            })
+        } catch { return .failure(error) }
+    }
+
+    private func fetchDoors() async -> Result<[PortalDoor], Error> {
+        do {
+            return .success(try await coordinator.withAuthentication(replay: .safeRead) { [api] token in
+                try await api.doorList(token: token)
+            })
+        } catch { return .failure(error) }
+    }
+
     // MARK: - Helpers
 
     private func handle(_ error: Error, context: String) {
@@ -122,6 +157,20 @@ final class AccessViewModel {
             banner = (.error, "The school portal changed and Access needs an update.")
         case .mutationOutcomeUnknown:
             banner = (.warning, "The request timed out. Verify the gate physically before retrying.")
+        }
+    }
+
+    private func message(for error: Error, fallback: String) -> String {
+        guard let portalError = error as? PortalSessionError else { return fallback }
+        switch portalError {
+        case .networkUnavailable: return "You appear to be offline."
+        case .serverUnavailable: return "The school portal is temporarily unavailable."
+        case .unauthorized: return "Your school session expired. Try again."
+        case .credentialsRejected: return "Your school password may have changed. Reconnect in Settings."
+        case .interactiveChallenge: return "The school portal needs a manual sign-in."
+        case .keychainUnavailable: return "Access needs your saved school sign-in."
+        case .incompatibleResponse: return "The school portal changed and Access needs an update."
+        case .mutationOutcomeUnknown: return "The previous physical action has an unknown outcome."
         }
     }
 
