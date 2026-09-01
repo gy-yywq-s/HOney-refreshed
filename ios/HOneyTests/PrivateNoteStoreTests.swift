@@ -31,7 +31,7 @@ final class PrivateNoteStoreTests: XCTestCase {
         XCTAssertEqual(note.body, "first note")
         XCTAssertEqual(note.target.entityKey, "teacher:t1")
 
-        let all = await store.list()
+        let all = try await store.list()
         XCTAssertEqual(all, [note])
     }
 
@@ -46,7 +46,7 @@ final class PrivateNoteStoreTests: XCTestCase {
         XCTAssertEqual(updated.body, "v2")
         XCTAssertEqual(updated.rating, 5)
 
-        let all = await store.list()
+        let all = try await store.list()
         XCTAssertEqual(all.count, 1, "updated, not duplicated")
     }
 
@@ -54,7 +54,7 @@ final class PrivateNoteStoreTests: XCTestCase {
         let store = PrivateNoteStore(directory: tempDir)
         let note = try await store.save(id: "missing-id", body: "text", rating: nil, target: target)
         XCTAssertNotEqual(note.id, "missing-id", "an unknown id falls back to create")
-        let all = await store.list()
+        let all = try await store.list()
         XCTAssertEqual(all.count, 1)
     }
 
@@ -63,11 +63,11 @@ final class PrivateNoteStoreTests: XCTestCase {
         let a = try await store.save(id: nil, body: "a", rating: nil, target: target)
         let b = try await store.save(id: nil, body: "b", rating: nil, target: target)
 
-        let found = await store.note(id: a.id)
+        let found = try await store.note(id: a.id)
         XCTAssertEqual(found?.body, "a")
 
         try await store.remove(id: a.id)
-        let all = await store.list()
+        let all = try await store.list()
         XCTAssertEqual(all, [b])
     }
 
@@ -75,7 +75,7 @@ final class PrivateNoteStoreTests: XCTestCase {
         let note = try await PrivateNoteStore(directory: tempDir)
             .save(id: nil, body: "durable", rating: nil, target: target)
         let reopened = PrivateNoteStore(directory: tempDir)
-        let all = await reopened.list()
+        let all = try await reopened.list()
         XCTAssertEqual(all, [note], "notes survive relaunch")
     }
 
@@ -83,7 +83,7 @@ final class PrivateNoteStoreTests: XCTestCase {
         let store = PrivateNoteStore(directory: tempDir)
         _ = try await store.save(id: nil, body: "a", rating: nil, target: target)
         try await store.clearAll()
-        let all = await store.list()
+        let all = try await store.list()
         XCTAssertTrue(all.isEmpty)
     }
 }

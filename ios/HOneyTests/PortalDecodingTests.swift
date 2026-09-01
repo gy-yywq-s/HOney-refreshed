@@ -8,6 +8,17 @@ import XCTest
 
 final class PortalDecodingTests: XCTestCase {
 
+    @MainActor
+    func testWebExpiryRouteUsesExactKnownLoginPaths() throws {
+        XCTAssertTrue(PortalWebSessionBridge.isKnownLoginRoute(try XCTUnwrap(URL(string: "https://www.huayaopudong.com/login"))))
+        XCTAssertTrue(PortalWebSessionBridge.isKnownLoginRoute(try XCTUnwrap(URL(string: "https://www.huayaopudong.com/student/login/"))))
+        XCTAssertTrue(PortalWebSessionBridge.isKnownLoginRoute(try XCTUnwrap(URL(string: "https://www.huayaopudong.com/student#/login"))))
+
+        XCTAssertFalse(PortalWebSessionBridge.isKnownLoginRoute(try XCTUnwrap(URL(string: "https://www.huayaopudong.com/student/login-history"))))
+        XCTAssertFalse(PortalWebSessionBridge.isKnownLoginRoute(try XCTUnwrap(URL(string: "https://www.huayaopudong.com/student?next=login"))))
+        XCTAssertFalse(PortalWebSessionBridge.isKnownLoginRoute(try XCTUnwrap(URL(string: "https://www.huayaopudong.com/student#/login-help"))))
+    }
+
     func testDoorListQuirkSuccessIsStatus1WithDoorsInMessage() throws {
         let json = """
         {

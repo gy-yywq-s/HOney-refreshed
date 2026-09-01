@@ -203,8 +203,11 @@ struct AccessView: View {
             } else if visible.isEmpty {
                 AppEmptyState(title: vm.didLoadPermits ? "No permits" : "Permits unavailable", systemImage: "doc.text")
             } else {
+                if let permitsError = vm.permitsError {
+                    AppBanner(text: permitsError + " Previously loaded permits cannot be used until refresh succeeds.", style: .warning)
+                }
                 ForEach(visible) { permit in
-                    PermitListRow(permit: permit) {
+                    PermitListRow(permit: permit, isActionable: vm.didLoadPermits && !vm.isWorking) {
                         beginGateFlow(route: .permit(recordId: permit.recordId))
                     }
                 }
@@ -403,6 +406,7 @@ private enum PermitTimeText {
 
 private struct PermitListRow: View {
     let permit: PortalPermitRow
+    let isActionable: Bool
     let onOpen: () -> Void
 
     private var statusText: String {
@@ -443,12 +447,14 @@ private struct PermitListRow: View {
                             .font(AppTheme.Typography.captionBold)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
-                            .background(Palette.ocean, in: Capsule())
+                            .background(isActionable ? Palette.ocean : Palette.surfaceMuted, in: Capsule())
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(Palette.accentForeground)
+                    .foregroundStyle(isActionable ? Palette.accentForeground : Palette.inkSecondary)
                     .frame(minHeight: 44)
+                    .disabled(!isActionable)
+                    .accessibilityHint(isActionable ? "Choose a gate to open with this permit" : "Refresh permits before using this row")
                 }
             } else {
                 Text(statusText)

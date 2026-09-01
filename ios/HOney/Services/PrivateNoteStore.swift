@@ -38,19 +38,19 @@ actor PrivateNoteStore {
         self.fileURL = dir.appendingPathComponent("honey-private-notes.json")
     }
 
-    func list() -> [PrivateNote] {
-        read()
+    func list() throws -> [PrivateNote] {
+        try read()
     }
 
-    func note(id: String) -> PrivateNote? {
-        read().first { $0.id == id }
+    func note(id: String) throws -> PrivateNote? {
+        try read().first { $0.id == id }
     }
 
     /// Create (`id == nil`) or update (existing id) a note. Updating keeps the
     /// original `createdAt` and refreshes `updatedAt`, like the web store.
     @discardableResult
     func save(id: String?, body: String, rating: Int?, target: PrivateNoteTarget) throws -> PrivateNote {
-        var notes = read()
+        var notes = try read()
         let now = Date()
         if let id, let index = notes.firstIndex(where: { $0.id == id }) {
             var note = notes[index]
@@ -76,7 +76,7 @@ actor PrivateNoteStore {
     }
 
     func remove(id: String) throws {
-        try write(read().filter { $0.id != id })
+        try write(try read().filter { $0.id != id })
     }
 
     /// Erase every note (account deletion with "erase everything" only).
@@ -85,9 +85,9 @@ actor PrivateNoteStore {
         try FileManager.default.removeItem(at: fileURL)
     }
 
-    private func read() -> [PrivateNote] {
-        guard let data = try? Data(contentsOf: fileURL) else { return [] }
-        return (try? JSONDecoder().decode([PrivateNote].self, from: data)) ?? []
+    private func read() throws -> [PrivateNote] {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
+        return try JSONDecoder().decode([PrivateNote].self, from: Data(contentsOf: fileURL))
     }
 
     private func write(_ notes: [PrivateNote]) throws {

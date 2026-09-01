@@ -31,6 +31,7 @@ final class AppModel {
     var consentError: String?
     var isSavingConsent = false
     var startupNotice: String?
+    var portalCredentialNotice: String?
 
     init(services: AppServices = .live()) {
         self.services = services
@@ -48,7 +49,10 @@ final class AppModel {
 
         guard await services.sessionStore.current() != nil else {
             await services.timetableRepository.invalidateAll()
+            await services.experienceFeedRepository.invalidate()
             await services.experienceTargetRepository.invalidate()
+            startupNotice = nil
+            portalCredentialNotice = nil
             phase = .signedOut
             return
         }
@@ -64,23 +68,26 @@ final class AppModel {
     func login(username: String, password: String) async {
         isAuthenticating = true
         loginError = nil
+        startupNotice = nil
+        portalCredentialNotice = nil
         await services.timetableRepository.invalidateAll()
+        await services.experienceFeedRepository.invalidate()
         await services.experienceTargetRepository.invalidate()
         defer { isAuthenticating = false }
         do {
             // Signing in never imports the timetable: the request carries no
             // consent (audit §3.2). Import is a separate, active choice on the
             // next step, with nothing preselected.
-            let response = try await services.honeyAPI.login(
-                username: username,
-                password: password,
-                consentTimetable: nil
-            )
+            let response = try await services.honeyAPI.login(username: username, password: password)
             // Authorize the portal connector to silently re-login for Access using
             // the same school credentials (device-only Keychain, not biometric).
-            try? await services.portalCoordinator.authorizeCredentials(
-                PortalCredentials(username: username, password: password)
-            )
+            do {
+                try await services.portalCoordinator.authorizeCredentials(
+                    PortalCredentials(username: username, password: password)
+                )
+            } catch {
+                portalCredentialNotice = "Signed in to HOney, but this iPhone could not save the school sign-in for silent Portal and Access reconnection."
+            }
             if response.profile.consent.timetable {
                 // Already granted on a previous device/session — skip the step.
                 phase = .signedIn(response.profile)
@@ -112,6 +119,7 @@ final class AppModel {
             do {
                 _ = try await services.honeyAPI.sync()
                 await services.timetableRepository.invalidateAll()
+                await services.experienceFeedRepository.invalidate()
                 await services.experienceTargetRepository.invalidate()
                 startupNotice = nil
             } catch {
@@ -136,6 +144,7 @@ final class AppModel {
             phase = .signedIn(profile)
             if !timetable {
                 await services.timetableRepository.invalidateAll()
+                await services.experienceFeedRepository.invalidate()
                 await services.experienceTargetRepository.invalidate()
             }
             return true
@@ -149,6 +158,7 @@ final class AppModel {
         do {
             _ = try await services.honeyAPI.sync()
             await services.timetableRepository.invalidateAll()
+            await services.experienceFeedRepository.invalidate()
             await services.experienceTargetRepository.invalidate()
             startupNotice = nil
         } catch {
@@ -173,6 +183,7 @@ final class AppModel {
         do {
             try await services.honeyAPI.disconnectSchool()
             await services.timetableRepository.invalidateAll()
+            await services.experienceFeedRepository.invalidate()
             await services.experienceTargetRepository.invalidate()
             if !(await refreshProfile()), var profile {
                 profile.connection = HOneyConnection(
@@ -191,11 +202,14 @@ final class AppModel {
     func signOut() async {
         await services.honeyAPI.logout()
         await services.timetableRepository.invalidateAll()
+        await services.experienceFeedRepository.invalidate()
         await services.experienceTargetRepository.invalidate()
         // Ownership keys, private notes and drafts are the user's device-local
         // property, not session state — an ordinary sign-out never deletes them
         // (audit §3.6). Only "delete account + erase everything" does.
         phase = .signedOut
+        startupNotice = nil
+        portalCredentialNotice = nil
     }
 
     /// Account deletion is a server operation. Ownership keys are the ONLY
@@ -211,6 +225,7 @@ final class AppModel {
         }
 
         await services.timetableRepository.invalidateAll()
+        await services.experienceFeedRepository.invalidate()
         await services.experienceTargetRepository.invalidate()
         var remaining: [String] = []
         do { try await services.sessionStore.clear() }
@@ -226,6 +241,8 @@ final class AppModel {
             catch { remaining.append("published-key recovery record") }
         }
         phase = .signedOut
+        startupNotice = nil
+        portalCredentialNotice = nil
         if remaining.isEmpty { return .complete }
 
         loginError = "Your HOney account was deleted, but this iPhone could not erase: "

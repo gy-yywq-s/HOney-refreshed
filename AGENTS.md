@@ -42,11 +42,19 @@ This file contains the active instructions for work in the local repository at
   pale paper/brown canvas. Candidate surfaces include current paper, neutral white, cool mist, and
   soft gray; every choice must define coherent light/dark canvas, surface, muted-surface, line, and
   ink roles without becoming a large saturated-color skin.
+- Surface choices remain part of the iOS product experiment. Present every available palette
+  directly instead of hiding choices in a dropdown, and keep each palette's accent tuned to its own
+  background rather than sharing an unchanged accent tuple.
 - The blue-teal accent remains one semantic family, but each Surface palette must tune its own
   `accent`, `accentSoft`, and `accentForeground` values to harmonize with that surface and pass
   contrast in light/dark mode. Do not paste one unchanged accent RGB tuple onto every background.
 - Replace the Login screen completely. Do not preserve the serif `HOney` title, text-only `HO` icon,
   or current layout.
+- Never tell users to use search to reveal selectable options that the product omitted. If an item is
+  available to choose, provide a complete scrollable, grouped, paginated, or progressively disclosed
+  list; search may filter that complete set but cannot be the only route to the remaining choices.
+- Every Timetable lesson card must show the teacher name when the backend supplies it. When it is
+  absent, show an honest unavailable label rather than silently omitting the field or inventing one.
 - ImageGen may be used for bounded wordmark/mark exploration. Selected concepts must be translated
   into production-appropriate assets and verified at small size, monochrome, and accessible contrast;
   do not paste a raster wordmark throughout the UI.

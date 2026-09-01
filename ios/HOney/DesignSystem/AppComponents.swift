@@ -7,6 +7,26 @@
 //
 
 import SwiftUI
+
+struct FilterChip: View {
+    let title: String
+    var isActive = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title)
+            Image(systemName: "chevron.down")
+                .font(AppTheme.Typography.caption2Bold)
+        }
+        .font(AppTheme.Typography.captionSemibold)
+        .foregroundStyle(isActive ? Palette.accent : Palette.inkSecondary)
+        .padding(.horizontal, 13)
+        .frame(minHeight: 44)
+        .background(isActive ? Palette.accentSoft : Palette.surface, in: Capsule())
+        .overlay(Capsule().stroke(isActive ? Palette.accent.opacity(0.45) : Palette.line, lineWidth: 1))
+        .contentShape(Capsule())
+    }
+}
 #if canImport(UIKit)
 import UIKit
 #endif

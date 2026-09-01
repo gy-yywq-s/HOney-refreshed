@@ -217,14 +217,18 @@ final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegat
 
     private func savedSafeURL() -> URL? {
         guard let string = UserDefaults.standard.string(forKey: lastURLKey),
-              let url = URL(string: string), !isUnsafe(url) else { return nil }
+              let url = URL(string: string), isSafePortalURL(url) else { return nil }
         return url
     }
 
-    private func isUnsafe(_ url: URL) -> Bool {
-        let unsafe = ["login", "callback", "logout", "signin", "error", "oauth"]
-        let lowered = url.absoluteString.lowercased()
-        return unsafe.contains { lowered.contains($0) }
+    private func isSafePortalURL(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "https",
+              let expectedHost = fallbackURL?.host?.lowercased(),
+              url.host?.lowercased() == expectedHost,
+              !PortalWebSessionBridge.isKnownLoginRoute(url) else { return false }
+        let disallowedPathComponents = Set(["callback", "logout", "signin", "error", "oauth"])
+        let components = url.path.lowercased().split(separator: "/").map(String.init)
+        return disallowedPathComponents.isDisjoint(with: components)
     }
 
     private func shouldHandleExpiry(_ url: URL?) -> Bool {
@@ -254,7 +258,7 @@ final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegat
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard isActive(navigation) else { return }
-        if let url = webView.url, !isUnsafe(url) {
+        if let url = webView.url, isSafePortalURL(url) {
             lastSuccessfullyFinishedURL = url
             UserDefaults.standard.set(url.absoluteString, forKey: lastURLKey)
         }

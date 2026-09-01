@@ -70,10 +70,10 @@ enum ComposerStatus: Sendable, Equatable {
 @Observable
 final class ComposeExperienceViewModel {
     // Web-identical notice copy (useComposer.ts).
-    static let editRequiredCopy = "This needs a small rephrase before it can be public — say it more directly, as your own experience. Nothing was kept, so you can still share here later."
+    static let editRequiredCopy = "This version needs a change before it can be shared. Say it more directly, as your own experience. Nothing was published; the words remain in the editor."
     static let outOfScopeCopy = "This reads as something for the school to handle directly, not a public feed. You can keep it as a private note instead."
-    static let blockedCopy = "This can't be published under the community rules. Nothing was stored — your draft is still here if you want to reshape it."
-    static let failedClosedCopy = "The safety check couldn't run just now, and nothing publishes unchecked. Your draft is safe — please try again in a moment."
+    static let blockedCopy = "This can't be published under the community rules. Nothing was published; the words remain in the editor if you want to reshape them."
+    static let failedClosedCopy = "The safety check couldn't run just now, and nothing publishes unchecked. The words remain in the editor — please try again in a moment."
 
     let target: ComposerTarget?
 
@@ -87,6 +87,7 @@ final class ComposeExperienceViewModel {
     private(set) var isSavingNote = false
     private(set) var keyRecoveryError: String?
     private(set) var isSavingRecoveryKey = false
+    private(set) var localStorageError: String?
 
     private let api: any ExperiencePublishing
     private let drafts: ComposerDraftStore
@@ -144,7 +145,9 @@ final class ComposeExperienceViewModel {
     }
 
     var canAct: Bool {
-        !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && status != .checking
+        !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && status != .checking
+            && localStorageError == nil
     }
 
     /// Restore any saved draft for this target (audit §3.4). A seeding private
@@ -152,16 +155,30 @@ final class ComposeExperienceViewModel {
     func hydrate() async {
         defer { hydrated = true }
         guard !hydrated else { return }
-        if let recovery = try? await recoveryStore.record(forTarget: target?.targetKey ?? ""),
-           recovery.targetKey == target?.targetKey {
-            body = recovery.body
-            rating = recovery.rating
-            status = .publishedKeyRecovery(
-                ownershipKey: recovery.ownershipKey,
-                experienceId: recovery.experienceId,
-                journalSaved: true
-            )
-            keyRecoveryError = "This published post still needs its post-control key saved on this iPhone."
+        do {
+            if let recovery = try await recoveryStore.record(forTarget: target?.targetKey ?? ""),
+               recovery.targetKey == target?.targetKey {
+                if try await ownershipKeys.ownershipKey(for: recovery.experienceId) == recovery.ownershipKey {
+                    do {
+                        try await recoveryStore.clear(experienceId: recovery.experienceId)
+                    } catch {
+                        localStorageError = "The post-control key is saved, but HOney could not clear its temporary recovery record. Close this editor and try again."
+                        return
+                    }
+                } else {
+                body = recovery.body
+                rating = recovery.rating
+                status = .publishedKeyRecovery(
+                    ownershipKey: recovery.ownershipKey,
+                    experienceId: recovery.experienceId,
+                    journalSaved: true
+                )
+                keyRecoveryError = "This published post still needs its post-control key saved on this iPhone."
+                return
+                }
+            }
+        } catch {
+            localStorageError = "HOney could not read the protected publication-recovery record. Close this editor and try again before sharing."
             return
         }
         if let seedNote {
@@ -170,9 +187,13 @@ final class ComposeExperienceViewModel {
             return
         }
         guard let key = target?.targetKey, !key.isEmpty else { return }
-        if let saved = await drafts.get(key) {
-            body = saved.body
-            rating = saved.rating
+        do {
+            if let saved = try await drafts.get(key) {
+                body = saved.body
+                rating = saved.rating
+            }
+        } catch {
+            localStorageError = "HOney could not read the saved draft on this iPhone. Close this editor and try again before sharing."
         }
     }
 
@@ -269,7 +290,14 @@ final class ComposeExperienceViewModel {
         guard let target, !target.targetKey.isEmpty else { return }
         // Persist the draft BEFORE any network call — nothing below can lose it.
         await pendingAutosave?.value
-        await drafts.save(targetKey: target.targetKey, body: body, rating: rating)
+        do {
+            try await drafts.save(targetKey: target.targetKey, body: body, rating: rating)
+            localStorageError = nil
+        } catch {
+            localStorageError = "The draft could not be saved on this iPhone, so HOney did not send it for checking."
+            status = .editing
+            return
+        }
         status = .checking
         notice = nil
         heldPass = nil
@@ -348,7 +376,13 @@ final class ComposeExperienceViewModel {
                 await pendingAutosave?.value
                 try await drafts.clear(key)
             }
-            try? await recoveryStore.clear(experienceId: result.experienceId)
+            do {
+                try await recoveryStore.clear(experienceId: result.experienceId)
+            } catch {
+                status = .published(ownershipKey: result.ownershipKey, experienceId: result.experienceId)
+                keyRecoveryError = "Shared and the post-control key is saved, but HOney could not clear a temporary recovery record."
+                return
+            }
             status = .published(ownershipKey: result.ownershipKey, experienceId: result.experienceId)
         } catch {
             // Publication already succeeded. Keep the durable draft and expose
@@ -377,6 +411,13 @@ final class ComposeExperienceViewModel {
         let body = self.body
         let rating = self.rating
         let drafts = self.drafts
-        pendingAutosave = Task { await drafts.save(targetKey: key, body: body, rating: rating) }
+        pendingAutosave = Task { [weak self] in
+            do {
+                try await drafts.save(targetKey: key, body: body, rating: rating)
+                self?.localStorageError = nil
+            } catch {
+                self?.localStorageError = "The draft is still in the editor, but it could not be saved on this iPhone."
+            }
+        }
     }
 }

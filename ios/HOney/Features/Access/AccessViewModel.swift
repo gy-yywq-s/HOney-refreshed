@@ -70,6 +70,7 @@ final class AccessViewModel {
     }
 
     func applyPermit(start: Date, end: Date, reason: String) async {
+        guard !isWorking else { return }
         isWorking = true
         defer { isWorking = false }
         let request = PortalApplyPermitRequest(
@@ -98,6 +99,7 @@ final class AccessViewModel {
     /// Open a gate. Non-idempotent → never auto-replayed. A timeout is surfaced
     /// as "outcome unknown" so the user verifies physically instead of retrying.
     func openGate(route: AccessRoute, door: PortalDoor) async {
+        guard !isWorking else { return }
         isWorking = true
         defer { isWorking = false }
         do {

@@ -42,19 +42,19 @@ actor ComposerDraftStore {
     }
 
     /// The saved draft for this target, or nil (a different target's draft is ignored).
-    func get(_ targetKey: String) -> ComposerDraft? {
-        guard let draft = read(), draft.targetKey == targetKey else { return nil }
+    func get(_ targetKey: String) throws -> ComposerDraft? {
+        guard let draft = try read(), draft.targetKey == targetKey else { return nil }
         return draft
     }
 
     /// Single-slot replace: whatever the slot held before is overwritten.
-    func save(targetKey: String, body: String, rating: Int?) {
-        write(ComposerDraft(targetKey: targetKey, body: body, rating: rating, updatedAt: Date()))
+    func save(targetKey: String, body: String, rating: Int?) throws {
+        try write(ComposerDraft(targetKey: targetKey, body: body, rating: rating, updatedAt: Date()))
     }
 
     /// Clear the slot, but only if it still holds this target's draft.
     func clear(_ targetKey: String) throws {
-        guard get(targetKey) != nil else { return }
+        guard try get(targetKey) != nil else { return }
         try FileManager.default.removeItem(at: fileURL)
     }
 
@@ -64,18 +64,18 @@ actor ComposerDraftStore {
         try FileManager.default.removeItem(at: fileURL)
     }
 
-    private func read() -> ComposerDraft? {
-        guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return try? JSONDecoder().decode(ComposerDraft.self, from: data)
+    private func read() throws -> ComposerDraft? {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        return try JSONDecoder().decode(ComposerDraft.self, from: Data(contentsOf: fileURL))
     }
 
-    private func write(_ draft: ComposerDraft) {
-        guard let data = try? JSONEncoder().encode(draft) else { return }
-        try? FileManager.default.createDirectory(
+    private func write(_ draft: ComposerDraft) throws {
+        let data = try JSONEncoder().encode(draft)
+        try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
-        try? data.write(to: fileURL, options: HOneyFileStorage.writeOptions)
+        try data.write(to: fileURL, options: HOneyFileStorage.writeOptions)
     }
 }
 

@@ -48,14 +48,14 @@ actor HOneyAPI {
 
     // MARK: - Auth
 
-    func login(username: String, password: String, consentTimetable: Bool?) async throws -> LoginResponse {
-        struct Body: Encodable { let username: String; let password: String; let consentTimetable: Bool? }
+    func login(username: String, password: String) async throws -> LoginResponse {
+        struct Body: Encodable { let username: String; let password: String }
         let response: LoginResponse = try await send(
             "POST", "/api/auth/login",
-            body: Body(username: username, password: password, consentTimetable: consentTimetable),
+            body: Body(username: username, password: password),
             authed: false
         )
-        await store.save(response.session)
+        try await store.save(response.session)
         return response
     }
 
@@ -291,7 +291,7 @@ actor HOneyAPI {
                 throw HOneyAPIError.notAuthenticated
             }
             let refreshed = try HOneyCoding.decoder.decode(HOneySession.self, from: data)
-            await store.save(refreshed)
+            try await store.save(refreshed)
             return refreshed
         }
         refreshTask = task

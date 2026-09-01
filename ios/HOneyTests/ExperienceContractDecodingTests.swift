@@ -303,3 +303,90 @@ final class ExperienceContractDecodingTests: XCTestCase {
         return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 }
+
+private actor CountingExperienceFeedProvider: ExperienceFeedProviding {
+    private var classCalls = 0
+    private var schoolCalls = 0
+    var delay: Duration = .zero
+
+    func configure(delay: Duration) { self.delay = delay }
+
+    func experiences(
+        entityKey: String?,
+        teacherId: String?,
+        courseId: String?,
+        roomId: String?,
+        query: String?,
+        sort: ExperienceSort
+    ) async throws -> ExperiencesFeedResponse {
+        schoolCalls += 1
+        if delay > .zero { try await Task.sleep(for: delay) }
+        return Self.response(id: "school")
+    }
+
+    func fromMyClasses(before: Int?, limit: Int?) async throws -> ExperiencesFeedResponse {
+        classCalls += 1
+        if delay > .zero { try await Task.sleep(for: delay) }
+        return Self.response(id: "classes")
+    }
+
+    func counts() -> (classes: Int, school: Int) { (classCalls, schoolCalls) }
+
+    private static func response(id: String) -> ExperiencesFeedResponse {
+        ExperiencesFeedResponse(experiences: [PublicExperience(
+            id: id,
+            entityKey: "teacher:t1",
+            ctxTeacherId: "t1",
+            ctxCourseId: nil,
+            ctxRoomId: nil,
+            body: id,
+            rating: nil,
+            provenance: .verifiedLesson,
+            publishedDay: nil,
+            reactions: nil
+        )])
+    }
+}
+
+final class ExperienceFeedRepositoryTests: XCTestCase {
+    func testFreshFeedIsSharedAcrossViewRecreation() async throws {
+        let provider = CountingExperienceFeedProvider()
+        let repository = ExperienceFeedRepository(provider: provider)
+
+        let first = try await repository.load(.myClasses)
+        let second = try await repository.load(.myClasses)
+
+        XCTAssertEqual(first.experiences.first?.id, "classes")
+        XCTAssertEqual(second.experiences.first?.id, "classes")
+        let counts = await provider.counts()
+        XCTAssertEqual(counts.classes, 1)
+    }
+
+    func testConcurrentLoadsCoalesceAndScopesStayIndependent() async throws {
+        let provider = CountingExperienceFeedProvider()
+        await provider.configure(delay: .milliseconds(80))
+        let repository = ExperienceFeedRepository(provider: provider)
+
+        async let first = repository.load(.myClasses)
+        async let second = repository.load(.myClasses)
+        _ = try await (first, second)
+        _ = try await repository.load(.school)
+
+        let counts = await provider.counts()
+        XCTAssertEqual(counts.classes, 1)
+        XCTAssertEqual(counts.school, 1)
+    }
+
+    func testExplicitReloadAndInvalidationRequestFreshData() async throws {
+        let provider = CountingExperienceFeedProvider()
+        let repository = ExperienceFeedRepository(provider: provider)
+
+        _ = try await repository.load(.school)
+        _ = try await repository.load(.school, policy: .reload)
+        await repository.invalidate()
+        _ = try await repository.load(.school)
+
+        let counts = await provider.counts()
+        XCTAssertEqual(counts.school, 3)
+    }
+}

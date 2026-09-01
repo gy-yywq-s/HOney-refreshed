@@ -97,7 +97,7 @@ struct MySubmissionsView: View {
                 }
             }
             .background(Palette.background.ignoresSafeArea())
-            .navigationTitle("My posts & notes")
+            .navigationTitle("Your notes & posts")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
@@ -288,7 +288,14 @@ struct MySubmissionsView: View {
         isLoading = true
         loadError = nil
         defer { isLoading = false }
-        notes = await model.services.privateNoteStore.list()
+        do {
+            notes = try await model.services.privateNoteStore.list()
+        } catch {
+            notes = []
+            experiences = []
+            loadError = "HOney could not read private notes on this iPhone. Nothing was deleted; try again before creating or editing notes."
+            return
+        }
         let map: [String: String]
         do {
             map = try await model.services.ownershipKeyStore.map()

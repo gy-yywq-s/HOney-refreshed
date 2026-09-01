@@ -27,7 +27,7 @@ final class AppModelLifecycleTests: XCTestCase {
     }
 
     private func seedLocalData() async throws {
-        await services.sessionStore.save(HOneySession(
+        try await services.sessionStore.save(HOneySession(
             accessToken: "access",
             accessExpiresAt: Date().addingTimeInterval(3_600),
             refreshToken: "refresh",
@@ -38,7 +38,7 @@ final class AppModelLifecycleTests: XCTestCase {
             id: nil, body: "note", rating: nil,
             target: PrivateNoteTarget(label: "Ms Lin", entityKey: "teacher:t1")
         )
-        await services.composerDraftStore.save(targetKey: "lesson:l1", body: "draft", rating: nil)
+        try await services.composerDraftStore.save(targetKey: "lesson:l1", body: "draft", rating: nil)
     }
 
     // MARK: Sign-out (audit §3.6)
@@ -51,9 +51,9 @@ final class AppModelLifecycleTests: XCTestCase {
         XCTAssertEqual(model.phase, .signedOut)
         let remainingKeys = try await keys.keys()
         XCTAssertEqual(remainingKeys, ["own-1"], "sign-out never deletes post keys")
-        let notes = await services.privateNoteStore.list()
+        let notes = try await services.privateNoteStore.list()
         XCTAssertEqual(notes.count, 1, "sign-out never deletes private notes")
-        let draft = await services.composerDraftStore.get("lesson:l1")
+        let draft = try await services.composerDraftStore.get("lesson:l1")
         XCTAssertEqual(draft?.body, "draft", "sign-out never deletes drafts")
     }
 
@@ -68,7 +68,7 @@ final class AppModelLifecycleTests: XCTestCase {
         XCTAssertEqual(model.phase, .signedOut)
         let remainingKeys = try await keys.keys()
         XCTAssertEqual(remainingKeys, ["own-1"], "'keep post keys' preserves control over past posts")
-        let notes = await services.privateNoteStore.list()
+        let notes = try await services.privateNoteStore.list()
         XCTAssertEqual(notes.count, 1)
     }
 
@@ -81,9 +81,9 @@ final class AppModelLifecycleTests: XCTestCase {
         XCTAssertEqual(model.phase, .signedOut)
         let remainingKeys = try await keys.keys()
         XCTAssertTrue(remainingKeys.isEmpty, "'erase everything' clears ownership keys")
-        let notes = await services.privateNoteStore.list()
+        let notes = try await services.privateNoteStore.list()
         XCTAssertTrue(notes.isEmpty, "'erase everything' clears private notes")
-        let draft = await services.composerDraftStore.get("lesson:l1")
+        let draft = try await services.composerDraftStore.get("lesson:l1")
         XCTAssertNil(draft, "'erase everything' clears the draft slot")
     }
 
@@ -93,8 +93,8 @@ final class AppModelLifecycleTests: XCTestCase {
 
         let deleted = await model.deleteAccount(eraseLocalData: true)
         let remainingKeys = try await keys.keys()
-        let remainingNotes = await services.privateNoteStore.list()
-        let remainingDraft = await services.composerDraftStore.get("lesson:l1")
+        let remainingNotes = try await services.privateNoteStore.list()
+        let remainingDraft = try await services.composerDraftStore.get("lesson:l1")
 
         XCTAssertEqual(deleted, .serverFailed)
         XCTAssertEqual(model.phase, .loading, "failed deletion must not pretend the user is signed out")
@@ -103,10 +103,10 @@ final class AppModelLifecycleTests: XCTestCase {
         XCTAssertNotNil(remainingDraft)
     }
 
-    func testServerDeletionSuccessWithLocalKeyFailureSignsOutAndReportsPartialCleanup() async {
+    func testServerDeletionSuccessWithLocalKeyFailureSignsOutAndReportsPartialCleanup() async throws {
         let failingKeys = FailingClearOwnershipKeyStore()
         let partialServices = AppServices.stub(tempDir: tempDir, ownershipKeyStore: failingKeys)
-        await partialServices.sessionStore.save(HOneySession(
+        try await partialServices.sessionStore.save(HOneySession(
             accessToken: "access",
             accessExpiresAt: Date().addingTimeInterval(3_600),
             refreshToken: "refresh",
@@ -136,7 +136,7 @@ final class AppModelLifecycleTests: XCTestCase {
         """.utf8)
     }
 
-    func testLoginWithoutPriorConsentEntersConsentPendingPhase() async {
+    func testLoginWithoutPriorConsentEntersConsentPendingPhase() async throws {
         StubURLProtocol.responses["/api/auth/login"] = (200, loginFixture(consent: false))
 
         await model.login(username: "gary", password: "pw")
@@ -147,7 +147,7 @@ final class AppModelLifecycleTests: XCTestCase {
         XCTAssertFalse(profile.consent.timetable, "consent was NOT sent with sign-in")
     }
 
-    func testLoginWithExistingConsentSkipsTheConsentStep() async {
+    func testLoginWithExistingConsentSkipsTheConsentStep() async throws {
         StubURLProtocol.responses["/api/auth/login"] = (200, loginFixture(consent: true))
 
         await model.login(username: "gary", password: "pw")
@@ -158,7 +158,7 @@ final class AppModelLifecycleTests: XCTestCase {
         XCTAssertTrue(profile.consent.timetable)
     }
 
-    func testNotNowLeavesConsentOffAndSignsIn() async {
+    func testNotNowLeavesConsentOffAndSignsIn() async throws {
         StubURLProtocol.responses["/api/auth/login"] = (200, loginFixture(consent: false))
         // /api/me after the choice reflects consent still off.
         StubURLProtocol.responses["/api/me"] = (200, Data("""

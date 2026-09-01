@@ -1,11 +1,10 @@
 //
 //  ExperiencesViewModel.swift
-//  HOney — browse feed state (Band 1).
+//  HOney — feed-first community state (Band 1).
 //
-//  Feed semantics mirror the web hub: the default surface is the backend
-//  "from your classes" domain query — chronological, never ranked — and the
-//  filtered browse preserves the server's order exactly (no client-side
-//  reordering; the old raw-first sort predates the provenance contract).
+//  The default is the backend "from your classes" domain query. Around school
+//  is a separate chronological scope. Intentional teacher/course/entity lookup
+//  lives in Explore and never blocks the feed behind controls.
 //
 
 import Foundation
@@ -19,28 +18,18 @@ final class ExperiencesViewModel {
     var experiences: [PublicExperience] = []
     var teachers: [DirectoryEntry] = []
     var courses: [DirectoryEntry] = []
+    var entities: [EntityRef] = []
     var targetNames: [String: String] = [:]
 
-    var query = ""
-    var sort: ExperienceSort = .newest
-    var selectedTeacherId: String?
-    var selectedCourseId: String?
+    var scope: ExperienceFeedScope = .myClasses
 
     var isLoading = false
     var errorMessage: String?
 
-    /// True while no filter is active and the list is the "from your classes"
-    /// domain feed (audit §4.2) rather than a filtered browse.
-    private(set) var showingFromMyClasses = false
+    var showingFromMyClasses: Bool { scope == .myClasses }
 
     init(services: AppServices) {
         self.services = services
-    }
-
-    var hasActiveFilters: Bool {
-        selectedTeacherId != nil || selectedCourseId != nil
-            || !query.trimmingCharacters(in: .whitespaces).isEmpty
-            || sort != .newest
     }
 
     func loadFilters() async {
@@ -49,6 +38,7 @@ final class ExperiencesViewModel {
             teachers = directory.teachers
             courses = directory.courses
         }
+        entities = metadata.entities
         targetNames = metadata.names
     }
 
@@ -56,30 +46,20 @@ final class ExperiencesViewModel {
         ExperienceTargetNaming.label(for: experience, names: targetNames)
     }
 
-    func reload() async {
+    func reload(forceRefresh: Bool = false) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            if hasActiveFilters {
-                // Filtered browse: the server's order is kept as-is.
-                let response = try await services.honeyAPI.experiences(
-                    teacherId: selectedTeacherId,
-                    courseId: selectedCourseId,
-                    query: query,
-                    sort: sort
-                )
-                experiences = response.experiences
-                showingFromMyClasses = false
-            } else {
-                // Default surface: experiences involving my own teachers and
-                // courses, newest first — chronological, never ranked.
-                let response = try await services.honeyAPI.fromMyClasses(limit: 100)
-                experiences = response.experiences
-                showingFromMyClasses = true
-            }
+            let response = try await services.experienceFeedRepository.load(
+                scope,
+                policy: forceRefresh ? .reload : .cacheFirst
+            )
+            experiences = response.experiences
         } catch {
-            errorMessage = "Could not load experiences."
+            errorMessage = showingFromMyClasses
+                ? "Could not load experiences from your classes."
+                : "Could not load experiences from around school."
         }
     }
 }

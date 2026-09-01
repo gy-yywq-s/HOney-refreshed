@@ -48,7 +48,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
 
     // MARK: Draft preservation (audit §3.4)
 
-    func testDraftSavedBeforeCheckAndKeptWhenEligibilityFails() async {
+    func testDraftSavedBeforeCheckAndKeptWhenEligibilityFails() async throws {
         let api = StubExperienceAPI(eligibility: [.failure(URLError(.notConnectedToInternet))])
         let vm = makeVM(target: lessonTarget, api: api)
         await vm.hydrate()
@@ -56,7 +56,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
 
         await vm.publish()
 
-        let saved = await drafts.get("lesson:l1")
+        let saved = try await drafts.get("lesson:l1")
         XCTAssertEqual(saved?.body, "my words", "draft persisted before the network call")
         XCTAssertEqual(vm.body, "my words", "editor text untouched")
         XCTAssertEqual(vm.status, .editing)
@@ -64,8 +64,8 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(vm.notice?.text, ExperienceSubmitCopy.networkError)
     }
 
-    func testHydrateRestoresSavedDraftForSameTarget() async {
-        await drafts.save(targetKey: "lesson:l1", body: "earlier words", rating: nil)
+    func testHydrateRestoresSavedDraftForSameTarget() async throws {
+        try await drafts.save(targetKey: "lesson:l1", body: "earlier words", rating: nil)
         let vm = makeVM(target: lessonTarget, api: StubExperienceAPI())
         await vm.hydrate()
         XCTAssertEqual(vm.body, "earlier words")
@@ -84,7 +84,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(vm.status, .published(ownershipKey: "own-1", experienceId: "exp-1"))
         let storedKey = try await keys.ownershipKey(for: "exp-1")
         XCTAssertEqual(storedKey, "own-1")
-        let draft = await drafts.get("lesson:l1")
+        let draft = try await drafts.get("lesson:l1")
         XCTAssertNil(draft, "successful publish clears the slot")
         let publishRequests = await api.publishRequests
         XCTAssertEqual(publishRequests.first?.body, "publishable words", "body is trimmed on the wire")
@@ -92,7 +92,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(publishRequests.first?.pass, "pass-1")
     }
 
-    func testPublishedPostEntersRecoveryWhenKeyPersistenceFails() async {
+    func testPublishedPostEntersRecoveryWhenKeyPersistenceFails() async throws {
         let api = StubExperienceAPI(check: [.success(StubExperienceAPI.lane(.publish, pass: "pass-1"))])
         let vm = makeVM(
             target: lessonTarget,
@@ -108,7 +108,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
             vm.status,
             .publishedKeyRecovery(ownershipKey: "own-1", experienceId: "exp-1", journalSaved: true)
         )
-        let savedDraft = await drafts.get("lesson:l1")
+        let savedDraft = try await drafts.get("lesson:l1")
         let firstPublishCount = await api.publishRequests.count
         XCTAssertNotNil(savedDraft, "draft stays until the key is verified")
         XCTAssertEqual(firstPublishCount, 1)
@@ -133,7 +133,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         await vm.retryOwnershipKeyStorage()
 
         let storedKey = try await keys.ownershipKey(for: "exp-1")
-        let remainingDraft = await drafts.get("lesson:l1")
+        let remainingDraft = try await drafts.get("lesson:l1")
         XCTAssertEqual(vm.status, .published(ownershipKey: "own-1", experienceId: "exp-1"))
         XCTAssertEqual(storedKey, "own-1")
         XCTAssertNil(remainingDraft)
@@ -161,7 +161,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(records[second.experienceId], second)
     }
 
-    func testNudgeLaneHoldsPassAndAsksTheUser() async {
+    func testNudgeLaneHoldsPassAndAsksTheUser() async throws {
         let api = StubExperienceAPI(check: [
             .success(StubExperienceAPI.lane(.nudge, reasons: ["Add when this happened"], pass: "pass-n"))
         ])
@@ -174,11 +174,11 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(vm.status, .nudge(reasons: ["Add when this happened"]))
         let published = await api.publishRequests
         XCTAssertTrue(published.isEmpty, "a nudge NEVER auto-publishes")
-        let saved = await drafts.get("lesson:l1")
+        let saved = try await drafts.get("lesson:l1")
         XCTAssertEqual(saved?.body, "short verdict")
     }
 
-    func testCooldownLaneHoldsTicketAndRecheckSendsIt() async {
+    func testCooldownLaneHoldsTicketAndRecheckSendsIt() async throws {
         let api = StubExperienceAPI(check: [
             .success(StubExperienceAPI.lane(.cooldown, reasons: ["Heated"], cooldown: CheckCooldown(ticket: "cd-1", retryAt: 1_756_704_000_000))),
             .success(StubExperienceAPI.lane(.publish, pass: "pass-2"))
@@ -198,7 +198,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(vm.status, .published(ownershipKey: "own-1", experienceId: "exp-1"))
     }
 
-    func testEditRequiredKeepsDraftWithWarnNotice() async {
+    func testEditRequiredKeepsDraftWithWarnNotice() async throws {
         let api = StubExperienceAPI(check: [
             .success(StubExperienceAPI.lane(.editRequired, reasons: ["Names a student"]))
         ])
@@ -215,7 +215,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(vm.body, "needs a rephrase")
     }
 
-    func testOutOfScopeSuggestsKeepPrivate() async {
+    func testOutOfScopeSuggestsKeepPrivate() async throws {
         let api = StubExperienceAPI(check: [.success(StubExperienceAPI.lane(.outOfScope))])
         let vm = makeVM(target: lessonTarget, api: api)
         await vm.hydrate()
@@ -229,7 +229,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(vm.notice?.suggestKeepPrivate, true)
     }
 
-    func testBlockedSeriousAndFailedClosedKeepDraftWithDangerNotice() async {
+    func testBlockedSeriousAndFailedClosedKeepDraftWithDangerNotice() async throws {
         for (lane, copy) in [
             (CheckLane.blockedSerious, ComposeExperienceViewModel.blockedCopy),
             (CheckLane.failedClosed, ComposeExperienceViewModel.failedClosedCopy)
@@ -250,7 +250,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         }
     }
 
-    func testCheckErrorCodeMapsToWebCopy() async {
+    func testCheckErrorCodeMapsToWebCopy() async throws {
         let api = StubExperienceAPI(check: [
             .failure(HOneyAPIError.http(status: 422, body: #"{"error":"already_reviewed"}"#))
         ])
@@ -265,7 +265,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
 
     // MARK: Nudge follow-ups
 
-    func testPublishAsIsUsesTheHeldPass() async {
+    func testPublishAsIsUsesTheHeldPass() async throws {
         let api = StubExperienceAPI(check: [
             .success(StubExperienceAPI.lane(.nudge, reasons: ["r"], pass: "pass-held"))
         ])
@@ -283,7 +283,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(publishRequests.first?.pass, "pass-held")
     }
 
-    func testStalePassSilentlyReRunsTheCheck() async {
+    func testStalePassSilentlyReRunsTheCheck() async throws {
         let api = StubExperienceAPI(
             check: [
                 .success(StubExperienceAPI.lane(.nudge, reasons: [], pass: "pass-old")),
@@ -307,7 +307,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(checks.count, 2)
     }
 
-    func testAddContextDropsThePass() async {
+    func testAddContextDropsThePass() async throws {
         let api = StubExperienceAPI(check: [
             .success(StubExperienceAPI.lane(.nudge, reasons: [], pass: "pass-1")),
             .success(StubExperienceAPI.lane(.publish, pass: "pass-2"))
@@ -327,7 +327,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
 
     // MARK: Keep private (audit §3.5)
 
-    func testKeepPrivateSavesNoteWithoutTouchingTheNetwork() async {
+    func testKeepPrivateSavesNoteWithoutTouchingTheNetwork() async throws {
         let api = StubExperienceAPI()
         let vm = makeVM(target: dishTarget, api: api)
         await vm.hydrate()
@@ -336,7 +336,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
 
         await vm.keepPrivate()
 
-        let saved = await notes.list()
+        let saved = try await notes.list()
         XCTAssertEqual(saved.count, 1)
         XCTAssertEqual(saved.first?.body, "private thought")
         XCTAssertEqual(saved.first?.rating, 3)
@@ -361,7 +361,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         vm.body = "v2"
         await vm.keepPrivate()
 
-        let saved = await notes.list()
+        let saved = try await notes.list()
         XCTAssertEqual(saved.count, 1, "the note is updated, not duplicated")
         XCTAssertEqual(saved.first?.id, original.id)
         XCTAssertEqual(saved.first?.body, "v2")

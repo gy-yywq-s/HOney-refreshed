@@ -14,7 +14,8 @@ final class HomeViewModel {
     var nextLesson: NextLesson?
     var nextLessonSummary: String = ""
     var recentExperiences: [PublicExperience] = []
-    var isLoading = false
+    var isLoadingLesson = false
+    var isLoadingExperiences = false
     var errorMessage: String?
     var targetNames: [String: String] = [:]
     var nextLessonAvailable = true
@@ -24,30 +25,35 @@ final class HomeViewModel {
         self.services = services
     }
 
-    func load() async {
-        isLoading = true
+    var isLoading: Bool { isLoadingLesson || isLoadingExperiences }
+
+    func load(forceRefresh: Bool = false) async {
+        isLoadingLesson = true
+        isLoadingExperiences = true
         errorMessage = nil
 
-        async let next = try? services.honeyAPI.nextLesson()
-        // "Recent from your classes" is the backend domain query (audit §4.2):
-        // posts relevant to my verified exposure, chronological, never ranked.
-        async let recent = try? services.honeyAPI.fromMyClasses(limit: 20)
+        async let recent = try? services.experienceFeedRepository.load(
+            .myClasses,
+            policy: forceRefresh ? .reload : .cacheFirst
+        )
 
-        let nextResult = await next
-        let recentResult = await recent
+        // Do not hold the primary school-day answer behind the secondary feed.
+        let nextResult = try? await services.honeyAPI.nextLesson()
         nextLesson = nextResult?.nextLesson
         nextLessonAvailable = nextResult != nil
         nextLessonSummary = NextLessonPresentation.summary(for: nextLesson)
-        recentExperiences = Array(recentResult?.experiences.prefix(3) ?? [])
+        isLoadingLesson = false
+
+        let recentResult = await recent
+        recentExperiences = Array(recentResult?.experiences.prefix(2) ?? [])
         recentExperiencesAvailable = recentResult != nil
+        isLoadingExperiences = false
 
         if nextResult == nil && recentResult == nil {
             errorMessage = "Home could not update. Pull to try again."
         } else if nextResult == nil || recentResult == nil {
             errorMessage = "Some Home information is temporarily unavailable."
         }
-        isLoading = false
-
         // Target names are secondary metadata. The app-scoped repository
         // coalesces this with Experiences/My Posts instead of refetching.
         targetNames = await services.experienceTargetRepository.load().names

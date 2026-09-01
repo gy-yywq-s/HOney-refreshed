@@ -10,7 +10,8 @@ import WebKit
 final class PortalWebSessionBridge: NSObject, WKScriptMessageHandler {
     private static let tokenStorageKey = "token"
     private static let messageHandlerName = "portalSession"
-    private static let loginRouteFragment = "login"
+    private static let loginPaths: Set<String> = ["/login", "/student/login", "/auth/login"]
+    private static let loginHashes: Set<String> = ["#/login", "#/student/login", "#/auth/login"]
 
     private let coordinator: PortalSessionCoordinator
     private weak var webView: WKWebView?
@@ -35,7 +36,13 @@ final class PortalWebSessionBridge: NSObject, WKScriptMessageHandler {
     func attach(_ webView: WKWebView) { self.webView = webView }
 
     func isExpirySignal(url: URL) -> Bool {
-        url.absoluteString.lowercased().contains(Self.loginRouteFragment)
+        Self.isKnownLoginRoute(url)
+    }
+
+    static func isKnownLoginRoute(_ url: URL) -> Bool {
+        let path = normalizedRoute(url.path)
+        let hash = normalizedHash(url.fragment)
+        return loginPaths.contains(path) || loginHashes.contains(hash)
     }
 
     func isExpirySignal(httpStatus: Int) -> Bool {
@@ -77,12 +84,15 @@ final class PortalWebSessionBridge: NSObject, WKScriptMessageHandler {
 
     private static var expiryProbeSource: String {
         let channel = jsStringLiteral(messageHandlerName)
-        let loginFragment = jsStringLiteral(loginRouteFragment)
         return """
         (function(){
           var CH=\(channel);
+          var PATHS={"/login":1,"/student/login":1,"/auth/login":1};
+          var HASHES={"#/login":1,"#/student/login":1,"#/auth/login":1};
           function notify(){ try{ window.webkit.messageHandlers[CH].postMessage(location.href); }catch(e){} }
-          function isLogin(u){ try{ return (""+u).toLowerCase().indexOf(\(loginFragment))>=0; }catch(e){ return false; } }
+          function cleanPath(v){ v=(v||"/").toLowerCase(); if(v.length>1&&v.endsWith("/"))v=v.slice(0,-1); return v; }
+          function cleanHash(v){ v=(v||"").toLowerCase().split("?")[0]; if(v.length>2&&v.endsWith("/"))v=v.slice(0,-1); return v; }
+          function isLogin(u){ try{ var x=new URL(u,location.origin); return !!PATHS[cleanPath(x.pathname)]||!!HASHES[cleanHash(x.hash)]; }catch(e){ return false; } }
           var _push=history.pushState, _replace=history.replaceState;
           history.pushState=function(){ var r=_push.apply(this,arguments); if(isLogin(location.href)) notify(); return r; };
           history.replaceState=function(){ var r=_replace.apply(this,arguments); if(isLogin(location.href)) notify(); return r; };
@@ -99,5 +109,18 @@ final class PortalWebSessionBridge: NSObject, WKScriptMessageHandler {
           }
         })();
         """
+    }
+
+    private static func normalizedRoute(_ raw: String) -> String {
+        var value = raw.lowercased()
+        if value.count > 1, value.hasSuffix("/") { value.removeLast() }
+        return value.isEmpty ? "/" : value
+    }
+
+    private static func normalizedHash(_ raw: String?) -> String {
+        guard var value = raw?.lowercased(), !value.isEmpty else { return "" }
+        value = "#" + value.split(separator: "?", maxSplits: 1).first.map(String.init)!
+        if value.count > 2, value.hasSuffix("/") { value.removeLast() }
+        return value
     }
 }

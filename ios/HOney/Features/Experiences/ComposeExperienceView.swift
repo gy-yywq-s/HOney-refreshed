@@ -204,15 +204,18 @@ struct ComposeExperienceView: View {
             VStack(alignment: .leading, spacing: 14) {
                 AppCard {
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
-                        Text("Published")
+                        Text("Shared")
                             .font(AppTheme.Typography.cardTitle)
                             .foregroundStyle(Palette.navy)
-                        Text("Your experience is live. It is stored without an author ID — the publish request carried no account identity, so nothing links the post back to you.")
+                        Text("Your school identity is not shown with this Experience. The public post is stored without an author field.")
                             .font(AppTheme.Typography.subheadline)
                             .foregroundStyle(Palette.ink)
-                        Text("A post-control key was saved only on this iPhone. It is how you can find and revoke the anonymous post later.")
+                        Text("A private post-control key was saved on this iPhone so you can find and revoke the post later.")
                             .font(AppTheme.Typography.caption)
                             .foregroundStyle(Palette.inkSecondary)
+                        if let warning = viewModel?.keyRecoveryError {
+                            AppBanner(text: warning, style: .warning)
+                        }
                         Button {
                             dismiss()
                         } label: {
@@ -291,7 +294,13 @@ struct ComposeExperienceView: View {
                 .listRowBackground(Self.rowBackground)
             }
 
-            Section("Your experience") {
+            Section {
+                Text("What do you want to share about this experience?")
+                    .font(AppTheme.Typography.subheadlineSemibold)
+                    .foregroundStyle(Palette.ink)
+                Text("Specific context can help, but it is okay if what you have is only a feeling.")
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Palette.inkSecondary)
                 TextEditor(text: $vm.body)
                     .frame(minHeight: 140)
                     .font(AppTheme.Typography.subheadline)
@@ -330,6 +339,11 @@ struct ComposeExperienceView: View {
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
             }
+            if let error = viewModel.localStorageError {
+                Section { AppBanner(text: error, style: .error) }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+            }
 
             Group {
                 switch viewModel.status {
@@ -343,22 +357,8 @@ struct ComposeExperienceView: View {
             }
             .listRowBackground(Self.rowBackground)
 
-            Section("A few things to keep in mind") {
-                ForEach(SixChecks.all) { check in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(check.title)
-                            .font(AppTheme.Typography.captionBold)
-                            .foregroundStyle(Palette.ocean)
-                        Text(check.prompt)
-                            .font(AppTheme.Typography.caption)
-                            .foregroundStyle(Palette.inkSecondary)
-                    }
-                }
-            }
-            .listRowBackground(Self.rowBackground)
-
             Section {
-                Text("Publishing runs a safety check first. Published posts carry no author ID; your only control is a key kept on this device. Private notes never leave this device.")
+                Text("Public sharing sends these words through HOney’s safety check and still requires your explicit action. Public posts have no author field; this device keeps the control key. Private notes stay on this device.")
                     .font(AppTheme.Typography.caption)
                     .foregroundStyle(Palette.inkSecondary)
             }
@@ -435,7 +435,7 @@ struct ComposeExperienceView: View {
     /// Share and Keep private are peer actions (audit §3.5).
     private func actionsSection(_ viewModel: ComposeExperienceViewModel) -> some View {
         Section {
-            Button(viewModel.status == .checking ? "Checking…" : "Share") {
+            Button(viewModel.status == .checking ? "Checking…" : "Share anonymously") {
                 Task { await viewModel.publish() }
             }
             .disabled(!viewModel.canAct)

@@ -410,7 +410,7 @@ private struct DayTimelineView: View {
                         }
                         .buttonStyle(.plain)
                         .contentShape(Rectangle().inset(by: -12))
-                        .accessibilityLabel(lesson.subjectName + ", " + lesson.timeRange + (lesson.roomName.map { ", " + $0 } ?? ""))
+                        .accessibilityLabel(accessibilityText(for: lesson))
                         .frame(width: lessonBlockWidth(in: proxy.size.width), height: blockHeight(for: lesson, in: proxy.size.height))
                         .offset(x: 10, y: blockOffset(for: lesson, in: proxy.size.height))
                     }
@@ -555,6 +555,13 @@ private struct DayTimelineView: View {
         max(1, safeDimension(availableWidth) - 16)
     }
 
+    private func accessibilityText(for lesson: Lesson) -> String {
+        let teacher = lesson.teacherName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let teacherText = teacher?.isEmpty == false ? teacher! : "teacher not listed"
+        let roomText = lesson.roomName.map { ", " + $0 } ?? ""
+        return lesson.subjectName + ", " + teacherText + ", " + lesson.timeRange + roomText
+    }
+
     private func clampedStartMinute(for lesson: Lesson) -> Int {
         min(max(lesson.startMinuteOfDay, PeriodSlot.dayStartMinute), PeriodSlot.dayEndMinute)
     }
@@ -621,16 +628,31 @@ private struct TimelineLessonBlock: View {
                         .foregroundStyle(Palette.navy)
                         .lineLimit(1)
                         .minimumScaleFactor(0.82)
+                        .layoutPriority(2)
+
+                    Text("·")
+                        .foregroundStyle(Palette.inkSecondary)
+
+                    Text(teacherLabel)
+                        .font(AppTheme.Typography.lessonTimelineMeta(isCompact: lesson.isCompactTimelineLabel))
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Palette.inkSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.78)
+                        .layoutPriority(1)
 
                     Spacer(minLength: 6)
-
-                    Text(lesson.roomName ?? "")
-                        .font(AppTheme.Typography.subheadlineBold)
-                        .foregroundStyle(Palette.ink)
-                        .lineLimit(1)
                 }
 
                 HStack(spacing: 6) {
+                    if let room = normalized(lesson.roomName) {
+                        Text(room)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+
+                        Text("·")
+                    }
+
                     Text(lesson.periodLabel)
                         .fontWeight(.semibold)
                         .lineLimit(1)
@@ -648,6 +670,16 @@ private struct TimelineLessonBlock: View {
         }
         .padding(.leading, 6)
         .frame(maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var teacherLabel: String {
+        normalized(lesson.teacherName) ?? "Teacher not listed"
+    }
+
+    private func normalized(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let cleaned = value.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return cleaned.isEmpty ? nil : cleaned
     }
 }
 

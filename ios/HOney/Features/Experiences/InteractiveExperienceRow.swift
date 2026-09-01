@@ -25,15 +25,16 @@ struct InteractiveExperienceRow: View {
                 reactionButton(value: 1, symbol: "hand.thumbsup", count: experience.reactions?.likes)
                 reactionButton(value: -1, symbol: "hand.thumbsdown", count: experience.reactions?.dislikes)
                 Spacer()
-                Button {
-                    reporting = true
+                Menu {
+                    Button("Report this Experience", systemImage: "flag") {
+                        reporting = true
+                    }
                 } label: {
-                    Label("Report", systemImage: "flag")
+                    Image(systemName: "ellipsis")
+                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(.plain)
-                .font(AppTheme.Typography.caption)
+                .accessibilityLabel("More actions")
                 .foregroundStyle(Palette.inkSecondary)
-                .frame(minWidth: 44, minHeight: 44)
             }
             .font(AppTheme.Typography.caption)
 

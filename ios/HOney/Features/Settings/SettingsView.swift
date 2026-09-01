@@ -42,7 +42,6 @@ struct SettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Done") {
-                        persistedSurfacePalette = pendingSurfacePalette.rawValue
                         dismiss()
                     }
                 }
@@ -79,34 +78,53 @@ struct SettingsView: View {
 
     private var appearanceSection: some View {
         Section {
-            Picker("Surface", selection: $pendingSurfacePalette) {
-                ForEach(SurfacePalette.allCases) { palette in
-                    Text(palette.title).tag(palette)
+            ForEach(SurfacePalette.allCases) { palette in
+                Button {
+                    pendingSurfacePalette = palette
+                    persistedSurfacePalette = palette.rawValue
+                } label: {
+                    paletteOption(palette)
                 }
+                .buttonStyle(.plain)
             }
-
-            HStack(spacing: 8) {
-                Circle().fill(previewColor(pendingSurfacePalette.spec.canvas)).overlay(Circle().stroke(previewColor(pendingSurfacePalette.spec.line))).frame(width: 24, height: 24).accessibilityHidden(true)
-                Circle().fill(previewColor(pendingSurfacePalette.spec.surface)).overlay(Circle().stroke(previewColor(pendingSurfacePalette.spec.line))).frame(width: 24, height: 24).accessibilityHidden(true)
-                Circle().fill(previewColor(pendingSurfacePalette.spec.accent)).frame(width: 24, height: 24).accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(pendingSurfacePalette.title)
-                        .font(AppTheme.Typography.subheadlineSemibold)
-                    Text("Surface and accent are tuned together for light and dark mode.")
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.inkSecondary)
-                }
-                .padding(.leading, 4)
-            }
-            .padding(.vertical, 4)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(pendingSurfacePalette.title + " surface preview. Applies when Done is selected, in light and dark mode.")
         } header: {
             Text("Appearance")
         } footer: {
-            Text("The blue-teal accent stays in the same family, with contrast and tone adjusted for each surface.")
+            Text("Every available surface is shown here. Each uses its own tuned blue accent in light and dark mode.")
         }
         .listRowBackground(Palette.surface)
+    }
+
+    private func paletteOption(_ palette: SurfacePalette) -> some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                paletteSwatch(palette.spec.canvas)
+                paletteSwatch(palette.spec.surface)
+                paletteSwatch(palette.spec.accent)
+            }
+
+            Text(palette.title)
+                .font(AppTheme.Typography.subheadlineSemibold)
+                .foregroundStyle(Palette.ink)
+
+            Spacer()
+
+            Image(systemName: pendingSurfacePalette == palette ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(pendingSurfacePalette == palette ? Palette.accent : Palette.inkSecondary)
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(palette.title)
+        .accessibilityValue(pendingSurfacePalette == palette ? "Selected" : "Not selected")
+    }
+
+    private func paletteSwatch(_ value: AdaptiveRGB) -> some View {
+        Circle()
+            .fill(previewColor(value))
+            .overlay(Circle().stroke(Palette.line, lineWidth: 1))
+            .frame(width: 22, height: 22)
+            .accessibilityHidden(true)
     }
 
     private func previewColor(_ value: AdaptiveRGB) -> Color {

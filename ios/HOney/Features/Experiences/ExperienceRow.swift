@@ -15,14 +15,18 @@ struct ExperienceRow: View {
     var showsReactions: Bool = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
+        VStack(alignment: .leading, spacing: 7) {
+            if let targetLabel, !targetLabel.isEmpty {
+                Text(targetLabel)
+                    .font(AppTheme.Typography.subheadlineSemibold)
+                    .foregroundStyle(Palette.ink)
+                    .lineLimit(2)
+            }
+
             HStack(spacing: AppTheme.Spacing.small) {
                 Text(experience.provenance.label)
-                    .font(AppTheme.Typography.caption2Bold)
-                    .foregroundStyle(Palette.ocean)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Palette.ocean.opacity(0.10), in: Capsule())
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Palette.inkSecondary)
                 if let rating = experience.rating {
                     RatingStars(rating: rating)
                 }
@@ -33,14 +37,8 @@ struct ExperienceRow: View {
                         .foregroundStyle(Palette.inkSecondary)
                 }
             }
-            if let targetLabel, !targetLabel.isEmpty {
-                Label(targetLabel, systemImage: "scope")
-                    .font(AppTheme.Typography.captionSemibold)
-                    .foregroundStyle(Palette.inkSecondary)
-                    .lineLimit(1)
-            }
             Text(experience.bodyText)
-                .font(AppTheme.Typography.subheadline)
+                .font(.body)
                 .foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
             if showsReactions, let reactions = experience.reactions {

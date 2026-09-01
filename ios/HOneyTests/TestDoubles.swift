@@ -175,7 +175,10 @@ extension AppServices {
             portalWebURL: URL(string: "https://stub.invalid")!
         )
         let unique = UUID().uuidString
-        let sessionStore = SessionStore(keychain: Keychain(service: "test.session.\(unique)"))
+        let sessionStore = SessionStore(
+            keychain: Keychain(service: "test.session.\(unique)"),
+            persistenceEnabled: false
+        )
         let sessionConfig = URLSessionConfiguration.ephemeral
         sessionConfig.protocolClasses = [StubURLProtocol.self]
         let honeyAPI = HOneyAPI(
@@ -189,6 +192,7 @@ extension AppServices {
             sessionStore: sessionStore,
             honeyAPI: honeyAPI,
             timetableRepository: TimetableRepository(provider: honeyAPI),
+            experienceFeedRepository: ExperienceFeedRepository(provider: honeyAPI),
             experienceTargetRepository: ExperienceTargetRepository(api: honeyAPI),
             portalAPI: PortalAPI(baseURL: config.portalBaseURL),
             credentialVault: KeychainCredentialVault(keychain: Keychain(service: "test.portal.\(unique)")),

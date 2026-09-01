@@ -31,13 +31,17 @@ struct HomeView: View {
                                 AppBanner(text: notice, style: .warning)
                             }
 
+                            if let notice = model.portalCredentialNotice {
+                                AppBanner(text: notice, style: .warning)
+                            }
+
                             if let error = viewModel?.errorMessage {
                                 AppBanner(text: error, style: .warning)
                             }
 
                             lessonFocus(now: timeline.date)
-                            quickActions
                             experiencesPreview
+                            secondaryActions
                             portalRow
                         }
                         .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
@@ -69,7 +73,7 @@ struct HomeView: View {
             }
             .refreshable {
                 await model.retryStartupSyncIfNeeded()
-                await viewModel?.load()
+                await viewModel?.load(forceRefresh: true)
             }
             .sheet(isPresented: $showPortal) {
                 PortalWebScreen(
@@ -111,7 +115,7 @@ struct HomeView: View {
     private func lessonFocus(now: Date) -> some View {
         let lesson = viewModel?.nextLesson
 
-        if viewModel?.isLoading == true && lesson == nil {
+        if viewModel?.isLoadingLesson == true && lesson == nil {
             AppLoadingState(title: "Checking your school day")
                 .frame(minHeight: 190)
                 .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.large))
@@ -180,62 +184,6 @@ struct HomeView: View {
         }
     }
 
-    private var quickActions: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            AppSectionHeader(title: "What do you need?")
-
-            HStack(spacing: 12) {
-                compactAction(
-                    title: "Share a lesson",
-                    subtitle: "Choose from past lessons",
-                    symbol: "square.and.pencil",
-                    action: { showLessonPicker = true }
-                )
-
-                compactAction(
-                    title: "Open Access",
-                    subtitle: "Permits and school gates",
-                    symbol: "door.left.hand.open",
-                    action: openAccess
-                )
-            }
-        }
-    }
-
-    private func compactAction(
-        title: String,
-        subtitle: String,
-        symbol: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                Image(systemName: symbol)
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(Palette.accent)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(AppTheme.Typography.subheadlineSemibold)
-                        .foregroundStyle(Palette.ink)
-                    Text(subtitle)
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.inkSecondary)
-                        .multilineTextAlignment(.leading)
-                }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, minHeight: 130, alignment: .leading)
-            .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-            .overlay {
-                RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                    .stroke(Palette.line, lineWidth: 1)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-        }
-        .buttonStyle(.plain)
-    }
-
     private var experiencesPreview: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
@@ -258,7 +206,7 @@ struct HomeView: View {
                         }
                     }
                 }
-            } else if viewModel?.isLoading == true {
+            } else if viewModel?.isLoadingExperiences == true {
                 AppLoadingState(title: "Loading class experiences")
             } else if viewModel?.recentExperiencesAvailable == false {
                 AppBanner(text: "Class experiences could not be loaded. Pull to try again.", style: .error)
@@ -269,6 +217,34 @@ struct HomeView: View {
                     .padding(.vertical, 8)
             }
         }
+    }
+
+    private var secondaryActions: some View {
+        HStack(spacing: 0) {
+            quietAction(title: "Share something", symbol: "square.and.pencil") {
+                showLessonPicker = true
+            }
+
+            Rectangle()
+                .fill(Palette.line)
+                .frame(width: 1, height: 28)
+
+            quietAction(title: "Open Access", symbol: "door.left.hand.open", action: openAccess)
+        }
+        .padding(.vertical, 4)
+        .overlay(alignment: .top) { Divider().overlay(Palette.line) }
+        .overlay(alignment: .bottom) { Divider().overlay(Palette.line) }
+    }
+
+    private func quietAction(title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: symbol)
+                .font(AppTheme.Typography.subheadlineSemibold)
+                .foregroundStyle(Palette.ink)
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var portalRow: some View {

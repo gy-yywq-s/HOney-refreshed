@@ -188,9 +188,9 @@ enum ExperienceProvenance: String, Codable, Sendable {
     /// Honest label — never "verified use" for dishes (spec §7.3).
     var label: String {
         switch self {
-        case .verifiedLesson: return "Verified lesson experience"
-        case .verifiedRetrospective: return "Based on a past lesson"
-        case .verifiedMember: return "Verified school member"
+        case .verifiedLesson: return "from a verified lesson"
+        case .verifiedRetrospective: return "from someone who has taken this class"
+        case .verifiedMember: return "from a student here"
         }
     }
 }

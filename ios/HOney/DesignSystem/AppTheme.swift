@@ -43,10 +43,10 @@ enum SurfacePalette: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .paper: return "Paper"
-        case .neutralWhite: return "Neutral White"
-        case .coolMist: return "Cool Mist"
-        case .softGray: return "Soft Gray"
+        case .paper: return "Porcelain"
+        case .neutralWhite: return "Clean White"
+        case .coolMist: return "Blue Mist"
+        case .softGray: return "Sage Gray"
         }
     }
 
@@ -58,55 +58,55 @@ enum SurfacePalette: String, CaseIterable, Identifiable {
         switch self {
         case .paper:
             return SurfacePaletteSpec(
-                canvas: .init(light: (0.973, 0.969, 0.953), dark: (0.071, 0.082, 0.098)),
-                surface: .init(light: (0.995, 0.992, 0.980), dark: (0.105, 0.118, 0.137)),
-                muted: .init(light: (0.941, 0.941, 0.918), dark: (0.137, 0.153, 0.173)),
-                ink: .init(light: (0.075, 0.102, 0.153), dark: (0.925, 0.937, 0.945)),
-                secondaryInk: .init(light: (0.300, 0.326, 0.357), dark: (0.690, 0.718, 0.745)),
-                accent: .init(light: (0.102, 0.421, 0.486), dark: (0.365, 0.718, 0.765)),
-                accentForeground: .init(light: (1, 1, 1), dark: (0.055, 0.075, 0.090)),
-                accentSoft: .init(light: (0.855, 0.918, 0.914), dark: (0.118, 0.235, 0.255)),
-                line: .init(light: (0.824, 0.831, 0.812), dark: (0.235, 0.255, 0.278)),
-                controlBorder: .init(light: (0.435, 0.455, 0.455), dark: (0.520, 0.555, 0.585))
+                canvas: .init(light: (0.961, 0.969, 0.973), dark: (0.059, 0.090, 0.129)),
+                surface: .init(light: (0.988, 0.992, 0.992), dark: (0.082, 0.122, 0.169)),
+                muted: .init(light: (0.914, 0.933, 0.945), dark: (0.110, 0.161, 0.212)),
+                ink: .init(light: (0.078, 0.149, 0.239), dark: (0.918, 0.941, 0.961)),
+                secondaryInk: .init(light: (0.294, 0.357, 0.431), dark: (0.682, 0.753, 0.812)),
+                accent: .init(light: (0.141, 0.361, 0.573), dark: (0.459, 0.682, 0.882)),
+                accentForeground: .init(light: (1, 1, 1), dark: (0.043, 0.106, 0.169)),
+                accentSoft: .init(light: (0.863, 0.914, 0.953), dark: (0.106, 0.220, 0.322)),
+                line: .init(light: (0.824, 0.859, 0.886), dark: (0.200, 0.286, 0.369)),
+                controlBorder: .init(light: (0.392, 0.459, 0.525), dark: (0.471, 0.565, 0.639))
             )
         case .neutralWhite:
             return SurfacePaletteSpec(
-                canvas: .init(light: (0.988, 0.988, 0.982), dark: (0.061, 0.069, 0.080)),
-                surface: .init(light: (1, 1, 0.998), dark: (0.095, 0.105, 0.118)),
-                muted: .init(light: (0.949, 0.951, 0.949), dark: (0.132, 0.144, 0.158)),
-                ink: .init(light: (0.065, 0.082, 0.112), dark: (0.941, 0.945, 0.949)),
-                secondaryInk: .init(light: (0.286, 0.306, 0.333), dark: (0.704, 0.722, 0.741)),
-                accent: .init(light: (0.071, 0.388, 0.478), dark: (0.392, 0.737, 0.800)),
-                accentForeground: .init(light: (1, 1, 1), dark: (0.043, 0.061, 0.073)),
-                accentSoft: .init(light: (0.847, 0.915, 0.925), dark: (0.105, 0.229, 0.267)),
-                line: .init(light: (0.842, 0.850, 0.850), dark: (0.226, 0.244, 0.263)),
-                controlBorder: .init(light: (0.445, 0.465, 0.480), dark: (0.515, 0.548, 0.580))
+                canvas: .init(light: (0.980, 0.984, 0.988), dark: (0.051, 0.071, 0.102)),
+                surface: .init(light: (1, 1, 1), dark: (0.078, 0.106, 0.145)),
+                muted: .init(light: (0.941, 0.953, 0.965), dark: (0.106, 0.145, 0.192)),
+                ink: .init(light: (0.063, 0.110, 0.169), dark: (0.941, 0.953, 0.969)),
+                secondaryInk: .init(light: (0.282, 0.337, 0.416), dark: (0.710, 0.753, 0.804)),
+                accent: .init(light: (0.192, 0.373, 0.604), dark: (0.518, 0.663, 0.875)),
+                accentForeground: .init(light: (1, 1, 1), dark: (0.035, 0.090, 0.149)),
+                accentSoft: .init(light: (0.890, 0.922, 0.961), dark: (0.122, 0.208, 0.322)),
+                line: .init(light: (0.863, 0.886, 0.910), dark: (0.204, 0.259, 0.333)),
+                controlBorder: .init(light: (0.408, 0.467, 0.541), dark: (0.510, 0.569, 0.643))
             )
         case .coolMist:
             return SurfacePaletteSpec(
-                canvas: .init(light: (0.953, 0.971, 0.975), dark: (0.052, 0.071, 0.086)),
-                surface: .init(light: (0.987, 0.996, 0.998), dark: (0.083, 0.105, 0.122)),
-                muted: .init(light: (0.898, 0.931, 0.938), dark: (0.116, 0.151, 0.173)),
-                ink: .init(light: (0.050, 0.087, 0.122), dark: (0.921, 0.949, 0.957)),
-                secondaryInk: .init(light: (0.274, 0.337, 0.373), dark: (0.682, 0.745, 0.773)),
-                accent: .init(light: (0.035, 0.376, 0.486), dark: (0.404, 0.769, 0.831)),
-                accentForeground: .init(light: (1, 1, 1), dark: (0.035, 0.061, 0.075)),
-                accentSoft: .init(light: (0.811, 0.906, 0.929), dark: (0.086, 0.229, 0.278)),
-                line: .init(light: (0.782, 0.835, 0.847), dark: (0.196, 0.253, 0.282)),
-                controlBorder: .init(light: (0.365, 0.455, 0.485), dark: (0.495, 0.570, 0.610))
+                canvas: .init(light: (0.933, 0.957, 0.969), dark: (0.047, 0.102, 0.137)),
+                surface: .init(light: (0.976, 0.988, 0.992), dark: (0.071, 0.141, 0.184)),
+                muted: .init(light: (0.875, 0.918, 0.941), dark: (0.098, 0.192, 0.243)),
+                ink: .init(light: (0.063, 0.169, 0.239), dark: (0.906, 0.949, 0.965)),
+                secondaryInk: .init(light: (0.271, 0.380, 0.443), dark: (0.675, 0.776, 0.820)),
+                accent: .init(light: (0.129, 0.400, 0.518), dark: (0.447, 0.722, 0.816)),
+                accentForeground: .init(light: (1, 1, 1), dark: (0.027, 0.106, 0.141)),
+                accentSoft: .init(light: (0.824, 0.906, 0.937), dark: (0.090, 0.231, 0.286)),
+                line: .init(light: (0.780, 0.851, 0.886), dark: (0.180, 0.318, 0.376)),
+                controlBorder: .init(light: (0.345, 0.467, 0.529), dark: (0.431, 0.573, 0.624))
             )
         case .softGray:
             return SurfacePaletteSpec(
-                canvas: .init(light: (0.956, 0.960, 0.963), dark: (0.068, 0.073, 0.082)),
-                surface: .init(light: (0.991, 0.992, 0.993), dark: (0.101, 0.108, 0.120)),
-                muted: .init(light: (0.911, 0.918, 0.922), dark: (0.139, 0.149, 0.164)),
-                ink: .init(light: (0.073, 0.083, 0.102), dark: (0.931, 0.936, 0.943)),
-                secondaryInk: .init(light: (0.302, 0.318, 0.345), dark: (0.702, 0.718, 0.741)),
-                accent: .init(light: (0.094, 0.369, 0.465), dark: (0.420, 0.733, 0.792)),
-                accentForeground: .init(light: (1, 1, 1), dark: (0.047, 0.060, 0.073)),
-                accentSoft: .init(light: (0.837, 0.897, 0.912), dark: (0.119, 0.219, 0.253)),
-                line: .init(light: (0.803, 0.816, 0.826), dark: (0.230, 0.246, 0.269)),
-                controlBorder: .init(light: (0.415, 0.440, 0.470), dark: (0.520, 0.545, 0.580))
+                canvas: .init(light: (0.945, 0.961, 0.953), dark: (0.063, 0.106, 0.106)),
+                surface: .init(light: (0.984, 0.988, 0.984), dark: (0.090, 0.149, 0.149)),
+                muted: .init(light: (0.894, 0.925, 0.910), dark: (0.122, 0.200, 0.192)),
+                ink: .init(light: (0.094, 0.188, 0.184), dark: (0.914, 0.949, 0.941)),
+                secondaryInk: .init(light: (0.302, 0.396, 0.384), dark: (0.694, 0.776, 0.757)),
+                accent: .init(light: (0.184, 0.416, 0.439), dark: (0.471, 0.729, 0.741)),
+                accentForeground: .init(light: (1, 1, 1), dark: (0.043, 0.102, 0.106)),
+                accentSoft: .init(light: (0.843, 0.914, 0.910), dark: (0.110, 0.235, 0.243)),
+                line: .init(light: (0.796, 0.855, 0.839), dark: (0.192, 0.310, 0.298)),
+                controlBorder: .init(light: (0.376, 0.475, 0.463), dark: (0.463, 0.565, 0.549))
             )
         }
     }
