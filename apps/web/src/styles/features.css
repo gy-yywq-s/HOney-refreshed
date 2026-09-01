@@ -45,11 +45,11 @@
 }
 .login .input {
   font-size: var(--fs-reading);
-  min-height: 48px;
+  min-height: 44px;
 }
 .login .btn {
   font-size: var(--fs-reading);
-  min-height: 48px;
+  min-height: 44px;
 }
 .login .field {
   margin-bottom: var(--sp-2);
@@ -223,7 +223,7 @@
   flex: 1 1 100%;
   margin: 0;
 }
-.timetable-foot {
+.timetable-note {
   margin-top: var(--sp-3);
 }
 @media (max-width: 700px) {
@@ -352,6 +352,7 @@
 }
 /* Lesson blocks: ink cards on the canvas. */
 .lesson-block {
+  scroll-margin-top: 140px; /* sticky daynav + note: the compact landing block sits below them */
   position: absolute;
   left: 10px;
   right: 8px;
@@ -443,14 +444,10 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin: 0 0 var(--sp-2);
+  margin: var(--sp-2) 0;
   font-size: var(--fs-secondary);
   font-weight: 600;
   color: var(--muted);
-}
-.timeline__empty svg {
-  width: 20px;
-  height: 20px;
 }
 .timeline__empty svg {
   width: 22px;
@@ -550,7 +547,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
-  min-height: 48px;
+  min-height: 44px;
   padding: var(--sp-3) 0;
   color: var(--ink);
   font-weight: 600;
@@ -1250,7 +1247,6 @@
   }
 }
 
-/* Explore inline history mark: never wraps, never competes with the name. */
 /* Anchored sections land with breathing room under the shell padding. */
 .section-title[id] {
   scroll-margin-top: var(--sp-4);
@@ -1278,10 +1274,9 @@
 
 /* Where a "Try again" lands: a visible ring on the content that replaced the
    banner (design-is r4). */
-.focus-landing:focus,
-.focus-landing:focus-visible {
-  /* Programmatic landing after a tapped "Try again" must paint too — not
-     only keyboard-driven :focus-visible. */
+.focus-landing[data-landed]:focus {
+  /* Paints only when useRetryFocus brought focus here (mouse, touch or
+     keyboard "Try again") — never on an ordinary tap inside the region. */
   outline: 3px solid var(--accent);
   outline-offset: 3px;
   border-radius: 12px;
@@ -1289,4 +1284,20 @@
 .section-title[id]:focus {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
+}
+
+/* An empty day states its emptiness once (the status line); the period
+   ghosts would say it six more times. Breaks stay as canvas texture. */
+.timeline__canvas--empty .timeline__ghost:not(.timeline__ghost--break) {
+  display: none;
+}
+/* Skip-link landing: a visible inset ring on the scroll owner. */
+.main:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+@media (max-width: 360px) {
+  .modal .stay-connected span {
+    font-size: var(--fs-micro);
+  }
 }

@@ -41,7 +41,6 @@
   align-items: center;
 }
 
-/* Hover lift for interactive cards (transform+shadow only). */
 
 /* Pointer-following highlight: JS writes --mx/--my on .primary
 /* ── Buttons — pill grammar, ink fill = primary ─────────────────────────── */
@@ -192,6 +191,17 @@ a.btn:hover {
 }
 
 /* ── Chips ──────────────────────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 99px;
+  padding: var(--sp-1) var(--sp-3);
+  background: var(--soft);
+  color: var(--accent);
+}
 .chip--ok {
   color: var(--ok);
   background: color-mix(in srgb, var(--ok) 10%, transparent);
@@ -203,17 +213,6 @@ a.btn:hover {
 .chip--muted {
   color: var(--muted);
   background: var(--soft);
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  font-size: var(--fs-micro);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  border-radius: 99px;
-  padding: var(--sp-1) var(--sp-3);
-  background: var(--soft);
-  color: var(--accent);
 }
 
 .chip--private {
@@ -777,9 +776,10 @@ a.btn:hover {
   color: var(--muted);
   font-size: var(--fs-micro);
 }
-.option-grid button[aria-pressed="true"] span {
-  color: inherit;
-  opacity: 0.7;
+.option-grid button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
 }
 .swatch {
   width: 23px;
@@ -800,7 +800,6 @@ a.btn:hover {
   background: #14171a;
 }
 
-/* Row links (Home portal card etc.). */
 
 /* ── Narrow adjustments ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
@@ -827,7 +826,13 @@ a.btn:hover {
 
 /* Thumb comfort on touch screens. */
 @media (pointer: coarse) {
-
+  /* Thumb comfort: the small pill and the reaction pill grow to 44px on
+     touch (r6: this list was deleted with a dead sibling — never again). */
+  .btn--small,
+  .react-btn,
+  .usermenu__button {
+    min-height: 44px;
+  }
   .star-input__star {
     min-height: 44px;
     min-width: 44px;

@@ -127,7 +127,7 @@ export function ExperiencesMinePage() {
 
 
   return (
-    <div className="stack focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label="Your notes and posts">
+    <div className="stack focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label="Your notes & posts">
       <header className="page-head">
         {/* "My submissions/contributions" is administrative language (review v3
             §10.5) — this page is the user's own notes & posts. */}
@@ -193,8 +193,9 @@ export function ExperiencesMinePage() {
           )}
           {orphanKeys.length > 0 && (
             <div className="caption orphan-keys">
-              {orphanKeys.length} stored key{orphanKeys.length > 1 ? "s" : ""} no longer match a
-              post on the server.{" "}
+              {orphanKeys.length === 1
+                ? "1 stored key no longer matches a post on the server."
+                : `${orphanKeys.length} stored keys no longer match a post on the server.`}{" "}
               <button type="button" className="btn btn--ghost btn--small" onClick={forgetOrphans}>
                 Forget {orphanKeys.length > 1 ? "them" : "it"}
               </button>

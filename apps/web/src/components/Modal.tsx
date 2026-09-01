@@ -91,8 +91,10 @@ export function ConfirmDialog({
   onClose,
 }: ConfirmDialogProps) {
   return (
-    <Modal title={title} onClose={onClose}>
-      <p className="muted">{body}</p>
+    <Modal title={title} onClose={onClose} describedBy="confirm-dialog-body">
+      <p className="muted" id="confirm-dialog-body">
+        {body}
+      </p>
       <div className="modal__actions modal__actions--row">
         <button className="btn btn--ghost" onClick={onClose} disabled={busy}>
           Cancel

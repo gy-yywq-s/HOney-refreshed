@@ -30,7 +30,13 @@ export function TimetablePage() {
   const [searchParams] = useSearchParams();
   const [date, setDate] = useState(() => {
     const q = searchParams.get("date");
-    return q && /^\d{4}-\d{2}-\d{2}$/.test(q) ? q : todayIsoDate();
+    // A real calendar date only (2026-13-45 is not a day).
+    if (q && /^\d{4}-\d{2}-\d{2}$/.test(q)) {
+      const [y, m, d] = q.split("-").map(Number);
+      const dt = new Date(y!, m! - 1, d!);
+      if (dt.getFullYear() === y && dt.getMonth() === m! - 1 && dt.getDate() === d) return q;
+    }
+    return todayIsoDate();
   });
   const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
   const [selected, setSelected] = useState<Lesson | null>(null);
@@ -78,6 +84,7 @@ export function TimetablePage() {
           </button>
           <button
             type="button"
+            hidden={pickerVisible}
             className="daynav__date"
             aria-label={`Pick a date (${formatStepperDate(date)})`}
             onClick={() => {
@@ -105,7 +112,7 @@ export function TimetablePage() {
             type="date"
             tabIndex={pickerVisible ? 0 : -1}
             aria-hidden={pickerVisible ? undefined : "true"}
-            aria-label="Pick a date"
+            aria-label={pickerVisible ? "Pick a date" : undefined}
             value={date}
             onBlur={() => setPickerVisible(false)}
             onChange={(e) => {
@@ -145,7 +152,7 @@ export function TimetablePage() {
         </p>
       )}
       <h1 className="schedule-header">{formatDayHeading(date)}</h1>
-      <p className="caption timetable-foot">
+      <p className="caption timetable-note">
         P1–P6 are the school’s six lesson periods.
         {data?.lastSyncedAt ? ` Last synced ${timeAgo(data.lastSyncedAt)}.` : ""}
       </p>
@@ -293,13 +300,24 @@ function DayTimeline({
       !lessons.some((l) => overlapsSlot(slot, minuteOfDay(l.startsAt), minuteOfDay(l.endsAt))),
   );
   const showNow = isToday && nowMinute >= DAY_START && nowMinute <= DAY_END;
+  // Compact heights (≤620px): the 620px canvas cannot fit above the fixed
+  // nav, so land with the first lesson still ahead at the top of the scroll
+  // owner instead of the 09:00 line. Proportions stay; the scroll starts
+  // where the day does. Never on a normal-height screen.
+  useEffect(() => {
+    if (window.innerHeight > 620 || visible.length === 0) return;
+    const ahead = visible.find((l) => !isToday || minuteOfDay(l.endsAt) > nowMinute) ?? visible[0]!;
+    const el = document.querySelector<HTMLElement>(`[data-lesson="${ahead.id}"]`);
+    el?.scrollIntoView({ block: "start" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, visible.length]);
 
   return (
     <>
       {visible.length === 0 && (
         <p className="timeline__empty" role="status">
           <CalendarGlyph />
-          <span>No lessons today</span>
+          <span>{isToday ? "No lessons today" : `No lessons on ${formatStepperDate(date)}`}</span>
         </p>
       )}
     <div className="timeline">
@@ -315,7 +333,7 @@ function DayTimeline({
         ))}
       </div>
 
-      <div className="timeline__canvas">
+      <div className={visible.length === 0 ? "timeline__canvas timeline__canvas--empty" : "timeline__canvas"}>
         {/* No exam strip: HOney has no exams feature, and the app must not
             assert "no exams" it cannot know (review 2026-09-01, finding 7).
             Matches iOS, where the strip is a deliberate correct absence. */}
@@ -345,7 +363,11 @@ function DayTimeline({
         ))}
 
         {BANDS.filter((b) => b.kind === "break").map((band) => (
-          <div key={band.id} className="timeline__ghost" style={{ top: topFor(band.start, 7) }}>
+          <div
+            key={band.id}
+            className="timeline__ghost timeline__ghost--break"
+            style={{ top: topFor(band.start, 7) }}
+          >
             <LeafGlyph />
             <span className="timeline__ghost-break">{band.label}</span>
           </div>
@@ -359,6 +381,7 @@ function DayTimeline({
           return (
             <button
               key={lesson.id}
+              data-lesson={lesson.id}
               className={compact ? "lesson-block lesson-block--compact" : "lesson-block"}
               style={{ top: topFor(start), height: heightBetween(start, end) }}
               onClick={() => onSelect(lesson)}

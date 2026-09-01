@@ -154,7 +154,11 @@ export function ExperiencesFeedPage() {
             </div>
           )
         ) : (
-          <div aria-live="polite">
+          null
+        )}
+        <div aria-live="polite">
+          {feed.items.length > 0 && !feed.loading && !feed.error && (
+            <>
             {feed.items.map((exp, i) => (
             <div key={exp.id}>
               {i > 0 && i % SHARE_PROMPT_EVERY === 0 && (
@@ -168,8 +172,9 @@ export function ExperiencesFeedPage() {
               <ExperiencePost exp={exp} />
             </div>
           ))}
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         <div ref={sentinel} aria-hidden="true" />
         {feed.loadingMore && <div className="feed-append muted">…</div>}

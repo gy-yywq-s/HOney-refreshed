@@ -9,7 +9,7 @@ export function NotFoundPage() {
     <main className="login">
       <div className="card placeholder">
         <h1 className="section-title">Page not found</h1>
-        <p className="muted">Nothing is listed at this address.</p>
+        <p className="muted">That page doesn’t exist.</p>
         <Link className="btn btn--primary" to="/home">
           Go home
         </Link>

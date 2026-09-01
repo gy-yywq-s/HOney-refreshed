@@ -9,8 +9,6 @@ interface ReconnectDialogProps {
   /** reconnect: the portal session ended (or needs refreshing); save: the
    *  student wants HOney to keep their school login on this device. */
   purpose?: "reconnect" | "save";
-  /** For reconnect: whether the stored portal session is actually expired. */
-  sessionExpired?: boolean;
 }
 
 /**
@@ -23,7 +21,6 @@ export function ReconnectDialog({
   onClose,
   onReconnected,
   purpose = "reconnect",
-  sessionExpired = true,
 }: ReconnectDialogProps) {
   const [stayConnected, setStayConnected] = useState(
     purpose === "save" ? true : portalCredentials.isAuthorized(),
@@ -32,9 +29,7 @@ export function ReconnectDialog({
   const body =
     purpose === "save"
       ? "Enter your school login once; it stays encrypted on this device (a browser is less protected than a phone’s secure storage) so routine portal time-outs reconnect on their own."
-      : sessionExpired
-        ? "The portal session ended. Sign in again to restore it — your HOney data stays as it is."
-        : "Sign in again to refresh the school connection — your HOney data stays as it is.";
+      : "The portal session ended. Sign in again to restore it — your HOney data stays as it is.";
   return (
     <Modal title={title} onClose={onClose} describedBy="school-dialog-body">
       <p className="muted" id="school-dialog-body">
@@ -51,9 +46,8 @@ export function ReconnectDialog({
                 onChange={(e) => setStayConnected(e.target.checked)}
               />
               <span>
-                Stay connected on this device, so routine time-outs reconnect on their own. Your
-                login is encrypted and kept only here (a browser is less protected than a phone’s
-                secure storage).
+                Stay connected on this device — encrypted, kept only here (a browser is less
+                protected than a phone’s secure storage).
               </span>
             </label>
         }

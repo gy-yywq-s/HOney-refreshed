@@ -322,7 +322,6 @@ export function SettingsPage() {
       {showReconnect && (
         <ReconnectDialog
           purpose={showReconnect}
-          sessionExpired={!connection.portalTokenValid}
           onClose={() => setShowReconnect(null)}
           onReconnected={() => {
             setStayConnected(portalCredentials.isAuthorized());

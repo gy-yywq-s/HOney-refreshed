@@ -139,7 +139,6 @@ a.btn:active {
   font-weight: 650;
 }
 
-/* Reading serif — Experiences post bodies. */
 
 /* Muted-ink utilities kept from the old grammar (many screens use them). */
 
@@ -186,9 +185,7 @@ p.text-4 {
   color: var(--muted);
 }
 
-/* Numbered action-card grid (Home). */
 
-/* Hairline list rows (History, entities, Mine, Settings rows). */
 
 /* ── Motion kit — shared keyframes & scroll-reveal states ───────────────── */
 

@@ -119,8 +119,9 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
       if (overflowRef.current?.contains(target)) return;
       setMenuOpen(false);
       // Return focus to ··· unless the outside tap is itself a control (the
-      // default focus then belongs to it); after the default, not before.
-      if (!target?.closest("button, a, input, textarea, select, [tabindex]")) {
+      // default focus then belongs to it). tabindex=-1 containers (landings,
+      // #main) are not controls. Runs after the default, not before.
+      if (!target?.closest('button, a, input, textarea, select, [tabindex]:not([tabindex="-1"])')) {
         setTimeout(() => moreBtnRef.current?.focus(), 0);
       }
     };
@@ -222,7 +223,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           title={REACTION_EXPLAINER}
           aria-pressed={myValue === 1}
           aria-label="Matches my experience"
-          disabled={busy}
+          aria-disabled={busy || undefined}
           onClick={() => void react(1)}
         >
           <ThumbUpIcon />
@@ -234,7 +235,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           title={REACTION_EXPLAINER}
           aria-pressed={myValue === -1}
           aria-label="Doesn’t match my experience"
-          disabled={busy}
+          aria-disabled={busy || undefined}
           onClick={() => void react(-1)}
         >
           <ThumbDownIcon />
@@ -317,7 +318,7 @@ function PostReportDialog({ experienceId, onClose }: { experienceId: string; onC
   }
 
   return (
-    <Modal title="Report this experience" onClose={onClose}>
+    <Modal title="Report this experience" onClose={onClose} describedBy="report-dialog-body">
       {done ? (
         <>
           <p>
@@ -332,7 +333,7 @@ function PostReportDialog({ experienceId, onClose }: { experienceId: string; onC
         </>
       ) : (
         <>
-          <p className="text-4">
+          <p className="text-4" id="report-dialog-body">
             Disagreeing is not a report — use the reaction for that. Reports are for rule problems
             only, and no free text is collected.
           </p>

@@ -11,6 +11,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, Lesson } from "../../api/types";
 import { useApi } from "../../lib/useApi";
+import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime, formatRemaining } from "../../lib/format";
 import { privateNotes } from "../../lib/ownershipKeys";
@@ -54,6 +55,7 @@ export function ExperiencesComposePage() {
   const entities = useApi(
     () => (effectiveEntityKey ? api.entities() : Promise.resolve(null)),
     [effectiveEntityKey],
+    effectiveEntityKey ? "entities" : undefined,
   );
 
   const target = useMemo<ComposerTarget | null>(() => {
@@ -97,6 +99,7 @@ export function ExperiencesComposePage() {
 
   const composer = useComposer(target);
   const { names } = useNames();
+  const landing = useRetryFocus<HTMLElement>(entities.loading);
   const { body, setBody, rating, setRating, status, notice } = composer;
 
   // Republishing a private note: seed the composer from the note's text.
@@ -210,7 +213,13 @@ export function ExperiencesComposePage() {
         <h1 className="page-title">Share an experience</h1>
         <div role="alert" className="banner banner--danger">
           <span>{entities.error}</span>
-          <button className="btn btn--ghost btn--small" onClick={() => entities.reload()}>
+          <button
+            className="btn btn--ghost btn--small"
+            onClick={() => {
+              landing.arm();
+              entities.reload();
+            }}
+          >
             Try again
           </button>
         </div>
@@ -286,7 +295,7 @@ export function ExperiencesComposePage() {
       )}
 
       {target && (
-        <section className="compose-editor">
+        <section className="compose-editor focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label="Editor">
           <div className="field">
             <label className="field__label" htmlFor="compose-body">
               {COMPOSE_PROMPT}

@@ -85,7 +85,7 @@ export function ExperiencesExplorePage() {
           </button>
         </div>
       )}
-      <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="region" aria-label="Everything listed">
+      <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="group" aria-label="Everything listed">
       {entities.loading ? (
         <Skeleton lines={6} />
       ) : (
