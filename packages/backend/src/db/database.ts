@@ -216,6 +216,31 @@ const MIGRATIONS: string[] = [
     count INTEGER NOT NULL DEFAULT 0
   ) STRICT;
   `,
+  // 008 — Experiences domain reset (review v3 §12.5 / Phase 3): a generic
+  // association model replaces the nullable ctx_* column matrix as the QUERY
+  // surface (the columns stay for now as a legacy read path for older
+  // clients). Lesson posts keep using the OPAQUE lesson token as entity_id.
+  // Course becomes a first-class entity; existing rows are backfilled.
+  `
+  CREATE TABLE experience_associations (
+    experience_id TEXT NOT NULL REFERENCES experiences(id) ON DELETE CASCADE,
+    entity_type TEXT NOT NULL,            -- teacher | course | room | lesson | dish
+    entity_id TEXT NOT NULL,              -- raw id; lessons use the opaque token
+    relationship TEXT NOT NULL,           -- primary | context
+    PRIMARY KEY (experience_id, entity_type, entity_id, relationship)
+  ) STRICT;
+  CREATE INDEX idx_assoc_entity ON experience_associations(entity_type, entity_id);
+
+  INSERT OR IGNORE INTO experience_associations (experience_id, entity_type, entity_id, relationship)
+    SELECT id, substr(entity_key, 1, instr(entity_key, ':') - 1), substr(entity_key, instr(entity_key, ':') + 1), 'primary'
+    FROM experiences WHERE instr(entity_key, ':') > 0;
+  INSERT OR IGNORE INTO experience_associations (experience_id, entity_type, entity_id, relationship)
+    SELECT id, 'teacher', ctx_teacher_id, 'context' FROM experiences WHERE ctx_teacher_id IS NOT NULL;
+  INSERT OR IGNORE INTO experience_associations (experience_id, entity_type, entity_id, relationship)
+    SELECT id, 'course', ctx_course_id, 'context' FROM experiences WHERE ctx_course_id IS NOT NULL;
+  INSERT OR IGNORE INTO experience_associations (experience_id, entity_type, entity_id, relationship)
+    SELECT id, 'room', ctx_room_id, 'context' FROM experiences WHERE ctx_room_id IS NOT NULL;
+  `,
 ];
 
 export function openDatabase(path: string): DatabaseSyncType {

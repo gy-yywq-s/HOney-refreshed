@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import { deriveKey, generateToken, hashToken } from "../crypto.js";
+import { deriveKey, generateToken, hashToken, open, seal } from "../crypto.js";
 import { lexicalScan } from "./lexicon.js";
 import { extractFeatures, type LlmVerdict } from "./llm.js";
 import { normalizeText } from "./normalize.js";
@@ -8,7 +8,14 @@ import { decide, POLICY_VERSION, type PolicyDecision } from "./policy.js";
 import { contentHashOf, contextHashOf, issuePass, markHash, verifyPass, type PassPayload } from "./pass.js";
 import type { EntityRegistry } from "./entities.js";
 import type { SettingsService } from "./settings.js";
-import type { CheckExperienceResponse, PublicExperience, ReportCategory } from "@honey/shared/api";
+import type {
+  CheckExperienceResponse,
+  EntitySummary,
+  FeedPage,
+  FeedScope,
+  PublicExperience,
+  ReportCategory,
+} from "@honey/shared/api";
 
 // The Experiences core (App A). Publication is a TWO-CALL flow (audit §3.7/§3.8):
 //
@@ -79,6 +86,18 @@ interface Target {
   mark: string;
 }
 
+interface SelectRow {
+  id: string;
+  entity_key: string;
+  ctx_teacher_id: string | null;
+  ctx_course_id: string | null;
+  ctx_room_id: string | null;
+  body: string | null;
+  rating: number | null;
+  provenance: string;
+  published_at: number | null;
+}
+
 interface EligibilityRow {
   token_hash: string;
   mark_hash: string;
@@ -110,6 +129,9 @@ export class ExperienceService {
   private readonly signKey: Buffer;
   private readonly lessonScopeKey: Buffer;
   private readonly cooldownKey: Buffer;
+  // Feed cursors are SEALED (AES-GCM): they carry the exact publish instant,
+  // which must never exist publicly (S5) — opacity by encryption, not base64.
+  private readonly cursorKey: Buffer;
 
   constructor(
     private readonly db: DatabaseSync,
@@ -123,6 +145,7 @@ export class ExperienceService {
     this.signKey = deriveKey(sealKey, "exp-sign");
     this.lessonScopeKey = deriveKey(sealKey, "lesson-scope");
     this.cooldownKey = deriveKey(sealKey, "exp-cooldown");
+    this.cursorKey = deriveKey(sealKey, "feed-cursor");
     this.llmRunner = async (text) => {
       const config = this.settings.llmConfig();
       if (!config) return { ok: false };
@@ -451,6 +474,15 @@ export class ExperienceService {
           body, rating, elig.provenance, hashToken(ownershipKey), payload.contentHash,
           payload.policyVersion, this.now(), this.now(),
         );
+      // Domain associations (review v3 §12.5): the generic query surface.
+      const assoc = this.db.prepare(
+        "INSERT OR IGNORE INTO experience_associations (experience_id, entity_type, entity_id, relationship) VALUES (?, ?, ?, ?)",
+      );
+      const sep = elig.entity_key.indexOf(":");
+      if (sep > 0) assoc.run(id, elig.entity_key.slice(0, sep), elig.entity_key.slice(sep + 1), "primary");
+      if (elig.ctx_teacher_id) assoc.run(id, "teacher", elig.ctx_teacher_id, "context");
+      if (elig.ctx_course_id) assoc.run(id, "course", elig.ctx_course_id, "context");
+      if (elig.ctx_room_id) assoc.run(id, "room", elig.ctx_room_id, "context");
       this.db.exec("COMMIT");
     } catch (e) {
       this.db.exec("ROLLBACK");
@@ -506,6 +538,13 @@ export class ExperienceService {
       const id = entityKey.slice("teacher:".length);
       const hit = this.db
         .prepare("SELECT 1 FROM user_lesson_exposures WHERE honey_id = ? AND teacher_id = ? LIMIT 1")
+        .get(honeyId, id);
+      return hit ? "verified_retrospective" : "";
+    }
+    if (type === "course") {
+      const id = entityKey.slice("course:".length);
+      const hit = this.db
+        .prepare("SELECT 1 FROM user_lesson_exposures WHERE honey_id = ? AND course_id = ? LIMIT 1")
         .get(honeyId, id);
       return hit ? "verified_retrospective" : "";
     }
@@ -601,8 +640,8 @@ export class ExperienceService {
       params.push(opts.teacherId, `teacher:${opts.teacherId}`);
     }
     if (opts.courseId) {
-      clauses.push("ctx_course_id = ?");
-      params.push(opts.courseId);
+      clauses.push("(ctx_course_id = ? OR entity_key = ?)");
+      params.push(opts.courseId, `course:${opts.courseId}`);
     }
     if (opts.roomId) {
       clauses.push("(ctx_room_id = ? OR entity_key = ?)");
@@ -650,6 +689,7 @@ export class ExperienceService {
     // their context snapshot or their (opaque) lesson scope.
     const entityKeys = [
       ...teacherIds.map((id) => `teacher:${id}`),
+      ...courseIds.map((id) => `course:${id}`),
       ...roomIds.map((id) => `room:${id}`),
       ...lessonIds.map((id) => `lesson:${this.lessonToken(id)}`),
     ];
@@ -674,6 +714,168 @@ export class ExperienceService {
     return this.selectPublic(clauses.join(" AND "), params, "DESC", opts.limit, honeyId);
   }
 
+  // ---------- cursor feed (review v3 §12.6): the social stream ----------
+
+  private sealCursor(t: number, id: string, scope: string): string {
+    return seal(JSON.stringify({ v: 1, t, id, s: scope }), this.cursorKey).toString("base64url");
+  }
+
+  private openCursor(cursor: string, scope: string): { t: number; id: string } | null {
+    try {
+      const parsed = JSON.parse(open(Buffer.from(cursor, "base64url"), this.cursorKey)) as {
+        v: number; t: number; id: string; s: string;
+      };
+      if (parsed.v !== 1 || parsed.s !== scope) return null; // scope-bound (§12.6)
+      if (typeof parsed.t !== "number" || typeof parsed.id !== "string") return null;
+      return { t: parsed.t, id: parsed.id };
+    } catch {
+      return null;
+    }
+  }
+
+  /** WHERE fragment for a feed scope; null = viewer has no exposure yet. */
+  private scopeWhere(
+    honeyId: string,
+    scope: FeedScope,
+  ): { clause: string; params: (string | number)[] } | null {
+    if (scope === "school") return { clause: "1=1", params: [] };
+    const ids = (col: string, sql: string) =>
+      (this.db.prepare(sql).all(honeyId) as unknown as { id: string }[]).map((r) => r.id);
+    const teacherIds = ids("t", "SELECT DISTINCT teacher_id AS id FROM user_lesson_exposures WHERE honey_id = ? AND teacher_id IS NOT NULL");
+    const courseIds = ids("c", "SELECT DISTINCT course_id AS id FROM user_lesson_exposures WHERE honey_id = ? AND course_id IS NOT NULL");
+    const lessonIds = ids("l", "SELECT lesson_instance_id AS id FROM user_lesson_exposures WHERE honey_id = ?");
+    // Room exposure deliberately does NOT scope the class feed (review v3
+    // §9.6A): "same classroom once" would mix everything into Your classes.
+    const pairs: [string, string][] = [
+      ...teacherIds.map((id): [string, string] => ["teacher", id]),
+      ...courseIds.map((id): [string, string] => ["course", id]),
+      ...lessonIds.map((id): [string, string] => ["lesson", this.lessonToken(id)]),
+    ];
+    if (pairs.length === 0) return null;
+    const clause = `id IN (SELECT experience_id FROM experience_associations WHERE (${pairs
+      .map(() => "(entity_type = ? AND entity_id = ?)")
+      .join(" OR ")}))`;
+    return { clause, params: pairs.flat() };
+  }
+
+  /**
+   * Cursor-paged chronological stream. Stable order (published_at, id) DESC;
+   * reactions never re-rank; a light adjacency rule keeps at most two
+   * consecutive posts on one primary entity WITHIN a page (order-preserving
+   * otherwise, and cursoring is computed on the RAW chronology so pages never
+   * skip or duplicate).
+   */
+  feedPage(
+    honeyId: string,
+    scope: FeedScope,
+    opts: {
+      cursor?: string;
+      limit?: number;
+      entityKey?: string;
+      teacherId?: string;
+      courseId?: string;
+      roomId?: string;
+    } = {},
+  ): { ok: true; page: FeedPage } | { ok: false; error: string } {
+    if (this.settings.killSwitch("HIDE_PUBLIC_EXPERIENCES")) {
+      return { ok: true, page: { items: [], nextCursor: null, headCursor: null } };
+    }
+    const scoped = this.scopeWhere(honeyId, scope);
+    if (!scoped) return { ok: true, page: { items: [], nextCursor: null, headCursor: null } };
+    const clauses = ["status = 'published'", scoped.clause];
+    const params: (string | number)[] = [...scoped.params];
+    if (opts.entityKey) {
+      clauses.push("entity_key = ?");
+      params.push(opts.entityKey);
+    }
+    if (opts.teacherId) {
+      clauses.push("(ctx_teacher_id = ? OR entity_key = ?)");
+      params.push(opts.teacherId, `teacher:${opts.teacherId}`);
+    }
+    if (opts.courseId) {
+      clauses.push("(ctx_course_id = ? OR entity_key = ?)");
+      params.push(opts.courseId, `course:${opts.courseId}`);
+    }
+    if (opts.roomId) {
+      clauses.push("(ctx_room_id = ? OR entity_key = ?)");
+      params.push(opts.roomId, `room:${opts.roomId}`);
+    }
+    if (opts.cursor) {
+      const c = this.openCursor(opts.cursor, scope);
+      if (!c) return { ok: false, error: "bad_cursor" };
+      clauses.push("(published_at < ? OR (published_at = ? AND id < ?))");
+      params.push(c.t, c.t, c.id);
+    }
+    const limit = Math.min(Math.max(Math.trunc(opts.limit ?? 20), 5), 25);
+    // Over-fetch by 1 to learn whether a next page exists.
+    const raw = this.db
+      .prepare(
+        `SELECT id, entity_key, ctx_teacher_id, ctx_course_id, ctx_room_id, body, rating,
+                provenance, published_at
+         FROM experiences WHERE ${clauses.join(" AND ")}
+         ORDER BY published_at DESC, id DESC LIMIT ${limit + 1}`,
+      )
+      .all(...params) as unknown as SelectRow[];
+    const hasMore = raw.length > limit;
+    const pageRows = raw.slice(0, limit).filter(
+      (r) => !this.frozenAnywhere(r.entity_key, r.ctx_teacher_id, r.ctx_room_id),
+    );
+    const last = raw.length > 0 ? raw[Math.min(limit, raw.length) - 1]! : null;
+    const first = pageRows[0] ?? null;
+    const items = this.diversify(pageRows).map((r) => this.toPublic(r, honeyId));
+    return {
+      ok: true,
+      page: {
+        items,
+        nextCursor: hasMore && last ? this.sealCursor(last.published_at ?? 0, last.id, scope) : null,
+        headCursor:
+          first && !opts.cursor
+            ? this.sealCursor(first.published_at ?? 0, first.id, scope)
+            : null,
+      },
+    };
+  }
+
+  /** Quiet new-content probe: never disturbs the reader's position (§9.6C). */
+  feedUpdates(honeyId: string, scope: FeedScope, head: string): { ok: true; newItemsAvailable: boolean } | { ok: false; error: string } {
+    if (this.settings.killSwitch("HIDE_PUBLIC_EXPERIENCES")) return { ok: true, newItemsAvailable: false };
+    const c = this.openCursor(head, scope);
+    if (!c) return { ok: false, error: "bad_cursor" };
+    const scoped = this.scopeWhere(honeyId, scope);
+    if (!scoped) return { ok: true, newItemsAvailable: false };
+    const hit = this.db
+      .prepare(
+        `SELECT 1 FROM experiences WHERE status = 'published' AND ${scoped.clause}
+         AND (published_at > ? OR (published_at = ? AND id > ?)) LIMIT 1`,
+      )
+      .get(...scoped.params, c.t, c.t, c.id);
+    return { ok: true, newItemsAvailable: !!hit };
+  }
+
+  /** ≤2 consecutive posts per primary entity, minimal stable displacement (§9.6A). */
+  private diversify<T extends { entity_key: string }>(rows: T[]): T[] {
+    const out: T[] = [];
+    const deferred: T[] = [];
+    for (const row of rows) {
+      const n = out.length;
+      if (n >= 2 && out[n - 1]!.entity_key === row.entity_key && out[n - 2]!.entity_key === row.entity_key) {
+        deferred.push(row); // hold until a different entity breaks the run
+      } else {
+        out.push(row);
+        // Re-admit deferred rows as soon as adjacency allows.
+        while (deferred.length > 0) {
+          const m = out.length;
+          const d = deferred[0]!;
+          if (m >= 2 && out[m - 1]!.entity_key === d.entity_key && out[m - 2]!.entity_key === d.entity_key) break;
+          out.push(d);
+          deferred.shift();
+        }
+      }
+    }
+    out.push(...deferred); // never drop content — worst case the run stays
+    return out;
+  }
+
   /** Shared public projection: frozen-entity filter, reaction hiding, day bucket. */
   private selectPublic(
     where: string,
@@ -689,48 +891,76 @@ export class ExperienceService {
                 provenance, published_at
          FROM experiences WHERE ${where} ORDER BY published_at ${order} LIMIT ${limit}`,
       )
-      .all(...params) as unknown as {
-        id: string; entity_key: string; ctx_teacher_id: string | null; ctx_course_id: string | null;
-        ctx_room_id: string | null; body: string | null; rating: number | null; provenance: string;
-        published_at: number | null;
-      }[];
-
-    const minCount = this.settings.reactionMinCount();
-    const countStmt = this.db.prepare(
-      "SELECT SUM(value = 1) AS likes, SUM(value = -1) AS dislikes FROM reactions WHERE experience_id = ?",
-    );
-    const myStmt = this.db.prepare(
-      "SELECT value FROM reactions WHERE experience_id = ? AND dedup_hash = ?",
-    );
+      .all(...params) as unknown as SelectRow[];
     return rows
       // Hide posts whose primary or context entity is frozen (S2).
       .filter((r) => !this.frozenAnywhere(r.entity_key, r.ctx_teacher_id, r.ctx_room_id))
-      .map((r) => {
-        const c = countStmt.get(r.id) as unknown as { likes: number | null; dislikes: number | null };
-        const likes = c.likes ?? 0;
-        const dislikes = c.dislikes ?? 0;
-        const reactions = likes + dislikes >= minCount ? { likes, dislikes } : null;
-        // The viewer's own reaction survives refresh/devices: the dedup mark is
-        // recomputable from (viewer, post), so no separate account-linked state
-        // is stored (review v3 §9.9 Option A, with the HMAC construction kept).
-        let myReaction: 1 | -1 | 0 = 0;
-        if (viewer) {
-          const mine = myStmt.get(r.id, markHash(this.markKey, viewer, `react:${r.id}`)) as unknown as
-            | { value: number }
-            | undefined;
-          if (mine?.value === 1 || mine?.value === -1) myReaction = mine.value;
-        }
-        // Publicly expose only a coarse day bucket, never exact ms (S5); the raw
-        // lesson token is omitted entirely (C1), as are all internal fields.
-        const { published_at, ...pub } = r;
-        return {
-          ...pub,
-          provenance: r.provenance as PublicExperience["provenance"],
-          publishedDay: published_at ? this.dayBucket(published_at) : null,
-          reactions,
-          myReaction,
-        };
-      });
+      .map((r) => this.toPublic(r, viewer));
+  }
+
+  /**
+   * One row → the complete public domain representation (review v3 §12.4):
+   * named primary + contexts ride ON the payload, so clients never join a
+   * directory to render a post. Coarse day bucket only (S5); the raw lesson
+   * token appears only inside EntitySummary ids (already opaque, C1).
+   */
+  private toPublic(r: SelectRow, viewer?: string): PublicExperience {
+    const c = this.db
+      .prepare("SELECT SUM(value = 1) AS likes, SUM(value = -1) AS dislikes FROM reactions WHERE experience_id = ?")
+      .get(r.id) as unknown as { likes: number | null; dislikes: number | null };
+    const likes = c.likes ?? 0;
+    const dislikes = c.dislikes ?? 0;
+    const reactions = likes + dislikes >= this.settings.reactionMinCount() ? { likes, dislikes } : null;
+    // The viewer's own reaction survives refresh/devices: the dedup mark is
+    // recomputable from (viewer, post), so no separate account-linked state
+    // is stored (review v3 §9.9 Option A, with the HMAC construction kept).
+    let myReaction: 1 | -1 | 0 = 0;
+    if (viewer) {
+      const mine = this.db
+        .prepare("SELECT value FROM reactions WHERE experience_id = ? AND dedup_hash = ?")
+        .get(r.id, markHash(this.markKey, viewer, `react:${r.id}`)) as unknown as
+        | { value: number }
+        | undefined;
+      if (mine?.value === 1 || mine?.value === -1) myReaction = mine.value;
+    }
+    const sep = r.entity_key.indexOf(":");
+    const primaryType = (sep > 0 ? r.entity_key.slice(0, sep) : "lesson") as EntitySummary["type"];
+    const primaryId = sep > 0 ? r.entity_key.slice(sep + 1) : r.entity_key;
+    const primary: EntitySummary = {
+      type: primaryType,
+      id: primaryId,
+      name: primaryType === "lesson" ? null : this.entityName(primaryType, primaryId),
+    };
+    const contexts: EntitySummary[] = [];
+    if (r.ctx_teacher_id) contexts.push({ type: "teacher", id: r.ctx_teacher_id, name: this.entityName("teacher", r.ctx_teacher_id) });
+    if (r.ctx_course_id) contexts.push({ type: "course", id: r.ctx_course_id, name: this.entityName("course", r.ctx_course_id) });
+    if (r.ctx_room_id) contexts.push({ type: "room", id: r.ctx_room_id, name: this.entityName("room", r.ctx_room_id) });
+    const { published_at, ...pub } = r;
+    return {
+      ...pub,
+      provenance: r.provenance as PublicExperience["provenance"],
+      publishedDay: published_at ? this.dayBucket(published_at) : null,
+      reactions,
+      myReaction,
+      primary,
+      contexts,
+    };
+  }
+
+  /** Display name for an entity id (normalized tables first, registry for the rest). */
+  private entityName(type: EntitySummary["type"], id: string): string | null {
+    const bySql: Partial<Record<EntitySummary["type"], string>> = {
+      teacher: "SELECT display_name AS name FROM teachers WHERE id = ?",
+      course: "SELECT name FROM courses WHERE id = ?",
+      room: "SELECT name FROM rooms WHERE id = ?",
+    };
+    const sql = bySql[type];
+    if (sql) {
+      const row = this.db.prepare(sql).get(id) as unknown as { name: string } | undefined;
+      if (row?.name) return row.name;
+    }
+    const reg = this.registry.get(`${type}:${id}`);
+    return reg?.name ?? null;
   }
 
   // ---------- reactions (§10) ----------

@@ -107,9 +107,9 @@ export interface SyncResponse {
 // Experiences (anonymous community — App A). Field names mirror the wire
 // exactly (snake_case where the backend sends snake_case).
 //
-// V1 Experiences objects (Gary, 2026-08-31): lesson / teacher / classroom /
-// canteen dish ONLY. "Course" is NOT a browsable Experiences entity in V1 —
-// course ids appear only as lesson CONTEXT for filter-time association.
+// V1 Experiences objects: lesson / teacher / course / classroom / canteen
+// dish. Course became a FIRST-CLASS browse + retrospective entity in the
+// product-v2 reset (review v3 §9.10) — it was previously context-only.
 //
 // Publication is a two-call flow (no server-side pending state, ever):
 //   1. POST /api/experiences/eligibility (authenticated) → single-use token
@@ -121,7 +121,7 @@ export interface SyncResponse {
 //      carries no account identity; published posts store no author ID.
 // ---------------------------------------------------------------------------
 
-export type EntityType = "teacher" | "room" | "dish";
+export type EntityType = "teacher" | "course" | "room" | "dish";
 
 export interface EntityRef {
   entity_key: string;
@@ -137,6 +137,18 @@ export interface EntitiesResponse {
 export interface ReactionCounts {
   likes: number;
   dislikes: number;
+}
+
+/**
+ * A named entity reference carried ON the post payload (review v3 §12.4): the
+ * feed is a complete domain representation — clients never join a directory
+ * to render a post. Lesson summaries carry the opaque lesson token and a null
+ * name (their display context comes from the accompanying contexts).
+ */
+export interface EntitySummary {
+  type: "teacher" | "course" | "lesson" | "room" | "dish";
+  id: string;
+  name: string | null;
 }
 
 export type ExperienceProvenance = "verified_lesson" | "verified_retrospective" | "verified_member";
@@ -163,6 +175,10 @@ export interface PublicExperience {
    * from the unlinkable dedup mark — public identity never exists (§12.15C).
    */
   myReaction?: 1 | -1 | 0;
+  /** Complete named context (see EntitySummary). ctx_* ids above are the
+   *  legacy read path and will be removed at convergence. */
+  primary?: EntitySummary;
+  contexts?: EntitySummary[];
 }
 
 export interface ExperiencesFeedParams {
@@ -186,6 +202,39 @@ export interface ExperiencesFeedResponse {
 export interface FromMyClassesParams {
   before?: number;
   limit?: number;
+}
+
+// ---- cursor feed (review v3 §12.6): the social stream's read surface ----
+
+export type FeedScope = "my_classes" | "school";
+
+export interface FeedParams {
+  scope: FeedScope;
+  /** Opaque, sealed server cursor. Never decode client-side. */
+  cursor?: string;
+  /** Page size, clamped server-side to 5–25 (default 20). */
+  limit?: number;
+  /** Optional entity filters (entity pages reuse the same stream). */
+  entityKey?: string;
+  teacherId?: string;
+  courseId?: string;
+  roomId?: string;
+}
+
+export interface FeedPage {
+  items: PublicExperience[];
+  /** null = end of stream. Pass back verbatim to continue. */
+  nextCursor: string | null;
+  /**
+   * Position of the newest item at fetch time; poll /api/experiences/feed/updates
+   * with it to learn whether new posts exist WITHOUT disturbing the reader.
+   */
+  headCursor: string | null;
+}
+
+/** GET /api/experiences/feed/updates?scope=&head= */
+export interface FeedUpdatesResponse {
+  newItemsAvailable: boolean;
 }
 
 // ---- step 1: eligibility (authenticated; single-use, scope-bound) ----

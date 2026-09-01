@@ -36,6 +36,41 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     return { experiences: ctx.experiences.feed(opts) };
   });
 
+  /** Cursor-paged social stream (review v3 §12.6). Scope-bound sealed cursors. */
+  app.get<{
+    Querystring: {
+      scope?: string; cursor?: string; limit?: string;
+      entityKey?: string; teacherId?: string; courseId?: string; roomId?: string;
+    };
+  }>("/api/experiences/feed", { preHandler: ctx.requireAuth }, async (req, reply) => {
+    const user = ctx.userOf(req);
+    const scope = req.query.scope === "school" ? "school" : "my_classes";
+    const opts: Parameters<typeof ctx.experiences.feedPage>[2] = {};
+    if (req.query.cursor) opts.cursor = req.query.cursor;
+    if (req.query.limit) opts.limit = Number(req.query.limit);
+    if (req.query.entityKey) opts.entityKey = req.query.entityKey;
+    if (req.query.teacherId) opts.teacherId = req.query.teacherId;
+    if (req.query.courseId) opts.courseId = req.query.courseId;
+    if (req.query.roomId) opts.roomId = req.query.roomId;
+    const result = ctx.experiences.feedPage(user.honey_id, scope, opts);
+    if (!result.ok) return reply.code(400).send({ error: result.error });
+    return reply.send(result.page);
+  });
+
+  /** Quiet new-content probe — never disturbs the reader's position (§9.6C). */
+  app.get<{ Querystring: { scope?: string; head?: string } }>(
+    "/api/experiences/feed/updates",
+    { preHandler: ctx.requireAuth },
+    async (req, reply) => {
+      const user = ctx.userOf(req);
+      const scope = req.query.scope === "school" ? "school" : "my_classes";
+      if (!req.query.head) return reply.code(400).send({ error: "head required" });
+      const result = ctx.experiences.feedUpdates(user.honey_id, scope, req.query.head);
+      if (!result.ok) return reply.code(400).send({ error: result.error });
+      return reply.send({ newItemsAvailable: result.newItemsAvailable });
+    },
+  );
+
   /** Domain query (audit §4.2): published posts relevant to MY verified exposure. */
   app.get<{ Querystring: { before?: string; limit?: string } }>(
     "/api/experiences/from-my-classes",
@@ -53,7 +88,7 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     "/api/entities",
     { preHandler: ctx.requireAuth },
     async (req) => {
-      const type = req.query.type as "teacher" | "room" | "dish" | undefined;
+      const type = req.query.type as "teacher" | "course" | "room" | "dish" | undefined;
       return { entities: ctx.entities.list(type, req.query.q) };
     },
   );

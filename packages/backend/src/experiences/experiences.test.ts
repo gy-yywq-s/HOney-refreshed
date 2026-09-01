@@ -508,6 +508,136 @@ describe("reports are category-only (audit §3.9)", () => {
   });
 });
 
+describe("cursor feed + course entity (review v3 \u00a712.5/\u00a712.6)", () => {
+  async function myTeacherAndCourse(): Promise<{ teacherId: string; courseId: string }> {
+    const history = await app.inject({ method: "GET", url: "/api/history?limit=20", headers: auth });
+    const lessons = (history.json() as { lessons: { teacherId: string | null; courseId: string | null }[] }).lessons;
+    const withT = lessons.find((l) => l.teacherId && l.courseId)!;
+    return { teacherId: withT.teacherId!, courseId: withT.courseId! };
+  }
+
+  function insertPost(n: number, entityKey: string, t: number, teacherCtx: string | null = null) {
+    const id = `exp-feed-${String(n).padStart(3, "0")}`;
+    app.ctx.db
+      .prepare(
+        `INSERT INTO experiences (id, entity_key, lesson_id, ctx_teacher_id, ctx_course_id, ctx_room_id,
+           body, rating, provenance, status, status_detail, ownership_hash, content_hash, policy_version, created_at, published_at)
+         VALUES (?, ?, NULL, ?, NULL, NULL, ?, NULL, 'verified_retrospective', 'published', NULL, ?, 'ch', 7, ?, ?)`,
+      )
+      .run(id, entityKey, teacherCtx, `Feed post ${n}.`, `oh-feed-${n}`, t, t);
+    const sep = entityKey.indexOf(":");
+    app.ctx.db
+      .prepare(
+        "INSERT OR IGNORE INTO experience_associations (experience_id, entity_type, entity_id, relationship) VALUES (?, ?, ?, 'primary')",
+      )
+      .run(id, entityKey.slice(0, sep), entityKey.slice(sep + 1), );
+    if (teacherCtx) {
+      app.ctx.db
+        .prepare(
+          "INSERT OR IGNORE INTO experience_associations (experience_id, entity_type, entity_id, relationship) VALUES (?, 'teacher', ?, 'context')",
+        )
+        .run(id, teacherCtx);
+    }
+    return id;
+  }
+
+  async function fetchPage(qs: string) {
+    const res = await app.inject({ method: "GET", url: `/api/experiences/feed?${qs}`, headers: auth });
+    return { status: res.statusCode, body: res.json() as {
+      items: { id: string; primary?: { type: string; id: string; name: string | null }; myReaction?: number }[];
+      nextCursor: string | null; headCursor: string | null; error?: string;
+    } };
+  }
+
+  it("pages the scoped stream without gaps or duplicates; payload carries named context", async () => {
+    const { teacherId } = await myTeacherAndCourse();
+    for (let i = 0; i < 12; i++) insertPost(i, `teacher:${teacherId}`, 10_000 + i * 100);
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    let head: string | null = null;
+    for (let page = 0; page < 5; page++) {
+      const q = `scope=my_classes&limit=5${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const { status, body } = await fetchPage(q);
+      expect(status).toBe(200);
+      if (page === 0) {
+        head = body.headCursor;
+        expect(head).not.toBeNull();
+        // Complete domain payload: no client directory join needed (§12.4).
+        expect(body.items[0]!.primary!.type).toBe("teacher");
+        expect(body.items[0]!.primary!.name).not.toBeNull();
+      }
+      seen.push(...body.items.map((i) => i.id));
+      cursor = body.nextCursor;
+      if (!cursor) break;
+    }
+    expect(new Set(seen).size).toBe(12); // no dups
+    expect(seen).toHaveLength(12); // no gaps
+
+    // The quiet probe: nothing new yet…
+    const q1 = await app.inject({
+      method: "GET",
+      url: `/api/experiences/feed/updates?scope=my_classes&head=${encodeURIComponent(head!)}`,
+      headers: auth,
+    });
+    expect((q1.json() as { newItemsAvailable: boolean }).newItemsAvailable).toBe(false);
+    // …until a newer post lands.
+    insertPost(99, `teacher:${teacherId}`, 99_999);
+    const q2 = await app.inject({
+      method: "GET",
+      url: `/api/experiences/feed/updates?scope=my_classes&head=${encodeURIComponent(head!)}`,
+      headers: auth,
+    });
+    expect((q2.json() as { newItemsAvailable: boolean }).newItemsAvailable).toBe(true);
+  });
+
+  it("cursors are sealed, tamper-checked and scope-bound", async () => {
+    const { teacherId } = await myTeacherAndCourse();
+    for (let i = 0; i < 6; i++) insertPost(i, `teacher:${teacherId}`, 20_000 + i);
+    const { body } = await fetchPage("scope=my_classes&limit=5");
+    expect(body.nextCursor).not.toBeNull();
+    // A cursor is OPAQUE — it must not decode to anything readable (S5: the
+    // exact publish instant lives inside).
+    expect(() => JSON.parse(Buffer.from(body.nextCursor!, "base64url").toString("utf8"))).toThrow();
+    // Wrong scope → rejected.
+    const wrong = await fetchPage(`scope=school&limit=5&cursor=${encodeURIComponent(body.nextCursor!)}`);
+    expect(wrong.status).toBe(400);
+    expect(wrong.body.error).toBe("bad_cursor");
+    // Garbage → rejected.
+    const garbage = await fetchPage("scope=my_classes&cursor=not-a-cursor");
+    expect(garbage.status).toBe(400);
+  });
+
+  it("light adjacency diversity: at most two consecutive posts per primary entity", async () => {
+    const { teacherId, courseId } = await myTeacherAndCourse();
+    // Newest-first raw order: T T T C — the third T defers past C.
+    insertPost(1, `course:${courseId}`, 30_000);
+    insertPost(2, `teacher:${teacherId}`, 30_001);
+    insertPost(3, `teacher:${teacherId}`, 30_002);
+    insertPost(4, `teacher:${teacherId}`, 30_003);
+    const { body } = await fetchPage("scope=my_classes&limit=10");
+    const keys = body.items.map((i) => i.primary!.type);
+    expect(keys).toEqual(["teacher", "teacher", "course", "teacher"]);
+  });
+
+  it("course is a first-class browse entity and retrospective target (§9.10)", async () => {
+    const { courseId } = await myTeacherAndCourse();
+    const list = await app.inject({ method: "GET", url: "/api/entities?type=course", headers: auth });
+    const entities = (list.json() as { entities: { entity_key: string; type: string; name: string }[] }).entities;
+    expect(entities.length).toBeGreaterThan(0);
+    expect(entities.some((e) => e.entity_key === `course:${courseId}`)).toBe(true);
+
+    // Verified exposure → standalone course retrospective publishes.
+    await fullPublish({ entityKey: `course:${courseId}` }, "The pace across this course was fair.");
+    const feed = await app.inject({
+      method: "GET",
+      url: `/api/experiences?courseId=${encodeURIComponent(courseId)}`,
+      headers: auth,
+    });
+    const rows = (feed.json() as { experiences: { entity_key: string; provenance: string }[] }).experiences;
+    expect(rows.some((r) => r.entity_key === `course:${courseId}` && r.provenance === "verified_retrospective")).toBe(true);
+  });
+});
+
 describe("report re-evaluation is tri-state (review v3 \u00a712.15B)", () => {
   /** Insert a published row directly (distinct posts without lesson-dedup limits). */
   function insertPublished(n: number): string {
