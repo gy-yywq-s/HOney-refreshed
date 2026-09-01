@@ -7,6 +7,7 @@ import { useAmbientMotion } from "../lib/motion";
 import type { Me } from "../api/types";
 
 import { DESKTOP_TABS, MOBILE_TABS } from "./navTabs";
+import { WordmarkHOney } from "./Wordmark";
 import { ThemeDialog } from "./ThemeControls";
 
 /** Route guard + chrome for every authed page. */
@@ -53,10 +54,7 @@ function AppLayout() {
           the active pill slides between items. Hidden ≤960px. */}
       <aside className="rail">
         <Link to="/home" className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            H
-          </span>
-          HOney
+          <WordmarkHOney height={26} />
         </Link>
         <nav className="rail-nav" aria-label="Primary">
           <span

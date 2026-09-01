@@ -489,18 +489,12 @@ a.btn:hover {
 .brand:hover {
   text-decoration: none;
 }
-.brand-mark {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--glacier);
-  color: #15181a;
-  font-family: var(--reading);
-  font-size: 15px;
-  font-weight: 600;
+.wordmark {
+  display: block;
+  color: var(--ink);
+}
+.wordmark text {
+  fill: currentColor;
 }
 .rail-nav {
   position: relative;

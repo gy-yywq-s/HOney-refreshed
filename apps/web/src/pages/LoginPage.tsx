@@ -8,6 +8,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { SchoolLoginForm } from "../components/SchoolLoginForm";
+import { WordmarkHOney } from "../components/Wordmark";
 
 type Phase = "signin" | "consent";
 
@@ -23,10 +24,9 @@ export function LoginPage() {
   return (
     <main className="login">
       <div className="login__doorway">
-        <div className="login__mark" aria-hidden="true">
-          HO
-        </div>
-        <h1 className="login__wordmark">HOney</h1>
+        <h1 className="login__wordmark">
+          <WordmarkHOney height={54} />
+        </h1>
 
         {phase === "signin" ? (
           <>
