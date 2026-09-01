@@ -62,7 +62,7 @@ describe("ApiClient login", () => {
     const fetchFn = vi.fn<FetchLike>().mockResolvedValueOnce(json(200, loginBody));
     const client = new ApiClient({ fetchFn, storage });
 
-    const result = await client.login({ username: "s1234", password: "pw", consentTimetable: true });
+    const result = await client.login({ username: "s1234", password: "pw" });
 
     expect(result.honeyId).toBe("hx7k2p");
     expect(client.hasSession()).toBe(true);
@@ -75,7 +75,6 @@ describe("ApiClient login", () => {
     expect(JSON.parse(String(init?.body))).toEqual({
       username: "s1234",
       password: "pw",
-      consentTimetable: true,
     });
   });
 

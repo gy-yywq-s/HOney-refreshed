@@ -96,11 +96,12 @@ beforeEach(async () => {
   const res = await app.inject({
     method: "POST",
     url: "/api/auth/login",
-    payload: { username: "s0088", password: "pw-good", consentTimetable: true },
+    payload: { username: "s0088", password: "pw-good" },
   });
   const body = res.json() as { honeyId: string; session: { accessToken: string } };
   honeyId = body.honeyId;
   auth = { authorization: `Bearer ${body.session.accessToken}` };
+  await app.inject({ method: "POST", url: "/api/consent", headers: auth, payload: { timetable: true } });
   await app.inject({ method: "POST", url: "/api/sync", headers: auth });
 });
 

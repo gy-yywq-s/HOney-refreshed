@@ -10,12 +10,11 @@ import type { AppContext } from "../context.js";
 interface LoginBody {
   username?: string;
   password?: string;
-  consentTimetable?: boolean;
 }
 
 export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void {
   app.post<{ Body: LoginBody }>("/api/auth/login", async (req, reply) => {
-    const { username, password, consentTimetable } = req.body ?? {};
+    const { username, password } = req.body ?? {};
     if (!username || !password) {
       return reply.code(400).send({ error: "username and password are required" });
     }
@@ -24,11 +23,10 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
       const identity = await ctx.connector.validate(portalSession);
       const result = ctx.accounts.provisionFromPortal(identity, portalSession);
 
-      if (consentTimetable === true) {
-        ctx.accounts.setConsent(result.user.honey_id, true);
-        // Initial import runs inline so first Home render has data.
-        await ctx.importer.syncTimetable(result.user.honey_id).catch(() => undefined);
-      }
+      // Login NEVER mutates import consent (review v3 §12.15A): any
+      // consent-looking field in the payload is ignored outright. The only
+      // consent mutation path is POST /api/consent, and the initial sync runs
+      // only from that explicit action.
       const consent = ctx.accounts.getConsent(result.user.honey_id);
       return reply.send({
         honeyId: result.user.honey_id,

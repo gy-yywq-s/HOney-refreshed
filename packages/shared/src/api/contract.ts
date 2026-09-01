@@ -9,10 +9,14 @@ export interface SessionTokens {
   refreshExpiresAt: string;
 }
 
+/**
+ * Login carries ONLY identity. Signing in and copying school data are two
+ * different decisions (review v3 §12.15A): no login payload can grant import
+ * consent — `POST /api/consent` is the single consent mutation path.
+ */
 export interface LoginInput {
   username: string;
   password: string;
-  consentTimetable?: boolean;
 }
 
 export interface LoginResponse {

@@ -36,16 +36,28 @@ async function login(consent = true) {
   const res = await app.inject({
     method: "POST",
     url: "/api/auth/login",
-    payload: { ...LOGIN, consentTimetable: consent },
+    payload: { ...LOGIN },
   });
   expect(res.statusCode).toBe(200);
-  return res.json() as {
+  const body = res.json() as {
     honeyId: string;
     created: boolean;
     isAdmin: boolean;
     consent: { timetable: boolean };
     session: { accessToken: string; refreshToken: string };
   };
+  // Consent is a SEPARATE explicit action — /api/consent is the only path.
+  if (consent && !body.consent.timetable) {
+    const c = await app.inject({
+      method: "POST",
+      url: "/api/consent",
+      headers: { authorization: `Bearer ${body.session.accessToken}` },
+      payload: { timetable: true },
+    });
+    expect(c.statusCode).toBe(200);
+    body.consent.timetable = true;
+  }
+  return body;
 }
 
 describe("auth: school login is signup", () => {
@@ -127,6 +139,27 @@ describe("auth: school login is signup", () => {
 });
 
 describe("consent & import", () => {
+  it("NO login payload can grant import consent (review v3 \u00a712.15A)", async () => {
+    // The legacy combined path is gone: consent-looking fields in the login
+    // body are ignored, /api/consent is the only consent mutation.
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/auth/login",
+      payload: { ...LOGIN, consentTimetable: true, consent: { timetable: true } },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { consent: { timetable: boolean }; session: { accessToken: string } };
+    expect(body.consent.timetable).toBe(false);
+
+    // And no data was imported behind the user's back.
+    const sync = await app.inject({
+      method: "POST",
+      url: "/api/sync",
+      headers: { authorization: `Bearer ${body.session.accessToken}` },
+    });
+    expect((sync.json() as { status: string }).status).toBe("no_consent");
+  });
+
   it("POST /api/sync accepts an empty JSON body (bodyless action)", async () => {
     const { session } = await login(true);
     const res = await app.inject({
