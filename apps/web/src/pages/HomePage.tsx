@@ -16,15 +16,17 @@ export function HomePage() {
 
   return (
     <div className="stack">
-      <header>
-        <h1 className="page-title">Welcome, {me.displayName}</h1>
-        {lastSyncedAt && isStale(lastSyncedAt) && (
-          <span className="caption">Last synced {timeAgo(lastSyncedAt)}</span>
-        )}
+      <header className="home-greeting">
+        <h1 className="home-greeting__hi">Hi, {me.displayName}</h1>
+        <p className="home-greeting__sub text-3">
+          {lastSyncedAt && isStale(lastSyncedAt)
+            ? `Last synced ${timeAgo(lastSyncedAt)}`
+            : "Here's your day."}
+        </p>
       </header>
 
-      <section className="card" aria-label="Next lesson">
-        <h2 className="section-title">Next lesson</h2>
+      <section className="card card--hero nextlesson" aria-label="Next lesson">
+        <span className="eyebrow">Next lesson</span>
         {loading ? (
           <p className="muted">Loading…</p>
         ) : error ? (
@@ -50,7 +52,7 @@ export function HomePage() {
       </section>
 
       <section className="card" aria-label="Experiences">
-        <h2 className="section-title">Recent from your classes</h2>
+        <span className="eyebrow">From your classes</span>
         {fromClasses.loading ? (
           <p className="muted">Loading…</p>
         ) : fromClasses.error ? (
@@ -61,8 +63,8 @@ export function HomePage() {
           </p>
         ) : (
           <ul className="home-exp-list">
-            {/* Chronological (newest first), no ranking — first three only. */}
-            {fromClasses.experiences.slice(0, 3).map((exp) => (
+            {/* Chronological (newest first), no ranking — a small glimpse only. */}
+            {fromClasses.experiences.slice(0, 2).map((exp) => (
               <li key={exp.id} className="home-exp-row">
                 <span className="home-exp-row__body">{exp.body}</span>
                 <span className="caption">

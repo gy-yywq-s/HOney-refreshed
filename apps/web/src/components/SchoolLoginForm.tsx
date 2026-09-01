@@ -4,7 +4,7 @@ import { api, describeApiError } from "../api/client";
 import type { LoginResponse } from "../api/types";
 
 interface SchoolLoginFormProps {
-  /** "login" shows the consent checkbox; "reconnect" is credentials-only. */
+  /** Only changes the button label; import consent is a separate, later step. */
   mode: "login" | "reconnect";
   onSuccess: (result: LoginResponse) => void;
 }
@@ -12,7 +12,6 @@ interface SchoolLoginFormProps {
 export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [consent, setConsent] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,11 +20,9 @@ export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
     setBusy(true);
     setError(null);
     try {
-      const input =
-        mode === "login"
-          ? { username, password, consentTimetable: consent }
-          : { username, password };
-      onSuccess(await api.login(input));
+      // Signing in never imports the timetable. Import is a separate, active
+      // choice on the next step (audit §3.2) — the request carries no consent.
+      onSuccess(await api.login({ username, password }));
     } catch (err) {
       setError(describeApiError(err));
       setBusy(false);
@@ -62,12 +59,6 @@ export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
           required
         />
       </div>
-      {mode === "login" && (
-        <label className="checkbox">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span>Import my timetable</span>
-        </label>
-      )}
       <button className="btn btn--primary btn--block" type="submit" disabled={busy}>
         {busy ? "Signing in…" : mode === "login" ? "Continue with school account" : "Reconnect"}
       </button>

@@ -1,31 +1,61 @@
 /*
- * HOney design tokens — mirrored by hand from design/tokens/tokens.json (v1.0.0).
- * Dark mode switches automatically via prefers-color-scheme.
+ * HOney design tokens — the legacy iOS design language, mirrored for web
+ * (docs/design/legacy-port-map.md). Color scheme is LOCKED to light; hierarchy
+ * is navy at fixed opacities, not extra hues. Surfaces are translucent white
+ * over one fixed page gradient — no backdrop-filter (the gate picker aside).
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
-  /* color.light */
-  --color-background: #f2f7fc;
-  --color-surface: #ffffff;
-  --color-surface-translucent: rgba(255, 255, 255, 0.72);
-  --color-text-primary: #17294b;
-  --color-text-secondary: #46608a;
-  --color-accent: #1b6bc4;
-  --color-accent-soft: #dcebfa;
-  --color-success: #177a50;
-  --color-warning: #8a5a00;
-  --color-danger: #c0362c;
-  --color-line: #d8e3f0;
+  /* Brand hues (as R,G,B triples so opacity can express the whole hierarchy). */
+  --navy: 18, 48, 92; /* #12305C — the ONLY text hue */
+  --ocean: 59, 176, 209; /* #3BB0D1 — the single accent */
 
-  /* typography (roles; px 1:1 with pt) */
-  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --text-display: 700 34px/41px var(--font-family);
-  --text-title: 600 22px/28px var(--font-family);
-  --text-body: 400 17px/24px var(--font-family);
-  --text-caption: 400 13px/18px var(--font-family);
+  --sky: #b8e0ff;
+  --mist: #edf7ff;
+  --line: #cce0f2; /* every 1px border */
+  --page: #ffffff;
 
-  /* spacing (4-base scale) */
+  --success: #2b8f4d;
+  --warning: #db6b24;
+  --error: #db2e38;
+  --accent: #3bb0d1;
+
+  /* Text hierarchy = navy at fixed opacities (the whole ladder). */
+  --text-1: rgba(var(--navy), 1);
+  --text-2: rgba(var(--navy), 0.82);
+  --text-3: rgba(var(--navy), 0.62);
+  --text-4: rgba(var(--navy), 0.48);
+  --text-5: rgba(var(--navy), 0.34);
+
+  /* Surfaces = white at fixed opacities over the gradient. */
+  --surface-overlay: rgba(255, 255, 255, 0.98);
+  --surface-canvas: rgba(255, 255, 255, 0.92);
+  --surface-card: rgba(255, 255, 255, 0.88);
+  --surface-header: rgba(255, 255, 255, 0.86);
+  --surface-nested: rgba(255, 255, 255, 0.72);
+  --surface-solid: #ffffff;
+
+  /* Accent tints. */
+  --accent-chip: rgba(var(--ocean), 0.1);
+  --accent-ghost: rgba(var(--ocean), 0.14);
+  --accent-soft: rgba(var(--ocean), 0.1);
+  --accent-wash: rgba(var(--ocean), 0.18);
+
+  /* Fixed diagonal page gradient — behind everything, never hidden. */
+  --page-gradient: linear-gradient(135deg, #f2faff 0%, #d6edff 100%);
+
+  /* Type. Rounded = headings; body = system default; serif = login wordmark only. */
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-rounded: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+  --font-serif: ui-serif, "New York", Georgia, "Times New Roman", serif;
+
+  /* Radius: 8 default, 12 heroes, pill for chips/status. */
+  --radius: 8px;
+  --radius-hero: 12px;
+  --radius-pill: 999px;
+
+  /* Spacing (legacy rhythm). */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
@@ -33,44 +63,13 @@
   --space-xl: 24px;
   --space-2xl: 32px;
   --space-3xl: 48px;
+  --page-h: 18px;
+  --pad-card: 16px;
+  --gap-section: 14px;
+  --gap-sibling: 10px;
+  --gap-row: 8px;
 
-  /* radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
-
-  /* motion */
-  --duration-fast: 120ms;
-  --duration-standard: 240ms;
-  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
-  --easing-decelerate: cubic-bezier(0, 0, 0, 1);
-  --easing-accelerate: cubic-bezier(0.3, 0, 1, 1);
-
-  /* elevation */
-  --shadow-card: 0 1px 3px rgba(23, 41, 75, 0.08);
-  --shadow-raised: 0 4px 12px rgba(23, 41, 75, 0.12);
-  --shadow-sheet: 0 8px 32px rgba(23, 41, 75, 0.18);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #0c1526;
-    --color-surface: #16233b;
-    --color-surface-translucent: rgba(22, 35, 59, 0.72);
-    --color-text-primary: #eaf2fb;
-    --color-text-secondary: #a3b8d4;
-    --color-accent: #63a9f2;
-    --color-accent-soft: #1d3a5f;
-    --color-success: #4fc792;
-    --color-warning: #e9ac55;
-    --color-danger: #f08479;
-    --color-line: #27395a;
-
-    /* Per tokens: dark mode relies on surface tone difference, not shadows. */
-    --shadow-card: none;
-    --shadow-raised: none;
-    --shadow-sheet: none;
-  }
+  /* Motion: legacy ships near-motionless — keep shapes, ~0 duration. */
+  --dur: 90ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
 }

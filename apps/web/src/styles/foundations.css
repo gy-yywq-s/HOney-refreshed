@@ -1,0 +1,125 @@
+/*
+ * Foundations — reset, the fixed page gradient, typography and layout
+ * primitives. No component grammar lives here.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font: 400 16px/1.5 var(--font-body);
+  color: var(--text-1);
+  /* The gradient is fixed behind everything and never hidden. */
+  background: var(--page-gradient) fixed;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Headings + eyebrows use the rounded stack; body stays system default. */
+.page-title,
+.section-title,
+.eyebrow,
+.modal__title {
+  font-family: var(--font-rounded);
+}
+
+.page-title {
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+  margin: 0 0 var(--space-lg);
+}
+.section-title {
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 var(--space-md);
+}
+
+/* Eyebrow label — quiet ocean, small. Used sparingly, not as default hierarchy. */
+.eyebrow,
+.overline {
+  display: block;
+  font-family: var(--font-rounded);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  margin: 0 0 var(--space-xs);
+}
+
+/* Navy-opacity text utilities — the whole hierarchy, one hue. */
+.text-2 {
+  color: var(--text-2);
+}
+.text-3,
+.caption,
+.muted {
+  color: var(--text-3);
+}
+.caption {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.text-4 {
+  color: var(--text-4);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.empty {
+  color: var(--text-3);
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+/* Layout primitives. */
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--page-h) var(--space-3xl);
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-section, 14px);
+}
+.fullscreen-note {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

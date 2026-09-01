@@ -41,13 +41,18 @@ export function ExperiencesHubPage() {
   return (
     <div className="stack">
       <header className="page-head">
-        <h1 className="page-title">Experiences</h1>
+        <div>
+          <span className="eyebrow">Experiences</span>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>
+            A shared memory, read slowly
+          </h1>
+        </div>
         <Link className="btn btn--primary" to="/experiences/compose">
           Share an experience
         </Link>
       </header>
-      <div className="caption">
-        Anonymous by construction — posts carry no author, and your keys stay on this device.{" "}
+      <div className="text-3">
+        Verified experiences from your school — more context, fewer verdicts.{" "}
         <Link to="/experiences/mine">My contributions</Link>
       </div>
 

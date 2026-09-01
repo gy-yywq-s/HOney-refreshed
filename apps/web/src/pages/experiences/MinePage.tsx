@@ -4,10 +4,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, ApiError } from "../../api/client";
+import { api } from "../../api/client";
 import type { MyExperience } from "../../api/types";
 import { ConfirmDialog } from "../../components/Modal";
-import { formatCoarseDate, formatRemaining } from "../../lib/format";
+import { formatCoarseDate } from "../../lib/format";
 import { ownershipKeys, privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote, StoredOwnershipKey } from "../../lib/ownershipKeys";
 import { useApi } from "../../lib/useApi";
@@ -15,40 +15,20 @@ import { Stars, provenanceLabel, useNames } from "./shared";
 
 interface StatusMeta {
   chip: string;
-  tone: "pending" | "ok" | "warn" | "muted" | "danger";
+  tone: "ok" | "muted" | "danger";
   explain: string;
 }
 
+// A "mine" row only ever exists for a post that was actually published — the
+// check/publish split means rejected drafts are never stored. So the only
+// statuses are published, later-hidden (blocked), and revoked.
 const STATUS_META: Record<string, StatusMeta> = {
-  pending: {
-    chip: "Pending",
-    tone: "pending",
-    explain: "Being checked automatically — usually a few seconds.",
-  },
   published: { chip: "Published", tone: "ok", explain: "" },
-  cooldown: {
-    chip: "Cooling off",
-    tone: "warn",
-    explain:
-      "The wording read as very heated, so it's saved privately for 24 h — you can publish after reconfirming.",
-  },
-  rephrase_required: {
-    chip: "Rephrase needed",
-    tone: "warn",
-    explain:
-      "The check asked for a rephrase — say it more directly, as your own experience. The text wasn't kept, so your review slot is free to try again.",
-  },
   blocked: {
-    chip: "Not published",
+    chip: "Hidden",
     tone: "danger",
     explain:
-      "This couldn't be published under the community rules. The text wasn't kept anywhere, and your review slot is free again.",
-  },
-  failed_closed: {
-    chip: "Check unavailable",
-    tone: "danger",
-    explain:
-      "The moderation check couldn't run, and nothing publishes unchecked. The text wasn't kept — you're welcome to try again.",
+      "This was hidden after a re-check against the current community rules. You can revoke it to free your review slot for this target.",
   },
   revoked: {
     chip: "Revoked",
@@ -110,36 +90,6 @@ export function ExperiencesMinePage() {
     return names.entity.get(exp.entity_key) ?? exp.entity_key;
   }
 
-  async function reconfirm(ownershipKey: string) {
-    setBusyKey(ownershipKey);
-    setFeedback(null);
-    try {
-      const result = await api.reconfirmExperience(ownershipKey);
-      setFeedback(
-        result.ok
-          ? { tone: "success", text: "Reconfirmed — your experience is now published." }
-          : {
-              tone: "danger",
-              text: `Reconfirm ran, but the current policy did not publish it (status: ${result.status ?? "unknown"}).`,
-            },
-      );
-      mine.reload();
-    } catch (err) {
-      const code = err instanceof ApiError ? err.code : "";
-      setFeedback({
-        tone: "danger",
-        text:
-          code === "cooldown_active"
-            ? "The cooling-off window hasn't finished yet."
-            : code === "publications_disabled"
-              ? "Publishing is paused right now — try again later."
-              : "Could not reconfirm. Please try again.",
-      });
-    } finally {
-      setBusyKey(null);
-    }
-  }
-
   async function revoke(ownershipKey: string) {
     setBusyKey(ownershipKey);
     setFeedback(null);
@@ -191,10 +141,10 @@ export function ExperiencesMinePage() {
         <section className="card">
           <h2 className="section-title">Nothing here yet</h2>
           <p className="muted">
-            Published experiences are anonymous: the server never stores who wrote a post. Instead,
-            each submission hands this browser a one-time ownership key — that key is the only
-            proof of authorship that exists, and it is how this page finds, revokes and reconfirms
-            your posts. Private notes live here too, encrypted, without ever leaving the device.
+            Published experiences are stored without an author ID. Each one hands this browser a
+            one-time ownership key — that key is the only control over the post that exists, and it
+            is how this page finds and revokes your posts. Private notes live here too, scrambled at
+            rest, without ever leaving the device.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/compose">
@@ -216,7 +166,6 @@ export function ExperiencesMinePage() {
                 label={targetLabel(item.exp!)}
                 ownershipKey={keyByExperienceId.get(item.exp!.id) ?? ""}
                 busy={busyKey === keyByExperienceId.get(item.exp!.id)}
-                onReconfirm={(k) => void reconfirm(k)}
                 onRevoke={(k) => setRevoking(k)}
               />
             ) : (
@@ -259,14 +208,12 @@ function MineExperienceCard({
   label,
   ownershipKey,
   busy,
-  onReconfirm,
   onRevoke,
 }: {
   exp: MyExperience;
   label: string;
   ownershipKey: string;
   busy: boolean;
-  onReconfirm: (key: string) => void;
   onRevoke: (key: string) => void;
 }) {
   const meta = STATUS_META[exp.status] ?? {
@@ -274,9 +221,6 @@ function MineExperienceCard({
     tone: "muted" as const,
     explain: "",
   };
-  const cooldownRemaining =
-    exp.status === "cooldown" && exp.cooldown_until !== null ? exp.cooldown_until - Date.now() : 0;
-  const canReconfirm = exp.status === "cooldown" && cooldownRemaining <= 0;
   const canRevoke = exp.status !== "revoked";
 
   return (
@@ -292,39 +236,21 @@ function MineExperienceCard({
         <p className="exp-card__body">{exp.body}</p>
       ) : (
         <p className="muted">
-          {exp.status === "revoked"
-            ? "(text deleted when you revoked this post)"
-            : "(the text was not kept)"}
+          {exp.status === "revoked" ? "(text deleted when you revoked this post)" : "(no text)"}
         </p>
       )}
       {meta.explain && <p className="caption exp-card__note">{meta.explain}</p>}
-      {exp.status === "cooldown" && cooldownRemaining > 0 && (
-        <p className="caption exp-card__note">
-          You can reconfirm in {formatRemaining(cooldownRemaining)}.
-        </p>
-      )}
-      {ownershipKey && (canReconfirm || canRevoke) && (
+      {exp.status_detail && <p className="caption exp-card__note">{exp.status_detail}</p>}
+      {ownershipKey && canRevoke && (
         <div className="exp-card__actions">
-          {canReconfirm && (
-            <button
-              type="button"
-              className="btn btn--primary btn--small"
-              disabled={busy}
-              onClick={() => onReconfirm(ownershipKey)}
-            >
-              {busy ? "Working…" : "Reconfirm & publish"}
-            </button>
-          )}
-          {canRevoke && (
-            <button
-              type="button"
-              className="btn btn--ghost btn--small"
-              disabled={busy}
-              onClick={() => onRevoke(ownershipKey)}
-            >
-              Revoke…
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn btn--ghost btn--small"
+            disabled={busy}
+            onClick={() => onRevoke(ownershipKey)}
+          >
+            Revoke…
+          </button>
         </div>
       )}
     </article>

@@ -1,0 +1,67 @@
+/*
+ * Admin (Dash) — the operational console has a different audience from the
+ * student product, so its visual system is scoped separately (audit §8.5).
+ * Everything here is nested under `.admin`.
+ */
+
+.admin .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-md);
+}
+.admin .stat-tile {
+  background: var(--surface-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.admin .stat-tile__value {
+  font-family: var(--font-rounded);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin .entity-admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  padding: var(--space-sm) 0;
+}
+.admin .entity-admin-row + .entity-admin-row {
+  border-top: 1px solid var(--line);
+}
+.admin .entity-admin-row__actions {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.admin .table-wrap {
+  overflow-x: auto;
+}
+.admin .table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--text-1);
+}
+.admin .table th {
+  text-align: left;
+  font-family: var(--font-rounded);
+  font-weight: 700;
+  color: var(--text-3);
+  padding: var(--space-sm) var(--space-md) var(--space-sm) 0;
+  border-bottom: 1px solid var(--line);
+}
+.admin .table td {
+  padding: var(--space-sm) var(--space-md) var(--space-sm) 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}

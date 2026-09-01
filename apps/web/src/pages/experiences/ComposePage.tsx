@@ -1,18 +1,21 @@
 // /experiences/compose?lessonId= | ?entityKey= | ?noteId= — write an
 // experience. Culture hints (spec §4, the Six Checks) appear as quiet
-// placeholder/hint text, never as checkboxes. Submission is async: the server
-// answers immediately with a device-held ownership key, and moderation runs in
-// the background.
+// placeholder/hint text, never as checkboxes. Publication is deliberate:
+// the draft is preserved locally (audit §3.4), moderation runs synchronously
+// as a preflight, and a `nudge` asks the user to choose before anything is
+// published (audit §3.3) — nothing is ever auto-published.
 
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, Lesson } from "../../api/types";
 import { useApi } from "../../lib/useApi";
-import { formatShortDate, formatTime } from "../../lib/format";
-import { ownershipKeys, privateNotes } from "../../lib/ownershipKeys";
+import { formatShortDate, formatTime, formatRemaining } from "../../lib/format";
+import { privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote } from "../../lib/ownershipKeys";
-import { StarInput, describeSubmitError } from "./shared";
+import { StarInput } from "./shared";
+import { useComposer } from "./useComposer";
+import type { ComposerTarget } from "./useComposer";
 
 // Six-Checks-derived contextual hints (spec §4: "contextually in composer
 // prompts ... rather than a mandatory six-checkbox ritual").
@@ -30,14 +33,6 @@ const FOOTER_HINTS = [
   "More context, fewer verdicts.",
 ];
 
-interface Target {
-  label: string;
-  detail?: string;
-  lessonId?: string;
-  entityKey?: string;
-  isDish: boolean;
-}
-
 export function ExperiencesComposePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -45,15 +40,11 @@ export function ExperiencesComposePage() {
   const entityKeyParam = searchParams.get("entityKey");
   const noteId = searchParams.get("noteId");
 
-  const [body, setBody] = useState("");
-  const [rating, setRating] = useState<number | null>(null);
   const [note, setNote] = useState<PrivateNote | null>(null);
-  const [busy, setBusy] = useState<"submit" | "save" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
-  // Stable per-mount hint pick — quiet variety without churn while typing.
   const hints = useMemo(
     () => ({
       placeholder: PLACEHOLDER_HINTS[Math.floor(Math.random() * PLACEHOLDER_HINTS.length)]!,
@@ -62,14 +53,10 @@ export function ExperiencesComposePage() {
     [],
   );
 
-  // Republishing a private note: prefill body/rating/target from the note.
   useEffect(() => {
     if (!noteId) return;
     void privateNotes.get(noteId).then((n) => {
-      if (!n) return;
-      setNote(n);
-      setBody(n.body);
-      setRating(n.rating);
+      if (n) setNote(n);
     });
   }, [noteId]);
 
@@ -85,7 +72,7 @@ export function ExperiencesComposePage() {
     [effectiveEntityKey],
   );
 
-  const target = useMemo<Target | null>(() => {
+  const target = useMemo<ComposerTarget | null>(() => {
     if (effectiveLessonId) {
       const lesson: Lesson | undefined = history.data?.lessons.find((l) => l.id === effectiveLessonId);
       return {
@@ -121,32 +108,22 @@ export function ExperiencesComposePage() {
     return null;
   }, [effectiveLessonId, effectiveEntityKey, history.data, entities.data]);
 
-  async function submit() {
-    if (!target || busy) return;
-    setBusy("submit");
-    setError(null);
-    try {
-      const result = await api.submitExperience({
-        ...(target.lessonId ? { lessonId: target.lessonId } : {}),
-        ...(target.entityKey ? { entityKey: target.entityKey } : {}),
-        body: body.trim(),
-        ...(target.isDish && rating !== null ? { rating } : {}),
-      });
-      // The ownership key is shown exactly once by the server — persist it
-      // immediately; it is the only control anyone will ever have over this post.
-      ownershipKeys.add({ key: result.ownershipKey, experienceId: result.experienceId });
-      setSubmitted(true);
-    } catch (err) {
-      setError(describeSubmitError(err));
-    } finally {
-      setBusy(null);
-    }
-  }
+  const composer = useComposer(target);
+  const { body, setBody, rating, setRating, status, notice } = composer;
+
+  // Republishing a private note: seed the composer from the note's text.
+  useEffect(() => {
+    if (!note) return;
+    setBody(note.body);
+    setRating(note.rating);
+    // Intentionally seed once when the note loads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note]);
 
   async function savePrivately() {
-    if (busy) return;
-    setBusy("save");
-    setError(null);
+    if (saveBusy) return;
+    setSaveBusy(true);
+    setSaveError(null);
     try {
       await privateNotes.save({
         ...(note ? { id: note.id } : {}),
@@ -161,27 +138,24 @@ export function ExperiencesComposePage() {
       });
       setSaved(true);
     } catch {
-      setError("Could not save the note on this device.");
+      setSaveError("Could not save the note on this device.");
     } finally {
-      setBusy(null);
+      setSaveBusy(false);
     }
   }
 
-  if (submitted) {
+  if (status.kind === "published") {
     return (
       <div className="stack">
-        <h1 className="page-title">Submitted</h1>
-        <section className="card">
-          <h2 className="section-title">Being checked — usually a few seconds</h2>
-          <p className="muted">
-            Every public word goes through the same automatic check before anyone sees it. There is
-            no human queue and nothing links the post to you — your control over it is the key just
-            saved to this browser.
+        <h1 className="page-title">Published</h1>
+        <section className="card card--hero">
+          <p>
+            Your experience is live. It is stored without an author ID — the publish request carried
+            no account identity, so nothing links the post back to you.
           </p>
-          <p className="muted">
-            If the checker reads the wording as very heated, the post is instead saved privately
-            for 24 hours — you can publish it after reconfirming, once the cooling-off window
-            passes. You can watch the status in My contributions.
+          <p className="text-3">
+            Your only control over it is an ownership key just saved to this browser. Keep it: it is
+            how you revoke the post later.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/mine">
@@ -199,11 +173,15 @@ export function ExperiencesComposePage() {
   if (saved) {
     return (
       <div className="stack">
-        <h1 className="page-title">Saved privately</h1>
-        <section className="card">
-          <p className="muted">
-            The note is encrypted and stays only on this device — it was never sent anywhere. You
-            can edit, delete or publish it later from My contributions.
+        <h1 className="page-title">Kept private</h1>
+        <section className="card card--hero">
+          <p>
+            The note stays only on this device — it was never sent anywhere. You can edit, delete or
+            publish it later from My contributions.
+          </p>
+          <p className="text-3">
+            It is scrambled at rest so a casual look at browser storage won't read it, but the key
+            sits on this device too — treat it as private-on-this-device, not encrypted-from-everyone.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/mine">
@@ -218,19 +196,23 @@ export function ExperiencesComposePage() {
     );
   }
 
+  const busy = status.kind === "checking";
+  const canAct = body.trim().length > 0 && !busy;
+
   return (
     <div className="stack">
+      <div className="eyebrow">Compose</div>
       <h1 className="page-title">Share an experience</h1>
 
       {target ? (
-        <section className="card compose-target" aria-label="What this is about">
-          <span className="overline">About</span>
-          <strong>{target.label}</strong>
-          {target.detail && <span className="caption">{target.detail}</span>}
+        <section className="compose-target" aria-label="What this is about">
+          <span className="eyebrow">About</span>
+          <strong className="compose-target__label">{target.label}</strong>
+          {target.detail && <span className="text-3">{target.detail}</span>}
         </section>
       ) : (
         <section className="card" aria-label="Pick a target">
-          <p className="muted">
+          <p className="text-3">
             An experience is about one of your own lessons, or a teacher, place or dish.
           </p>
           <div className="card-actions">
@@ -245,7 +227,7 @@ export function ExperiencesComposePage() {
       )}
 
       {target && (
-        <section className="card">
+        <section className="stack">
           <div className="field">
             <label className="field__label" htmlFor="compose-body">
               Your experience
@@ -258,8 +240,9 @@ export function ExperiencesComposePage() {
               placeholder={hints.placeholder}
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              disabled={status.kind === "nudge"}
             />
-            <span className="caption compose-hint">{hints.footer}</span>
+            <span className="text-4 compose-hint">{hints.footer}</span>
           </div>
 
           {target.isDish && (
@@ -269,33 +252,157 @@ export function ExperiencesComposePage() {
             </div>
           )}
 
-          {error && <div className="banner banner--danger">{error}</div>}
+          {notice && (
+            <div className={`banner banner--${notice.tone === "danger" ? "danger" : "warning"}`}>
+              <div>
+                <p style={{ margin: 0 }}>{notice.text}</p>
+                {notice.reasons && notice.reasons.length > 0 && (
+                  <ul className="compose-reasons">
+                    {notice.reasons.map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                )}
+                {notice.suggestKeepPrivate && (
+                  <button
+                    className="btn btn--ghost btn--small"
+                    disabled={saveBusy}
+                    onClick={() => void savePrivately()}
+                  >
+                    Keep as a private note
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {saveError && <div className="banner banner--danger">{saveError}</div>}
 
-          <div className="card-actions">
-            <button
-              className="btn btn--primary"
-              disabled={busy !== null || body.trim().length === 0}
-              onClick={() => void submit()}
-            >
-              {busy === "submit" ? "Submitting…" : "Publish anonymously"}
-            </button>
-            <button
-              className="btn btn--ghost"
-              disabled={busy !== null || body.trim().length === 0}
-              onClick={() => void savePrivately()}
-            >
-              {busy === "save" ? "Saving…" : "Save privately instead"}
-            </button>
-            <button className="btn btn--ghost" disabled={busy !== null} onClick={() => navigate(-1)}>
-              Cancel
-            </button>
-          </div>
-          <p className="caption" style={{ marginBottom: 0 }}>
-            Published posts carry no author. Your only control over this post will be a key stored
-            in this browser. Private notes never leave this device.
+          {status.kind === "nudge" ? (
+            <NudgePreflight
+              reasons={status.reasons}
+              busy={busy}
+              saveBusy={saveBusy}
+              onPublish={() => void composer.publishAsIs()}
+              onAddContext={composer.backToEditing}
+              onKeepPrivate={() => void savePrivately()}
+            />
+          ) : status.kind === "cooldown" ? (
+            <CooldownPanel
+              retryAt={status.retryAt}
+              onRecheck={() => void composer.recheckAfterCooldown()}
+              onKeepPrivate={() => void savePrivately()}
+              saveBusy={saveBusy}
+            />
+          ) : (
+            <div className="card-actions">
+              <button
+                className="btn btn--primary"
+                disabled={!canAct}
+                onClick={() => void composer.publish()}
+              >
+                {busy ? "Checking…" : "Publish"}
+              </button>
+              <button
+                className="btn btn--ghost"
+                disabled={saveBusy || body.trim().length === 0 || busy}
+                onClick={() => void savePrivately()}
+              >
+                {saveBusy ? "Saving…" : "Keep private"}
+              </button>
+              <button className="btn btn--ghost" disabled={busy} onClick={() => navigate(-1)}>
+                Cancel
+              </button>
+            </div>
+          )}
+
+          <p className="text-4" style={{ marginBottom: 0 }}>
+            Publishing runs a safety check first. Published posts carry no author ID; your only
+            control is a key kept in this browser. Private notes never leave this device.{" "}
+            <Link to="/settings">How privacy works</Link>
           </p>
         </section>
       )}
     </div>
+  );
+}
+
+function NudgePreflight({
+  reasons,
+  busy,
+  saveBusy,
+  onPublish,
+  onAddContext,
+  onKeepPrivate,
+}: {
+  reasons: string[];
+  busy: boolean;
+  saveBusy: boolean;
+  onPublish: () => void;
+  onAddContext: () => void;
+  onKeepPrivate: () => void;
+}) {
+  return (
+    <section className="card nudge" aria-label="Before you publish">
+      <span className="eyebrow">Before you publish</span>
+      <p style={{ marginTop: 0 }}>
+        This can go public as it is. A little more context often helps another student more than a
+        verdict — but that is your call.
+      </p>
+      {reasons.length > 0 && (
+        <ul className="compose-reasons">
+          {reasons.map((r) => (
+            <li key={r}>{r}</li>
+          ))}
+        </ul>
+      )}
+      <div className="card-actions">
+        <button className="btn btn--primary" disabled={busy} onClick={onPublish}>
+          {busy ? "Publishing…" : "Publish as is"}
+        </button>
+        <button className="btn btn--ghost" disabled={busy} onClick={onAddContext}>
+          Add context
+        </button>
+        <button className="btn btn--ghost" disabled={busy || saveBusy} onClick={onKeepPrivate}>
+          Keep private
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function CooldownPanel({
+  retryAt,
+  onRecheck,
+  onKeepPrivate,
+  saveBusy,
+}: {
+  retryAt: number;
+  onRecheck: () => void;
+  onKeepPrivate: () => void;
+  saveBusy: boolean;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  const remaining = retryAt - now;
+  const ready = remaining <= 0;
+  return (
+    <section className="card nudge" aria-label="Cooling off">
+      <span className="eyebrow">Cooling off</span>
+      <p style={{ marginTop: 0 }}>
+        The wording reads as very heated. Nothing was stored, and your draft is safe. You can publish
+        the same words after a short cooling-off window — a pause, not a rejection.
+      </p>
+      <div className="card-actions">
+        <button className="btn btn--primary" disabled={!ready} onClick={onRecheck}>
+          {ready ? "Publish now" : `Publish in ${formatRemaining(remaining)}`}
+        </button>
+        <button className="btn btn--ghost" disabled={saveBusy} onClick={onKeepPrivate}>
+          Keep private meanwhile
+        </button>
+      </div>
+    </section>
   );
 }

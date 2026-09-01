@@ -81,7 +81,7 @@ export function DashPage() {
   const counts = overview.data?.counts;
 
   return (
-    <div className="stack">
+    <div className="stack admin">
       <h1 className="page-title">Dash</h1>
       {feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>}
       {overview.error && <div className="banner banner--danger">{overview.error}</div>}
@@ -91,7 +91,6 @@ export function DashPage() {
         <div className="stat-grid">
           <StatTile label="Users" value={counts?.users} />
           <StatTile label="Published" value={counts?.published} />
-          <StatTile label="Pending" value={counts?.pending} />
           <StatTile label="Open reports" value={counts?.openReports} />
           <StatTile label="Entities" value={counts?.entities} />
         </div>
@@ -553,7 +552,6 @@ function ReportsPanel() {
                 <th>Category</th>
                 <th>Outcome</th>
                 <th>Post</th>
-                <th>Note</th>
               </tr>
             </thead>
             <tbody>
@@ -563,7 +561,6 @@ function ReportsPanel() {
                   <td>{r.category.replaceAll("_", " ")}</td>
                   <td>{(r.outcome ?? "pending").replaceAll("_", " ")}</td>
                   <td className="caption">{r.experience_id.slice(0, 8)}…</td>
-                  <td className="caption">{r.note ?? ""}</td>
                 </tr>
               ))}
             </tbody>

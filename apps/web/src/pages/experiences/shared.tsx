@@ -168,33 +168,17 @@ export function useNames() {
 }
 
 // ---------------------------------------------------------------------------
-// "From your classes" — chronological, unranked (spec §9: allowed sorts only)
+// "From your classes" — a backend domain query (audit §4.2). The server knows
+// the caller's verified exposure; the client no longer fetches the newest feed
+// and filters it. Still chronological and unranked.
 // ---------------------------------------------------------------------------
 
 export function useFromYourClasses(limit = 100) {
-  const directory = useApi(() => api.directory(), []);
-  const feed = useApi(() => api.experiencesFeed({ sort: "newest", limit }), []);
-
-  const experiences = useMemo(() => {
-    const dir = directory.data;
-    const all = feed.data?.experiences;
-    if (!dir || !all) return null;
-    const myTeachers = new Set(dir.teachers.map((t) => t.id));
-    const myCourses = new Set(dir.courses.map((c) => c.id));
-    // Plain chronological filter over the newest-first feed — deliberately no
-    // ranking, scoring or reordering of any kind.
-    return all.filter(
-      (e) =>
-        (e.ctx_teacher_id !== null && myTeachers.has(e.ctx_teacher_id)) ||
-        (e.ctx_course_id !== null && myCourses.has(e.ctx_course_id)) ||
-        [...myTeachers].some((id) => e.entity_key === `teacher:${id}`),
-    );
-  }, [directory.data, feed.data]);
-
+  const feed = useApi(() => api.fromMyClasses({ limit }), [limit]);
   return {
-    experiences,
-    loading: directory.loading || feed.loading,
-    error: directory.error ?? feed.error,
+    experiences: feed.data?.experiences ?? null,
+    loading: feed.loading,
+    error: feed.error,
   };
 }
 
@@ -305,7 +289,6 @@ export function ExperienceCard({
 
 function ReportDialog({ experienceId, onClose }: { experienceId: string; onClose: () => void }) {
   const [category, setCategory] = useState<ReportCategory | null>(null);
-  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -315,7 +298,7 @@ function ReportDialog({ experienceId, onClose }: { experienceId: string; onClose
     setBusy(true);
     setError(null);
     try {
-      await api.reportExperience(experienceId, category, note.trim() || undefined);
+      await api.reportExperience(experienceId, category);
       setDone(true);
     } catch {
       setError("Could not send the report. Please try again.");
@@ -357,18 +340,10 @@ function ReportDialog({ experienceId, onClose }: { experienceId: string; onClose
               </label>
             ))}
           </div>
-          <div className="field">
-            <label className="field__label" htmlFor="report-note">
-              Anything that helps (optional)
-            </label>
-            <textarea
-              id="report-note"
-              className="input"
-              rows={2}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
+          <p className="caption">
+            Reports are a category only — there is no free-text box. The post is automatically
+            re-checked against the current rules; sensitive detail belongs with the school, not here.
+          </p>
           {error && <div className="banner banner--danger">{error}</div>}
           <div className="modal__actions modal__actions--row">
             <button className="btn btn--ghost" onClick={onClose} disabled={busy}>

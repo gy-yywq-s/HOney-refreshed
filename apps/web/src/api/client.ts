@@ -8,11 +8,16 @@ import type {
   AdminLlmTestResponse,
   AdminOverview,
   AdminReportsResponse,
+  CheckExperienceInput,
+  CheckExperienceResponse,
   DirectoryResponse,
   EntitiesResponse,
   EntityType,
+  ExperienceEligibilityInput,
+  ExperienceEligibilityResponse,
   ExperiencesFeedParams,
   ExperiencesFeedResponse,
+  FromMyClassesParams,
   HistoryParams,
   HistoryResponse,
   KillSwitchName,
@@ -21,12 +26,11 @@ import type {
   Me,
   MyExperiencesResponse,
   NextLessonResponse,
-  ReconfirmResponse,
+  PublishExperienceInput,
+  PublishExperienceResponse,
   ReportCategory,
   SessionTokens,
   StandaloneMode,
-  SubmitExperienceInput,
-  SubmitExperienceResponse,
   SyncResponse,
   TimetableResponse,
 } from "./types";
@@ -156,17 +160,41 @@ export class ApiClient {
     return this.request("GET", qs ? `/api/experiences?${qs}` : "/api/experiences");
   }
 
-  submitExperience(input: SubmitExperienceInput): Promise<SubmitExperienceResponse> {
-    return this.request("POST", "/api/experiences", input);
+  /** Domain query (audit §4.2): posts relevant to my verified exposure. */
+  fromMyClasses(params: FromMyClassesParams = {}): Promise<ExperiencesFeedResponse> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== "") query.set(key, String(value));
+    }
+    const qs = query.toString();
+    return this.request(
+      "GET",
+      qs ? `/api/experiences/from-my-classes?${qs}` : "/api/experiences/from-my-classes",
+    );
+  }
+
+  // ---- Publication flow: eligibility → check → publish (contract §Experiences) ----
+
+  /** Step 1: authenticated, single-use, scope-bound eligibility token. */
+  experienceEligibility(
+    input: ExperienceEligibilityInput,
+  ): Promise<ExperienceEligibilityResponse> {
+    return this.request("POST", "/api/experiences/eligibility", input);
+  }
+
+  /** Step 2: synchronous moderation preflight. The draft is NEVER persisted. */
+  checkExperience(input: CheckExperienceInput): Promise<CheckExperienceResponse> {
+    return this.request("POST", "/api/experiences/check", input);
+  }
+
+  /** Step 3: publish. No session auth — the eligibility token + pass are the only proof. */
+  publishExperience(input: PublishExperienceInput): Promise<PublishExperienceResponse> {
+    return this.request("POST", "/api/experiences/publish", input, { auth: false });
   }
 
   /** Own submissions, proved by client-held keys (any status). */
   myExperiences(keys: string[]): Promise<MyExperiencesResponse> {
     return this.request("POST", "/api/experiences/mine", { keys });
-  }
-
-  reconfirmExperience(ownershipKey: string): Promise<ReconfirmResponse> {
-    return this.request("POST", "/api/experiences/reconfirm", { ownershipKey });
   }
 
   revokeExperience(ownershipKey: string): Promise<{ ok: boolean }> {
@@ -177,11 +205,9 @@ export class ApiClient {
     return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/react`, { value });
   }
 
-  reportExperience(id: string, category: ReportCategory, note?: string): Promise<{ ok: boolean }> {
-    return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/report`, {
-      category,
-      ...(note ? { note } : {}),
-    });
+  /** Reports are category-only (audit §3.9): the backend rejects any free text. */
+  reportExperience(id: string, category: ReportCategory): Promise<{ ok: boolean }> {
+    return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/report`, { category });
   }
 
   // ---- Admin dash (isAdmin only) ----

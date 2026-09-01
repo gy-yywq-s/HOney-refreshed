@@ -58,8 +58,8 @@ export function SettingsPage() {
           <div className="setting-row__main">
             <span>Delete account</span>
             <span className="caption">
-              Removes your HOney account and everything imported with it. Published anonymous
-              experiences stay, controlled only by keys on your devices.
+              Removes your HOney account and everything imported with it. Published experiences
+              stay — they carry no author ID and are controlled only by the keys on your devices.
             </span>
           </div>
           <button className="btn btn--danger" onClick={() => setConfirm("delete-account")}>
@@ -144,33 +144,32 @@ export function SettingsPage() {
       </section>
 
       <section className="card settings-section" aria-label="Experiences and privacy">
-        <h2 className="section-title">Experiences &amp; privacy</h2>
+        <h2 className="section-title">How privacy works</h2>
         <p className="muted">
-          Experiences are anonymous by construction, not by promise. What that means concretely:
+          The plain version: HOney checks you actually have the relevant experience, published posts
+          are not attached to your school account, and your device holds the control needed to
+          remove your own post. The detail, honestly:
         </p>
         <ul className="privacy-list muted">
           <li>
-            <strong>Public posts have no author field.</strong> The server stores the text, its
-            lesson/entity context and a moderation status — nothing that identifies who wrote it.
-            No one, including admins, can look up an author.
+            <strong>Published posts are stored without an author ID.</strong> The publish request
+            carries no account identity, so the stored post has nothing that says who wrote it —
+            there is no author lookup, for anyone, including admins.
           </li>
           <li>
-            <strong>Your control is a device-held key.</strong> Each submission returns a one-time
-            ownership key stored only in this browser; the server keeps a hash. Presenting the key
-            is the only way to see, revoke or reconfirm your post.
-          </li>
-          <li>
-            <strong>One-review-per-scope uses unlinkable HMAC marks.</strong> A keyed hash prevents
-            duplicate reviews and duplicate reactions without recording who reviewed what — the
-            marks join to nothing.
+            <strong>Your control is a device-held key.</strong> Each publish returns a one-time
+            ownership key stored only in this browser; the server keeps only a hash. Presenting the
+            key is the only way to find or revoke your post.
           </li>
           <li>
             <strong>Public dates are coarse.</strong> Posts show a calendar day only; exact
             timestamps are never published.
           </li>
           <li>
-            <strong>Private notes never leave this device</strong> and are encrypted at rest in
-            this browser.
+            <strong>Private notes stay on this device.</strong> They are scrambled at rest, so a
+            casual look at browser storage won't read them — but the key sits on this device too.
+            That protects against casual dumps, not against scripts running on this site or someone
+            with full access to this browser. Treat them as private-on-this-device.
           </li>
         </ul>
         <KeyManagement onFeedback={setFeedback} />
