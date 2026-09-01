@@ -17,7 +17,7 @@ interface Rule {
   pattern?: RegExp;
   /** Tested against `deleeted` (confusables collapsed — slur wording). */
   deleetedPattern?: RegExp;
-  /** Tested against `squeezed` (spacing-proof). */
+  /** Tested against the squeezed projection of `deleeted`, word-bounded (spacing-proof). */
   squeezedPattern?: RegExp;
 }
 
@@ -30,19 +30,52 @@ const RULES: Rule[] = [
   { flag: "doxxing_pattern", pattern: /\b\d{17}[\dx]\b/ }, // CN national id
   { flag: "doxxing_pattern", pattern: /(家住|home address|lives at)\s*\S+/ },
   // Slur/dehumanizing seeds (deleeted + squeezed to defeat l33t and spacing).
-  { flag: "slur_or_dehumanizing", squeezedPattern: /(nigg(er|a)|fagg?ot|retard(ed)?|chink|spic|kike)/ },
-  { flag: "slur_or_dehumanizing", deleetedPattern: /(retard|nigg(er|a))/ },
+  { flag: "slur_or_dehumanizing", squeezedPattern: /(nigg(er|a)s?|fagg?ots?|retard(ed)?s?|chinks?|spics?|kikes?)/ },
+  { flag: "slur_or_dehumanizing", deleetedPattern: /(?<![\p{L}\p{N}])(retard(ed)?s?|nigg(er|a)s?)(?![\p{L}\p{N}])/u },
   { flag: "slur_or_dehumanizing", pattern: /(去死|畜生|贱人|婊子)/ },
   // Sexualized content involving minors — absolute block.
   { flag: "sexual_minor_context", pattern: /\b(sex|nude|naked)\b.{0,40}\b(student|minor|kid|child)\b/ },
 ];
+
+// Squeezing strips every separator, so a bare substring test would also hit
+// benign words that merely CONTAIN a blocked term. Instead, map each squeezed
+// match back to its span in `deleeted` and require a word boundary (string
+// edge or non-letter/digit) on both sides THERE. Spacing/punctuation/emoji
+// evasion still hits: those separators fall INSIDE the span, never at its
+// edges — only an unbroken longer word supplies letter neighbours.
+const WORD_CHAR = /[\p{L}\p{N}]/u; // mirrors the squeeze step in normalize.ts
+
+function squeezedRuleHits(deleeted: string, pattern: RegExp): boolean {
+  const map: number[] = []; // squeezed code-unit index → deleeted code-unit index
+  let squeezed = "";
+  let at = 0;
+  for (const ch of deleeted) {
+    if (WORD_CHAR.test(ch)) {
+      for (let k = 0; k < ch.length; k += 1) map.push(at + k);
+      squeezed += ch;
+    }
+    at += ch.length;
+  }
+  const flags = pattern.flags.includes("g") ? pattern.flags : pattern.flags + "g";
+  for (const m of squeezed.matchAll(new RegExp(pattern.source, flags))) {
+    const start = map[m.index];
+    const end = map[m.index + m[0].length - 1];
+    if (start === undefined || end === undefined) continue; // unreachable: map covers all of squeezed
+    const before = deleeted[start - 1];
+    const after = deleeted[end + 1];
+    if ((before === undefined || !WORD_CHAR.test(before)) && (after === undefined || !WORD_CHAR.test(after))) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export function lexicalScan(text: NormalizedText): LexicalFlag[] {
   const flags = new Set<LexicalFlag>();
   for (const rule of RULES) {
     if (rule.pattern?.test(text.folded)) flags.add(rule.flag);
     if (rule.deleetedPattern?.test(text.deleeted)) flags.add(rule.flag);
-    if (rule.squeezedPattern?.test(text.squeezed)) flags.add(rule.flag);
+    if (rule.squeezedPattern && squeezedRuleHits(text.deleeted, rule.squeezedPattern)) flags.add(rule.flag);
   }
   return [...flags];
 }

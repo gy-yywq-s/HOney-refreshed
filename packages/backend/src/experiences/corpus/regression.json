@@ -1,5 +1,5 @@
 {
-  "policyVersion": 4,
+  "policyVersion": 5,
   "note": "Versioned human-authored regression + adversarial corpus (App A §24/§26), deliberately BALANCED across benign / nuanced / serious classes — not merely more harmful examples. `lexical` cases must be caught by the deterministic normalize+lexicon layer ALONE (no LLM). `features` cases assert the deterministic policy engine over a feature vector (the LLM's only job is to produce that vector). Both halves run hermetically in CI. `live` cases carry real text checked against the ACTUAL LLM only when OPENROUTER_API_KEY is set; CI never depends on the network. The §26.2 launch gates are asserted over this set. Claim supported: \"zero misses in the versioned critical regression suite\" — NOT \"zero serious content can ever publish\".",
   "lexical": [
     {
@@ -127,6 +127,43 @@
       "text": "someone is sharing nude pics of a minor",
       "expect": "blocked_serious",
       "reason": "minor sexual context variant"
+    }
+  ],
+  "lexicalBenign": [
+    {
+      "id": "benign-spicy-en",
+      "text": "the canteen noodles were spicy and honestly great",
+      "reason": "must-not-false-positive: benign word merely contains a blocked term once squeezed"
+    },
+    {
+      "id": "benign-suspicious-en",
+      "text": "there was a suspicious smell in the chemistry lab",
+      "reason": "must-not-false-positive: blocked term is an interior substring of an everyday word"
+    },
+    {
+      "id": "benign-conspicuous-en",
+      "text": "she made a conspicuous effort to help every student",
+      "reason": "must-not-false-positive: interior-substring hit on a benign word"
+    },
+    {
+      "id": "benign-retardant-en",
+      "text": "the fire retardant blanket in the lab has expired",
+      "reason": "must-not-false-positive: benign compound word containing a blocked stem"
+    },
+    {
+      "id": "benign-niggardly-en",
+      "text": "the library is niggardly with printing credits",
+      "reason": "must-not-false-positive: classic benign word containing a blocked substring"
+    },
+    {
+      "id": "benign-junction-en",
+      "text": "was pic day moved to friday?",
+      "reason": "must-not-false-positive: squeezing joins two benign words into a blocked substring across the junction"
+    },
+    {
+      "id": "benign-spicy-zh",
+      "text": "这道菜很spicy但是我喜欢",
+      "reason": "must-not-false-positive: zh/en mixed sentence where the embedded English word contains a blocked substring"
     }
   ],
   "features": [

@@ -13,6 +13,7 @@ import { extractFeatures, DEFAULT_LLM_MODEL, type LlmFeatures } from "./llm.js";
 interface Corpus {
   policyVersion: number;
   lexical: { id: string; text: string; expect: string; reason?: string }[];
+  lexicalBenign: { id: string; text: string; reason?: string }[];
   features: { id: string; features: Partial<LlmFeatures> | null; expect: string; reason?: string }[];
   live: { id: string; text: string; expectPublishable: boolean }[];
 }
@@ -45,6 +46,10 @@ describe("regression corpus — deterministic layers", () => {
     const decision = decide({ lexical: flags, llm: null, entityType: "lesson", hasRating: false });
     const action = decision.action === "failed_closed" ? "blocked_serious" : decision.action;
     expect(action).toBe(c.expect);
+  });
+
+  it.each(corpus.lexicalBenign)("lexical benign: $id must NOT hard-block ($reason)", (c) => {
+    expect(lexicalScan(normalizeText(c.text))).toHaveLength(0); // no lexical flag → no deterministic hard block
   });
 
   it.each(corpus.features)("features: $id → $expect ($reason)", (c) => {
