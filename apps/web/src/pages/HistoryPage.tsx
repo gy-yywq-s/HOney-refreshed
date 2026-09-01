@@ -39,7 +39,7 @@ export function HistoryPage() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const directory = useApi(() => api.directory(), []);
+  const directory = useApi(() => api.directory(), [], "directory");
   const history = useApi(
     () =>
       api.history({
@@ -50,6 +50,7 @@ export function HistoryPage() {
         ...(courseId ? { courseId } : {}),
       }),
     [debouncedQ, teacherId, courseId],
+    `history:${JSON.stringify([debouncedQ, teacherId, courseId])}`,
   );
 
   const groups = useMemo(() => groupByMonth(history.data?.lessons ?? []), [history.data]);

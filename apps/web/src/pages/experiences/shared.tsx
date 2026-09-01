@@ -158,8 +158,8 @@ export function contextLine(exp: PublicExperience, names: NameMaps): string {
 
 /** Directory + entity registry in one hook (both are small, cached per page). */
 export function useNames() {
-  const directory = useApi(() => api.directory(), []);
-  const entities = useApi(() => api.entities(), []);
+  const directory = useApi(() => api.directory(), [], "directory");
+  const entities = useApi(() => api.entities(), [], "entities");
   const names = useMemo(
     () => buildNameMaps(directory.data, entities.data?.entities ?? null),
     [directory.data, entities.data],
@@ -174,7 +174,7 @@ export function useNames() {
 // ---------------------------------------------------------------------------
 
 export function useFromYourClasses(limit = 100) {
-  const feed = useApi(() => api.fromMyClasses({ limit }), [limit]);
+  const feed = useApi(() => api.fromMyClasses({ limit }), [limit], `experiences:from-my-classes:${limit}`);
   return {
     experiences: feed.data?.experiences ?? null,
     loading: feed.loading,

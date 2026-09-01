@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { apiCache } from "../lib/useApi";
 import { api, describeApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
@@ -138,6 +139,7 @@ export function SettingsPage() {
                   "consent",
                   async () => {
                     await api.setConsent(!me.consent.timetable);
+                    apiCache.invalidate("");
                     await refreshMe();
                   },
                   me.consent.timetable ? "Timetable import switched off." : "Timetable import on.",
@@ -204,6 +206,7 @@ export function SettingsPage() {
               "disconnect",
               async () => {
                 await api.disconnectSchool();
+                apiCache.invalidate("");
                 await refreshMe();
                 setConfirm(null);
               },

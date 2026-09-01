@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiCache } from "../lib/useApi";
 import { api, ApiError, describeApiError } from "../api/client";
 import type { Me } from "../api/types";
 
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshMe]);
 
   const signOut = useCallback(async () => {
+    apiCache.clear();
     await api.logout();
     setMe(null);
     navigate("/login", { replace: true });

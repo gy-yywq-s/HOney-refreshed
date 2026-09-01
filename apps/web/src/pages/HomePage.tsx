@@ -8,8 +8,8 @@ import { provenanceLabel, useFromYourClasses } from "./experiences/shared";
 
 export function HomePage() {
   const { me } = useAuth();
-  const { data, error, loading } = useApi(() => api.nextLesson(), []);
-  const today = useApi(() => api.timetable(todayIsoDate()), []);
+  const { data, error, loading } = useApi(() => api.nextLesson(), [], "next-lesson");
+  const today = useApi(() => api.timetable(todayIsoDate()), [], `timetable:${todayIsoDate()}`);
   const fromClasses = useFromYourClasses(30);
   const now = useNowTick(1000);
 

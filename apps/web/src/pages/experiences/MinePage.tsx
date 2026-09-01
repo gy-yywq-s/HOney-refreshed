@@ -11,7 +11,7 @@ import { formatCoarseDate } from "../../lib/format";
 import { ownershipKeys, privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote, StoredOwnershipKey } from "../../lib/ownershipKeys";
 import { Reveal, useCountUp , Skeleton } from "../../lib/motion";
-import { useApi } from "../../lib/useApi";
+import { apiCache, useApi } from "../../lib/useApi";
 import { Stars, provenanceLabel, useNames } from "./shared";
 
 interface StatusMeta {
@@ -96,6 +96,7 @@ export function ExperiencesMinePage() {
     setFeedback(null);
     try {
       await api.revokeExperience(ownershipKey);
+      apiCache.invalidate("experiences");
       setFeedback({
         tone: "success",
         text: "Revoked. The post is gone and your review slot is free again.",

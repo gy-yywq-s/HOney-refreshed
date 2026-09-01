@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../../api/client";
 import type { CheckExperienceInput } from "../../api/types";
+import { apiCache } from "../../lib/useApi";
 import { composerDrafts } from "../../lib/composerDraft";
 import { ownershipKeys } from "../../lib/ownershipKeys";
 import { describeSubmitError } from "./shared";
@@ -92,6 +93,7 @@ export function useComposer(target: ComposerTarget | null) {
         ...(target?.isDish && rating !== null ? { rating } : {}),
       });
       ownershipKeys.add({ key: result.ownershipKey, experienceId: result.experienceId });
+      apiCache.invalidate("experiences");
       if (key) composerDrafts.clear(key);
       setStatus({ kind: "published", ownershipKey: result.ownershipKey, experienceId: result.experienceId });
     },

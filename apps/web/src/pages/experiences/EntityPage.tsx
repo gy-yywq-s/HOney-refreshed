@@ -34,7 +34,7 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
   else if (kind === "course") params.courseId = id;
   else params.entityKey = entityKey;
 
-  const feed = useApi(() => api.experiencesFeed(params), [kind, id, sort]);
+  const feed = useApi(() => api.experiencesFeed(params), [kind, id, sort], `experiences:feed:${kind}:${id}:${sort}`);
 
   const name =
     (kind === "teacher" && (names.teacher.get(id) ?? names.entity.get(entityKey))) ||

@@ -19,3 +19,12 @@ if (el) {
     </React.StrictMode>,
   );
 }
+
+// PWA: one small service worker (see public/sw.js). Registered after load so
+// it never competes with first paint; scope "/" keeps every route inside the
+// installed app on iOS and Android.
+if ("serviceWorker" in navigator && !import.meta.env.DEV) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js");
+  });
+}

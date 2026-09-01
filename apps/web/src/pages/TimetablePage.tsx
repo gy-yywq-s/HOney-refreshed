@@ -5,7 +5,7 @@ import { api, describeApiError } from "../api/client";
 import type { Lesson, SyncResponse } from "../api/types";
 import { Modal } from "../components/Modal";
 import { ReconnectDialog } from "../components/ReconnectDialog";
-import { useApi } from "../lib/useApi";
+import { apiCache, useApi } from "../lib/useApi";
 import {
   formatDayHeading,
   formatTime,
@@ -18,7 +18,7 @@ type SyncFeedback = { kind: "result"; result: SyncResponse } | { kind: "error"; 
 
 export function TimetablePage() {
   const [date, setDate] = useState(todayIsoDate());
-  const { data, error, loading, reload } = useApi(() => api.timetable(date), [date]);
+  const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
   const [selected, setSelected] = useState<Lesson | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
@@ -30,7 +30,13 @@ export function TimetablePage() {
     try {
       const result = await api.sync();
       setSyncFeedback({ kind: "result", result });
-      if (result.status === "ok") reload();
+      if (result.status === "ok") {
+        apiCache.invalidate("timetable");
+        apiCache.invalidate("next-lesson");
+        apiCache.invalidate("history");
+        apiCache.invalidate("directory");
+        reload();
+      }
     } catch (err) {
       setSyncFeedback({ kind: "error", message: describeApiError(err) });
     } finally {

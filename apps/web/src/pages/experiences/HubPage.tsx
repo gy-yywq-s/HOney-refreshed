@@ -25,10 +25,11 @@ export function ExperiencesHubPage() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const entities = useApi(() => api.entities(), []);
+  const entities = useApi(() => api.entities(), [], "entities");
   const search = useApi(
     () => (debouncedQ ? api.entities(undefined, debouncedQ) : Promise.resolve(null)),
     [debouncedQ],
+    `entities:search:${debouncedQ}`,
   );
   const { names } = useNames();
   const fromClasses = useFromYourClasses();
