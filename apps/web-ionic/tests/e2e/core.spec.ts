@@ -141,7 +141,7 @@ test("active app exposes one focusable main landmark and 44px feed actions", asy
   await page.setViewportSize({ width: 390, height: 844 });
   await openFixture(page, "/experiences");
 
-  await expect(page.locator("main")).toHaveCount(1);
+  await expect(page.getByRole("main")).toHaveCount(1);
   await page.locator(".skip-link").focus();
   await page.keyboard.press("Enter");
   await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe("main-view");

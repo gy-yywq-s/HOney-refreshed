@@ -38,11 +38,11 @@ const TimetablePage = lazy(() => import("./pages/TimetablePage").then((module) =
 const WhyPage = lazy(() => import("./pages/WhyPage").then((module) => ({ default: module.WhyPage })));
 
 export function App() {
-  return <IonApp><IonReactRouter><AuthProvider><a className="skip-link" href="#main-view">Skip to content</a><main id="main-view" className="route-main" tabIndex={-1}><Suspense fallback={<div className="app-loading" role="status">Opening this page…</div>}><Routes>
+  return <IonApp><IonReactRouter><AuthProvider><a className="skip-link" href="#main-view">Skip to content</a><div id="main-view" className="route-main" tabIndex={-1}><Suspense fallback={<div className="app-loading" role="status">Opening this page…</div>}><Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/consent" element={<ConsentPage />} />
     <Route path="/*" element={<AuthenticatedApp />} />
-  </Routes></Suspense></main></AuthProvider></IonReactRouter></IonApp>;
+  </Routes></Suspense></div></AuthProvider></IonReactRouter></IonApp>;
 }
 
 function AuthenticatedApp() {
