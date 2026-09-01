@@ -38,7 +38,10 @@ struct HomeView: View {
             }
             .refreshable { await viewModel?.load() }
             .sheet(isPresented: $showPortal) {
-                PortalWebScreen(portalURL: model.services.config.portalWebURL)
+                PortalWebScreen(
+                    portalURL: model.services.config.portalWebURL,
+                    coordinator: model.services.portalCoordinator
+                )
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(isPresented: $composeStandalone) {

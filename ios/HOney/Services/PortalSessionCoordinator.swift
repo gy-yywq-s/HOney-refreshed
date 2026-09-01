@@ -140,6 +140,14 @@ actor PortalSessionCoordinator {
         try await ensureFreshSession().token
     }
 
+    /// A currently-valid portal token for the Portal WebView session bridge.
+    /// Delegates to the same single-flight `ensureFreshSession` reauth path — it
+    /// reuses a clock-valid token and only silently re-logs-in when needed, so it
+    /// duplicates none of the reauth logic.
+    func freshTokenForWebBridge() async throws -> String {
+        try await ensureFreshSession().token
+    }
+
     func currentState() -> PortalSessionState { state }
 
     private func ensureFreshSession(now: Date = .now) async throws -> PortalSession {

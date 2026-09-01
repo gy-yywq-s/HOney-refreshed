@@ -44,6 +44,7 @@
 		9B8C5B24F4896937B2CD3F8D /* KeychainCredentialVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = F914932AA354C797E7E588F1 /* KeychainCredentialVault.swift */; };
 		A52F99D9DACFACE2C47CF0FF /* AccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2103B8A5602ABAD8F811C15B /* AccessView.swift */; };
 		B1C41581FC2A8EA4597DFC20 /* PortalSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0212B1D36005B7C963CAD5F2 /* PortalSessionCoordinator.swift */; };
+		7F464FAFF33DFFA11FD5A68F /* PortalWebSessionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F4D162D85C2ECAFCE3B4388 /* PortalWebSessionBridge.swift */; };
 		C15ABC4DC4969FAB22953DF4 /* OwnershipKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E6CB998A1EA7FC0F494C15F /* OwnershipKeyStore.swift */; };
 		C449DFF2555F5981A615E44F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE444897BB93883336E39674 /* SettingsView.swift */; };
 		CEA063A0BDBBCA06C6FD2560 /* ExperiencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F4E35ADFB9D3D3D47F553BA /* ExperiencesView.swift */; };
@@ -68,6 +69,7 @@
 
 /* Begin PBXFileReference section */
 		0212B1D36005B7C963CAD5F2 /* PortalSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalSessionCoordinator.swift; sourceTree = "<group>"; };
+		4F4D162D85C2ECAFCE3B4388 /* PortalWebSessionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalWebSessionBridge.swift; sourceTree = "<group>"; };
 		07D369A95CEEE2209B2B53CF /* SixChecks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SixChecks.swift; sourceTree = "<group>"; };
 		0A0612D0FC289F8132E25E6E /* MySubmissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MySubmissionsView.swift; sourceTree = "<group>"; };
 		0EF83AD65015BCE646B84B7A /* TestDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDoubles.swift; sourceTree = "<group>"; };
@@ -162,6 +164,7 @@
 				3E6CB998A1EA7FC0F494C15F /* OwnershipKeyStore.swift */,
 				B940A27FCE6CB8F0F852FEC7 /* PortalAPI.swift */,
 				0212B1D36005B7C963CAD5F2 /* PortalSessionCoordinator.swift */,
+				4F4D162D85C2ECAFCE3B4388 /* PortalWebSessionBridge.swift */,
 				33FB65E14953017E37EA7445 /* SessionStore.swift */,
 			);
 			path = Services;
@@ -443,6 +446,7 @@
 				2BA5A6AF111594E7321F7260 /* PortalAPI.swift in Sources */,
 				87D32EE4F7C9291EBA2671BD /* PortalModels.swift in Sources */,
 				B1C41581FC2A8EA4597DFC20 /* PortalSessionCoordinator.swift in Sources */,
+				7F464FAFF33DFFA11FD5A68F /* PortalWebSessionBridge.swift in Sources */,
 				3FD1910C824F9435BEA5FC35 /* PortalWebView.swift in Sources */,
 				22DF92A89A2B5C5533662BF9 /* ReportSheet.swift in Sources */,
 				08B768B9E05C4E181CAC9110 /* RootView.swift in Sources */,
