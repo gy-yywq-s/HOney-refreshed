@@ -69,13 +69,17 @@ struct ComposeExperienceView: View {
 
     @State private var viewModel: ComposeExperienceViewModel?
 
+    private static let rowBackground = Color.white.opacity(0.88)
+
     var body: some View {
         NavigationStack {
             Group {
                 if let viewModel {
                     content(viewModel)
                 } else {
-                    LoadingView()
+                    AppLoadingState(title: "One moment")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Palette.background.ignoresSafeArea())
                 }
             }
             .navigationTitle("Share")
@@ -115,66 +119,89 @@ struct ComposeExperienceView: View {
 
     private var publishedConfirmation: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                Card {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+            VStack(alignment: .leading, spacing: 14) {
+                AppCard {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
                         Text("Published")
-                            .font(Theme.Typography.title)
-                            .foregroundStyle(Theme.Palette.textPrimary)
+                            .font(AppTheme.Typography.cardTitle)
+                            .foregroundStyle(Palette.navy)
                         Text("Your experience is live. It is stored without an author ID — the publish request carried no account identity, so nothing links the post back to you.")
-                            .font(Theme.Typography.body)
-                            .foregroundStyle(Theme.Palette.textPrimary)
+                            .font(AppTheme.Typography.subheadline)
+                            .foregroundStyle(Palette.navy.opacity(0.82))
                         Text("Your only control over it is an ownership key just saved to this device. Keep it: it is how you revoke the post later.")
-                            .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
-                        Button("Done") { dismiss() }
-                            .buttonStyle(HOneyPrimaryButtonStyle())
+                            .font(AppTheme.Typography.caption)
+                            .foregroundStyle(Palette.navy.opacity(0.62))
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text("Done")
+                                .font(AppTheme.Typography.subheadlineSemibold)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 11)
+                                .background(Palette.ocean, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                                .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.white)
                     }
                 }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+            .padding(.vertical, 18)
         }
-        .screenBackground()
+        .background(Palette.background.ignoresSafeArea())
     }
 
     private var keptPrivateConfirmation: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                Card {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+            VStack(alignment: .leading, spacing: 14) {
+                AppCard {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
                         Text("Kept private")
-                            .font(Theme.Typography.title)
-                            .foregroundStyle(Theme.Palette.textPrimary)
+                            .font(AppTheme.Typography.cardTitle)
+                            .foregroundStyle(Palette.navy)
                         Text("The note stays only on this device — it was never sent anywhere. You can edit, delete or publish it later from My submissions.")
-                            .font(Theme.Typography.body)
-                            .foregroundStyle(Theme.Palette.textPrimary)
-                        Button("Done") { dismiss() }
-                            .buttonStyle(HOneyPrimaryButtonStyle())
+                            .font(AppTheme.Typography.subheadline)
+                            .foregroundStyle(Palette.navy.opacity(0.82))
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text("Done")
+                                .font(AppTheme.Typography.subheadlineSemibold)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 11)
+                                .background(Palette.ocean, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                                .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.white)
                     }
                 }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+            .padding(.vertical, 18)
         }
-        .screenBackground()
+        .background(Palette.background.ignoresSafeArea())
     }
 
     private var noTargetGuidance: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                Card {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+            VStack(alignment: .leading, spacing: 14) {
+                AppCard {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
                         Text("An experience is about one of your own lessons, or a teacher, place or dish.")
-                            .font(Theme.Typography.body)
-                            .foregroundStyle(Theme.Palette.textPrimary)
+                            .font(AppTheme.Typography.subheadline)
+                            .foregroundStyle(Palette.navy.opacity(0.82))
                         Text("Pick a lesson from your Timetable or History, or open a teacher, place or dish from Experiences, and share from there.")
-                            .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
+                            .font(AppTheme.Typography.caption)
+                            .foregroundStyle(Palette.navy.opacity(0.62))
                     }
                 }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+            .padding(.vertical, 18)
         }
-        .screenBackground()
+        .background(Palette.background.ignoresSafeArea())
     }
 
     // MARK: - Editor
@@ -190,23 +217,27 @@ struct ComposeExperienceView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(target.label)
-                            .font(Theme.Typography.headline)
-                            .foregroundStyle(Theme.Palette.textPrimary)
+                            .font(AppTheme.Typography.cardTitle)
+                            .foregroundStyle(Palette.navy)
                         if let detail = target.detail, !detail.isEmpty {
                             Text(detail)
-                                .font(Theme.Typography.caption)
-                                .foregroundStyle(Theme.Palette.textSecondary)
+                                .font(AppTheme.Typography.caption)
+                                .foregroundStyle(Palette.navy.opacity(0.62))
                         }
                     }
                 }
+                .listRowBackground(Self.rowBackground)
             }
 
             Section("Your experience") {
                 TextEditor(text: $vm.body)
                     .frame(minHeight: 140)
-                    .font(Theme.Typography.body)
+                    .font(AppTheme.Typography.subheadline)
+                    .foregroundStyle(Palette.navy)
+                    .scrollContentBackground(.hidden)
                     .disabled(isNudge)
             }
+            .listRowBackground(Self.rowBackground)
 
             if viewModel.target?.isDish == true {
                 Section("Rating (dishes only — optional)") {
@@ -216,67 +247,80 @@ struct ComposeExperienceView: View {
                     ), in: 0...5) {
                         HStack {
                             Text(vm.rating.map { "\($0) / 5" } ?? "No rating")
+                                .foregroundStyle(Palette.navy)
                             if let rating = vm.rating, rating > 0 {
                                 RatingStars(rating: rating)
                             }
                         }
                     }
                 }
+                .listRowBackground(Self.rowBackground)
             }
 
             if let notice = viewModel.notice {
                 Section {
                     noticeBanner(notice, viewModel: viewModel)
                 }
+                .listRowBackground(Self.rowBackground)
             }
             if let error = viewModel.keepPrivateError {
-                Section { Banner(kind: .error, message: error) }
+                Section { AppBanner(text: error, style: .error) }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
             }
 
-            switch viewModel.status {
-            case .nudge(let reasons):
-                nudgeSection(reasons: reasons, viewModel: viewModel)
-            case .cooldown(let retryAt, _):
-                cooldownSection(retryAt: retryAt, viewModel: viewModel)
-            default:
-                actionsSection(viewModel)
+            Group {
+                switch viewModel.status {
+                case .nudge(let reasons):
+                    nudgeSection(reasons: reasons, viewModel: viewModel)
+                case .cooldown(let retryAt, _):
+                    cooldownSection(retryAt: retryAt, viewModel: viewModel)
+                default:
+                    actionsSection(viewModel)
+                }
             }
+            .listRowBackground(Self.rowBackground)
 
             Section("A few things to keep in mind") {
                 ForEach(SixChecks.all) { check in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(check.title)
-                            .font(Theme.Typography.caption.weight(.semibold))
-                            .foregroundStyle(Theme.Palette.accent)
+                            .font(AppTheme.Typography.captionBold)
+                            .foregroundStyle(Palette.ocean)
                         Text(check.prompt)
-                            .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
+                            .font(AppTheme.Typography.caption)
+                            .foregroundStyle(Palette.navy.opacity(0.62))
                     }
                 }
             }
+            .listRowBackground(Self.rowBackground)
 
             Section {
                 Text("Publishing runs a safety check first. Published posts carry no author ID; your only control is a key kept on this device. Private notes never leave this device.")
-                    .font(Theme.Typography.caption)
-                    .foregroundStyle(Theme.Palette.textSecondary)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Palette.navy.opacity(0.62))
             }
+            .listRowBackground(Self.rowBackground)
         }
+        .scrollContentBackground(.hidden)
+        .background(Palette.background.ignoresSafeArea())
+        .tint(Palette.ocean)
     }
 
     private func noticeBanner(_ notice: ComposerNotice, viewModel: ComposeExperienceViewModel) -> some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-            Banner(kind: notice.tone == .danger ? .error : .warning, message: notice.text)
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
+            AppBanner(text: notice.text, style: notice.tone == .danger ? .error : .warning)
             ForEach(notice.reasons, id: \.self) { reason in
                 Text("• \(reason)")
-                    .font(Theme.Typography.caption)
-                    .foregroundStyle(Theme.Palette.textSecondary)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Palette.navy.opacity(0.62))
             }
             if notice.suggestKeepPrivate {
                 Button("Keep as a private note") {
                     Task { await viewModel.keepPrivate() }
                 }
                 .disabled(viewModel.isSavingNote)
-                .font(Theme.Typography.caption)
+                .font(AppTheme.Typography.caption)
             }
         }
     }
@@ -285,12 +329,12 @@ struct ComposeExperienceView: View {
     private func nudgeSection(reasons: [String], viewModel: ComposeExperienceViewModel) -> some View {
         Section("Before you publish") {
             Text("This can go public as it is. A little more context often helps another student more than a verdict — but that is your call.")
-                .font(Theme.Typography.body)
-                .foregroundStyle(Theme.Palette.textPrimary)
+                .font(AppTheme.Typography.subheadline)
+                .foregroundStyle(Palette.navy.opacity(0.82))
             ForEach(reasons, id: \.self) { reason in
                 Text("• \(reason)")
-                    .font(Theme.Typography.caption)
-                    .foregroundStyle(Theme.Palette.textSecondary)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Palette.navy.opacity(0.62))
             }
             Button("Publish as is") {
                 Task { await viewModel.publishAsIs() }
@@ -309,8 +353,8 @@ struct ComposeExperienceView: View {
     private func cooldownSection(retryAt: Int, viewModel: ComposeExperienceViewModel) -> some View {
         Section("Cooling off") {
             Text("The wording reads as very heated. Nothing was stored, and your draft is safe. You can publish the same words after a short cooling-off window — a pause, not a rejection.")
-                .font(Theme.Typography.body)
-                .foregroundStyle(Theme.Palette.textPrimary)
+                .font(AppTheme.Typography.subheadline)
+                .foregroundStyle(Palette.navy.opacity(0.82))
             TimelineView(.periodic(from: .now, by: 30)) { timeline in
                 let remainingMs = retryAt - Int(timeline.date.timeIntervalSince1970 * 1000)
                 let ready = remainingMs <= 0

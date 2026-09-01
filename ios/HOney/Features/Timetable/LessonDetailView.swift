@@ -1,6 +1,7 @@
 //
 //  LessonDetailView.swift
-//  HOney — lesson detail sheet with experience actions.
+//  HOney — lesson detail sheet with experience actions, in the legacy card
+//  grammar.
 //
 
 import SwiftUI
@@ -14,67 +15,75 @@ struct LessonDetailView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                    Card {
-                        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                            Text(lesson.subjectName)
-                                .font(Theme.Typography.title)
-                                .foregroundStyle(Theme.Palette.textPrimary)
-                            if let topic = lesson.topicName {
-                                Text(topic)
-                                    .font(Theme.Typography.body)
-                                    .foregroundStyle(Theme.Palette.textSecondary)
-                            }
-                            HStack(spacing: Theme.Spacing.xs) {
-                                Image(systemName: "clock")
-                                Text(lesson.startsAt, style: .time)
-                                Text("–")
-                                Text(lesson.endsAt, style: .time)
-                            }
-                            .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
-                            if let teacher = lesson.teacherName {
-                                Label(teacher, systemImage: "person")
-                                    .font(Theme.Typography.caption)
-                                    .foregroundStyle(Theme.Palette.textSecondary)
-                            }
-                            if let room = lesson.roomName {
-                                Label(room, systemImage: "mappin.and.ellipse")
-                                    .font(Theme.Typography.caption)
-                                    .foregroundStyle(Theme.Palette.textSecondary)
-                            }
-                        }
-                    }
+            ZStack {
+                Palette.background.ignoresSafeArea()
 
-                    VStack(spacing: Theme.Spacing.md) {
-                        if let teacherId = lesson.teacherId, let teacherName = lesson.teacherName {
-                            NavigationLink {
-                                LessonExperiencesView(title: teacherName, teacherId: teacherId, courseId: nil)
-                                    .environment(model)
-                            } label: {
-                                ListRow(title: "View teacher experiences", systemImage: "person.crop.circle", showsChevron: true)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        AppCard {
+                            VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
+                                Text(lesson.subjectName)
+                                    .font(AppTheme.Typography.cardTitle)
+                                    .foregroundStyle(Palette.navy)
+                                if let topic = lesson.topicName {
+                                    Text(topic)
+                                        .font(AppTheme.Typography.subheadline)
+                                        .foregroundStyle(Palette.navy.opacity(0.62))
+                                }
+                                Label("\(lesson.periodLabel) · \(lesson.timeRange)", systemImage: "clock")
+                                    .font(AppTheme.Typography.caption)
+                                    .foregroundStyle(Palette.navy.opacity(0.62))
+                                if let teacher = lesson.teacherName {
+                                    Label(teacher, systemImage: "person")
+                                        .font(AppTheme.Typography.caption)
+                                        .foregroundStyle(Palette.navy.opacity(0.62))
+                                }
+                                if let room = lesson.roomName {
+                                    Label(room, systemImage: "mappin.and.ellipse")
+                                        .font(AppTheme.Typography.caption)
+                                        .foregroundStyle(Palette.navy.opacity(0.62))
+                                }
                             }
                         }
-                        if let courseId = lesson.courseId {
-                            NavigationLink {
-                                LessonExperiencesView(title: lesson.courseName ?? lesson.subjectName, teacherId: nil, courseId: courseId)
-                                    .environment(model)
-                            } label: {
-                                ListRow(title: "View course experiences", systemImage: "book", showsChevron: true)
+
+                        VStack(spacing: 10) {
+                            if let teacherId = lesson.teacherId, let teacherName = lesson.teacherName {
+                                NavigationLink {
+                                    LessonExperiencesView(title: teacherName, teacherId: teacherId, courseId: nil)
+                                        .environment(model)
+                                } label: {
+                                    detailRow(title: "View teacher experiences", systemImage: "person.crop.circle")
+                                }
+                                .buttonStyle(.plain)
                             }
+                            if let courseId = lesson.courseId {
+                                NavigationLink {
+                                    LessonExperiencesView(title: lesson.courseName ?? lesson.subjectName, teacherId: nil, courseId: courseId)
+                                        .environment(model)
+                                } label: {
+                                    detailRow(title: "View course experiences", systemImage: "book")
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            Button {
+                                showCompose = true
+                            } label: {
+                                Label("Share experience", systemImage: "square.and.pencil")
+                                    .font(AppTheme.Typography.subheadlineSemibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 11)
+                                    .background(Palette.ocean, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                                    .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.white)
                         }
-                        Button {
-                            showCompose = true
-                        } label: {
-                            Label("Share experience", systemImage: "square.and.pencil")
-                        }
-                        .buttonStyle(HOneyPrimaryButtonStyle())
                     }
+                    .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+                    .padding(.vertical, 18)
                 }
-                .padding(Theme.Spacing.lg)
+                .scrollIndicators(.hidden)
             }
-            .screenBackground()
             .navigationTitle("Lesson")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -84,6 +93,26 @@ struct LessonDetailView: View {
                 ComposeExperienceView(context: .lesson(lesson)).environment(model)
             }
         }
+    }
+
+    private func detailRow(title: String, systemImage: String) -> some View {
+        AppCard(padding: 14) {
+            AppListRow {
+                Image(systemName: systemImage)
+                    .foregroundStyle(Palette.ocean)
+                    .frame(width: 28, height: 28)
+                    .background(Palette.mist, in: RoundedRectangle(cornerRadius: AppTheme.Radius.small))
+            } content: {
+                Text(title)
+                    .font(AppTheme.Typography.subheadlineSemibold)
+                    .foregroundStyle(Palette.navy)
+            } trailing: {
+                Image(systemName: "chevron.right")
+                    .font(AppTheme.Typography.captionBold)
+                    .foregroundStyle(Palette.navy.opacity(0.28))
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
     }
 }
 
@@ -99,20 +128,22 @@ struct LessonExperiencesView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: Theme.Spacing.md) {
+            VStack(spacing: 10) {
                 if isLoading {
-                    LoadingView().frame(height: 160)
+                    AppLoadingState(title: "Loading experiences")
                 } else if experiences.isEmpty {
-                    EmptyStateView(systemImage: "bubble.left.and.bubble.right", title: "No experiences yet")
+                    AppEmptyState(title: "No experiences yet", systemImage: "bubble.left.and.bubble.right")
                 } else {
                     ForEach(experiences) { experience in
-                        Card { ExperienceRow(experience: experience) }
+                        AppCard { ExperienceRow(experience: experience) }
                     }
                 }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+            .padding(.vertical, 14)
         }
-        .screenBackground()
+        .scrollIndicators(.hidden)
+        .background(Palette.background.ignoresSafeArea())
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .task {

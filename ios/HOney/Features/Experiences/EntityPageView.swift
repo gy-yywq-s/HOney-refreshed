@@ -1,6 +1,7 @@
 //
 //  EntityPageView.swift
 //  HOney — a teacher / place / dish page: its experiences + compose.
+//  Legacy grammar: AppCard hero, primary button, card feed.
 //
 
 import SwiftUI
@@ -15,15 +16,15 @@ struct EntityPageView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                Card {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+            VStack(alignment: .leading, spacing: 14) {
+                AppCard {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.xSmall) {
                         Text(entity.type.rawValue.capitalized)
-                            .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
+                            .font(AppTheme.Typography.caption2Bold)
+                            .foregroundStyle(Palette.ocean)
                         Text(entity.name)
-                            .font(Theme.Typography.title)
-                            .foregroundStyle(Theme.Palette.textPrimary)
+                            .font(AppTheme.Typography.cardTitle)
+                            .foregroundStyle(Palette.navy)
                     }
                 }
 
@@ -31,25 +32,30 @@ struct EntityPageView: View {
                     showCompose = true
                 } label: {
                     Label("Share an experience", systemImage: "square.and.pencil")
+                        .font(AppTheme.Typography.subheadlineSemibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(Palette.ocean, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                 }
-                .buttonStyle(HOneyPrimaryButtonStyle())
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
 
                 if isLoading {
-                    LoadingView().frame(height: 160)
+                    AppLoadingState(title: "Loading experiences")
                 } else if experiences.isEmpty {
-                    EmptyStateView(
-                        systemImage: "bubble.left.and.bubble.right",
-                        title: "No experiences yet"
-                    )
+                    AppEmptyState(title: "No experiences yet", systemImage: "bubble.left.and.bubble.right")
                 } else {
                     ForEach(experiences) { experience in
-                        Card { InteractiveExperienceRow(experience: experience, services: model.services) }
+                        AppCard { InteractiveExperienceRow(experience: experience, services: model.services) }
                     }
                 }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+            .padding(.vertical, 14)
         }
-        .screenBackground()
+        .scrollIndicators(.hidden)
+        .background(Palette.background.ignoresSafeArea())
         .navigationTitle(entity.name)
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }

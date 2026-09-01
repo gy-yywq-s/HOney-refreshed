@@ -11,6 +11,11 @@ struct AppConfig: Sendable {
     /// Web base for the persistent School Portal WKWebView.
     var portalWebURL: URL
 
+    // Legacy design-system posture (referenced by AppTheme/AppComponents):
+    // the app ships near motionless and without debug chrome.
+    static var showDebugBorders = false
+    static var enableAnimations = false
+
     static let `default` = AppConfig(
         honeyBaseURL: URL(string: "https://honey.gaelisus.com")!,
         portalBaseURL: URL(string: "https://www.huayaopudong.com")!,

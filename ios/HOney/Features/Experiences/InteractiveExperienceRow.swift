@@ -16,9 +16,9 @@ struct InteractiveExperienceRow: View {
     @State private var myVote = 0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
             ExperienceRow(experience: experience, showsReactions: false)
-            HStack(spacing: Theme.Spacing.lg) {
+            HStack(spacing: AppTheme.Spacing.large) {
                 reactionButton(value: 1, symbol: "hand.thumbsup", count: experience.reactions?.likes)
                 reactionButton(value: -1, symbol: "hand.thumbsdown", count: experience.reactions?.dislikes)
                 Spacer()
@@ -28,10 +28,10 @@ struct InteractiveExperienceRow: View {
                     Label("Report", systemImage: "flag")
                 }
                 .buttonStyle(.plain)
-                .font(Theme.Typography.caption)
-                .foregroundStyle(Theme.Palette.textSecondary)
+                .font(AppTheme.Typography.caption)
+                .foregroundStyle(Palette.navy.opacity(0.48))
             }
-            .font(Theme.Typography.caption)
+            .font(AppTheme.Typography.caption)
         }
         .sheet(isPresented: $reporting) {
             ReportSheet { category in
@@ -52,7 +52,7 @@ struct InteractiveExperienceRow: View {
             Label(count.map(String.init) ?? "", systemImage: selected ? "\(symbol).fill" : symbol)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(selected ? Theme.Palette.accent : Theme.Palette.textSecondary)
+        .foregroundStyle(selected ? Palette.ocean : Palette.navy.opacity(0.48))
         .accessibilityLabel(value == 1 ? "This matched my experience" : "This did not match my experience")
     }
 }

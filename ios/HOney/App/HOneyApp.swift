@@ -13,7 +13,8 @@ struct HOneyApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
-                .tint(Theme.Palette.accent)
+                .tint(Palette.ocean)
+                .preferredColorScheme(.light)
         }
     }
 }

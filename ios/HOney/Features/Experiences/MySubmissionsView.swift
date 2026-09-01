@@ -19,17 +19,17 @@ private struct StatusMeta {
     static func meta(for status: MyExperienceStatus) -> StatusMeta {
         switch status {
         case .published:
-            return StatusMeta(chip: "Published", tint: Theme.Palette.accent, explain: "")
+            return StatusMeta(chip: "Published", tint: Palette.ocean, explain: "")
         case .blocked:
             return StatusMeta(
                 chip: "Hidden",
-                tint: Theme.Palette.danger,
+                tint: Palette.error,
                 explain: "This was hidden after a re-check against the current community rules. You can revoke it to free your review slot for this target."
             )
         case .revoked:
             return StatusMeta(
                 chip: "Revoked",
-                tint: Theme.Palette.textSecondary,
+                tint: Palette.navy.opacity(0.54),
                 explain: "You removed this post; your review slot for this target is free again."
             )
         }
@@ -47,7 +47,7 @@ struct MySubmissionsView: View {
     @State private var isLoading = true
     @State private var busyKey: String?
     @State private var revokingKey: String?
-    @State private var feedback: (kind: BannerKind, text: String)?
+    @State private var feedback: (kind: AppBanner.Style, text: String)?
     @State private var editingNote: PrivateNote?
     @State private var deletingNote: PrivateNote?
 
@@ -80,14 +80,15 @@ struct MySubmissionsView: View {
         NavigationStack {
             Group {
                 if isLoading {
-                    LoadingView()
+                    AppLoadingState(title: "Loading your submissions")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if experiences.isEmpty && notes.isEmpty {
                     emptyState
                 } else {
                     list
                 }
             }
-            .screenBackground()
+            .background(Palette.background.ignoresSafeArea())
             .navigationTitle("My submissions")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -124,28 +125,30 @@ struct MySubmissionsView: View {
 
     private var emptyState: some View {
         ScrollView {
-            Card {
-                VStack(alignment: .leading, spacing: Theme.Spacing.md) {
+            AppCard {
+                VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
                     Text("Nothing here yet")
-                        .font(Theme.Typography.headline)
-                        .foregroundStyle(Theme.Palette.textPrimary)
+                        .font(AppTheme.Typography.cardTitle)
+                        .foregroundStyle(Palette.navy)
                     Text("Published experiences are stored without an author ID. Each one hands this device a one-time ownership key — that key is the only control over the post that exists, and it is how this screen finds and revokes your posts. Private notes live here too, without ever leaving the device.")
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.navy.opacity(0.62))
                 }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+            .padding(.vertical, 14)
         }
+        .scrollIndicators(.hidden)
     }
 
     private var list: some View {
         ScrollView {
-            VStack(spacing: Theme.Spacing.md) {
+            VStack(spacing: 10) {
                 if !keyByExperienceId.isEmpty {
-                    Banner(kind: .warning, message: "Your ownership keys exist only on this device. Losing this device permanently removes your control over these posts.")
+                    AppBanner(text: "Your ownership keys exist only on this device. Losing this device permanently removes your control over these posts.", style: .warning)
                 }
                 if let feedback {
-                    Banner(kind: feedback.kind, message: feedback.text)
+                    AppBanner(text: feedback.text, style: feedback.kind)
                 }
                 ForEach(items) { item in
                     switch item {
@@ -156,8 +159,10 @@ struct MySubmissionsView: View {
                     }
                 }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+            .padding(.vertical, 14)
         }
+        .scrollIndicators(.hidden)
     }
 
     // MARK: - Cards
@@ -165,50 +170,52 @@ struct MySubmissionsView: View {
     private func experienceCard(_ exp: MyExperience) -> some View {
         let meta = StatusMeta.meta(for: exp.status)
         let ownershipKey = keyByExperienceId[exp.id]
-        return Card {
-            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                HStack(spacing: Theme.Spacing.sm) {
+        return AppCard {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
+                HStack(spacing: AppTheme.Spacing.small) {
                     chip(meta.chip, tint: meta.tint)
                     Text(exp.provenance.label)
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.accent)
+                        .font(AppTheme.Typography.caption2Bold)
+                        .foregroundStyle(Palette.ocean)
                     Spacer()
                     Text(Date(timeIntervalSince1970: Double(exp.createdAt) / 1000), style: .date)
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.navy.opacity(0.48))
                 }
                 Text(targetLabel(exp))
-                    .font(Theme.Typography.caption)
-                    .foregroundStyle(Theme.Palette.textSecondary)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Palette.navy.opacity(0.62))
                 if let rating = exp.rating {
                     RatingStars(rating: rating)
                 }
                 if let body = exp.body {
                     Text(body)
-                        .font(Theme.Typography.body)
-                        .foregroundStyle(Theme.Palette.textPrimary)
+                        .font(AppTheme.Typography.subheadline)
+                        .foregroundStyle(Palette.navy.opacity(0.82))
                 } else {
                     Text(exp.status == .revoked ? "(text deleted when you revoked this post)" : "(no text)")
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.navy.opacity(0.48))
                 }
                 if !meta.explain.isEmpty {
                     Text(meta.explain)
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.navy.opacity(0.62))
                 }
                 if let detail = exp.statusDetail {
                     Text(detail)
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.navy.opacity(0.62))
                 }
                 if let ownershipKey, exp.status != .revoked {
                     Button(role: .destructive) {
                         revokingKey = ownershipKey
                     } label: {
                         Label("Revoke…", systemImage: "trash")
+                            .font(AppTheme.Typography.captionBold)
                     }
-                    .font(Theme.Typography.caption)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Palette.error)
                     .disabled(busyKey == ownershipKey)
                 }
             }
@@ -217,29 +224,33 @@ struct MySubmissionsView: View {
 
     /// Private notes are visually distinct: they never left this device.
     private func noteCard(_ note: PrivateNote) -> some View {
-        Card {
-            VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                HStack(spacing: Theme.Spacing.sm) {
-                    chip("Private — only on this device", tint: Theme.Palette.warning)
+        AppCard {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
+                HStack(spacing: AppTheme.Spacing.small) {
+                    chip("Private — only on this device", tint: Palette.warning)
                     Spacer()
                     Text(note.updatedAt, style: .date)
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.navy.opacity(0.48))
                 }
                 Text(note.target.label)
-                    .font(Theme.Typography.caption)
-                    .foregroundStyle(Theme.Palette.textSecondary)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Palette.navy.opacity(0.62))
                 if let rating = note.rating {
                     RatingStars(rating: rating)
                 }
                 Text(note.body)
-                    .font(Theme.Typography.body)
-                    .foregroundStyle(Theme.Palette.textPrimary)
-                HStack(spacing: Theme.Spacing.lg) {
+                    .font(AppTheme.Typography.subheadline)
+                    .foregroundStyle(Palette.navy.opacity(0.82))
+                HStack(spacing: AppTheme.Spacing.large) {
                     Button("Edit / publish…") { editingNote = note }
-                        .font(Theme.Typography.caption)
+                        .buttonStyle(.plain)
+                        .font(AppTheme.Typography.captionBold)
+                        .foregroundStyle(Palette.ocean)
                     Button("Delete", role: .destructive) { deletingNote = note }
-                        .font(Theme.Typography.caption)
+                        .buttonStyle(.plain)
+                        .font(AppTheme.Typography.captionBold)
+                        .foregroundStyle(Palette.error)
                 }
             }
         }
@@ -247,8 +258,8 @@ struct MySubmissionsView: View {
 
     private func chip(_ text: String, tint: Color) -> some View {
         Text(text)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, Theme.Spacing.sm)
+            .font(AppTheme.Typography.caption2Bold)
+            .padding(.horizontal, AppTheme.Spacing.small)
             .padding(.vertical, 2)
             .background(tint.opacity(0.15))
             .foregroundStyle(tint)

@@ -1,6 +1,7 @@
 //
 //  RootView.swift
-//  HOney — gates on auth: LoginView vs MainTabView.
+//  HOney — gates on auth: LoginView vs MainTabView, over the fixed
+//  diagonal gradient (legacy shell: the gradient is never hidden).
 //
 
 import SwiftUI
@@ -10,11 +11,12 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        Group {
+        ZStack {
+            Palette.background.ignoresSafeArea()
+
             switch model.phase {
             case .loading:
-                LoadingView(label: "Getting things ready…")
-                    .screenBackground()
+                AppLoadingState(title: "Getting things ready…")
             case .signedOut:
                 LoginView()
             case .consentPending:
@@ -23,7 +25,7 @@ struct RootView: View {
                 MainTabView()
             }
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: Theme.Motion.standard), value: model.phase)
+        .animation(reduceMotion ? nil : AppTheme.Motion.standard, value: model.phase)
         .task {
             if model.phase == .loading {
                 await model.bootstrap()

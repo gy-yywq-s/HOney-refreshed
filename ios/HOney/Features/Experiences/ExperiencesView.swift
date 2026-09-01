@@ -2,7 +2,8 @@
 //  ExperiencesView.swift
 //  HOney — the community hub: the "from your classes" feed by default
 //  (chronological, never ranked) plus a filtered browse. Ordering is always the
-//  server's; nothing is re-ranked client-side.
+//  server's; nothing is re-ranked client-side. Built in the legacy grammar —
+//  AppCard rows, chip filters, quiet copy.
 //
 
 import SwiftUI
@@ -19,10 +20,9 @@ struct ExperiencesView: View {
                 if let viewModel {
                     content(viewModel)
                 } else {
-                    LoadingView()
+                    AppLoadingState(title: "Loading experiences")
                 }
             }
-            .screenBackground()
             .navigationTitle("Experiences")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -35,6 +35,7 @@ struct ExperiencesView: View {
                         } label: { Label("My submissions", systemImage: "person.crop.circle") }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .foregroundStyle(Palette.navy.opacity(0.62))
                     }
                 }
             }
@@ -56,33 +57,42 @@ struct ExperiencesView: View {
     private func content(_ viewModel: ExperiencesViewModel) -> some View {
         @Bindable var vm = viewModel
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
+            VStack(alignment: .leading, spacing: 14) {
                 filterBar(vm)
                 if vm.isLoading {
-                    LoadingView().frame(height: 200)
+                    AppLoadingState(title: "Loading experiences")
                 } else if let error = vm.errorMessage {
-                    Banner(kind: .error, message: error)
+                    AppBanner(text: error, style: .error)
                 } else if vm.experiences.isEmpty {
-                    EmptyStateView(
-                        systemImage: "bubble.left.and.bubble.right",
-                        title: vm.showingFromMyClasses ? "Nothing from your classes yet" : "No experiences yet",
-                        message: vm.showingFromMyClasses
-                            ? "Import your timetable, or be the first to share one."
-                            : "Be the first to share what a lesson, teacher, place or dish was really like."
-                    )
+                    AppCard(background: .white.opacity(0.82)) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            AppEmptyState(
+                                title: vm.showingFromMyClasses ? "Nothing from your classes yet" : "No experiences yet",
+                                systemImage: "bubble.left.and.bubble.right"
+                            )
+                            Text(vm.showingFromMyClasses
+                                 ? "Import your timetable, or be the first to share one."
+                                 : "Be the first to share what a lesson, teacher, place or dish was really like.")
+                                .font(AppTheme.Typography.caption)
+                                .foregroundStyle(Palette.navy.opacity(0.48))
+                                .padding(.horizontal, AppTheme.Spacing.medium)
+                        }
+                    }
                 } else {
                     if vm.showingFromMyClasses {
                         Text("From your classes — experiences involving your own teachers and courses, newest first. Chronological, never ranked.")
-                            .font(Theme.Typography.caption)
-                            .foregroundStyle(Theme.Palette.textSecondary)
+                            .font(AppTheme.Typography.caption)
+                            .foregroundStyle(Palette.navy.opacity(0.48))
                     }
                     ForEach(vm.experiences) { experience in
-                        Card { InteractiveExperienceRow(experience: experience, services: model.services) }
+                        AppCard { InteractiveExperienceRow(experience: experience, services: model.services) }
                     }
                 }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+            .padding(.vertical, 14)
         }
+        .scrollIndicators(.hidden)
         .searchable(text: $vm.query, prompt: "Search experiences")
         .onSubmit(of: .search) { Task { await vm.reload() } }
     }
@@ -90,7 +100,7 @@ struct ExperiencesView: View {
     @ViewBuilder
     private func filterBar(_ viewModel: ExperiencesViewModel) -> some View {
         @Bindable var vm = viewModel
-        VStack(spacing: Theme.Spacing.sm) {
+        VStack(spacing: AppTheme.Spacing.small) {
             Picker("Sort", selection: $vm.sort) {
                 ForEach(ExperienceSort.allCases) { Text($0.label).tag($0) }
             }
@@ -98,7 +108,7 @@ struct ExperiencesView: View {
             .onChange(of: vm.sort) { Task { await vm.reload() } }
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Theme.Spacing.sm) {
+                HStack(spacing: AppTheme.Spacing.small) {
                     Menu {
                         Button("All teachers") { vm.selectedTeacherId = nil; Task { await vm.reload() } }
                         ForEach(vm.teachers) { teacher in
@@ -128,20 +138,21 @@ struct ExperiencesView: View {
     }
 }
 
+/// Filter chip in the legacy chip/tag grammar: active = ocean chip
+/// (caption2Bold on ocean@0.10), inactive = tag (navy@0.54 on mist@0.72).
 struct FilterChip: View {
     let title: String
     var isActive: Bool = false
     var body: some View {
         HStack(spacing: 4) {
             Text(title)
-            Image(systemName: "chevron.down").font(.caption2)
+            Image(systemName: "chevron.down").font(AppTheme.Typography.caption2Bold)
         }
-        .font(Theme.Typography.caption)
-        .padding(.horizontal, Theme.Spacing.md)
-        .padding(.vertical, Theme.Spacing.sm)
-        .background(isActive ? Theme.Palette.accentSoft : Theme.Palette.surface)
-        .foregroundStyle(isActive ? Theme.Palette.accent : Theme.Palette.textSecondary)
-        .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(Theme.Palette.line, lineWidth: 1))
+        .font(isActive ? AppTheme.Typography.caption2Bold : AppTheme.Typography.caption2Medium)
+        .foregroundStyle(isActive ? Palette.ocean : Palette.navy.opacity(0.54))
+        .padding(.horizontal, AppTheme.Spacing.medium)
+        .padding(.vertical, AppTheme.Spacing.small)
+        .background(isActive ? Palette.ocean.opacity(0.10) : Palette.mist.opacity(0.72), in: Capsule())
+        .overlay(Capsule().stroke(isActive ? Palette.ocean.opacity(0.24) : Palette.line, lineWidth: 1))
     }
 }

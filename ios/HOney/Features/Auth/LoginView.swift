@@ -1,6 +1,8 @@
 //
 //  LoginView.swift
 //  HOney — sign in with the school account (no signup).
+//  Ported legacy LoginScreen: white→mist gradient, serif wordmark,
+//  48pt opaque-white fields (deliberately off the navy system).
 //
 
 import SwiftUI
@@ -15,65 +17,111 @@ struct LoginView: View {
     private enum Field { case username, password }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.xl) {
-                VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                    HOneyWordmark(size: 40)
-                    Text("Continue with your school account")
-                        .font(Theme.Typography.title)
-                        .foregroundStyle(Theme.Palette.textPrimary)
-                    Text("HOney signs you in with your OASIS school portal account. There is no separate signup.")
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.textSecondary)
-                }
-                .padding(.top, Theme.Spacing.xxl)
+        VStack(spacing: 0) {
+            Spacer(minLength: 70)
 
-                Card {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                        LabeledField(title: "School username") {
-                            TextField("Username", text: $username)
-                                .textContentType(.username)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .focused($focus, equals: .username)
-                                .submitLabel(.next)
-                                .onSubmit { focus = .password }
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xxLarge) {
+                VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
+                    HOneyLoginMark()
+                        .frame(width: 48, height: 48)
+
+                    Text("HOney")
+                        .font(AppTheme.Typography.loginTitle)
+                        .foregroundStyle(Palette.navy)
+
+                    Text("your school account signs you in — there is no separate signup.")
+                        .font(AppTheme.Typography.footnote)
+                        .foregroundStyle(Palette.navy.opacity(0.58))
+                }
+
+                VStack(spacing: AppTheme.Spacing.medium) {
+                    TextField("Username", text: $username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textContentType(.username)
+                        .keyboardType(.asciiCapable)
+                        .submitLabel(.next)
+                        .focused($focus, equals: .username)
+                        .loginFieldStyle()
+                        .onSubmit {
+                            focus = .password
                         }
-                        LabeledField(title: "Password") {
-                            SecureField("Password", text: $password)
-                                .textContentType(.password)
-                                .focused($focus, equals: .password)
-                                .submitLabel(.go)
-                                .onSubmit { submit() }
-                        }                    }
-                }
 
-                if let error = model.loginError {
-                    Banner(kind: .error, message: error)
-                }
+                    SecureField("Password", text: $password)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textContentType(.password)
+                        .keyboardType(.asciiCapable)
+                        .submitLabel(.go)
+                        .focused($focus, equals: .password)
+                        .loginFieldStyle()
+                        .onSubmit {
+                            submit()
+                        }
 
-                Button {
-                    submit()
-                } label: {
-                    if model.isAuthenticating {
-                        ProgressView().tint(.white)
-                    } else {
-                        Text("Continue")
+                    if let errorMessage = model.loginError {
+                        Text(errorMessage)
+                            .font(AppTheme.Typography.footnote)
+                            .foregroundStyle(.red.opacity(0.86))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 2)
                     }
                 }
-                .buttonStyle(HOneyPrimaryButtonStyle(enabled: canSubmit))
-                .disabled(!canSubmit || model.isAuthenticating)
 
-                Text("Your password is used only to sign in to the school portal and is stored securely on this device.")
-                    .font(Theme.Typography.caption)
-                    .foregroundStyle(Theme.Palette.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .multilineTextAlignment(.center)
+                VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
+                    Button {
+                        submit()
+                    } label: {
+                        HStack(spacing: AppTheme.Spacing.small) {
+                            if model.isAuthenticating {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+
+                            Text(model.isAuthenticating ? "Signing In" : "Sign In")
+                                .font(AppTheme.Typography.loginButton)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: AppTheme.Typography.loginControlHeight)
+                        .background(
+                            canSubmit ? Palette.ocean : Palette.navy.opacity(0.16),
+                            in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.white)
+                    .disabled(!canSubmit || model.isAuthenticating)
+
+                    Text("your password is used only to sign in to the school portal and is stored securely on this device.")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.navy.opacity(0.48))
+                }
             }
-            .padding(Theme.Spacing.lg)
+            .padding(.horizontal, AppTheme.Spacing.loginHorizontal)
+
+            Spacer(minLength: 36)
         }
-        .screenBackground()
-        .scrollDismissesKeyboard(.interactively)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            LinearGradient(
+                colors: [.white, Palette.mist.opacity(0.62)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            focus = nil
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    focus = nil
+                }
+            }
+        }
     }
 
     private var canSubmit: Bool {
@@ -90,33 +138,6 @@ struct LoginView: View {
                 username: username.trimmingCharacters(in: .whitespaces),
                 password: password
             )
-        }
-    }
-}
-
-private struct LabeledField<Content: View>: View {
-    let title: String
-    private let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-            Text(title)
-                .font(Theme.Typography.caption)
-                .foregroundStyle(Theme.Palette.textSecondary)
-            content
-                .font(Theme.Typography.body)
-                .padding(Theme.Spacing.md)
-                .background(Theme.Palette.background)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Radius.sm, style: .continuous)
-                        .strokeBorder(Theme.Palette.line, lineWidth: 1)
-                )
         }
     }
 }

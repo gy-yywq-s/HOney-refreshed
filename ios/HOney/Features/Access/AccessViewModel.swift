@@ -19,7 +19,7 @@ final class AccessViewModel {
 
     var isLoading = false
     var isWorking = false
-    var banner: (kind: BannerKind, message: String)?
+    var banner: (kind: AppBanner.Style, message: String)?
 
     init(services: AppServices) {
         self.coordinator = services.portalCoordinator
