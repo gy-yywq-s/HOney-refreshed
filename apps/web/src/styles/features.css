@@ -355,6 +355,10 @@
 .lesson-block__meta strong {
   font-weight: 600;
 }
+.lesson-block__teacher {
+  font-weight: 600;
+  opacity: 0.95;
+}
 .timeline__empty {
   position: absolute;
   inset: 38px 0 0;

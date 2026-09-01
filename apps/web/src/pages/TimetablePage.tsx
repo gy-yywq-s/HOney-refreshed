@@ -305,6 +305,10 @@ function DayTimeline({
                 <span className="lesson-block__meta">
                   {period && <strong>{period} · </strong>}
                   {formatTime(lesson.startsAt)}–{formatTime(lesson.endsAt)}
+                  {/* Teacher on the card face (Gary, 2026-09-01) — not detail-only. */}
+                  {lesson.teacherName && (
+                    <span className="lesson-block__teacher"> · {lesson.teacherName}</span>
+                  )}
                 </span>
               </span>
             </button>
