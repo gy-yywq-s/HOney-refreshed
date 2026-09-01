@@ -26,7 +26,7 @@ export function LoginPage() {
   if (phase === "signin" && api.hasSession()) return <Navigate to="/home" replace />;
 
   return (
-    <main className="login">
+    <div className="login">
       <div className="login__doorway">
         <h1 className="login__wordmark">
           <WordmarkHOney height={54} />
@@ -64,7 +64,7 @@ export function LoginPage() {
           <ImportConsentStep creds={credsRef.current} onDone={() => navigate("/home", { replace: true })} />
         )}
       </div>
-    </main>
+    </div>
   );
 }
 

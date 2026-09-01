@@ -67,6 +67,7 @@ describe("Ionic screen composition (§16.14)", () => {
     const ionic = read("../styles/ionic.css");
     expect(ionic).toMatch(/\.route-page--public \.login\s*{[^}]*overflow-y:\s*visible/s);
     expect(read("../App.tsx")).toContain("publicScreen");
+    expect(read("../pages/LoginPage.tsx")).not.toContain("<main");
   });
 
   it("compact-height degradation exists before overflow", () => {
