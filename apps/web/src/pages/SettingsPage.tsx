@@ -202,8 +202,9 @@ export function SettingsPage() {
         <ul className="privacy-list muted">
           <li>
             <strong>Published posts are stored without an author ID.</strong> The publish request
-            carries no account identity, so the stored post has nothing that says who wrote it —
-            there is no author lookup, for anyone, including admins.
+            carries no ordinary account identity, so the stored post has nothing that says who
+            wrote it — HOney provides no normal author lookup, for anyone, including admins. The
+            words themselves can still make you recognisable to people who know the situation.
           </li>
           <li>
             <strong>Your control is a device-held key.</strong> Each publish returns a one-time
@@ -213,6 +214,15 @@ export function SettingsPage() {
           <li>
             <strong>Public dates are coarse.</strong> Posts show a calendar day only; exact
             timestamps are never published.
+          </li>
+          <li>
+            <strong>How moderation handles your text.</strong> When you run the pre-publish check,
+            obvious rule-breaking wording is caught on the HOney server directly. Otherwise the
+            draft text — the text only, never your identity — is sent once to an external
+            moderation model (via OpenRouter) and judged transiently; HOney stores neither the
+            text nor the verdict at check time. The external provider processes the text under
+            its own retention policy, so don't put things in a draft you wouldn't run through a
+            moderation service.
           </li>
           <li>
             <strong>Private notes stay on this device.</strong> They are scrambled at rest, so a

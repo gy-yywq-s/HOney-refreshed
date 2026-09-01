@@ -29,5 +29,12 @@ Gary reopens it. This file only records the lab's inputs so nothing is lost.
   commits behind build/v1).
 - Earlier review findings: delete-account failure path, ReportSheet error
   surfacing, reaction optimism, publish cookie-jar isolation.
+- Privacy copy truth (review v3 §13.5): ComposeExperienceView's publish
+  success still says "nothing links the post back to you" — must become the
+  honest ownership-key wording (web already changed); Settings "not even for
+  you" line likewise. Also surface the external-LLM moderation disclosure
+  (docs/architecture/moderation-external-processing.md) on iOS.
+- Reaction UX parity: adopt myReaction restore + authoritative react echo
+  (backend already serves both).
 - Real-device runtime evidence pass (signed-in screenshots, VoiceOver,
   Dynamic Type, portal cold/warm timing, Release build).

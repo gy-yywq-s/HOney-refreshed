@@ -40,3 +40,13 @@ product approval. Approval is a separate, owner-given state per platform
 Older docs that conflict with this hierarchy (`decisions-2026-09-01.md`,
 `legacy-design-audit.md`, `design/legacy-port-map.md`, `design/web-style.md`)
 are historical experiment records — see their headers.
+
+## Recorded risk acceptances (dev stage)
+
+- **Web HOney session tokens live in localStorage** (review v3 §12.15D wants
+  HttpOnly cookies + CSRF). Accepted for the dev deployment — no real users,
+  same-origin app. This is a PUBLIC-LAUNCH BLOCKER (acceptance §19 no.32):
+  migrate to Secure/HttpOnly/SameSite cookies with refresh rotation before
+  any public candidate, or re-record this acceptance with Gary's sign-off.
+- **External moderation LLM without a verified no-retention tier** — see
+  `docs/architecture/moderation-external-processing.md` (launch gate).
