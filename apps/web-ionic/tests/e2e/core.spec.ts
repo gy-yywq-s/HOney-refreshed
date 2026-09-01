@@ -78,3 +78,30 @@ test("Timetable to lesson to lesson-bound Compose is a real route transition", a
   await expect(page.getByRole("heading", { name: "What was it like for you?" })).toBeVisible();
   await expect(page.getByText(/Further Mathematics · Ms Lin/)).toBeVisible();
 });
+
+test("login submits password-manager autofill even when IonInput state did not update", async ({ page }) => {
+  await page.route("**/api/auth/login", async (route) => {
+    await route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "school_credentials_rejected" }),
+    });
+  });
+  await page.goto("/login");
+
+  // Model password-manager autofill: native values change without input or
+  // ionInput events, leaving React's controlled state untouched.
+  await page.locator("#school-username input").evaluate((input: HTMLInputElement) => { input.value = "autofilled-user"; });
+  await page.locator("#school-password input").evaluate((input: HTMLInputElement) => { input.value = "autofilled-password"; });
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("rejected that username or password");
+});
+
+test("declining timetable import enters the account instead of looping to consent", async ({ page }) => {
+  await page.goto("/consent?demo=1");
+  await page.getByRole("button", { name: "Not now" }).click();
+
+  await expect(page).toHaveURL(/\/home/);
+  await expect(page.getByRole("heading", { name: /Hi, Gary/ })).toBeVisible();
+});

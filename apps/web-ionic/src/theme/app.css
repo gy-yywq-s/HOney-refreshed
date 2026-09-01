@@ -35,11 +35,9 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
 .skip-link:focus { transform: translateY(0); }
 
 .wordmark {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
-  font-size: 1.52rem;
-  letter-spacing: -0.045em;
-  color: var(--honey-ink);
+  display: block;
+  width: auto;
+  height: 26px;
 }
 
 .page-title {

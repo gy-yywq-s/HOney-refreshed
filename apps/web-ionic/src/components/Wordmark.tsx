@@ -1,3 +1,3 @@
 export function Wordmark() {
-  return <span className="wordmark" aria-label="HOney">HOney</span>;
+  return <img className="wordmark" src="/wordmark.png" alt="HOney" />;
 }

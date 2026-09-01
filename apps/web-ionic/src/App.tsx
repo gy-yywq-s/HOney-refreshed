@@ -47,7 +47,6 @@ function AuthenticatedApp() {
   const { me, loading, fixtureMode } = useAuth();
   if (loading) return <div className="app-loading" role="status">Opening HOney…</div>;
   if (!me) return <Navigate to="/login" replace />;
-  if (!me.consent.timetable && window.location.pathname !== "/consent") return <Navigate to="/consent" replace />;
   return <>{fixtureMode && <div className="demo-strip">Fixture data · not live</div>}<AppShell /></>;
 }
 
