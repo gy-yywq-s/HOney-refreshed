@@ -260,6 +260,19 @@ describe("data endpoints", () => {
     expect([...times].sort((a, b) => a - b)).toEqual(times);
   });
 
+  it("out-of-range weeks (portal status:1) are treated as empty, not schemaIncompatible", async () => {
+    const vault = new MemoryVault();
+    vault.creds = { ...GOOD };
+    const c = connectorWith(vault);
+    // Mark the earliest weeks in the range as portal-unavailable.
+    const from = new Date(2026, 7, 31);
+    const to = new Date(2026, 8, 13);
+    state.outOfRangeBelow = 2957; // both requested weeks (2956/2957 area) — force the earlier one out of range
+    const lessons = await c.getLessons(from, to);
+    // No throw; only the in-range week's lessons come back.
+    expect(Array.isArray(lessons)).toBe(true);
+  });
+
   it("door list quirk: doors parsed from `message` with status===1", async () => {
     const vault = new MemoryVault();
     vault.creds = { ...GOOD };

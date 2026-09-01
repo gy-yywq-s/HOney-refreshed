@@ -12,6 +12,8 @@ export interface MockPortalState {
   tokens: Map<string, number>;
   studentId: number;
   tokenTtlSeconds: number;
+  /** Weeks strictly below this index return the portal's out-of-range status:1. */
+  outOfRangeBelow?: number;
   loginCount: number;
   /** Counts every openDoor HTTP request that passed auth — including hangs. */
   doorRequestCount: number;
@@ -120,6 +122,10 @@ export function makeMockPortal(overrides?: Partial<MockPortalState>): {
       const tok = authed(req as never);
       if (!tok) return reply.code(401).send(unauthorized);
       const week = Number(req.params.week);
+      if (state.outOfRangeBelow !== undefined && week < state.outOfRangeBelow) {
+        // Portal: only the past ~2 weeks are viewable — status:1 + message, no lessons.
+        return { status: 1, message: "只能查看过去两周内的课表", data: {} };
+      }
       // One deterministic lesson per requested week, Monday 09:00–09:40 local.
       // 1970-01-01 is a Thursday; the Monday belonging to portal week W is
       // epoch + W*7 + 4 days (matches portalWeekIndex()).

@@ -45,7 +45,9 @@ export class ImportService {
     if (!conn) return { lessons: 0, teachers: 0, courses: 0, rooms: 0, status: "portal_reconnect_required" };
 
     const nowDate = this.now();
-    const from = new Date(nowDate.getTime() - 8 * 7 * 86_400_000);
+    // The portal only serves the past ~2 weeks (older weeks return status:1
+    // "only the last two weeks are viewable"); future weeks are available.
+    const from = new Date(nowDate.getTime() - 2 * 7 * 86_400_000);
     const to = new Date(nowDate.getTime() + 4 * 7 * 86_400_000);
 
     let lessons: Lesson[];

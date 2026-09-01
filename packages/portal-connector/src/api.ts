@@ -97,8 +97,15 @@ export class PortalApi {
     const path = `/api/students/schedule/${studentId}/${weekIndex}`;
     const resp = await this.http.request({ method: "GET", path, token });
     const env = asEnvelope(this.http.triage(resp, path), path);
-    if (env.status !== 0 || env.data === null || typeof env.data !== "object") {
+    if (env.data === null || typeof env.data !== "object") {
       throw schemaIncompatible(path);
+    }
+    // The portal returns status:1 with a message (e.g. "只能查看过去两周内的课表")
+    // for weeks outside the viewable range — that is a legitimately EMPTY week,
+    // not a schema error. A whole sync must not fail because one week is
+    // out of range.
+    if (env.status !== 0) {
+      return { student_exam: [], special_day: [], lessons: [] };
     }
     const d = env.data as Partial<WeeklyScheduleWire>;
     return {

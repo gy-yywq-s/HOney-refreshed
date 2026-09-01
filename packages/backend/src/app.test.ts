@@ -127,6 +127,18 @@ describe("auth: school login is signup", () => {
 });
 
 describe("consent & import", () => {
+  it("POST /api/sync accepts an empty JSON body (bodyless action)", async () => {
+    const { session } = await login(true);
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/sync",
+      headers: { authorization: `Bearer ${session.accessToken}`, "content-type": "application/json" },
+      payload: "",
+    });
+    expect(res.statusCode).toBe(200);
+    expect((res.json() as { status: string }).status).toBe("ok");
+  });
+
   it("no consent → no imported data; consent + sync → lessons appear", async () => {
     const noConsent = await login(false);
     expect(noConsent.consent.timetable).toBe(false);

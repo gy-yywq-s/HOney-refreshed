@@ -74,6 +74,18 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   const app = Fastify({ logger: false }) as unknown as FastifyInstance & { ctx: AppContext };
   app.ctx = ctx;
 
+  // Bodyless POST actions (e.g. /api/sync) may arrive with an application/json
+  // content-type and an empty body — treat that as {} rather than a 400.
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+    const text = (body as string).trim();
+    if (text.length === 0) return done(null, {});
+    try {
+      done(null, JSON.parse(text));
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  });
+
   app.get("/api/health", async () => ({ status: "ok", service: "honey-backend" }));
   registerAuthRoutes(app, ctx);
   registerDataRoutes(app, ctx);
