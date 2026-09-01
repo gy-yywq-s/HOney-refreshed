@@ -10,8 +10,6 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-    CODE_SIGNING_ALLOWED: "NO"          # simulator build/test needs no signing
-    CODE_SIGNING_REQUIRED: "NO"
     ENABLE_USER_SCRIPT_SANDBOXING: "YES"
 
 targets:
@@ -25,6 +23,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gaelisus.honey
         PRODUCT_NAME: HOney
+        # Automatic signing, no team baked in — Xcode uses your own Apple ID.
+        # A free personal Apple ID is enough to run on your own iPhone.
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -51,6 +53,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gaelisus.honey.tests
         GENERATE_INFOPLIST_FILE: "YES"
+        CODE_SIGNING_ALLOWED: "NO"
 
 schemes:
   HOney:

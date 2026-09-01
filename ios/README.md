@@ -1,62 +1,34 @@
-# HOney iOS (SwiftUI)
+# HOney iOS
 
-The HOney iOS app. Built and tested on the GitHub Actions **macOS runner** — there
-is no local Xcode/Swift in the dev box, so the CI runner is the compile gate.
+SwiftUI app (iOS 17+). Four-band architecture: `DesignSystem/`, `Services/` (no SwiftUI),
+`Features/` (views + view models), `Models/`.
 
-## Layout (four-band separation)
+## Run on your iPhone (Mac + Xcode)
+
+1. **Clone** the repo and open **`ios/HOney.xcodeproj`** in Xcode (double-click).
+   *(The project is committed, so no tooling is needed to open it.)*
+2. **Connect your iPhone** by cable and select it as the run destination (top bar).
+3. **Signing is automatic and no team is baked in** — Xcode uses your own Apple ID.
+   - If Signing shows a team is required: Xcode ▸ Settings ▸ Accounts ▸ add your Apple ID
+     (a **free** personal account works), then in the target's *Signing & Capabilities* tab
+     make sure "Automatically manage signing" is on. Your personal team is selected for you.
+   - You do **not** need a paid Apple Developer Program membership to run it on your own device.
+4. Press **Run (⌘R)**. First install: on the phone, trust the developer under
+   Settings ▸ General ▸ VPN & Device Management.
+
+> The app icon is HOney's (reused from the previous app). The bundle id is
+> `com.gaelisus.honey`; if another app on your account already uses it, change it in
+> *Signing & Capabilities* — automatic signing handles the rest.
+
+## Regenerate the project (optional)
+
+`ios/project.yml` (XcodeGen) is the source of truth; `HOney.xcodeproj` is a committed snapshot.
+After changing `project.yml`, refresh it with:
 
 ```
-ios/
-├── project.yml            # XcodeGen spec (do NOT hand-edit .xcodeproj)
-├── HOney/
-│   ├── App/               # composition root: entry, RootView, AppModel, services
-│   ├── DesignSystem/      # Theme (tokens) + reusable components
-│   ├── Models/            # Codable Honey API models + portal wire types + pure logic
-│   ├── Services/          # Band 2/4 client logic — NO SwiftUI imports
-│   │   ├── HoneyAPI.swift                 # typed Honey client, single-flight refresh-on-401
-│   │   ├── SessionStore.swift             # Honey tokens in Keychain
-│   │   ├── PortalAPI.swift                # direct-to-school portal (Access only)
-│   │   ├── PortalSessionCoordinator.swift # the session actor (blueprint contract)
-│   │   ├── KeychainCredentialVault.swift  # non-biometric device-only credential vault
-│   │   ├── OwnershipKeyStore.swift        # device-only experience ownership keys
-│   │   ├── Keychain.swift                 # generic Keychain wrapper
-│   │   └── Coding.swift                   # shared JSON coders
-│   ├── Features/          # Band 1 UI + view models (Auth, Home, Timetable, History,
-│   │                      #   Experiences, Access, Settings, Main tab)
-│   └── Resources/         # Assets.xcassets (AccentColor, AppIcon placeholder)
-└── HOneyTests/            # xcodebuild-test runnable unit tests (pure logic only)
+brew install xcodegen   # once
+cd ios && xcodegen generate
 ```
 
-## XcodeGen flow (what CI runs)
-
-The `.xcodeproj` is **generated**, never committed. Regenerate it from `project.yml`:
-
-```sh
-brew install xcodegen
-xcodegen generate --spec ios/project.yml     # produces ios/HOney.xcodeproj
-
-# Build + test on an iOS Simulator (iPhone 15, latest runtime)
-xcodebuild build \
-  -project ios/HOney.xcodeproj -scheme HOney \
-  -destination 'platform=iOS Simulator,name=iPhone 15'
-
-xcodebuild test \
-  -project ios/HOney.xcodeproj -scheme HOney \
-  -destination 'platform=iOS Simulator,name=iPhone 15'
-```
-
-The `HOney` scheme is configured for `xcodebuild test`: it builds the app target
-plus the `HOneyTests` unit-test bundle (hosted by the app) and runs the test action.
-
-## Notes
-
-- **Bundle id:** `com.gaelisus.honey`. **Deployment target:** iOS 17. SwiftUI lifecycle,
-  Swift 5.9, async/await + the Observation framework (`@Observable`).
-- **Signing:** disabled for simulator build/test (`CODE_SIGNING_ALLOWED=NO`).
-- **App icon:** intentionally a placeholder (see `HOney/Resources/APP_ICON_PLACEHOLDER.md`).
-  Gary generates the final mark later via `codex exec` → imagegen. The in-app brand is
-  the text wordmark "HOney" in a clean rounded system font (never a serif).
-- **Tests** cover only pure logic that needs no simulator UI: the session coordinator
-  (single-flight, replay policy, expiry, credential safety), portal wire decoding
-  (incl. the door-list quirk), Front/Back door mapping + commuter `record_id = -2`,
-  and next-lesson temporal formatting. UI is intentionally not unit-tested.
+CI (`.github/workflows/ios.yml`) regenerates the project and runs `xcodebuild test` on a
+macOS runner for every change under `ios/`.

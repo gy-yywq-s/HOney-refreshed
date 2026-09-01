@@ -12,3 +12,9 @@ coverage/
 ios/**/build/
 ios/**/*.xcuserstate
 ios/**/DerivedData/
+
+# Xcode user-specific state (the .xcodeproj itself IS committed for convenience)
+ios/**/*.xcodeproj/xcuserdata/
+ios/**/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/**/*.xcworkspace/xcuserdata/
+ios/**/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
