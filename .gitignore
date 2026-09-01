@@ -3,6 +3,8 @@ dist/
 build/
 coverage/
 .turbo/
+.playwright-cli/
+output/playwright/
 *.tsbuildinfo
 .DS_Store
 .env

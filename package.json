@@ -12,7 +12,10 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "dev:backend": "pnpm --filter @honey/backend dev",
-    "dev:web": "pnpm --filter @honey/web dev"
+    "dev:web": "pnpm --filter @honey/web dev",
+    "dev:web:ionic": "pnpm --filter @honey/web-ionic dev",
+    "build:web": "pnpm --filter @honey/web build",
+    "build:web:ionic": "pnpm --filter @honey/web-ionic build"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
