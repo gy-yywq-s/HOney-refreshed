@@ -1,0 +1,404 @@
+/* Ionic application shell. Existing HOney component/feature CSS remains the
+   presentation source; this file only bridges Ionic hosts and deliberately
+   refines composition where the reference exposed excess chrome/dead space. */
+
+ion-app,
+ion-split-pane,
+ion-tabs,
+ion-router-outlet,
+ion-page {
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--ui);
+}
+
+ion-split-pane.app-frame {
+  --border: 1px solid var(--line);
+  height: 100%;
+}
+
+ion-menu.honey-rail {
+  --width: var(--rail);
+  --min-width: var(--rail);
+  --max-width: var(--rail);
+  --background: var(--surface);
+}
+
+ion-menu.honey-rail::part(container) {
+  border-right: 1px solid var(--line);
+  box-shadow: none;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+}
+
+.honey-rail .rail {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  height: 100%;
+  border-right: 0;
+}
+
+.ionic-main {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.ionic-main > ion-tabs {
+  height: 100%;
+}
+
+.route-page {
+  background: var(--surface);
+}
+
+.route-content {
+  --background: var(--surface);
+  --color: var(--ink);
+  --padding-top: 34px;
+  --padding-end: clamp(22px, 5vw, 76px);
+  --padding-bottom: 40px;
+  --padding-start: clamp(22px, 5vw, 76px);
+  --keyboard-offset: 0px;
+}
+
+.route-content::part(scroll) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.route-content .view {
+  flex: 1 0 auto;
+  width: min(100%, 1080px);
+  min-height: 100%;
+}
+
+.route-page[data-scroll-model="FIT"] .view,
+.route-page[data-scroll-model="FRAMED_EDITOR"] .view {
+  display: flex;
+  flex-direction: column;
+}
+
+.route-page[data-scroll-model="FIT"] .view > *,
+.route-page[data-scroll-model="FRAMED_EDITOR"] .view > .compose-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.route-page--public .route-content {
+  --padding-top: 0;
+  --padding-end: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+}
+
+.route-page--public .view {
+  width: 100%;
+}
+
+.route-page--public .login {
+  height: auto;
+  min-height: 100%;
+  overflow-y: visible;
+}
+
+ion-refresher {
+  color: var(--accent);
+}
+
+ion-refresher-content {
+  --color: var(--accent);
+  color: var(--accent);
+  font-size: var(--fs-caption);
+}
+
+/* Desktop Home had a full-width focal card with a large inert right half.
+   Constraining the task column preserves hierarchy and reads as a desktop app,
+   not a stretched mobile canvas. */
+.home {
+  width: min(100%, 940px);
+}
+
+.feed-screen {
+  width: min(100%, 760px);
+}
+
+.feed-head__tools {
+  gap: var(--sp-2);
+}
+
+.feed-tool {
+  min-height: 40px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: var(--fs-caption);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.feed-tool:hover {
+  text-decoration: none;
+  background: var(--soft);
+}
+
+.feed-tool--primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+.feed-tool ion-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.feed-tool__narrow {
+  display: none;
+}
+
+ion-segment.scope-switch {
+  width: fit-content;
+  min-width: 238px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+ion-segment.scope-switch ion-segment-button {
+  --background: transparent;
+  --background-checked: transparent;
+  --color: var(--muted);
+  --color-checked: var(--surface);
+  --indicator-color: var(--ink);
+  --indicator-box-shadow: none;
+  --indicator-height: 100%;
+  --border-radius: 999px;
+  min-width: 112px;
+  min-height: 42px;
+  font-family: var(--ui);
+  font-size: var(--fs-secondary);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+ion-segment.scope-switch ion-label {
+  margin: 0;
+}
+
+/* Ionic overlays own stacking/focus; HOney owns their visual language. */
+ion-modal.honey-modal {
+  --width: min(460px, calc(100vw - 32px));
+  --height: auto;
+  --max-height: min(88dvh, 850px);
+  --border-radius: 20px;
+  --background: var(--surface-solid);
+  --box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+ion-modal.honey-modal::part(content) {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+}
+
+.honey-modal .modal {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: inherit;
+  box-shadow: none;
+  background: var(--surface-solid);
+}
+
+ion-popover.account-popover {
+  --width: 230px;
+  --background: var(--surface-solid);
+  --box-shadow: var(--shadow);
+}
+
+ion-popover.post-popover {
+  --width: 176px;
+  --background: var(--surface-solid);
+  --box-shadow: var(--shadow);
+}
+
+ion-popover::part(content) {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.usermenu__panel--ionic,
+.post__menu--ionic {
+  position: static;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+  background: var(--surface-solid);
+}
+
+.post__menu--ionic {
+  padding: 7px;
+}
+
+/* IonTabBar replaces the hand-built fixed navigation. It remains quiet and
+   compact, but now participates in Ionic's viewport/safe-area geometry. */
+ion-tab-bar.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .route-content {
+    --padding-top: calc(14px + var(--ion-safe-area-top));
+    --padding-end: 16px;
+    --padding-bottom: 16px;
+    --padding-start: 16px;
+  }
+
+  ion-tab-bar.mobile-nav {
+    display: flex;
+    flex: 0 0 62px;
+    min-height: 58px;
+    margin: 0 10px calc(10px + var(--ion-safe-area-bottom));
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 17px;
+    --background: color-mix(in srgb, var(--surface) 95%, transparent);
+    background: color-mix(in srgb, var(--surface) 95%, transparent);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  ion-tab-bar.mobile-nav ion-tab-button {
+    --background: transparent;
+    --color: var(--muted);
+    --color-selected: var(--surface);
+    max-width: none;
+    min-height: 46px;
+    border-radius: 11px;
+    font-family: var(--ui);
+  }
+
+  ion-tab-bar.mobile-nav ion-tab-button.tab-selected {
+    --background: var(--ink);
+  }
+
+  ion-tab-bar.mobile-nav ion-tab-button::part(native) {
+    border-radius: 11px;
+  }
+
+  ion-tab-bar.mobile-nav ion-icon {
+    width: 21px;
+    height: 21px;
+    margin-bottom: 2px;
+  }
+
+  ion-tab-bar.mobile-nav ion-label {
+    margin: 0;
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .feed-head {
+    gap: var(--sp-2);
+  }
+
+  .feed-head__row {
+    align-items: center;
+  }
+
+  .feed-head__tools {
+    flex-wrap: nowrap;
+  }
+
+  .feed-tool {
+    min-height: 38px;
+    padding: 0 10px;
+  }
+
+  .feed-tool__wide {
+    display: none;
+  }
+
+  .feed-tool__narrow {
+    display: inline;
+  }
+}
+
+@media (max-width: 640px) {
+  ion-modal.honey-modal {
+    align-items: flex-end;
+    --width: 100%;
+    --max-height: 92dvh;
+    --border-radius: 20px 20px 0 0;
+  }
+
+  ion-modal.honey-modal::part(content) {
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+  }
+
+  .honey-modal .modal {
+    padding: 20px 18px calc(24px + var(--ion-safe-area-bottom));
+  }
+
+  .feed-head__row {
+    gap: var(--sp-2);
+  }
+
+  .feed-head__tools {
+    margin-left: auto;
+  }
+
+  .feed-tool {
+    width: 38px;
+    padding: 0;
+  }
+
+  .feed-tool span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  ion-segment.scope-switch {
+    min-width: min(100%, 238px);
+  }
+}
+
+@media (max-width: 374px) {
+  .feed-head__tools {
+    gap: var(--sp-1);
+  }
+
+  .feed-tool {
+    width: 36px;
+    min-height: 36px;
+  }
+}

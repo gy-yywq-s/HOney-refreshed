@@ -1,0 +1,73 @@
+/*
+ * Admin (Dash) — the ops console keeps its own scoped grammar, restyled to
+ * the same cool system: hairline stat tiles, hairline rows, quiet tables.
+ */
+
+.admin .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.admin .stat-tile {
+  padding: 16px 14px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.admin .stat-tile:last-child {
+  border-right: 0;
+}
+.admin .stat-tile__value {
+  font-family: var(--display);
+  font-size: clamp(22px, 3vw, 34px);
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin .entity-admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.admin .entity-admin-row:first-child {
+  border-top: 0;
+}
+.admin .entity-admin-row__actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.admin .table-wrap {
+  overflow-x: auto;
+}
+.admin .table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-caption);
+  color: var(--ink);
+}
+.admin .table th {
+  text-align: left;
+  font-weight: 700;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.admin .table td {
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}

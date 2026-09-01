@@ -1,0 +1,1293 @@
+/*
+ * Features — per-screen compositions in the new editorial grammar: oversized
+ * section heads, hairline-divided rows and stat strips, numbered action
+ * cards, serif reading bodies for Experiences, and the restyled Day canvas.
+ */
+
+/* ── Login — one calm doorway, editorial ────────────────────────────────── */
+.login {
+  /* FIT screen (§16.14.2): one screen when the keyboard is closed; the page
+     itself absorbs keyboard-height changes instead of growing the document. */
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  display: flex;
+  align-items: center;
+  padding: 32px 24px;
+}
+.login__doorway {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  animation: settle 0.5s var(--ease) both;
+}
+.login__wordmark {
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: clamp(44px, 9vw, 56px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-weight: 550;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+.login__tagline {
+  font-size: var(--fs-reading);
+  line-height: 1.45;
+  margin: 0 0 24px;
+}
+.login__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.login .input {
+  font-size: var(--fs-reading);
+  min-height: 48px;
+}
+.login .btn {
+  font-size: var(--fs-reading);
+  min-height: 48px;
+}
+.login .field {
+  margin-bottom: 8px;
+}
+.login__footnote {
+  display: block;
+  margin-top: 16px;
+}
+.login__consent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.placeholder {
+  max-width: 380px;
+  text-align: center;
+  padding: 32px 24px;
+}
+
+/* ── Home — greeting hero, stat strip, wash card, action grid ───────────── */
+.home-greeting {
+  padding: clamp(14px, 3vw, 30px) 0 6px;
+}
+.home-greeting__sub {
+  margin: 14px 0 0 6vw;
+}
+
+/* Next / current lesson — surface-solid card with the animated progress wash. */
+.nextlesson {
+  position: relative;
+  overflow: hidden;
+}
+.nextlesson__wash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  pointer-events: none;
+  transition: width 1s var(--ease);
+  animation: pulse-soft 5.5s ease-in-out infinite; /* ambient: the wash breathes */
+}
+.nextlesson > :not(.nextlesson__wash) {
+  position: relative;
+}
+.nextlesson__state {
+  display: inline-block;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #15181a;
+  background: var(--glacier);
+  border-radius: 99px;
+  padding: 4px 12px;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.nextlesson__subject {
+  font-family: var(--display);
+  /* The focal object of the whole screen — it reads at headline size
+     (Gary 2026-09-01: bigger type, less dead air in this card). */
+  font-size: clamp(26px, 6.5vw, 34px);
+  letter-spacing: -0.015em;
+  line-height: 1.08;
+  font-weight: 650;
+  margin: 6px 0 0;
+}
+.nextlesson p {
+  margin: 6px 0 0;
+  font-size: var(--fs-body);
+}
+.nextlesson .caption {
+  display: inline-block;
+  margin-top: 12px;
+}
+.home-exp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.home-exp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.home-exp-row:first-child {
+  border-top: 0;
+}
+.home-exp-row__body {
+  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Timetable — the Day canvas, restyled: surface-solid bands, hairline
+   grid, accent exam strip, danger now-line, ink lesson blocks. ─────────── */
+.timetable-screen {
+  /* FRAMED_SCROLL: this screen is a flex column filling .view, so the day
+     canvas can actually stretch (its flex:1 was inert without this —
+     Gary's 2026-09-01 screenshot: squashed bands + dead space below). */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.schedule-header {
+  font-family: var(--display);
+  font-size: clamp(20px, 2.6vw, 28px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  font-weight: 650;
+  margin: 0 0 12px;
+}
+.daynav {
+  /* Timetable is FRAMED_SCROLL: date navigation belongs to the frame — it
+     stays put while the day timeline scrolls beneath it (§16.14.7).
+     Order is deliberate (Gary 2026-09-01): the day stepper is the subject,
+     "Back to today" appears only when you left today, utilities sit last. */
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 6px 0;
+}
+.daynav__spacer {
+  flex: 1;
+}
+.daynav__stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface-solid);
+  overflow: hidden;
+}
+.daynav__arrow {
+  border: 0;
+  background: none;
+  width: 44px;
+  min-height: 44px;
+  font-size: var(--fs-title-sm);
+  line-height: 1;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.daynav__arrow:hover {
+  background: var(--soft);
+}
+.daynav__date {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 118px;
+  padding: 0 4px;
+  font-size: var(--fs-secondary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+}
+.daynav__picker {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  /* Phones: the stepper takes its own full row; today/utility actions form
+     a second, right-anchored row — two calm rows, nothing floats loose. */
+  .daynav__stepper {
+    flex: 1 1 100%;
+  }
+  .daynav__date {
+    flex: 1;
+  }
+}
+
+.timeline {
+  /* The day canvas fills whatever height the framed screen has. The floor
+     keeps the ORIGINAL band proportions (2026-09-01: never squash the day
+     to fit — on short screens the canvas scrolls under the sticky frame). */
+  flex: 1 1 auto;
+  min-height: 656px;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+.timeline__hours {
+  position: relative;
+  width: 50px;
+  flex: none;
+}
+.timeline__hour {
+  position: absolute;
+  right: 0;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.timeline__canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+}
+/* Bands: alternating surface-solid / soft; breaks get the accent's quietest tint. */
+.timeline__band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--line);
+}
+.timeline__band--even {
+  background: var(--soft);
+}
+.timeline__band--odd {
+  background: transparent;
+}
+.timeline__band--break {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.timeline__gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--line) 55%, transparent);
+}
+.timeline__ghost {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.03em;
+  line-height: 1;
+  pointer-events: none;
+}
+.timeline__ghost-period {
+  font-weight: 700;
+  color: var(--accent);
+}
+.timeline__ghost-free {
+  font-weight: 500;
+  color: var(--muted);
+}
+.timeline__ghost-break {
+  font-weight: 600;
+  color: var(--muted);
+}
+.timeline__ghost svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  color: var(--accent);
+}
+/* The now-line: danger rule + a gently pulsing dot (ambient life). */
+.timeline__now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.timeline__now::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex: none;
+  animation: pulse-soft 2.4s ease-in-out infinite;
+}
+.timeline__now::after {
+  content: "";
+  flex: 1;
+  height: 1.5px;
+  background: var(--danger);
+}
+/* Lesson blocks: ink cards on the canvas. */
+.lesson-block {
+  position: absolute;
+  left: 10px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  min-height: 20px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.lesson-block:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+:root[data-surface="night"] .lesson-block {
+  background: var(--surface-solid);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.lesson-block__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 0;
+}
+.lesson-block--compact .lesson-block__body {
+  gap: 0;
+  padding: 2px 0;
+  line-height: 1.05;
+}
+.lesson-block__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.lesson-block__subject {
+  font-size: var(--fs-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lesson-block--compact .lesson-block__subject {
+  font-size: var(--fs-micro);
+}
+.lesson-block__room {
+  margin-left: auto;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.lesson-block--compact .lesson-block__room {
+  font-size: var(--fs-micro);
+}
+.lesson-block__meta {
+  font-size: var(--fs-micro);
+  opacity: 0.72;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.lesson-block--compact .lesson-block__meta {
+  font-size: var(--fs-micro);
+}
+.lesson-block__meta strong {
+  font-weight: 600;
+}
+.lesson-block__teacher {
+  font-weight: 600;
+  opacity: 0.95;
+}
+.timeline__empty {
+  position: absolute;
+  inset: 38px 0 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: var(--fs-secondary);
+  font-weight: 600;
+  color: var(--muted);
+  pointer-events: none;
+}
+.timeline__empty svg {
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
+}
+
+/* Lesson detail key/value. */
+.kv {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+}
+.kv dt {
+  font-size: var(--fs-caption);
+  color: var(--muted);
+  align-self: center;
+}
+.kv dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+/* ── History — hairline rows under month eyebrows ───────────────────────── */
+.filters {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.filters .input {
+  flex: 1;
+  min-width: 160px;
+  border-radius: 99px;
+}
+.month-group {
+  margin-bottom: 26px;
+}
+.month-group__label {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.month-group__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-height: 60px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.history-row__date {
+  width: 92px;
+  flex-shrink: 0;
+  font-size: var(--fs-caption);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.history-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.history-row__body > span:first-child {
+  font-weight: 600;
+}
+
+/* ── Experiences ────────────────────────────────────────────────────────── */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin: 4px 0 10px;
+}
+.browse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.entity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.entity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 48px;
+  padding: 9px 0;
+  color: var(--ink);
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+  transition: color var(--dur-fast) var(--ease);
+}
+.entity-list li:first-child .entity-row {
+  border-top: 0;
+}
+.entity-row:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
+.entity-row .caption {
+  font-weight: 400;
+}
+
+/* Post card — padded card, serif reading body. */
+.exp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: clamp(22px, 3vw, 34px);
+  border-radius: 18px;
+}
+.exp-card__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.exp-card__provenance {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+.exp-card__context {
+  margin-top: -4px;
+}
+.exp-card__body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: var(--fs-reading);
+  line-height: 1.62;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.exp-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.exp-card__spacer {
+  flex: 1;
+}
+.exp-card__note {
+  margin: 0;
+}
+.exp-card--private {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--line);
+}
+
+/* Report dialog. */
+.report-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 12px 0;
+}
+.report-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  cursor: pointer;
+  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
+}
+.report-option input {
+  accent-color: var(--accent);
+  margin-top: 4px;
+}
+
+/* Composer — FRAMED_EDITOR: .compose-screen flexes inside .view, the
+   field stretches, and the textarea takes every spare pixel. One screen. */
+.compose-screen {
+  display: flex;
+  flex-direction: column;
+}
+.compose-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.compose-editor > .field {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+}
+.compose-target {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: 10px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+.compose-target__label {
+  font-family: var(--display);
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.compose-textarea {
+  resize: none;
+  flex: 1 1 auto;
+  min-height: 120px;
+  line-height: 1.55;
+  border-radius: 14px;
+}
+.compose-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: 12px;
+  align-items: center;
+}
+.compose-hint {
+  font-style: italic;
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+}
+.compose-reasons {
+  margin: 8px 0;
+  padding-left: 16px;
+  color: inherit;
+}
+.compose-reasons li {
+  margin: 2px 0;
+}
+.nudge {
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+  animation: rise-in var(--dur) var(--ease) both;
+}
+
+/* ── Settings ───────────────────────────────────────────────────────────── */
+.settings-section {
+  margin-bottom: 4px;
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.settings-section .setting-row:first-of-type {
+  border-top: 0;
+}
+.setting-row__main {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.setting-row__main > span:first-child {
+  font-weight: 600;
+}
+.privacy-list {
+  margin: 0 0 12px;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.orphan-keys {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* ── Mobile pass (320 / 375 / 430) ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* History: search full-width, the two filters share a row. */
+  .filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .filters .input {
+    min-width: 0;
+  }
+  .filters .input[type="search"] {
+    grid-column: 1 / -1;
+  }
+  .history-row {
+    gap: var(--sp-3);
+  }
+  .history-row__date {
+    width: 72px;
+  }
+
+  /* Timetable: tighter hours gutter; floor = the original mobile canvas
+     height, so proportions never compress below the legacy density. */
+  .timeline {
+    min-height: 620px;
+  }
+  .timeline__hours {
+    width: 44px;
+  }
+
+  /* Composer: the editor already fills the screen; actions go full-width. */
+  .compose-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .compose-actions .btn {
+    width: 100%;
+  }
+
+  /* Nudge / cooldown panels present as slide-up bottom sheets. */
+  .nudge {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    margin: 0;
+    max-height: 80dvh;
+    overflow: auto;
+    border-radius: 20px 20px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    background: var(--surface-solid);
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+    animation: sheet-up 0.42s var(--ease) both;
+  }
+
+  /* Experiences: thumb-friendly rows and full-width hub CTA. */
+  .page-head .btn {
+    width: 100%;
+  }
+  .exp-card {
+    padding: 20px 16px;
+  }
+}
+
+/* The narrowest pass (320): keep the canvas usable. */
+@media (max-width: 359px) {
+  .timeline {
+    gap: 6px;
+  }
+  .lesson-block__room {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Experiences stream (product-v2): voices in a stream, not database cards.
+   Space + hairlines carry the rhythm (review v3 §9.8); the body text holds
+   the largest visual weight; metadata stays quiet.
+--------------------------------------------------------------------------- */
+
+.feed-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.feed-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.feed-head__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.feed-head__tools {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.feed-identity {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--ink-2);
+}
+.feed-identity a {
+  white-space: nowrap;
+}
+
+.scope-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  align-self: flex-start;
+  background: var(--surface);
+}
+.scope-switch__btn {
+  border: 0;
+  background: none;
+  padding: 0 16px;
+  min-height: 44px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: var(--fs-secondary);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.scope-switch__btn--on {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}
+
+.feed-new {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  align-self: center;
+  border: 1px solid var(--line);
+  background: var(--surface-solid, var(--surface));
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--fs-caption);
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.08);
+}
+
+.feed-stream {
+  display: flex;
+  flex-direction: column;
+  max-width: 720px;
+  width: 100%;
+}
+
+.post {
+  padding: var(--sp-4) 0 var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.post__context {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.post__context a {
+  color: inherit;
+  text-decoration: none;
+}
+.post__context a:hover {
+  text-decoration: underline;
+}
+.post__provenance {
+  font-size: var(--fs-caption);
+  color: var(--muted);
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.post__body {
+  margin: 2px 0 0;
+  font-size: var(--fs-reading);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.post__body--feature {
+  /* Short posts set larger — one line still reads as the subject, never a
+     caption between two rows of metadata (Gary 2026-09-01). */
+  font-size: var(--fs-title-sm);
+  line-height: 1.45;
+  letter-spacing: -0.008em;
+}
+.post__more {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-caption);
+  color: var(--accent);
+  cursor: pointer;
+}
+.post__actions {
+  /* ONE line, always: the provenance yields (ellipsis), the reaction
+     cluster keeps the right edge — wrapping here split the thumbs across
+     rows and pushed the menu off-screen (Gary, 2026-09-01 screenshot). */
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: 4px;
+}
+/* In the stream footer the reactions sit quiet: no pill borders — the
+   icon + count carries it; the on-state uses the accent tint. */
+.post__actions .react-btn {
+  border-color: transparent;
+  padding: 0 8px;
+  color: var(--muted);
+}
+.post__actions .react-btn:hover:not(:disabled) {
+  background: var(--soft);
+  color: var(--ink);
+}
+.post__actions .react-btn--on {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+:root[data-surface="night"] .post__actions .react-btn--on {
+  color: var(--accent);
+}
+.post__overflow {
+  position: relative;
+}
+.post__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface-solid, var(--surface));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 4px;
+  z-index: 6;
+  min-width: 120px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.1);
+}
+.post__menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-caption);
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  color: inherit;
+}
+.post__menu button:hover {
+  background: var(--wash, rgb(0 0 0 / 0.05));
+}
+.post__note {
+  color: var(--ink-2);
+}
+
+.feed-invite {
+  margin: 4px 0;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.feed-invite p {
+  margin: 0;
+  font-size: var(--fs-secondary);
+  color: var(--ink-2);
+}
+.feed-append,
+.feed-end {
+  text-align: center;
+  padding: 16px 0;
+}
+.feed-empty {
+  padding: 28px 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  align-items: flex-start;
+}
+.feed-empty p {
+  margin: 0;
+}
+
+.entity-intro {
+  max-width: 640px;
+}
+
+/* Explore: the complete listing, always (rule 4f); letters are landmarks. */
+.explore .search-box {
+  max-width: 480px;
+}
+.explore-letter {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 6px;
+  align-items: start;
+  margin-bottom: 4px;
+}
+.explore-letter__mark {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--ink-3, var(--ink-2));
+  padding-top: 10px;
+}
+
+/* DOCUMENT pages (Why this space exists, privacy): natural long reading. */
+.doc {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.doc section {
+  margin: 0 0 10px;
+}
+.doc h2 {
+  font-size: var(--fs-reading);
+  margin: 14px 0 6px;
+}
+.doc p,
+.doc li {
+  font-size: var(--fs-secondary);
+  line-height: 1.6;
+}
+.doc__footer {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* Home (product-v2 §6.3): a quiet doorway — greeting, focal lesson, two
+   voices, one share action, one portal row. */
+.home-head__hi {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 32px);
+  letter-spacing: -0.01em;
+}
+.home-head__date {
+  margin: 2px 0 0;
+  font-size: var(--fs-secondary);
+  color: var(--ink-2);
+}
+.home-head__stale {
+  color: var(--ink-3, var(--ink-2));
+}
+.home-voices__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.home-voices__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.home-voices__row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.home-voices__row:last-child {
+  border-bottom: 0;
+}
+.home-voices__body {
+  color: inherit;
+  text-decoration: none;
+  font-size: var(--fs-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.home-voices__empty {
+  margin: 6px 0 0;
+}
+.home-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.portal-row {
+  /* Full-width row on every size: sharing and the portal are different
+     kinds of act — side-by-side they crowd and the labels wrap badly. */
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.portal-row:hover {
+  border-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+   Vertical composition classes (§16.14.4): width AND height are constraints.
+   compact ≤700px usable height · regular 701–850 · tall ≥851.
+   Degradation order (§16.14.5): spacing → metadata → collapse secondary →
+   fewer previews → only then overflow. Type never shrinks below readability.
+--------------------------------------------------------------------------- */
+@media (max-height: 700px) {
+  .main {
+    padding-top: 14px;
+    padding-bottom: 90px;
+  }
+  .stack {
+    gap: 14px;
+  }
+  .card--hero {
+    padding: 16px 18px;
+  }
+  /* Home compact: previews 2 → 1 before anything overflows (§16.14.6). */
+  .home-voices__row:nth-child(n + 2) {
+    display: none;
+  }
+  .home-voices__body {
+    -webkit-line-clamp: 2;
+  }
+  .feed-head {
+    gap: 6px;
+  }
+  .post {
+    padding: 12px 0 10px;
+  }
+}
+@media (min-height: 851px) {
+  /* Tall screens get breathing room — never proportionally bigger chrome. */
+  .main {
+    padding-top: 44px;
+  }
+}
+
+/* Compose is FRAMED_EDITOR (§16.14.7): while the editor has the keyboard,
+   the bottom nav yields the row it would cover — the primary actions stay
+   reachable without growing the document. */
+@media (max-width: 960px) {
+  .app-frame:has(.compose-textarea:focus) .mobile-nav {
+    display: none;
+  }
+}
+
+/* Inline text links on primary screens: pad the tap zone (a11y audit —
+   18-19px tall links) without shifting the visual line. */
+.feed-identity a,
+.home-voices__head a,
+.nextlesson .caption {
+  padding-block: 10px;
+  margin-block: -10px;
+}
+
+/* Explore "From your history": a compact quick-jump strip, visually a
+   different affordance from the complete sections below — never a second
+   full listing (design-is r1, move 5). */
+.history-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.history-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-solid);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: var(--fs-secondary);
+}
+.history-chip:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+/* Compose on compact heights (§16.14.5 order: spacing → metadata): the
+   audit measured 144px overflow at 320×568 — tighten rhythm and let the
+   helper line go before anything overflows. */
+@media (max-height: 620px) {
+  .compose-screen .page-title {
+    font-size: var(--fs-title-sm);
+  }
+  .compose-target {
+    padding: var(--sp-1) 0 var(--sp-2);
+  }
+  .compose-target__label {
+    font-size: var(--fs-title-sm);
+  }
+  .compose-hint {
+    display: none;
+  }
+  .compose-textarea {
+    min-height: 84px;
+  }
+  .compose-actions {
+    margin-top: var(--sp-2);
+  }
+}

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#edf0f1" />
+    <link rel="icon" href="/favicon-h.png" type="image/png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="HOney" />
+    <title>HOney</title>
+    <script>
+      // Theme boot — runs before first paint so the chosen surface never
+      // flashes. Mirrors src/lib/theme.ts (the runtime source of truth).
+      (function () {
+        try {
+          var surfaces = { stone: 1, white: 1, mist: 1, night: 1 };
+          var s = localStorage.getItem("honey.theme.surface");
+          if (!surfaces[s] && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            s = "night"; // system preference honored until the user chooses
+          }
+          var root = document.documentElement;
+          root.dataset.surface = surfaces[s] ? s : "stone";
+          var colors = { stone: "#f4f6f7", white: "#ffffff", mist: "#eef2f2", night: "#14171a" };
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", colors[root.dataset.surface] || colors.stone);
+        } catch (e) {
+          /* private mode etc. — defaults apply */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,984 @@
+/* Keyboard skip link — visible only when focused. */
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  left: 12px;
+  top: -80px;
+  padding: 10px 14px;
+  border-radius: 99px;
+  background: var(--ink);
+  color: var(--surface);
+  transition: top var(--dur-fast) var(--ease);
+}
+.skip-link:focus {
+  top: 12px;
+}
+
+/*
+ * Components — the reusable grammar: pill buttons and filters, hairline
+ * cards, the rail shell (appearance + account at its foot), the floating
+ * mobile pill nav, dialog
+ * shells / bottom sheets, and the theme (appearance) controls.
+ */
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  padding: var(--sp-5);
+}
+.card--hero {
+  border-radius: 20px;
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+}
+.card-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: 14px;
+  align-items: center;
+}
+
+/* Hover lift for interactive cards (transform+shadow only). */
+.action-card,
+a.card,
+.lift {
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.action-card:hover,
+a.card:hover,
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+/* Pointer-following highlight: JS writes --mx/--my on .primary
+/* ── Buttons — pill grammar, ink fill = primary ─────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  font-family: var(--ui);
+  font-weight: 600;
+  font-size: var(--fs-secondary);
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  padding: 0 18px;
+  min-height: 44px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ink);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+a.btn:hover {
+  text-decoration: none;
+}
+.btn--primary {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+.btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 86%, var(--accent));
+}
+.btn--primary:disabled {
+  /* AA even while disabled (design-is r1): soft fill + muted text, not a
+     washed ink block (was 2.19:1). */
+  background: color-mix(in srgb, var(--ink) 8%, var(--surface));
+  border-color: transparent;
+  color: var(--muted);
+  opacity: 1;
+}
+.btn--secondary,
+.btn--ghost {
+  background: transparent;
+  color: var(--ink);
+}
+.btn--secondary:hover:not(:disabled),
+.btn--ghost:hover:not(:disabled) {
+  background: var(--soft);
+}
+.btn--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+/* Night's danger fill is light — white text fails AA (2.26:1); ink passes. */
+:root[data-surface="night"] .btn--danger {
+  color: #14171a;
+}
+.btn--danger:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.btn--small {
+  font-size: var(--fs-caption);
+  padding: 0 13px;
+  min-height: 36px;
+}
+.btn--block {
+  width: 100%;
+}
+
+/* ── Fields ─────────────────────────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.field__label {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
+}
+.input {
+  font: 400 16px/1.4 var(--ui);
+  color: var(--ink);
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 11px 13px;
+  min-height: 44px;
+}
+.input::placeholder {
+  color: var(--muted);
+}
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 12px 0;
+}
+.checkbox input {
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+}
+
+/* Big underline search (Experiences hub) — editorial search-box. */
+.search-box {
+  width: 100%;
+  margin: 4px 0 8px;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--display);
+  font-size: clamp(22px, 4vw, 40px);
+  letter-spacing: -0.03em;
+  outline: none;
+  min-height: 44px;
+}
+.search-box::placeholder {
+  color: var(--muted);
+}
+
+/* ── Banners — quiet tinted notices (kept: they carry flow copy) ────────── */
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--soft);
+  padding: 12px 16px;
+  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
+  animation: rise-in 0.4s var(--ease) both;
+}
+.banner--success {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 38%, transparent);
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+}
+.banner--warning {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.banner--danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 38%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+/* ── Chips ──────────────────────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 99px;
+  padding: 3px 12px;
+  background: var(--soft);
+  color: var(--accent);
+}
+.chip--ok {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+}
+.chip--danger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.chip--muted {
+  color: var(--muted);
+}
+.chip--private {
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--line);
+}
+
+/* Reaction pills. */
+.react-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 0 14px;
+  cursor: pointer;
+  min-height: 38px;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.react-btn:hover:not(:disabled) {
+  background: var(--soft);
+  color: var(--ink);
+}
+.react-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.react-btn--more {
+  min-width: 44px;
+}
+.react-btn--on {
+  color: var(--surface);
+  border-color: var(--ink);
+  background: var(--ink);
+}
+.react-btn__count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sort toggle — segmented pill with a sliding thumb. */
+.sort-toggle {
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  overflow: hidden;
+  align-self: flex-start;
+  isolation: isolate;
+}
+.sort-toggle::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(100% / var(--n, 2));
+  border-radius: 99px;
+  background: var(--ink);
+  transform: translateX(calc(var(--active, 0) * 100%));
+  transition: transform var(--dur) var(--ease);
+}
+.sort-toggle__btn {
+  position: relative;
+  z-index: 1;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 0 18px;
+  cursor: pointer;
+  min-height: 40px;
+  transition: color var(--dur-fast) var(--ease);
+}
+.sort-toggle__btn--on {
+  color: var(--surface);
+}
+
+/* Stars (dishes only). */
+.stars {
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+.stars__empty {
+  opacity: 0.26;
+}
+.star-input {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.star-input__star {
+  font-size: 24px;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--line);
+  transition:
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.star-input__star:hover {
+  transform: scale(1.12);
+}
+.star-input__star--on {
+  color: var(--accent);
+}
+
+/* ── Modal / dialog shell / bottom sheet ────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(11, 13, 14, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+  animation: fade-in var(--dur-fast) var(--ease) both;
+}
+.modal {
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  max-width: 460px;
+  width: 100%;
+  max-height: min(88dvh, 850px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 26px;
+  animation: rise-in var(--dur) var(--ease) both;
+}
+.modal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: 12px;
+}
+.modal__title {
+  font-family: var(--display);
+  font-size: clamp(24px, 5vw, 32px);
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  font-weight: 600;
+  margin: 0;
+}
+.modal__close {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font-size: var(--fs-title);
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.modal__close:hover {
+  background: var(--soft);
+}
+.modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: 16px;
+}
+.modal__actions--row {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ── Shell: fixed left rail ─────────────────────────────────────────────── */
+.rail {
+  position: fixed;
+  z-index: 20;
+  inset: 0 auto 0 0;
+  width: var(--rail);
+  padding: 28px 22px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.brand {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: 24px;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+.brand:hover {
+  text-decoration: none;
+}
+.wordmark {
+  display: block;
+}
+:root[data-surface="night"] .wordmark {
+  filter: invert(1) hue-rotate(180deg);
+}
+.rail-nav {
+  position: relative;
+  margin-top: auto;
+  margin-bottom: auto;
+  display: grid;
+  gap: 5px;
+}
+.rail-pill {
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--ink);
+  transform: translateY(calc(var(--active, 0) * 49px));
+  transition: transform var(--dur) var(--ease);
+}
+.rail-pill[data-off="true"] {
+  opacity: 0;
+}
+.nav-item {
+  position: relative;
+  z-index: 1;
+  min-height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+.nav-item:hover {
+  background: var(--soft);
+  color: var(--ink);
+  text-decoration: none;
+}
+.nav-item.is-active {
+  background: transparent;
+  color: var(--surface);
+}
+.nav-item.is-active:hover {
+  background: transparent;
+}
+.rail-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.rail .usermenu__panel {
+  right: auto;
+  left: 0;
+  top: auto;
+  bottom: calc(100% + 10px);
+}
+
+.settings-trigger {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.settings-trigger:hover {
+  border-color: var(--line);
+  background: var(--card);
+  transform: rotate(24deg);
+}
+.settings-trigger svg {
+  width: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+/* Main column. */
+.main {
+  height: 100%;
+  overflow-y: auto;
+  /* Reaching the edge must not drag the app shell (§16.14.11 no.7) — while
+     the region itself keeps its natural elasticity. */
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  margin-left: var(--rail);
+  padding: 34px clamp(22px, 5vw, 76px) 110px;
+}
+.view {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  /* FIT/FRAMED screens (timetable, compose) flex to the visible height;
+     document screens simply grow past it. min-height resolves against
+     .main's content box — the area inside the shell's padding. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.view > * {
+  flex: 0 0 auto;
+}
+.view > .timetable-screen,
+.view > .compose-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Pull-to-refresh — the shell's own; body scroll lock removed the
+   browser's gesture, so the scroll owner provides one (lib/refresh.ts). ── */
+.ptr {
+  position: sticky;
+  top: 0;
+  height: 0;
+  z-index: 25;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.ptr__disc {
+  width: 36px;
+  height: 36px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.ptr__disc--spin {
+  opacity: 1 !important;
+}
+.ptr__disc--spin svg {
+  animation: ptr-rot 800ms linear infinite;
+}
+@keyframes ptr-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── User menu (rail foot) ──────────────────────────────────────────────── */
+.usermenu {
+  position: relative;
+  flex: none;
+}
+.usermenu__button {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 99px;
+  padding: 0 16px;
+  min-height: 44px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.usermenu__button:hover {
+  background: var(--soft);
+}
+.usermenu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 230px;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  animation: rise-in var(--dur-fast) var(--ease) both;
+}
+.usermenu__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.usermenu__item {
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 12px;
+  min-height: 40px;
+  border-radius: 10px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.usermenu__item:hover {
+  background: var(--soft);
+  text-decoration: none;
+}
+.usermenu__item--danger {
+  color: var(--danger);
+}
+
+/* ── Mobile floating pill nav (≤960px) ──────────────────────────────────── */
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  :root {
+    --rail: 0px;
+  }
+  .rail {
+    display: none;
+  }
+  .main {
+    margin-left: 0;
+    padding: calc(14px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
+  }
+  .mobile-nav {
+    position: fixed;
+    z-index: 30;
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    min-height: 58px;
+    padding: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    border: 1px solid var(--line);
+    border-radius: 17px;
+    background: color-mix(in srgb, var(--surface) 95%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow);
+    isolation: isolate;
+  }
+  .mobile-nav__pill {
+    position: absolute;
+    z-index: 0;
+    top: 6px;
+    bottom: 6px;
+    left: 6px;
+    width: calc((100% - 12px - 6px) / 4);
+    border-radius: 11px;
+    background: var(--ink);
+    transform: translateX(calc(var(--active, 0) * (100% + 2px)));
+    transition: transform var(--dur) var(--ease);
+  }
+  .mobile-nav__pill[data-off="true"] {
+    opacity: 0;
+  }
+  .mobile-nav__item {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    min-height: 46px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--fs-micro);
+    line-height: 1;
+    font-weight: 600;
+    transition: color var(--dur-fast) var(--ease);
+  }
+  .mobile-nav__item:hover {
+    text-decoration: none;
+  }
+  .mobile-nav__item.is-active {
+    color: var(--surface);
+  }
+  .tabbar__icon {
+    width: 22px;
+    height: 22px;
+    flex: none;
+  }
+}
+
+/* Icon size on desktop contexts too (icons come from navTabs). */
+.tabbar__icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* ── Theme (appearance) controls — settings dialog + Settings page ──────── */
+.theme-dialog__section {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+.theme-dialog__section:first-of-type {
+  border-top: 0;
+}
+.theme-dialog__section h3 {
+  margin: 0 0 10px;
+  font-size: var(--fs-secondary);
+}
+.option-grid {
+  display: grid;
+  gap: 7px;
+}
+.option-grid.four {
+  grid-template-columns: repeat(4, 1fr);
+}
+.option-grid button {
+  min-height: 78px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.option-grid button[aria-pressed="true"],
+.segmented button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+}
+.option-grid span {
+  color: var(--muted);
+  font-size: var(--fs-micro);
+}
+.option-grid button[aria-pressed="true"] span {
+  color: inherit;
+  opacity: 0.7;
+}
+.swatch {
+  width: 23px;
+  height: 23px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 50%;
+}
+.swatch--stone {
+  background: #f4f6f7;
+}
+.swatch--white {
+  background: #fff;
+}
+.swatch--mist {
+  background: #eef2f2;
+}
+.swatch--night {
+  background: #14171a;
+}
+.segmented {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.segmented button {
+  min-height: 44px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.segmented button:last-child {
+  border-right: 0;
+}
+
+/* Row links (Home portal card etc.). */
+.row-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
+  font-weight: 600;
+  transition: color var(--dur-fast) var(--ease);
+}
+.row-link:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+/* ── Narrow adjustments ─────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .option-grid.four {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Modals become slide-up bottom sheets (transform animation, safe-area). */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal {
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: 20px 20px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding: 20px 18px calc(24px + env(safe-area-inset-bottom));
+    animation: sheet-up 0.42s var(--ease) both;
+  }
+}
+
+/* Thumb comfort on touch screens. */
+@media (pointer: coarse) {
+  .btn--small,
+  .react-btn,
+  .sort-toggle__btn,
+  .usermenu__button {
+    min-height: 44px;
+  }
+  .star-input__star {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Loading skeletons — quiet hairline bars with a slow shimmer. */
+.skeleton {
+  display: grid;
+  gap: 10px;
+  padding: 4px 0;
+}
+.skeleton__row {
+  height: 14px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--soft) 25%, var(--line) 50%, var(--soft) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s var(--ease) infinite;
+}
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* Opt-in row for staying connected to the school portal. */
+.stay-connected {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 4px 0 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+  cursor: pointer;
+  text-align: left;
+}
+.stay-connected input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--accent);
+}
+.stay-connected span {
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.stay-connected strong {
+  color: var(--ink);
+  font-weight: 600;
+}
