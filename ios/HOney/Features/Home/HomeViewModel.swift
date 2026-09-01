@@ -16,6 +16,7 @@ final class HomeViewModel {
     var recentExperiences: [PublicExperience] = []
     var isLoading = false
     var errorMessage: String?
+    var targetNames: [String: String] = [:]
     var nextLessonAvailable = true
     var recentExperiencesAvailable = true
 
@@ -26,7 +27,6 @@ final class HomeViewModel {
     func load() async {
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
 
         async let next = try? services.honeyAPI.nextLesson()
         // "Recent from your classes" is the backend domain query (audit §4.2):
@@ -46,5 +46,14 @@ final class HomeViewModel {
         } else if nextResult == nil || recentResult == nil {
             errorMessage = "Some Home information is temporarily unavailable."
         }
+        isLoading = false
+
+        // Target names are secondary metadata. The app-scoped repository
+        // coalesces this with Experiences/My Posts instead of refetching.
+        targetNames = await services.experienceTargetRepository.load().names
+    }
+
+    func targetLabel(for experience: PublicExperience) -> String {
+        ExperienceTargetNaming.label(for: experience, names: targetNames)
     }
 }

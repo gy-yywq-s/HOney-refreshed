@@ -11,6 +11,7 @@ import SwiftUI
 
 struct ExperienceRow: View {
     let experience: PublicExperience
+    var targetLabel: String? = nil
     var showsReactions: Bool = true
 
     var body: some View {
@@ -31,6 +32,12 @@ struct ExperienceRow: View {
                         .font(AppTheme.Typography.caption)
                         .foregroundStyle(Palette.inkSecondary)
                 }
+            }
+            if let targetLabel, !targetLabel.isEmpty {
+                Label(targetLabel, systemImage: "scope")
+                    .font(AppTheme.Typography.captionSemibold)
+                    .foregroundStyle(Palette.inkSecondary)
+                    .lineLimit(1)
             }
             Text(experience.bodyText)
                 .font(AppTheme.Typography.subheadline)

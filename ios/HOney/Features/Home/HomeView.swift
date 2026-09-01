@@ -248,7 +248,10 @@ struct HomeView: View {
             if let recents = viewModel?.recentExperiences, !recents.isEmpty {
                 VStack(spacing: 0) {
                     ForEach(recents) { experience in
-                        ExperienceRow(experience: experience)
+                        ExperienceRow(
+                            experience: experience,
+                            targetLabel: viewModel?.targetLabel(for: experience)
+                        )
                             .padding(.vertical, 14)
                         if experience.id != recents.last?.id {
                             Divider().overlay(Palette.line)

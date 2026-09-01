@@ -9,6 +9,7 @@ import SwiftUI
 struct InteractiveExperienceRow: View {
     let experience: PublicExperience
     let services: AppServices
+    var targetLabel: String? = nil
 
     @State private var reporting = false
     /// Session-local highlight only; the server keeps no per-user reaction state
@@ -19,7 +20,7 @@ struct InteractiveExperienceRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
-            ExperienceRow(experience: experience, showsReactions: false)
+            ExperienceRow(experience: experience, targetLabel: targetLabel, showsReactions: false)
             HStack(spacing: AppTheme.Spacing.large) {
                 reactionButton(value: 1, symbol: "hand.thumbsup", count: experience.reactions?.likes)
                 reactionButton(value: -1, symbol: "hand.thumbsdown", count: experience.reactions?.dislikes)

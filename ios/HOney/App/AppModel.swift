@@ -48,6 +48,7 @@ final class AppModel {
 
         guard await services.sessionStore.current() != nil else {
             await services.timetableRepository.invalidateAll()
+            await services.experienceTargetRepository.invalidate()
             phase = .signedOut
             return
         }
@@ -64,6 +65,7 @@ final class AppModel {
         isAuthenticating = true
         loginError = nil
         await services.timetableRepository.invalidateAll()
+        await services.experienceTargetRepository.invalidate()
         defer { isAuthenticating = false }
         do {
             // Signing in never imports the timetable: the request carries no
@@ -110,6 +112,7 @@ final class AppModel {
             do {
                 _ = try await services.honeyAPI.sync()
                 await services.timetableRepository.invalidateAll()
+                await services.experienceTargetRepository.invalidate()
                 startupNotice = nil
             } catch {
                 startupNotice = "Import is on, but the first school-data sync failed. Pull Home to retry."
@@ -131,7 +134,10 @@ final class AppModel {
             try await services.honeyAPI.setConsent(timetable: timetable)
             profile.consent.timetable = timetable
             phase = .signedIn(profile)
-            if !timetable { await services.timetableRepository.invalidateAll() }
+            if !timetable {
+                await services.timetableRepository.invalidateAll()
+                await services.experienceTargetRepository.invalidate()
+            }
             return true
         } catch {
             return false
@@ -143,6 +149,7 @@ final class AppModel {
         do {
             _ = try await services.honeyAPI.sync()
             await services.timetableRepository.invalidateAll()
+            await services.experienceTargetRepository.invalidate()
             startupNotice = nil
         } catch {
             startupNotice = "Import is on, but school data still could not sync. Pull Home to try again."
@@ -166,6 +173,7 @@ final class AppModel {
         do {
             try await services.honeyAPI.disconnectSchool()
             await services.timetableRepository.invalidateAll()
+            await services.experienceTargetRepository.invalidate()
             if !(await refreshProfile()), var profile {
                 profile.connection = HOneyConnection(
                     connected: false,
@@ -183,6 +191,7 @@ final class AppModel {
     func signOut() async {
         await services.honeyAPI.logout()
         await services.timetableRepository.invalidateAll()
+        await services.experienceTargetRepository.invalidate()
         // Ownership keys, private notes and drafts are the user's device-local
         // property, not session state — an ordinary sign-out never deletes them
         // (audit §3.6). Only "delete account + erase everything" does.
@@ -202,6 +211,7 @@ final class AppModel {
         }
 
         await services.timetableRepository.invalidateAll()
+        await services.experienceTargetRepository.invalidate()
         var remaining: [String] = []
         do { try await services.sessionStore.clear() }
         catch { remaining.append("HOney session") }

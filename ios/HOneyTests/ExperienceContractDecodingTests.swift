@@ -10,6 +10,52 @@ import XCTest
 
 final class ExperienceContractDecodingTests: XCTestCase {
 
+    func testTargetNamingUsesEntityAndLessonContextWithoutExposingRawKeys() {
+        let names = [
+            "teacher:t1": "Ms Lin",
+            "course:c1": "Mathematics",
+            "dish:d1": "Braised tofu"
+        ]
+        let dish = PublicExperience(
+            id: "e1", entityKey: "dish:d1", ctxTeacherId: nil, ctxCourseId: nil,
+            ctxRoomId: nil, body: "Good", rating: 4, provenance: .verifiedMember,
+            publishedDay: nil, reactions: nil
+        )
+        let lesson = PublicExperience(
+            id: "e2", entityKey: "lesson:opaque", ctxTeacherId: "t1", ctxCourseId: "c1",
+            ctxRoomId: nil, body: "Clear", rating: nil, provenance: .verifiedLesson,
+            publishedDay: nil, reactions: nil
+        )
+
+        XCTAssertEqual(ExperienceTargetNaming.label(for: dish, names: names), "Braised tofu")
+        XCTAssertEqual(ExperienceTargetNaming.label(for: lesson, names: names), "Lesson · Mathematics · Ms Lin")
+
+        let unresolvedCases = [
+            ("teacher:missing", "Teacher"),
+            ("room:missing", "Place"),
+            ("dish:missing", "Dish"),
+            ("unknown:opaque", "School experience")
+        ]
+        for (entityKey, expected) in unresolvedCases {
+            let experience = PublicExperience(
+                id: entityKey, entityKey: entityKey, ctxTeacherId: "t1", ctxCourseId: "c1",
+                ctxRoomId: nil, body: "Body", rating: nil, provenance: .verifiedMember,
+                publishedDay: nil, reactions: nil
+            )
+            let label = ExperienceTargetNaming.label(for: experience, names: names)
+            XCTAssertEqual(label, expected)
+            XCTAssertFalse(label.contains(entityKey))
+        }
+
+        let normalized = ExperienceTargetNaming.names(
+            directory: DirectoryResponse(
+                teachers: [DirectoryEntry(id: "blank", name: "  ")], courses: [], rooms: []
+            ),
+            entities: nil
+        )
+        XCTAssertNil(normalized["teacher:blank"])
+    }
+
     private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
         try HOneyCoding.decoder.decode(T.self, from: Data(json.utf8))
     }

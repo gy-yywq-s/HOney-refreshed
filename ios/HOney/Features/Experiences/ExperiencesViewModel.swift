@@ -19,6 +19,7 @@ final class ExperiencesViewModel {
     var experiences: [PublicExperience] = []
     var teachers: [DirectoryEntry] = []
     var courses: [DirectoryEntry] = []
+    var targetNames: [String: String] = [:]
 
     var query = ""
     var sort: ExperienceSort = .newest
@@ -43,10 +44,16 @@ final class ExperiencesViewModel {
     }
 
     func loadFilters() async {
-        if let directory = try? await services.honeyAPI.directory() {
+        let metadata = await services.experienceTargetRepository.load()
+        if let directory = metadata.directory {
             teachers = directory.teachers
             courses = directory.courses
         }
+        targetNames = metadata.names
+    }
+
+    func targetLabel(for experience: PublicExperience) -> String {
+        ExperienceTargetNaming.label(for: experience, names: targetNames)
     }
 
     func reload() async {

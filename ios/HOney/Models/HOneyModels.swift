@@ -241,6 +241,65 @@ struct ExperiencesFeedResponse: Codable, Sendable {
     let experiences: [PublicExperience]
 }
 
+enum ExperienceTargetNaming {
+    static func names(directory: DirectoryResponse?, entities: EntitiesResponse?) -> [String: String] {
+        var names: [String: String] = [:]
+        for item in directory?.teachers ?? [] { insert(item.name, for: "teacher:" + item.id, into: &names) }
+        for item in directory?.courses ?? [] { insert(item.name, for: "course:" + item.id, into: &names) }
+        for item in directory?.rooms ?? [] { insert(item.name, for: "room:" + item.id, into: &names) }
+        for entity in entities?.entities ?? [] { insert(entity.name, for: entity.entityKey, into: &names) }
+        return names
+    }
+
+    static func label(for experience: PublicExperience, names: [String: String]) -> String {
+        label(
+            entityKey: experience.entityKey,
+            teacherId: experience.ctxTeacherId,
+            courseId: experience.ctxCourseId,
+            roomId: experience.ctxRoomId,
+            names: names
+        )
+    }
+
+    static func label(for experience: MyExperience, names: [String: String]) -> String {
+        label(
+            entityKey: experience.entityKey,
+            teacherId: experience.ctxTeacherId,
+            courseId: experience.ctxCourseId,
+            roomId: experience.ctxRoomId,
+            names: names
+        )
+    }
+
+    private static func label(
+        entityKey: String,
+        teacherId: String?,
+        courseId: String?,
+        roomId: String?,
+        names: [String: String]
+    ) -> String {
+        if let direct = names[entityKey] { return direct }
+        if entityKey.hasPrefix("teacher:") { return "Teacher" }
+        if entityKey.hasPrefix("room:") { return "Place" }
+        if entityKey.hasPrefix("dish:") { return "Dish" }
+        if entityKey.hasPrefix("lesson:") {
+            let context = [
+                courseId.flatMap { names["course:" + $0] },
+                teacherId.flatMap { names["teacher:" + $0] },
+                roomId.flatMap { names["room:" + $0] }
+            ].compactMap { $0 }
+            return (["Lesson"] + context).joined(separator: " · ")
+        }
+        return "School experience"
+    }
+
+    private static func insert(_ rawName: String, for key: String, into names: inout [String: String]) {
+        let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        names[key] = name
+    }
+}
+
 // MARK: - Own submissions (looked up by client-held ownership keys)
 
 /// A "mine" row only ever exists for a post that was actually published — the

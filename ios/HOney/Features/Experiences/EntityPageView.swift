@@ -45,7 +45,12 @@ struct EntityPageView: View {
                     AppEmptyState(title: "No experiences yet", systemImage: "bubble.left.and.bubble.right")
                 } else {
                     ForEach(experiences) { experience in
-                        AppCard { InteractiveExperienceRow(experience: experience, services: model.services) }
+                        AppCard {
+                            InteractiveExperienceRow(
+                                experience: experience,
+                                services: model.services
+                            )
+                        }
                     }
                 }
             }

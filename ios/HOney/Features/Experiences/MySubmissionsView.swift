@@ -315,26 +315,11 @@ struct MySubmissionsView: View {
 
     /// Directory ids + entity registry → display names (web NameMaps).
     private func loadNames() async {
-        var resolved: [String: String] = names
-        if let directory = try? await model.services.honeyAPI.directory() {
-            for teacher in directory.teachers { resolved["teacher:\(teacher.id)"] = teacher.name }
-            for course in directory.courses { resolved["course:\(course.id)"] = course.name }
-            for room in directory.rooms { resolved["room:\(room.id)"] = room.name }
-        }
-        if let entities = try? await model.services.honeyAPI.entities(type: nil, query: nil) {
-            for entity in entities.entities { resolved[entity.entityKey] = entity.name }
-        }
-        names = resolved
+        names = await model.services.experienceTargetRepository.load().names
     }
 
     private func targetLabel(_ exp: MyExperience) -> String {
-        if exp.entityKey.hasPrefix("lesson:") {
-            var parts = ["Lesson experience"]
-            if let courseId = exp.ctxCourseId, let name = names["course:\(courseId)"] { parts.append(name) }
-            if let teacherId = exp.ctxTeacherId, let name = names["teacher:\(teacherId)"] { parts.append(name) }
-            return parts.joined(separator: " · ")
-        }
-        return names[exp.entityKey] ?? exp.entityKey
+        ExperienceTargetNaming.label(for: exp, names: names)
     }
 
     private func revoke(ownershipKey: String) async {

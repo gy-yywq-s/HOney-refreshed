@@ -39,8 +39,10 @@ struct ExperiencesView: View {
             }
             .task {
                 if viewModel == nil { viewModel = ExperiencesViewModel(services: model.services) }
-                await viewModel?.loadFilters()
-                await viewModel?.reload()
+                guard let viewModel else { return }
+                async let filters: Void = viewModel.loadFilters()
+                async let feed: Void = viewModel.reload()
+                _ = await (filters, feed)
             }
             .sheet(isPresented: $showLessonPicker, onDismiss: beginPendingComposition) {
                 NavigationStack {
@@ -97,7 +99,11 @@ struct ExperiencesView: View {
                 } else {
                     LazyVStack(spacing: 12) {
                         ForEach(vm.experiences) { experience in
-                            InteractiveExperienceRow(experience: experience, services: model.services)
+                            InteractiveExperienceRow(
+                                experience: experience,
+                                services: model.services,
+                                targetLabel: vm.targetLabel(for: experience)
+                            )
                                 .padding(16)
                                 .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                                 .overlay {
