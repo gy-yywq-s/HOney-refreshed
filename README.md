@@ -76,6 +76,7 @@ Per-stage documentation lives in [`docs/architecture/`](docs/architecture/):
 | ★ | [`moderation-pipeline.md`](docs/architecture/moderation-pipeline.md) | **The moderation pipeline** — layers, LLM constraints, pass mechanics |
 | M5 | [`m5-web-and-deploy.md`](docs/architecture/m5-web-and-deploy.md) | Web app, admin dash, deploy |
 | — | [`acceptance.md`](docs/acceptance.md) | **Line-by-line acceptance** (§20 / §27 / §26.2) |
+| — | [`regressions-2026-09-01.md`](docs/regressions-2026-09-01.md) | Live-portal fixes: timetable import, empty-body sync, admin binding |
 | — | [`legacy-design-audit.md`](docs/legacy-design-audit.md) · [`access-legacy-parity-map.md`](docs/access-legacy-parity-map.md) · [`ugc-appstore-review.md`](docs/ugc-appstore-review.md) | Legacy audit, Access parity, UGC review |
 
 ## Repository layout
