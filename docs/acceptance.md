@@ -9,15 +9,15 @@ Appendix A §26.2 launch gates (10) — reported on independent axes instead of 
 | Axis | Meaning | Current baseline |
 |------|---------|------------------|
 | **Code** | implemented on `build/v1` | @ `c2f03b8` (main/prod pinned at `8158966` until A6) |
-| **Tests** | asserted by green automated tests | TS 127 pass / 23 live-skipped (backend 97, connector 17, web 10, shared 3) + iOS `HOneyTests` in CI |
+| **Tests** | asserted by green automated tests | TS 134 pass / 23 live-gated (backend 104, connector 17, web 10, shared 3) + iOS `HOneyTests` in CI |
 | **Live** | verified against the real portal or production | portal facts confirmed 2026-09-01 with the school test account |
 | **UI** | surface exists in the approved (legacy) design and passed design-is ≥22 | **RED — in flight**: legacy wholesale port not landed; prior scores were for the rejected UI |
 
 ## Honest framing of the moderation claims
 
 The launch gates are properties of the **versioned critical regression suite**, not of the world.
-What is asserted and tested: **zero misses in the versioned regression corpus (75 balanced
-bilingual rows, policy v4)** — no serious/out-of-scope or threat/slur/doxxing row publishes, no
+What is asserted and tested: **zero misses in the versioned regression corpus (82 balanced
+bilingual rows incl. must-not-false-positive benign rows, policy v5)** — no serious/out-of-scope or threat/slur/doxxing row publishes, no
 injection row obtains a pass, outputs are 100% schema-valid or the pipeline fails closed — plus
 structural tests: no author column (PRAGMA), no author-linking logs (source scan),
 content-hash + single-use-nonce pass binding, working kill switches.
@@ -27,9 +27,9 @@ can be missed by the classifier. The residual-risk posture is: fail-closed defau
 report → automatic re-evaluation path (outage hides reported posts), admin kill switches, and
 growing the corpus with every observed miss (each miss becomes a permanent regression row).
 
-Known open moderation bug: **Task #15** — the lexicon squeezed-token pattern lacks word
-boundaries, hard-blocking a few benign words (false positives). Fix + must-not-false-positive
-corpus rows are in flight on `build/v1`.
+Task #15 (lexicon squeezed-token matching lacked word boundaries → benign false
+positives) is FIXED on `build/v1`: boundary assertions on the mapped span, 7 new
+must-not-false-positive corpus rows, evasion variants still caught, policy v4 → v5.
 
 ## Master §20 — 39 criteria
 
@@ -105,9 +105,8 @@ the forbidden mixed-case form).
 1. iOS P0 batch (consent two-step, draft preservation, private notes, ownership-key lifecycle)
    + legacy UI wholesale port.
 2. Web full legacy parity + mobile-first optimization pass.
-3. Task #15 lexicon false-positive fix + corpus rows.
-4. design-is re-scoring of all surfaces (≥22), subagent code review, full monorepo tests,
+3. design-is re-scoring of all surfaces (≥22), subagent code review, full monorepo tests,
    iOS CI, casing gate.
-5. A6 line-by-line spec walk; then — only on Gary's go — fast-forward `main` and deploy.
+4. A6 line-by-line spec walk; then — only on Gary's go — fast-forward `main` and deploy.
 
 Production (`honey.gaelisus.com`) still runs `8158966`; nothing above is deployed yet.

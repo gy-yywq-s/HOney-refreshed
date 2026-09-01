@@ -171,7 +171,7 @@ stay public just because the classifier is down).
 
 ## Versioning & the launch gates
 
-`POLICY_VERSION` (currently 4) stamps every decision and pass. Any prompt/lexicon/engine change
+`POLICY_VERSION` (currently 5) stamps every decision and pass. Any prompt/lexicon/engine change
 bumps it and re-runs the regression corpus. The §26.2 gates are asserted as **zero misses in
 that versioned corpus** — no serious/out-of-scope row publishes, no injection row obtains a
 pass, 100 % schema-valid or fail-closed, no systematic blocking of ordinary negativity, pass
