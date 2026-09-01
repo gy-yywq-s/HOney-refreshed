@@ -1168,8 +1168,9 @@
   flex-wrap: wrap;
 }
 .portal-row {
-  flex: 1;
-  min-width: 200px;
+  /* Full-width row on every size: sharing and the portal are different
+     kinds of act — side-by-side they crowd and the labels wrap badly. */
+  flex: 1 1 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1179,6 +1180,7 @@
   border-radius: 12px;
   color: inherit;
   text-decoration: none;
+  white-space: nowrap;
 }
 .portal-row:hover {
   border-color: var(--accent);
