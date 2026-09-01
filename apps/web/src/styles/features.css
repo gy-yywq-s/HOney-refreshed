@@ -759,6 +759,14 @@
   .timeline {
     min-height: 620px;
   }
+  @media (max-height: 620px) {
+    /* Compact heights (§16.14.5 degradation, one notch): a 09:00–18:00
+       day fits above the fixed nav at 320×568; the landing scroll puts
+       the first lesson ahead at the top. Normal heights keep 620. */
+    .timeline {
+      min-height: 540px;
+    }
+  }
   .timeline__hours {
     width: 44px;
   }
@@ -1295,9 +1303,4 @@
 .main:focus {
   outline: 3px solid var(--accent);
   outline-offset: -3px;
-}
-@media (max-width: 360px) {
-  .modal .stay-connected span {
-    font-size: var(--fs-micro);
-  }
 }

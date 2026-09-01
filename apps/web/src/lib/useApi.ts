@@ -8,6 +8,10 @@ import { REFRESH_EVENT } from "./refresh";
 // a background failure keeps the cached view. Keyed entries only — callers
 // without a key keep plain fetch-on-mount behavior.
 const cache = new Map<string, unknown>();
+// In-flight requests by key: two hooks mounting in the same tick share one
+// network call instead of racing (design-is r6: compose fired /api/entities
+// twice, concurrently).
+const inflight = new Map<string, Promise<unknown>>();
 
 export const apiCache = {
   /** Drop every entry whose key starts with `prefix` ("" clears all). */
@@ -48,7 +52,17 @@ export function useApi<T>(
     let cancelled = false;
     const hit = key !== undefined && cache.has(key) ? (cache.get(key) as T) : null;
     setState({ data: hit, error: null, loading: hit === null });
-    fn().then(
+    const run = (): Promise<T> => {
+      if (key === undefined) return fn();
+      const pending = inflight.get(key) as Promise<T> | undefined;
+      if (pending) return pending;
+      const p = fn().finally(() => {
+        if (inflight.get(key) === p) inflight.delete(key);
+      });
+      inflight.set(key, p);
+      return p;
+    };
+    run().then(
       (data) => {
         if (key !== undefined) cache.set(key, data);
         if (!cancelled) setState({ data, error: null, loading: false });

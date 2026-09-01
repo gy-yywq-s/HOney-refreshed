@@ -46,8 +46,9 @@ export function ReconnectDialog({
                 onChange={(e) => setStayConnected(e.target.checked)}
               />
               <span>
-                Stay connected on this device — encrypted, kept only here (a browser is less
-                protected than a phone’s secure storage).
+                {purpose === "save"
+                  ? "Stay connected on this device."
+                  : "Stay connected on this device — encrypted, kept only here (a browser is less protected than a phone’s secure storage)."}
               </span>
             </label>
         }
