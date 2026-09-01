@@ -6,7 +6,7 @@
 - Exact base: `integration/product-v2` at `3d91cb3f3981f282268dbd598f1106c2fd53732c`.
 - Previous-agent commits found on this branch: none. The branch pointed directly at the base SHA.
 - Previous-agent files preserved: the 10 reference screenshots under `docs/web/evidence/ionic-fidelity/reference/`.
-- Implementation commit deployed locally: `f87fe75` (`web: add isolated Ionic fidelity PWA`).
+- Publicly deployed code revision: `c83bd11581fe5e3716c9802b69d1e12f80087f49`.
 - Gary's explicit follow-up requires the existing Web to remain. Therefore the Ionic implementation is isolated at `apps/web-ionic`; `apps/web` is unchanged.
 - Backend, shared source, database, iOS, and the deployed `/home/honey/app` checkout are unchanged.
 
@@ -96,11 +96,12 @@ Target: `https://ionic.gaelisus.com`.
 Process completed on the droplet:
 
 1. Pushed `web/ionic-fidelity`.
-2. Created the separate checkout `/home/honey/ionic-app` at `f87fe75`.
+2. Created the separate checkout `/home/honey/ionic-app`; the deployed code revision is `c83bd11581fe5e3716c9802b69d1e12f80087f49`.
 3. Ran locked install, shared type build, and `@honey/web-ionic` production build.
 4. Installed the reviewable `docs/deploy/honey-ionic-fidelity.service`.
 5. Started and enabled `honey-ionic-fidelity.service` on `127.0.0.1:8902`.
-6. Added only the `ionic.gaelisus.com` ingress to `/etc/cloudflared/config.base.yml` and regenerated the tunnel config. No DNS record was changed.
+6. Added only the `ionic.gaelisus.com` ingress to `/etc/cloudflared/config.base.yml` and regenerated the tunnel config.
+7. After Gary explicitly authorized the DNS correction, pointed only `ionic.gaelisus.com` at the existing Cloudflare Tunnel.
 
 Local deployment verification:
 
@@ -110,7 +111,15 @@ Local deployment verification:
 - `/sw.js`: 200, no-store plus `Service-Worker-Allowed: /`.
 - `/api/health`: 200 from the existing `honey-backend`.
 
-Public deployment status: blocked at DNS. Every HTTPS probe to `ionic.gaelisus.com` returns Cloudflare 403 Error 1000, “DNS points to prohibited IP.” The request does not reach the tunnel or Ionic service. Correcting the existing DNS record is required, but the task explicitly says not to change DNS. Public page boot, client-side routing, manifest, and service-worker verification therefore remain untested at the target host. The exact service and ingress are ready once that separate authorization is given.
+Public deployment status: complete.
+
+- `https://ionic.gaelisus.com/`: HTTPS 200.
+- `/experiences/explore`: HTTPS 200 SPA fallback; a clean unauthenticated browser applies the client-side redirect to `/login`.
+- Hashed JavaScript asset: HTTPS 200 with one-year immutable caching.
+- Manifest: HTTPS 200, `display: standalone`, `start_url: /home`, three icons.
+- Service worker: HTTPS 200 with no-store headers and `Service-Worker-Allowed: /`; clean Chromium reports it activated at the origin root scope.
+- `/api/health`: HTTPS 200 from the existing backend through the same-origin proxy.
+- Public browser: secure context, latest deployed asset, one main landmark on Login, no horizontal/root overflow, and no runtime boot error.
 
 The existing `honey.gaelisus.com` service, checkout, backend, and tunnel rule were not changed. The older `honey.gaelis.cc` hostd Ionic experiment was also not overwritten.
 
@@ -123,7 +132,8 @@ Current focused results:
 - `pnpm --filter @honey/web-ionic test`: 7 files, 32 tests passed.
 - `pnpm --filter @honey/web-ionic build`: pass.
 - Clean deployment checkout install/build: pass.
-- Production browser against the built local server: booted with an activated service worker and no boot error.
+- Production browser against both the built local server and public HTTPS origin: booted with an activated service worker and no boot error.
+- Public deep-link, static-asset, manifest, service-worker, icon, and API health probes: pass.
 - Browser console in the final development sweep: zero runtime errors; only React Router future-flag warnings.
 - Modal lifecycle: lesson modal opened with Ionic focus ownership and closed by Escape without route change.
 - Report lifecycle: post popover closed before report modal opened; Escape dismissed the modal.
@@ -151,7 +161,6 @@ Both directories contain the same 10-state matrix:
 
 ## Remaining limitations and untested items
 
-- Public HTTPS verification is blocked by the existing DNS record as described above.
 - No physical iOS Safari/Android Chrome install test was run; Chromium validated responsive and standalone PWA behavior.
 - The current service proxies to the development backend, so its availability depends on the existing `honey.service`.
 - Vite's shared Ionic chunk-size advisory remains.
