@@ -491,10 +491,9 @@ a.btn:hover {
 }
 .wordmark {
   display: block;
-  color: var(--ink);
 }
-.wordmark text {
-  fill: currentColor;
+:root[data-surface="night"] .wordmark {
+  filter: invert(1) hue-rotate(180deg);
 }
 .rail-nav {
   position: relative;
