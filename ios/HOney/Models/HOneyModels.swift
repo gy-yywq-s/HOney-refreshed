@@ -130,11 +130,13 @@ struct DirectoryResponse: Codable, Sendable {
     let rooms: [DirectoryEntry]
 }
 
-/// Browsable Experiences entity kinds (contract `EntityType`). V1: lesson is a
-/// compose target but NOT a browsable entity, and course ids appear only as
-/// lesson CONTEXT for filter-time association.
+/// Browsable Experiences entity kinds (contract `EntityType`). Course became
+/// first-class in the product-v2 backend reset (review v3 §9.10) — decoding
+/// must accept it or every EntitiesResponse fails once a timetable import
+/// registers a course. (Model-layer wire compat only; iOS UI is Gary'"'"'s track.)
 enum EntityType: String, Codable, Sendable, CaseIterable {
     case teacher
+    case course
     case room
     case dish
 }

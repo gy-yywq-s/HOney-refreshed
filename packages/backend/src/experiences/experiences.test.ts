@@ -590,6 +590,32 @@ describe("cursor feed + course entity (review v3 \u00a712.5/\u00a712.6)", () => 
     expect((q2.json() as { newItemsAvailable: boolean }).newItemsAvailable).toBe(true);
   });
 
+  it("garbage limit never reaches SQL (review M1); empty feed still arms the probe (L4)", async () => {
+    // limit=abc used to interpolate LIMIT NaN into the SQL → 500.
+    const bad = await fetchPage("scope=my_classes&limit=abc");
+    expect(bad.status).toBe(200);
+
+    // A user with exposure but an EMPTY feed gets a zero-position head, so
+    // the very first post still triggers the new-posts banner.
+    const empty = await fetchPage("scope=my_classes");
+    expect(empty.body.items).toHaveLength(0);
+    expect(empty.body.headCursor).not.toBeNull();
+    const q0 = await app.inject({
+      method: "GET",
+      url: `/api/experiences/feed/updates?scope=my_classes&head=${encodeURIComponent(empty.body.headCursor!)}`,
+      headers: auth,
+    });
+    expect((q0.json() as { newItemsAvailable: boolean }).newItemsAvailable).toBe(false);
+    const { teacherId } = await myTeacherAndCourse();
+    insertPost(200, `teacher:${teacherId}`, 50_000);
+    const q1 = await app.inject({
+      method: "GET",
+      url: `/api/experiences/feed/updates?scope=my_classes&head=${encodeURIComponent(empty.body.headCursor!)}`,
+      headers: auth,
+    });
+    expect((q1.json() as { newItemsAvailable: boolean }).newItemsAvailable).toBe(true);
+  });
+
   it("cursors are sealed, tamper-checked and scope-bound", async () => {
     const { teacherId } = await myTeacherAndCourse();
     for (let i = 0; i < 6; i++) insertPost(i, `teacher:${teacherId}`, 20_000 + i);

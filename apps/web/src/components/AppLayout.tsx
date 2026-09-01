@@ -26,6 +26,14 @@ function AppLayout() {
   const location = useLocation();
   const [themeOpen, setThemeOpen] = useState(false);
 
+  // The scroll owner persists across routes now (§16.14.3), so each route
+  // change resets it to the top (review M3). Instant, not smooth: pages that
+  // restore their own position (the feed) re-scroll in a later frame.
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>("[data-scroll-owner]");
+    el?.scrollTo({ top: 0, behavior: "instant" });
+  }, [location.pathname]);
+
   if (!me) {
     if (loading) return <div className="fullscreen-note">Loading…</div>;
     return (

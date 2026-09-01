@@ -806,7 +806,8 @@ export class ExperienceService {
       clauses.push("(published_at < ? OR (published_at = ? AND id < ?))");
       params.push(c.t, c.t, c.id);
     }
-    const limit = Math.min(Math.max(Math.trunc(opts.limit ?? 20), 5), 25);
+    const rawLimit = Number.isFinite(opts.limit) ? (opts.limit as number) : 20;
+    const limit = Math.min(Math.max(Math.trunc(rawLimit), 5), 25);
     // Over-fetch by 1 to learn whether a next page exists.
     const raw = this.db
       .prepare(
@@ -821,17 +822,20 @@ export class ExperienceService {
       (r) => !this.frozenAnywhere(r.entity_key, r.ctx_teacher_id, r.ctx_room_id),
     );
     const last = raw.length > 0 ? raw[Math.min(limit, raw.length) - 1]! : null;
-    const first = pageRows[0] ?? null;
+    // Head = the newest RAW position at fetch time (pre-filter): a frozen
+    // newest post must advance the head too, or the new-posts probe would
+    // signal forever about something the feed can never show. An empty
+    // unpaged feed arms at the zero position so the FIRST post still lands.
+    const first = raw[0] ?? null;
     const items = this.diversify(pageRows).map((r) => this.toPublic(r, honeyId));
     return {
       ok: true,
       page: {
         items,
         nextCursor: hasMore && last ? this.sealCursor(last.published_at ?? 0, last.id, scope) : null,
-        headCursor:
-          first && !opts.cursor
-            ? this.sealCursor(first.published_at ?? 0, first.id, scope)
-            : null,
+        headCursor: opts.cursor
+          ? null
+          : this.sealCursor(first?.published_at ?? 0, first?.id ?? "", scope),
       },
     };
   }
@@ -972,16 +976,17 @@ export class ExperienceService {
   ): { ok: true; value: 1 | -1 | 0; reactions: { likes: number; dislikes: number } | null } | { ok: false; error: string } {
     if (this.settings.killSwitch("DISABLE_REACTIONS")) return { ok: false, error: "reactions_disabled" };
     const row = this.db
-      .prepare("SELECT id, entity_key, lesson_id, ctx_teacher_id FROM experiences WHERE id = ? AND status = 'published'")
+      .prepare(
+        "SELECT id, entity_key, lesson_id, ctx_teacher_id, ctx_room_id FROM experiences WHERE id = ? AND status = 'published'",
+      )
       .get(experienceId) as unknown as
-      | { id: string; entity_key: string; lesson_id: string | null; ctx_teacher_id: string | null }
+      | { id: string; entity_key: string; lesson_id: string | null; ctx_teacher_id: string | null; ctx_room_id: string | null }
       | undefined;
     if (!row) return { ok: false, error: "not_found" };
-    // Frozen entity: no new reactions (S2).
-    if (
-      this.settings.frozenEntity(row.entity_key) ||
-      (row.ctx_teacher_id && this.settings.frozenEntity(`teacher:${row.ctx_teacher_id}`))
-    ) {
+    // Frozen entity: no new reactions (S2) — same scope as publish/feed
+    // (primary + teacher + room context), so a post hidden from feeds can't
+    // keep collecting reactions via a remembered id.
+    if (this.frozenAnywhere(row.entity_key, row.ctx_teacher_id, row.ctx_room_id)) {
       return { ok: false, error: "entity_frozen" };
     }
 
@@ -1166,13 +1171,20 @@ export class ExperienceService {
       .run(POLICY_VERSION, reportId);
   }
 
-  /** Retry queue sweep: re-run re-evaluations that failed closed earlier. */
+  /**
+   * Retry queue sweep: re-run re-evaluations that failed closed earlier, plus
+   * any report stranded at 'pending' (a crash between INSERT and the first
+   * reevaluate, or legacy rows) once it is 10+ minutes old.
+   */
   async processPendingReevaluations(): Promise<number> {
     const due = this.db
       .prepare(
-        "SELECT id, experience_id FROM reports WHERE outcome = 'reevaluation_pending' AND retry_at IS NOT NULL AND retry_at <= ? LIMIT 20",
+        `SELECT id, experience_id FROM reports
+         WHERE (outcome = 'reevaluation_pending' AND retry_at IS NOT NULL AND retry_at <= ?)
+            OR (outcome = 'pending' AND created_at <= ?)
+         LIMIT 20`,
       )
-      .all(this.now()) as unknown as { id: string; experience_id: string }[];
+      .all(this.now(), this.now() - 10 * 60_000) as unknown as { id: string; experience_id: string }[];
     for (const r of due) await this.reevaluate(r.id, r.experience_id);
     return due.length;
   }

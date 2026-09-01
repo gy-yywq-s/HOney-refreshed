@@ -38,6 +38,7 @@ enum ComposeContext {
             case .room: detail = "Place"
             case .dish: detail = "Food"
             case .teacher: detail = "Teacher"
+            case .course: detail = "Course"
             }
             return ComposerTarget(
                 label: entity.name,

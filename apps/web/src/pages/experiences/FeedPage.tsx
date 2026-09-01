@@ -28,18 +28,23 @@ export function ExperiencesFeedPage() {
 
   // Infinite scroll: load the next page as the sentinel nears the viewport.
   const sentinel = useRef<HTMLDivElement>(null);
+  // Depend on the STABLE loadMore only (review H2): a per-render dependency
+  // would rebuild the observer every render, and each rebuild's initial
+  // callback re-fires on a still-visible sentinel — a hot retry loop when a
+  // page fetch keeps failing.
+  const loadMore = feed.loadMore;
   useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) void feed.loadMore();
+        if (entries.some((e) => e.isIntersecting)) void loadMore();
       },
       { rootMargin: "600px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [feed]);
+  }, [loadMore]);
 
   return (
     <div className="feed-screen">

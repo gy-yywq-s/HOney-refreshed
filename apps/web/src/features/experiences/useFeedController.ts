@@ -2,8 +2,15 @@
 // Owns: cursor pagination, scope switching, in-session state + scroll
 // restoration (leaving and returning lands the reader where they were —
 // §16.14 acceptance 14/15), and the quiet new-posts probe (§9.6C).
+//
+// Key discipline (code review 2026-09-01, H1): the hook stays MOUNTED when
+// FeedPage switches scope in place, so `key` can change without a remount.
+// All state is therefore tagged with the key it belongs to (stateKey ref):
+// snapshots are always written under the key the items came from, and a key
+// change re-seeds items/cursors synchronously before anything else runs —
+// no cross-scope items, no cross-scope cursors, no corrupted snapshots.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, describeApiError } from "../../api/client";
 import type { FeedPage, FeedParams, FeedScope, PublicExperience } from "../../api/types";
 
@@ -28,7 +35,7 @@ function keyOf(scope: FeedScope, filters: FeedFilters): string {
   return [scope, filters.entityKey ?? "", filters.teacherId ?? "", filters.courseId ?? "", filters.roomId ?? ""].join("|");
 }
 
-/** The scroll owner for feed restoration (window until the app-shell frame owns it). */
+/** The scroll owner for feed restoration (the app frame's <main>). */
 function scroller(): { get(): number; set(y: number): void } {
   const el = document.querySelector<HTMLElement>("[data-scroll-owner]");
   if (el) return { get: () => el.scrollTop, set: (y) => el.scrollTo({ top: y }) };
@@ -50,18 +57,13 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     next: restored?.nextCursor ?? null,
     head: restored?.headCursor ?? null,
   });
-  const exhausted = restored !== null && restored.nextCursor === null;
-  const [end, setEnd] = useState(exhausted);
+  const [end, setEnd] = useState(restored !== null && restored.nextCursor === null);
   const busy = useRef(false);
-
-  const snapshot = useCallback(() => {
-    snapshots.set(key, {
-      items,
-      nextCursor: cursors.current.next,
-      headCursor: cursors.current.head,
-      scrollY: scroller().get(),
-    });
-  }, [key, items]);
+  // The key the CURRENT items/cursors belong to. Updated only in the
+  // key-switch layout effect below, so snapshot writes can never mislabel.
+  const stateKey = useRef(key);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   const applyPage = useCallback((page: FeedPage, mode: "replace" | "append") => {
     setItems((prev) => {
@@ -74,36 +76,41 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     setEnd(page.nextCursor === null);
   }, []);
 
+  const paramsRef = useRef<FeedParams>({ scope, ...filters });
+  paramsRef.current = { scope, ...filters };
+
   const loadFirst = useCallback(async () => {
+    const forKey = stateKey.current;
     setLoading(true);
     setError(null);
     try {
-      const params: FeedParams = { scope, ...filters };
-      applyPage(await api.feedPage(params), "replace");
+      const page = await api.feedPage(paramsRef.current);
+      if (stateKey.current !== forKey) return; // key switched mid-flight
+      applyPage(page, "replace");
       setNewAvailable(false);
     } catch (err) {
-      setError(describeApiError(err));
+      if (stateKey.current === forKey) setError(describeApiError(err));
     } finally {
-      setLoading(false);
+      if (stateKey.current === forKey) setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, applyPage]);
+  }, [applyPage]);
 
   const loadMore = useCallback(async () => {
     const cursor = cursors.current.next;
+    const forKey = stateKey.current;
     if (!cursor || busy.current) return;
     busy.current = true;
     setLoadingMore(true);
     try {
-      applyPage(await api.feedPage({ scope, ...filters, cursor }), "append");
+      const page = await api.feedPage({ ...paramsRef.current, cursor });
+      if (stateKey.current === forKey) applyPage(page, "append");
     } catch {
-      /* quiet — the sentinel retries when it re-enters the viewport */
+      /* quiet — the sentinel retries on the next real intersection change */
     } finally {
       busy.current = false;
       setLoadingMore(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, applyPage]);
+  }, [applyPage]);
 
   /** The banner action: back to the top of a fresh stream. */
   const jumpToNew = useCallback(async () => {
@@ -111,9 +118,47 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     await loadFirst();
   }, [loadFirst]);
 
-  // Mount: restore position or fetch page one.
+  const writeSnapshot = useCallback((ofKey: string) => {
+    snapshots.set(ofKey, {
+      items: itemsRef.current,
+      nextCursor: cursors.current.next,
+      headCursor: cursors.current.head,
+      scrollY: scroller().get(),
+    });
+  }, []);
+
+  // Key switch WITHOUT remount (in-place scope toggle): capture the outgoing
+  // key's state at its still-current scroll offset, then re-seed everything
+  // for the incoming key. Layout effect: runs before the passive effects
+  // below see the new key.
+  useLayoutEffect(() => {
+    if (stateKey.current === key) return;
+    writeSnapshot(stateKey.current);
+    stateKey.current = key;
+    busy.current = false;
+    setNewAvailable(false);
+    setError(null);
+    setLoadingMore(false);
+    const snap = snapshots.get(key) ?? null;
+    if (snap) {
+      setItems(snap.items);
+      cursors.current = { next: snap.nextCursor, head: snap.headCursor };
+      setEnd(snap.nextCursor === null);
+      setLoading(false);
+      requestAnimationFrame(() => scroller().set(snap.scrollY));
+    } else {
+      setItems([]);
+      cursors.current = { next: null, head: null };
+      setEnd(false);
+      scroller().set(0);
+      void loadFirst();
+    }
+  }, [key, loadFirst, writeSnapshot]);
+
+  // Mount: restore position or fetch page one. (Key switches are handled
+  // by the layout effect above; this runs once per mount.)
   useEffect(() => {
-    const snap = snapshots.get(key);
+    const snap = snapshots.get(stateKey.current);
     if (snap) {
       // Restore after paint; the list must exist before scrolling to it.
       requestAnimationFrame(() => scroller().set(snap.scrollY));
@@ -121,13 +166,15 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
       void loadFirst();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, []);
 
-  // Keep the snapshot current + capture scroll on unmount.
+  // Keep the snapshot current + capture scroll on unmount — always under the
+  // key the state actually belongs to.
   useEffect(() => {
-    snapshot();
-    return snapshot;
-  }, [snapshot]);
+    writeSnapshot(stateKey.current);
+    const ofKey = stateKey.current;
+    return () => writeSnapshot(ofKey);
+  }, [items, writeSnapshot]);
 
   // Quiet new-content probe (§9.6C): poll only while visible; a result shows
   // a banner, never a scroll jump.
@@ -135,16 +182,16 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     const tick = async () => {
       const head = cursors.current.head;
       if (!head || document.hidden) return;
+      const forKey = stateKey.current;
       try {
-        const res = await api.feedUpdates(scope, head);
-        if (res.newItemsAvailable) setNewAvailable(true);
+        const res = await api.feedUpdates(paramsRef.current.scope, head);
+        if (res.newItemsAvailable && stateKey.current === forKey) setNewAvailable(true);
       } catch {
         /* quiet */
       }
     };
     const id = setInterval(() => void tick(), UPDATE_POLL_MS);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
   return { items, loading, loadingMore, error, end, loadMore, newAvailable, jumpToNew, refresh: loadFirst };

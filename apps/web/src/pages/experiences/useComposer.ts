@@ -55,7 +55,10 @@ export function useComposer(target: ComposerTarget | null) {
 
   // Held between a `nudge`/`cooldown` and the user's explicit follow-up action.
   const pass = useRef<{ eligibilityToken: string; pass: string } | null>(null);
-  const cooldownTicket = useRef<string | null>(null);
+  // The ticket is CONTENT-BOUND server-side (same body+rating only) — keep
+  // the content it was issued for, so an edited draft re-checks fresh
+  // instead of failing with an opaque cooldown_ticket_invalid (review L5).
+  const cooldownTicket = useRef<{ ticket: string; body: string; rating: number | null } | null>(null);
 
   const key = target ? targetKeyOf(target) : null;
 
@@ -128,7 +131,7 @@ export function useComposer(target: ComposerTarget | null) {
             setStatus({ kind: "nudge", reasons: check.reasons });
             break;
           case "cooldown":
-            cooldownTicket.current = check.cooldown!.ticket;
+            cooldownTicket.current = { ticket: check.cooldown!.ticket, body: body.trim(), rating };
             setStatus({ kind: "cooldown", retryAt: check.cooldown!.retryAt, reasons: check.reasons });
             break;
           case "edit_required":
@@ -175,8 +178,12 @@ export function useComposer(target: ComposerTarget | null) {
   }, [finishPublish, runCheck]);
 
   const recheckAfterCooldown = useCallback(() => {
-    return runCheck(cooldownTicket.current ?? undefined);
-  }, [runCheck]);
+    const held = cooldownTicket.current;
+    // Edited since the cooldown? The ticket no longer matches the content —
+    // run a fresh check (which may cool down again, correctly).
+    const usable = held && held.body === body.trim() && held.rating === rating;
+    return runCheck(usable ? held.ticket : undefined);
+  }, [runCheck, body, rating]);
 
   // Leave the nudge preflight to add more context, keeping the draft.
   const backToEditing = useCallback(() => {

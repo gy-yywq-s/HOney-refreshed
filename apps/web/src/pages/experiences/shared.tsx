@@ -84,6 +84,8 @@ export const SUBMIT_ERROR_COPY: Record<string, string> = {
     "You can review teachers and rooms your imported timetable shows you've actually had — nothing in your history matches this entry.",
   rating_not_allowed:
     "Stars are for dishes only, never for people, lessons or rooms. Remove the rating to continue.",
+  cooldown_ticket_invalid:
+    "The cooling-off pass didn't match this draft (it changed since then). Run the check again — nothing was lost.",
   already_reviewed:
     "You've already shared an experience for this. You can revoke it in Your notes & posts if you want to write a new one.",
 };

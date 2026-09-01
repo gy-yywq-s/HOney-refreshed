@@ -43,18 +43,23 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
   const feed = useFeedController("school", filters);
 
   const sentinel = useRef<HTMLDivElement>(null);
+  // Depend on the STABLE loadMore only (review H2): a per-render dependency
+  // would rebuild the observer every render, and each rebuild's initial
+  // callback re-fires on a still-visible sentinel — a hot retry loop when a
+  // page fetch keeps failing.
+  const loadMore = feed.loadMore;
   useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) void feed.loadMore();
+        if (entries.some((e) => e.isIntersecting)) void loadMore();
       },
       { rootMargin: "600px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [feed]);
+  }, [loadMore]);
 
   const name =
     (kind === "teacher" && (names.teacher.get(id) ?? names.entity.get(entityKey))) ||
