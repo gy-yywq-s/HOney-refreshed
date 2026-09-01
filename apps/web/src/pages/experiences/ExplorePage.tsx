@@ -39,24 +39,17 @@ export function ExperiencesExplorePage() {
     return groups;
   }, [entities.data, q]);
 
-  // "From your history": the user's own imported teachers/courses — the most
-  // likely lookup targets — surfaced first, still with everything listed below.
+  // "From your history": the user's own imported teachers/courses are the
+  // most likely lookup targets. They are MARKED inline in the complete
+  // listing (design-is r2: a separate strip repeated 9 of 10 names).
   const fromHistory = useMemo(() => {
     const dir = directory.data;
-    if (!dir) return [];
+    if (!dir) return new Set<string>();
     const known = new Set((entities.data?.entities ?? []).map((e) => e.entity_key));
-    const refs: { key: string; name: string; path: string }[] = [];
-    for (const t of dir.teachers) {
-      if (known.has(`teacher:${t.id}`)) {
-        refs.push({ key: `teacher:${t.id}`, name: t.name, path: `/experiences/teacher/${encodeURIComponent(t.id)}` });
-      }
-    }
-    for (const c of dir.courses) {
-      if (known.has(`course:${c.id}`)) {
-        refs.push({ key: `course:${c.id}`, name: c.name, path: `/experiences/course/${encodeURIComponent(c.id)}` });
-      }
-    }
-    return refs.slice(0, 10);
+    const refs: { key: string }[] = [];
+    for (const t of dir.teachers) if (known.has(`teacher:${t.id}`)) refs.push({ key: `teacher:${t.id}` });
+    for (const c of dir.courses) if (known.has(`course:${c.id}`)) refs.push({ key: `course:${c.id}` });
+    return new Set(refs.map((r) => r.key));
   }, [directory.data, entities.data]);
 
   return (
@@ -82,24 +75,18 @@ export function ExperiencesExplorePage() {
         onChange={(e) => setQ(e.target.value)}
       />
 
-      {!q && fromHistory.length > 0 && (
-        <section aria-label="From your history">
-          <h2 className="overline">From your history</h2>
-          <div className="history-chips">
-            {fromHistory.map((r) => (
-              <Link key={r.key} className="history-chip" to={r.path}>
-                {r.name}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
       {entities.error && <div role="alert" className="banner banner--danger">{entities.error}</div>}
       {entities.loading ? (
         <Skeleton lines={6} />
       ) : (
         SECTIONS.map(({ type, label }) => (
-          <ExploreSection key={type} label={label} items={byType[type]} filtered={q.trim().length > 0} />
+          <ExploreSection
+            key={type}
+            label={label}
+            items={byType[type]}
+            filtered={q.trim().length > 0}
+            mine={fromHistory}
+          />
         ))
       )}
     </div>
@@ -110,10 +97,12 @@ function ExploreSection({
   label,
   items,
   filtered,
+  mine,
 }: {
   label: string;
   items: EntityRef[];
   filtered: boolean;
+  mine: Set<string>;
 }) {
   // The COMPLETE listing, always (rule 4f). Letter groups keep it scannable.
   const grouped = useMemo(() => {
@@ -141,7 +130,7 @@ function ExploreSection({
             <span className="explore-letter__mark">{letter}</span>
             <ul className="entity-list">
               {list.map((e) => (
-                <ExploreRow key={e.entity_key} entity={e} />
+                <ExploreRow key={e.entity_key} entity={e} mine={mine.has(e.entity_key)} />
               ))}
             </ul>
           </div>
@@ -149,7 +138,7 @@ function ExploreSection({
       ) : (
         <ul className="entity-list">
           {items.map((e) => (
-            <ExploreRow key={e.entity_key} entity={e} />
+            <ExploreRow key={e.entity_key} entity={e} mine={mine.has(e.entity_key)} />
           ))}
         </ul>
       )}
@@ -157,11 +146,12 @@ function ExploreSection({
   );
 }
 
-function ExploreRow({ entity }: { entity: EntityRef }) {
+function ExploreRow({ entity, mine }: { entity: EntityRef; mine: boolean }) {
   return (
     <li>
       <Link className="entity-row" to={entityPath(entity)}>
         <span>{entity.name}</span>
+        {mine && <span className="caption">from your classes</span>}
       </Link>
     </li>
   );

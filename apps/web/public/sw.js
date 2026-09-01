@@ -7,7 +7,7 @@
 // the next load and the app still opens offline with its last shell.
 // /api/ requests are NEVER cached — data freshness is the app's job
 // (it has its own in-memory SWR layer).
-const CACHE = "honey-v1";
+const CACHE = "honey-v2"; // bump per deploy wave: activate evicts the old cache
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

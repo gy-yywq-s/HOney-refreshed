@@ -104,7 +104,7 @@ a.btn:active {
 .overline {
   /* No small all-caps titles (Gary 2026-09-01): quiet sentence-case label. */
   display: block;
-  margin: 0 0 8px;
+  margin: 0 0 var(--sp-2);
   color: var(--muted);
   font-family: var(--ui);
   font-size: var(--fs-caption);
@@ -113,11 +113,11 @@ a.btn:active {
 }
 
 .section-head {
-  margin: 4px 0 30px;
+  margin: var(--sp-1) 0 var(--sp-5);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 18px;
+  gap: var(--sp-5);
 }
 .section-head h1,
 .page-title {
@@ -137,7 +137,7 @@ a.btn:active {
   line-height: 1.55;
 }
 .section-title {
-  margin: 0 0 12px;
+  margin: 0 0 var(--sp-3);
   font-family: var(--display);
   font-size: var(--fs-title-sm);
   letter-spacing: -0.01em;
@@ -177,7 +177,7 @@ a.btn:active {
 .empty {
   color: var(--muted);
   text-align: center;
-  padding: 24px;
+  padding: var(--sp-6);
 }
 
 /* ── Layout primitives ──────────────────────────────────────────────────── */
@@ -204,7 +204,7 @@ a.btn:active {
 }
 .stat {
   min-height: 108px;
-  padding: 20px 20px;
+  padding: var(--sp-5) var(--sp-5);
   border-right: 1px solid var(--line);
   min-width: 0;
 }
@@ -221,22 +221,22 @@ a.btn:active {
 }
 .stat span {
   display: block;
-  margin-top: 7px;
+  margin-top: var(--sp-2);
   color: var(--muted);
   font-size: var(--fs-micro);
 }
 
 /* Numbered action-card grid (Home). */
 .action-grid {
-  margin: 8px 0;
+  margin: var(--sp-2) 0;
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr;
-  gap: 14px;
+  gap: var(--sp-4);
   align-items: stretch;
 }
 .action-card {
   min-height: 280px;
-  padding: 26px;
+  padding: var(--sp-6);
   display: grid;
   grid-template-rows: 22px minmax(80px, auto) minmax(56px, 1fr) 46px;
   gap: var(--sp-3);
@@ -285,7 +285,7 @@ a.btn:active {
   align-items: center;
   gap: var(--sp-2);
   min-height: 44px;
-  padding: 0 18px;
+  padding: 0 var(--sp-5);
   border: 1px solid currentColor;
   border-radius: 99px;
   background: transparent;

@@ -4,7 +4,7 @@
   z-index: 100;
   left: 12px;
   top: -80px;
-  padding: 10px 14px;
+  padding: var(--sp-3) var(--sp-4);
   border-radius: 99px;
   background: var(--ink);
   color: var(--surface);
@@ -37,7 +37,7 @@
   display: flex;
   gap: var(--sp-2);
   flex-wrap: wrap;
-  margin-top: 14px;
+  margin-top: var(--sp-4);
   align-items: center;
 }
 
@@ -68,7 +68,7 @@ a.card:hover,
   font-size: var(--fs-secondary);
   border-radius: 99px;
   border: 1px solid var(--line);
-  padding: 0 18px;
+  padding: 0 var(--sp-5);
   min-height: 44px;
   cursor: pointer;
   background: transparent;
@@ -125,7 +125,7 @@ a.btn:hover {
 }
 .btn--small {
   font-size: var(--fs-caption);
-  padding: 0 13px;
+  padding: 0 var(--sp-3);
   min-height: 36px;
 }
 .btn--block {
@@ -136,8 +136,8 @@ a.btn:hover {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
 }
 .field__label {
   font-size: var(--fs-caption);
@@ -150,7 +150,7 @@ a.btn:hover {
   background: var(--surface-solid);
   border: 1px solid var(--line);
   border-radius: 11px;
-  padding: 11px 13px;
+  padding: var(--sp-3) var(--sp-3);
   min-height: 44px;
 }
 .input::placeholder {
@@ -160,7 +160,7 @@ a.btn:hover {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin: 12px 0;
+  margin: var(--sp-3) 0;
 }
 .checkbox input {
   accent-color: var(--accent);
@@ -171,8 +171,8 @@ a.btn:hover {
 /* Big underline search (Experiences hub) — editorial search-box. */
 .search-box {
   width: 100%;
-  margin: 4px 0 8px;
-  padding: 12px 0;
+  margin: var(--sp-1) 0 var(--sp-2);
+  padding: var(--sp-3) 0;
   border: 0;
   border-bottom: 2px solid var(--ink);
   border-radius: 0;
@@ -196,7 +196,7 @@ a.btn:hover {
   border: 1px solid var(--line);
   border-radius: 13px;
   background: var(--soft);
-  padding: 12px 16px;
+  padding: var(--sp-3) var(--sp-4);
   color: color-mix(in srgb, var(--ink) 86%, var(--muted));
   animation: rise-in 0.4s var(--ease) both;
 }
@@ -224,7 +224,7 @@ a.btn:hover {
   font-weight: 600;
   letter-spacing: 0.01em;
   border-radius: 99px;
-  padding: 3px 12px;
+  padding: var(--sp-1) var(--sp-3);
   background: var(--soft);
   color: var(--accent);
 }
@@ -250,14 +250,14 @@ a.btn:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--sp-2);
   font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--muted);
   background: transparent;
   border: 1px solid var(--line);
   border-radius: 99px;
-  padding: 0 14px;
+  padding: 0 var(--sp-4);
   cursor: pointer;
   min-height: 38px;
   transition:
@@ -319,7 +319,7 @@ a.btn:hover {
   color: var(--muted);
   background: none;
   border: none;
-  padding: 0 18px;
+  padding: 0 var(--sp-5);
   cursor: pointer;
   min-height: 40px;
   transition: color var(--dur-fast) var(--ease);
@@ -347,7 +347,7 @@ a.btn:hover {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: var(--sp-1);
   color: var(--line);
   transition:
     color var(--dur-fast) var(--ease),
@@ -372,7 +372,7 @@ a.btn:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: var(--sp-4);
   z-index: 50;
   animation: fade-in var(--dur-fast) var(--ease) both;
 }
@@ -386,7 +386,7 @@ a.btn:hover {
   max-height: min(88dvh, 850px);
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 26px;
+  padding: var(--sp-6);
   animation: rise-in var(--dur) var(--ease) both;
 }
 .modal__head {
@@ -394,7 +394,7 @@ a.btn:hover {
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--sp-3);
-  margin-bottom: 12px;
+  margin-bottom: var(--sp-3);
 }
 .modal__title {
   font-family: var(--display);
@@ -426,7 +426,7 @@ a.btn:hover {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  margin-top: 16px;
+  margin-top: var(--sp-4);
 }
 .modal__actions--row {
   flex-direction: row;
@@ -452,7 +452,7 @@ a.btn:hover {
   z-index: 20;
   inset: 0 auto 0 0;
   width: var(--rail);
-  padding: 28px 22px;
+  padding: var(--sp-7) var(--sp-6);
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--line);
@@ -464,7 +464,7 @@ a.btn:hover {
   min-height: 44px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   color: var(--ink);
   font-family: var(--reading);
   font-optical-sizing: auto;
@@ -486,7 +486,7 @@ a.btn:hover {
   margin-top: auto;
   margin-bottom: auto;
   display: grid;
-  gap: 5px;
+  gap: var(--sp-2);
 }
 .rail-pill {
   position: absolute;
@@ -507,7 +507,7 @@ a.btn:hover {
   position: relative;
   z-index: 1;
   min-height: 44px;
-  padding: 0 14px;
+  padding: 0 var(--sp-4);
   display: flex;
   align-items: center;
   border: 0;
@@ -619,7 +619,7 @@ a.btn:hover {
 .ptr__disc {
   width: 36px;
   height: 36px;
-  margin-top: -4px;
+  margin-top: calc(-1 * var(--sp-1));
   border-radius: 50%;
   background: var(--surface-solid);
   border: 1px solid var(--line);
@@ -652,7 +652,7 @@ a.btn:hover {
   border: 1px solid var(--line);
   background: transparent;
   border-radius: 99px;
-  padding: 0 16px;
+  padding: 0 var(--sp-4);
   min-height: 44px;
   max-width: 180px;
   overflow: hidden;
@@ -675,7 +675,7 @@ a.btn:hover {
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow);
-  padding: 8px;
+  padding: var(--sp-2);
   display: flex;
   flex-direction: column;
   animation: rise-in var(--dur-fast) var(--ease) both;
@@ -683,16 +683,16 @@ a.btn:hover {
 .usermenu__header {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 12px;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3);
   border-bottom: 1px solid var(--line);
-  margin-bottom: 8px;
+  margin-bottom: var(--sp-2);
 }
 .usermenu__item {
   text-align: left;
   background: none;
   border: none;
-  padding: 10px 12px;
+  padding: var(--sp-3) var(--sp-3);
   min-height: 40px;
   border-radius: 10px;
   color: var(--ink);
@@ -730,10 +730,10 @@ a.btn:hover {
     right: 10px;
     bottom: calc(10px + env(safe-area-inset-bottom));
     min-height: 58px;
-    padding: 6px;
+    padding: var(--sp-2);
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 2px;
+    gap: var(--sp-1);
     border: 1px solid var(--line);
     border-radius: 17px;
     background: color-mix(in srgb, var(--surface) 95%, transparent);
@@ -766,7 +766,7 @@ a.btn:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: var(--sp-1);
     border: 0;
     border-radius: 11px;
     background: transparent;
@@ -797,31 +797,31 @@ a.btn:hover {
 
 /* ── Theme (appearance) controls — settings dialog + Settings page ──────── */
 .theme-dialog__section {
-  padding: 18px 0;
+  padding: var(--sp-5) 0;
   border-top: 1px solid var(--line);
 }
 .theme-dialog__section:first-of-type {
   border-top: 0;
 }
 .theme-dialog__section h3 {
-  margin: 0 0 10px;
+  margin: 0 0 var(--sp-3);
   font-size: var(--fs-secondary);
 }
 .option-grid {
   display: grid;
-  gap: 7px;
+  gap: var(--sp-2);
 }
 .option-grid.four {
   grid-template-columns: repeat(4, 1fr);
 }
 .option-grid button {
   min-height: 78px;
-  padding: 12px;
+  padding: var(--sp-3);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 6px;
+  gap: var(--sp-2);
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--card);
@@ -938,8 +938,8 @@ a.btn:hover {
 /* Loading skeletons — quiet hairline bars with a slow shimmer. */
 .skeleton {
   display: grid;
-  gap: 10px;
-  padding: 4px 0;
+  gap: var(--sp-3);
+  padding: var(--sp-1) 0;
 }
 .skeleton__row {
   height: 14px;
@@ -956,10 +956,10 @@ a.btn:hover {
 /* Opt-in row for staying connected to the school portal. */
 .stay-connected {
   display: flex;
-  gap: 10px;
+  gap: var(--sp-3);
   align-items: flex-start;
-  margin: 4px 0 18px;
-  padding: 14px;
+  margin: var(--sp-1) 0 var(--sp-5);
+  padding: var(--sp-4);
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--soft);
@@ -967,7 +967,7 @@ a.btn:hover {
   text-align: left;
 }
 .stay-connected input {
-  margin-top: 3px;
+  margin-top: var(--sp-1);
   width: 18px;
   height: 18px;
   flex: none;
