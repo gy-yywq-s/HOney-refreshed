@@ -1,5 +1,10 @@
 # Legacy Design Audit & Preserve / Refine / Replace
 
+> **HISTORICAL (2026-09-01, product-v2 freeze).** This document records an experiment round or a
+> superseded decision. It is evidence, not binding direction. The source-of-truth hierarchy is
+> defined in `docs/status/current.md`; current design direction lives in
+> `docs/design/web-lab.md` / `docs/design/ios-lab.md` under `docs/design/shared-product-design-invariants.md`.
+
 Required by master spec §1.4 and acceptance §20.35–§20.36. Audits the supplied legacy HOney iOS
 app (`reference/legacy-ios/`, a SwiftUI build) before final UI implementation and classifies every
 major legacy pattern. Binding direction from Gary (2026-08-31): **no legacy code is copied**; the

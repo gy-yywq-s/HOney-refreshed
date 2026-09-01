@@ -1,5 +1,10 @@
 # Web design system — the style lab (2026-09-01)
 
+> **HISTORICAL (2026-09-01, product-v2 freeze).** This document records an experiment round or a
+> superseded decision. It is evidence, not binding direction. The source-of-truth hierarchy is
+> defined in `docs/status/current.md`; current design direction lives in
+> `docs/design/web-lab.md` / `docs/design/ios-lab.md` under `docs/design/shared-product-design-invariants.md`.
+
 The web app is a deliberately **independent, experimental design surface** (Gary, 2026-09-01):
 iOS carries the legacy design; web explores its own language and the two are expected to
 diverge. Structural grammar follows an editorial reference chosen by Gary; fonts and palette

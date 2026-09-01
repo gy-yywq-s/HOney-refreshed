@@ -1,5 +1,10 @@
 # Legacy HOney — design port reference
 
+> **HISTORICAL (2026-09-01, product-v2 freeze).** This document records an experiment round or a
+> superseded decision. It is evidence, not binding direction. The source-of-truth hierarchy is
+> defined in `docs/status/current.md`; current design direction lives in
+> `docs/design/web-lab.md` / `docs/design/ios-lab.md` under `docs/design/shared-product-design-invariants.md`.
+
 The V1 **iOS** UI reproduces the legacy design (Gary, 2026-09-01) — this file is the
 token/grammar source of truth for the SwiftUI port. **Scope change (2026-09-01, late): the Web
 app no longer mirrors this** — it has its own experimental design system, documented in

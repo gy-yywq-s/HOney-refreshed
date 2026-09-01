@@ -1,5 +1,10 @@
 # Decisions — 2026-09-01 (post-audit)
 
+> **HISTORICAL (2026-09-01, product-v2 freeze).** This document records an experiment round or a
+> superseded decision. It is evidence, not binding direction. The source-of-truth hierarchy is
+> defined in `docs/status/current.md`; current design direction lives in
+> `docs/design/web-lab.md` / `docs/design/ios-lab.md` under `docs/design/shared-product-design-invariants.md`.
+
 Gary reviewed the repository against `audit-2026-09-01-repo-and-next-plan.md` and adopted it as the
 binding next-phase instruction, with **two amendments that override the audit where they conflict**:
 

@@ -1,5 +1,10 @@
 # Acceptance status — multi-axis (truth reset 2026-09-01)
 
+> **Note (product-v2 freeze):** checklist axes here are quality evidence, not product approval.
+> Design approval is a separate owner-given state per platform — see `docs/status/current.md`.
+> Web UI axis "GREEN (22/30)" reads as: the round-1 editorial experiment passed its own checklist;
+> the direction itself is `experimental_not_approved`.
+
 Per-item status against the spec's own checklists — master §20 (39), Appendix A §27 (27),
 Appendix A §26.2 launch gates (10) — reported on independent axes instead of one binary PASS.
 "Doesn't contradict the spec" counts for nothing on any axis.
