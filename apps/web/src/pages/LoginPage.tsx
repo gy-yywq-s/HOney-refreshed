@@ -1,3 +1,4 @@
+// Scroll model: FIT (§16.14.2) — one screen keyboard-closed; the route region absorbs keyboard height.
 // Login — "one calm doorway" (legacy port-map). Step 1 is a single school-account
 // action under the serif wordmark. Step 2 is a SEPARATE, active import-consent
 // choice (audit §3.2): signing in and copying school data are different decisions,

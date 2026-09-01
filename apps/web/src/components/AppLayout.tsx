@@ -44,7 +44,7 @@ function AppLayout() {
   const mobileIndex = tabIndex(location.pathname, MOBILE_TABS);
 
   return (
-    <>
+    <div className="app-frame">
       <a className="skip-link" href="#main">
         Skip to content
       </a>
@@ -61,13 +61,12 @@ function AppLayout() {
             style={{ "--active": Math.max(railIndex, 0) } as CSSProperties}
             aria-hidden="true"
           />
-          {DESKTOP_TABS.map((tab, i) => (
+          {DESKTOP_TABS.map((tab) => (
             <NavLink
               key={tab.to}
               to={tab.to}
               className={({ isActive }) => (isActive ? "nav-item is-active" : "nav-item")}
             >
-              <span>{String(i + 1).padStart(2, "0")}</span>
               {tab.label}
             </NavLink>
           ))}
@@ -92,8 +91,10 @@ function AppLayout() {
         </div>
       </aside>
 
-      {/* Route-level settle: the keyed .view re-runs the entrance per route. */}
-      <main className="main" id="main">
+      {/* Route-level settle: the keyed .view re-runs the entrance per route.
+          THE scroll owner (§16.14.3): the app frame owns the viewport; only
+          this region scrolls. data-scroll-owner is the restoration handle. */}
+      <main className="main" id="main" data-scroll-owner>
         <div className="view" key={location.pathname}>
           <Outlet />
         </div>
@@ -122,7 +123,7 @@ function AppLayout() {
       </nav>
 
       {themeOpen && <ThemeDialog onClose={() => setThemeOpen(false)} />}
-    </>
+    </div>
   );
 }
 

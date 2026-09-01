@@ -1,3 +1,4 @@
+// Scroll model: FRAMED_SCROLL (§16.14.7) — sticky date nav frame; the day timeline scrolls.
 import { Skeleton } from "../lib/motion";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";

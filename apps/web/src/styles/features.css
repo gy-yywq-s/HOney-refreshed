@@ -6,7 +6,11 @@
 
 /* ── Login — one calm doorway, editorial ────────────────────────────────── */
 .login {
-  min-height: 100dvh;
+  /* FIT screen (§16.14.2): one screen when the keyboard is closed; the page
+     itself absorbs keyboard-height changes instead of growing the document. */
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   display: flex;
   align-items: center;
   padding: 32px 24px;
@@ -148,11 +152,18 @@
   margin: 0 0 16px;
 }
 .daynav {
+  /* Timetable is FRAMED_SCROLL: date navigation belongs to the frame — it
+     stays put while the day timeline scrolls beneath it (§16.14.7). */
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  background: var(--surface);
   display: flex;
   align-items: center;
   gap: 7px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+  padding: 6px 0;
 }
 .daynav__spacer {
   flex: 1;
@@ -1058,4 +1069,51 @@
 }
 .portal-row:hover {
   border-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+   Vertical composition classes (§16.14.4): width AND height are constraints.
+   compact ≤700px usable height · regular 701–850 · tall ≥851.
+   Degradation order (§16.14.5): spacing → metadata → collapse secondary →
+   fewer previews → only then overflow. Type never shrinks below readability.
+--------------------------------------------------------------------------- */
+@media (max-height: 700px) {
+  .main {
+    padding-top: 14px;
+    padding-bottom: 90px;
+  }
+  .stack {
+    gap: 14px;
+  }
+  .card--hero {
+    padding: 16px 18px;
+  }
+  /* Home compact: previews 2 → 1 before anything overflows (§16.14.6). */
+  .home-voices__row:nth-child(n + 2) {
+    display: none;
+  }
+  .home-voices__body {
+    -webkit-line-clamp: 2;
+  }
+  .feed-head {
+    gap: 6px;
+  }
+  .post {
+    padding: 12px 0 10px;
+  }
+}
+@media (min-height: 851px) {
+  /* Tall screens get breathing room — never proportionally bigger chrome. */
+  .main {
+    padding-top: 44px;
+  }
+}
+
+/* Compose is FRAMED_EDITOR (§16.14.7): while the editor has the keyboard,
+   the bottom nav yields the row it would cover — the primary actions stay
+   reachable without growing the document. */
+@media (max-width: 960px) {
+  .app-frame:has(.compose-textarea:focus) .mobile-nav {
+    display: none;
+  }
 }

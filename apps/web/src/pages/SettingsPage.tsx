@@ -1,3 +1,4 @@
+// Scroll model: FRAMED_SCROLL (§16.14.2).
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiCache } from "../lib/useApi";

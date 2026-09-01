@@ -1,3 +1,4 @@
+// Scroll model: FRAMED_SCROLL (§16.14.7) — filters frame; the lesson list scrolls.
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";

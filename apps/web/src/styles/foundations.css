@@ -8,18 +8,31 @@
   box-sizing: border-box;
 }
 
+/* Screen composition (review v3 §16.14): the SCREEN owns the composition —
+   html/body/#root never become a business scroll owner. Every route declares
+   its scroll model in web-lab.md; the app frame's <main> (data-scroll-owner)
+   is the single primary vertical scroller for framed screens. */
 html {
+  height: 100%;
   min-width: 320px;
-  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
+  height: 100%;
+  overflow: hidden; /* the document is not the scroller — regions are */
   min-width: 320px;
-  min-height: 100dvh;
   font: 400 16px/1.5 var(--ui);
   color: var(--ink);
   background-color: var(--surface);
+}
+
+#root {
+  height: 100%;
+}
+
+.app-frame {
+  height: 100%;
 }
 
 /* Theme crossfade: html gets .theme-anim for ~450ms around a surface switch. */

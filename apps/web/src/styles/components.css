@@ -493,9 +493,8 @@ a.btn:hover {
   position: relative;
   z-index: 1;
   min-height: 44px;
-  padding: 0 10px;
-  display: grid;
-  grid-template-columns: 30px 1fr;
+  padding: 0 14px;
+  display: flex;
   align-items: center;
   border: 0;
   border-radius: 10px;
@@ -507,10 +506,6 @@ a.btn:hover {
   transition:
     color var(--dur-fast) var(--ease),
     background-color var(--dur-fast) var(--ease);
-}
-.nav-item span {
-  font-size: 10px;
-  letter-spacing: 0.12em;
 }
 .nav-item:hover {
   background: var(--soft);
@@ -567,7 +562,13 @@ a.btn:hover {
 
 /* Main column. */
 .main {
-  min-height: 100dvh;
+  height: 100%;
+  overflow-y: auto;
+  /* Reaching the edge must not drag the app shell (§16.14.11 no.7) — while
+     the region itself keeps its natural elasticity. */
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
   margin-left: var(--rail);
   padding: 34px clamp(22px, 5vw, 76px) 110px;
 }

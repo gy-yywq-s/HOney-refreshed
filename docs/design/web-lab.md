@@ -37,6 +37,18 @@ Hypotheses under test (per review §5.5; these are hypotheses, not brand spec):
 
 Approval state moves here only when Gary approves a running build.
 
+## Screen composition status (2026-09-01)
+
+Implemented: the app shell owns the viewport (`body { overflow: hidden }`,
+`#root` full-height); `<main data-scroll-owner>` is the single business
+scroll region (`overscroll-behavior-y: contain` — no shell drag leak, local
+elasticity kept); Login owns its keyboard overflow; Timetable's date nav is
+a sticky frame element; compact-height (≤700px) degrades spacing → metadata
+→ Home preview count before any overflow; tall (≥851px) adds breathing room
+only. Static pins in `apps/web/src/lib/composition.test.ts`. REMAINING owner
+evidence: the real installed-PWA matrix (320×568 / 375×667 / 390×844 /
+430×932 + short-landscape) and the §16.14.11-22 feel check.
+
 ## Scroll models (declared per §16.14.2)
 
 | Route | Model |

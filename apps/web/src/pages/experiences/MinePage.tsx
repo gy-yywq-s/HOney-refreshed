@@ -1,3 +1,4 @@
+// Scroll model: FRAMED_SCROLL (§16.14.2).
 // /experiences/mine — the user's own contributions: server-side submissions
 // (proved by device-held ownership keys) merged with local private notes.
 // Private notes are visually distinct; they never left this browser.

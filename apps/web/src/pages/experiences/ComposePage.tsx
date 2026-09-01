@@ -1,3 +1,4 @@
+// Scroll model: FRAMED_EDITOR (§16.14.7) — the editor region absorbs keyboard/height changes.
 // /experiences/compose?lessonId= | ?entityKey= | ?noteId= — write an
 // experience. Culture hints (spec §4, the Six Checks) appear as quiet
 // placeholder/hint text, never as checkboxes. Publication is deliberate:
