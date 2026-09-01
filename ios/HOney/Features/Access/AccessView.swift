@@ -1,16 +1,14 @@
 //
 //  AccessView.swift
-//  HOney — Access tab in the legacy grammar: Apply Permit card + All Permits
-//  list scroll above a fixed bottom action dock (Commuter / Exit Permit cards
-//  that expand into the gate picker — the app's single real material).
-//  Behavior is the P0 flow: confirm before any gate opens; errors stay on
-//  this screen.
+//  HOney — permit management and direct-to-school physical access. Every gate
+//  is named from the portal response and confirmed before a mutation is sent.
 //
 
 import SwiftUI
 
 struct AccessView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: AccessViewModel?
 
     // Open-gate flow
@@ -18,7 +16,7 @@ struct AccessView: View {
     @State private var isGatePickerExpanded = false
     /// Route + gate captured together at gate-choice time, so the collapse
     /// gesture can never race the confirmation (legacy AccessConfirmation).
-    @State private var confirmRequest: (route: AccessRoute, gate: GateChoice)?
+    @State private var confirmRequest: (route: AccessRoute, door: PortalDoor)?
     @State private var isPermitPickerPresented = false
     @State private var isQuickApplyPromptPresented = false
 
@@ -73,16 +71,16 @@ struct AccessView: View {
         }
         .simultaneousGesture(TapGesture().onEnded { collapseGatePicker() })
         .confirmationDialog(
-            "Open the \(confirmRequest?.gate.title ?? "gate")?",
+            "Open " + (confirmRequest?.door.displayName ?? "this gate") + "?",
             isPresented: Binding(
                 get: { confirmRequest != nil },
                 set: { if !$0 { confirmRequest = nil } }
             ),
             titleVisibility: .visible
         ) {
-            Button("Open \(confirmRequest?.gate.title ?? "gate")") {
+            Button("Open " + (confirmRequest?.door.displayName ?? "gate")) {
                 if let request = confirmRequest {
-                    Task { await vm.openGate(route: request.route, gate: request.gate) }
+                    Task { await vm.openGate(route: request.route, door: request.door) }
                 }
                 confirmRequest = nil
                 pendingRoute = nil
@@ -103,11 +101,11 @@ struct AccessView: View {
         }
         .confirmationDialog("No Active Permit", isPresented: $isQuickApplyPromptPresented, titleVisibility: .visible) {
             Button("Quick Apply") {
-                Task { await vm.applyPermit(start: Date(), end: Date().addingTimeInterval(2 * 3600), reason: cleanedReason) }
+                Task { await vm.applyPermit(start: permitStartDate, end: permitEndDate, reason: cleanedReason) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("No approved exit permit is available. Apply with the current draft first?")
+            Text("No approved exit permit is available. Submit the start, end, and reason shown in the current draft first?")
         }
         .sheet(item: $editingPermitField) { field in
             PermitDraftEditor(
@@ -121,7 +119,7 @@ struct AccessView: View {
         }
     }
 
-    // MARK: - Apply Permit (legacy permitTemplate)
+    // MARK: - Apply permit
 
     private func permitTemplate(_ vm: AccessViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -134,7 +132,7 @@ struct AccessView: View {
 
                 Text(Self.dateFormatter.string(from: permitStartDate))
                     .font(AppTheme.Typography.captionSemibold)
-                    .foregroundStyle(Palette.navy.opacity(0.55))
+                    .foregroundStyle(Palette.inkSecondary)
             }
 
             HStack(spacing: 8) {
@@ -161,19 +159,13 @@ struct AccessView: View {
             Button {
                 Task { await vm.applyPermit(start: permitStartDate, end: permitEndDate, reason: cleanedReason) }
             } label: {
-                Label(vm.isWorking ? "Applying" : "Apply", systemImage: "plus.circle.fill")
-                    .font(AppTheme.Typography.subheadlineSemibold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(Palette.ocean, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                    .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                Label(vm.isWorking ? "Applying…" : "Apply for permit", systemImage: "plus.circle")
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.white)
+            .buttonStyle(PrimaryActionButtonStyle())
             .disabled(vm.isWorking)
         }
         .padding(14)
-        .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+        .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
                 .stroke(Palette.line, lineWidth: 1)
@@ -185,7 +177,7 @@ struct AccessView: View {
         return cleaned.isEmpty ? "Exit" : cleaned
     }
 
-    // MARK: - All Permits (legacy permitListPreview)
+    // MARK: - Permits
 
     private func permitListPreview(_ vm: AccessViewModel) -> some View {
         let permits = vm.permits
@@ -193,7 +185,7 @@ struct AccessView: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("All Permits")
+                Text("Permits")
                     .font(AppTheme.Typography.cardTitle)
                     .foregroundStyle(Palette.navy)
 
@@ -209,7 +201,7 @@ struct AccessView: View {
             if vm.isLoading && permits.isEmpty {
                 AppLoadingState(title: "Loading permits")
             } else if visible.isEmpty {
-                AppEmptyState(title: "No permits loaded", systemImage: "doc.text")
+                AppEmptyState(title: vm.didLoadPermits ? "No permits" : "Permits unavailable", systemImage: "doc.text")
             } else {
                 ForEach(visible) { permit in
                     PermitListRow(permit: permit) {
@@ -219,26 +211,21 @@ struct AccessView: View {
             }
 
             if permits.count > maxPreviewPermitsCollapsed {
-                Text(isPermitListExpanded ? "Show Less" : "Tap anywhere to show all permits")
+                Button(isPermitListExpanded ? "Show less" : "Show all permits") {
+                    withAnimation(reduceMotion ? nil : AppTheme.Motion.fast) { isPermitListExpanded.toggle() }
+                }
                     .font(AppTheme.Typography.captionSemibold)
                     .foregroundStyle(Palette.ocean)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 2)
+                    .frame(minHeight: 44)
             }
         }
         .padding(14)
-        .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+        .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
                 .stroke(Palette.line, lineWidth: 1)
         )
-        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-        .onTapGesture {
-            guard permits.count > maxPreviewPermitsCollapsed else { return }
-            withAnimation(AppTheme.Motion.fast) {
-                isPermitListExpanded.toggle()
-            }
-        }
     }
 
     // MARK: - Fixed status + action dock
@@ -247,7 +234,13 @@ struct AccessView: View {
         VStack(spacing: 8) {
             if let banner = vm.banner {
                 AppBanner(text: banner.message, style: banner.kind)
-                    .onTapGesture { vm.dismissBanner() }
+                    .overlay(alignment: .topTrailing) {
+                        Button { vm.dismissBanner() } label: {
+                            Image(systemName: "xmark")
+                                .frame(width: 44, height: 44)
+                        }
+                        .accessibilityLabel("Dismiss message")
+                    }
             }
         }
         .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
@@ -256,13 +249,13 @@ struct AccessView: View {
     private func accessSection(_ vm: AccessViewModel) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("Open Gate")
+                Text("School access")
                     .font(AppTheme.Typography.cardTitle)
                     .foregroundStyle(Palette.navy)
 
-                Text("direct to the school portal")
+                Text("Sent directly to the school")
                     .font(AppTheme.Typography.caption2Semibold)
-                    .foregroundStyle(Palette.navy.opacity(0.42))
+                    .foregroundStyle(Palette.inkSecondary)
             }
 
             primaryActions(vm)
@@ -273,8 +266,8 @@ struct AccessView: View {
     private func primaryActions(_ vm: AccessViewModel) -> some View {
         ZStack {
             if isGatePickerExpanded, let route = pendingRoute {
-                MergedGatePicker(routeTitle: routeTitle(route)) { gate in
-                    confirmRequest = (route: route, gate: gate)
+                MergedGatePicker(routeTitle: routeTitle(route), doors: vm.doors) { door in
+                    confirmRequest = (route: route, door: door)
                     isGatePickerExpanded = false
                 }
                 .transition(.asymmetric(
@@ -284,8 +277,8 @@ struct AccessView: View {
             } else {
                 HStack(alignment: .top, spacing: 12) {
                     AccessActionCard(
-                        title: "Commuter",
-                        subtitle: "Direct access",
+                        title: "Day student",
+                        subtitle: "Open without an exit permit",
                         systemImage: "figure.walk.departure",
                         accent: Palette.ocean
                     ) {
@@ -293,8 +286,8 @@ struct AccessView: View {
                     }
 
                     AccessActionCard(
-                        title: "Exit Permit",
-                        subtitle: vm.approvedPermits.isEmpty ? "No active permit" : "Use active permit",
+                        title: "Exit permit",
+                        subtitle: permitActionSubtitle(vm),
                         systemImage: "doc.text",
                         accent: Palette.ocean
                     ) {
@@ -308,24 +301,28 @@ struct AccessView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .animation(AppTheme.Motion.standard, value: isGatePickerExpanded)
+        .animation(reduceMotion ? nil : AppTheme.Motion.standard, value: isGatePickerExpanded)
     }
 
     private func routeTitle(_ route: AccessRoute) -> String {
         switch route {
-        case .commuter: return "Commuter"
-        case .permit: return "Exit Permit"
+        case .commuter: return "Day student access"
+        case .permit: return "Exit permit access"
         }
     }
 
     private func beginGateFlow(route: AccessRoute) {
         pendingRoute = route
-        withAnimation(AppTheme.Motion.standard) {
+        withAnimation(reduceMotion ? nil : AppTheme.Motion.standard) {
             isGatePickerExpanded = true
         }
     }
 
     private func beginExitPermitSelection(_ vm: AccessViewModel) {
+        guard vm.didLoadPermits else {
+            vm.banner = (.warning, "Permits are not available yet. Refresh Access and try again.")
+            return
+        }
         let permits = vm.approvedPermits
         if permits.isEmpty {
             isQuickApplyPromptPresented = true
@@ -336,9 +333,15 @@ struct AccessView: View {
         }
     }
 
+    private func permitActionSubtitle(_ vm: AccessViewModel) -> String {
+        if vm.isLoading { return "Checking permits…" }
+        guard vm.didLoadPermits else { return "Permits unavailable" }
+        return vm.approvedPermits.isEmpty ? "No approved permit" : "Use an approved permit"
+    }
+
     private func collapseGatePicker() {
         guard isGatePickerExpanded else { return }
-        withAnimation(AppTheme.Motion.standard) {
+        withAnimation(reduceMotion ? nil : AppTheme.Motion.standard) {
             isGatePickerExpanded = false
         }
     }
@@ -389,7 +392,7 @@ private enum PermitTimeText {
     }
 }
 
-// MARK: - Permit list row (ported legacy PermitListRow)
+// MARK: - Permit list row
 
 private struct PermitListRow: View {
     let permit: PortalPermitRow
@@ -412,7 +415,7 @@ private struct PermitListRow: View {
 
                 Text("\(PermitTimeText.dateText(permit.startTime)) · \(PermitTimeText.rangeText(start: permit.startTime, end: permit.endTime))")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(Palette.navy.opacity(0.62))
+                    .foregroundStyle(Palette.inkSecondary)
             }
 
             Spacer()
@@ -437,7 +440,8 @@ private struct PermitListRow: View {
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Palette.accentForeground)
+                    .frame(minHeight: 44)
                 }
             } else {
                 Text(statusText)
@@ -453,7 +457,7 @@ private struct PermitListRow: View {
     }
 }
 
-// MARK: - Editable permit fields (ported legacy)
+// MARK: - Editable permit fields
 
 private enum PermitDraftField: String, Identifiable {
     case start
@@ -486,7 +490,7 @@ private struct EditablePermitField: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(AppTheme.Typography.caption2Bold)
-                        .foregroundStyle(Palette.navy.opacity(0.54))
+                        .foregroundStyle(Palette.inkSecondary)
 
                     Text(value)
                         .font(AppTheme.Typography.captionSemibold)
@@ -508,7 +512,7 @@ private struct EditablePermitField: View {
 
                 Image(systemName: "chevron.right")
                     .font(AppTheme.Typography.caption2Bold)
-                    .foregroundStyle(Palette.navy.opacity(0.28))
+                    .foregroundStyle(Palette.inkSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10)
@@ -594,7 +598,7 @@ private struct PermitDraftEditor: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .padding(12)
-                    .background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                    .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                     .overlay(
                         RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
                             .stroke(Palette.line, lineWidth: 1)
@@ -608,11 +612,11 @@ private struct PermitDraftEditor: View {
     private func editorHint(_ text: String) -> some View {
         Text(text)
             .font(AppTheme.Typography.captionMedium)
-            .foregroundStyle(Palette.navy.opacity(0.52))
+            .foregroundStyle(Palette.inkSecondary)
     }
 }
 
-// MARK: - Action dock cards + gate picker (ported legacy)
+// MARK: - Action dock and verified gate picker
 
 private struct AccessActionCard: View {
     let title: String
@@ -628,10 +632,10 @@ private struct AccessActionCard: View {
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
-        .frame(height: 124)
+        .frame(minHeight: 82)
         .background(
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                .fill(.white.opacity(0.92))
+                .fill(Palette.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
@@ -654,17 +658,16 @@ private struct AccessActionCard: View {
 
                     Text(subtitle)
                         .font(AppTheme.Typography.captionMedium)
-                        .foregroundStyle(Palette.navy.opacity(0.55))
+                        .foregroundStyle(Palette.inkSecondary)
                         .lineLimit(1)
                 }
 
                 Spacer(minLength: 0)
             }
 
-            Spacer(minLength: 0)
         }
         .padding(14)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, minHeight: 82)
     }
 
     private var iconView: some View {
@@ -678,7 +681,8 @@ private struct AccessActionCard: View {
 
 private struct MergedGatePicker: View {
     let routeTitle: String
-    let action: (GateChoice) -> Void
+    let doors: [PortalDoor]
+    let action: (PortalDoor) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -689,37 +693,46 @@ private struct MergedGatePicker: View {
 
                 Text("Choose gate")
                     .font(AppTheme.Typography.captionSemibold)
-                    .foregroundStyle(Palette.navy.opacity(0.50))
+                    .foregroundStyle(Palette.inkSecondary)
             }
 
-            HStack(spacing: 10) {
-                ForEach(GateChoice.allCases) { gate in
+            if doors.isEmpty {
+                Text("Gate names are unavailable. Refresh Access before attempting a physical gate action.")
+                    .font(AppTheme.Typography.footnote)
+                    .foregroundStyle(Palette.inkSecondary)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(doors) { door in
                     Button {
-                        action(gate)
+                        action(door)
                     } label: {
-                        Text(gate == .front ? "Front" : "Back")
-                            .font(AppTheme.Typography.gateChoice)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 62)
-                            .background(Palette.ocean.opacity(0.18), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                                    .stroke(Palette.ocean.opacity(0.24), lineWidth: 1)
-                            )
-                            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                        HStack {
+                            Text(door.displayName)
+                                .font(AppTheme.Typography.headlineSemibold)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .padding(.horizontal, 14)
+                        .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
+                                .stroke(Palette.line, lineWidth: 1)
+                        }
+                        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(Palette.navy.opacity(0.78))
+                    .foregroundStyle(Palette.ink)
+                    }
                 }
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 124, alignment: .leading)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+        .background(Palette.canvas, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                .stroke(Palette.ocean.opacity(0.22), lineWidth: 1)
+                .stroke(Palette.line, lineWidth: 1)
         )
-        .shadow(color: Palette.navy.opacity(0.08), radius: 18, x: 0, y: 8)
     }
 }

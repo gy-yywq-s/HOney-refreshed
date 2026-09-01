@@ -24,13 +24,13 @@ private struct StatusMeta {
             return StatusMeta(
                 chip: "Hidden",
                 tint: Palette.error,
-                explain: "This was hidden after a re-check against the current community rules. You can revoke it to free your review slot for this target."
+                explain: "This was hidden after a re-check against the current community rules. Revoke it if you want to share about this lesson or school item again."
             )
         case .revoked:
             return StatusMeta(
                 chip: "Revoked",
-                tint: Palette.navy.opacity(0.54),
-                explain: "You removed this post; your review slot for this target is free again."
+                tint: Palette.inkSecondary,
+                explain: "You removed this post and can share about this lesson or school item again."
             )
         }
     }
@@ -50,6 +50,7 @@ struct MySubmissionsView: View {
     @State private var feedback: (kind: AppBanner.Style, text: String)?
     @State private var editingNote: PrivateNote?
     @State private var deletingNote: PrivateNote?
+    @State private var loadError: String?
 
     private enum MineItem: Identifiable {
         case experience(MyExperience)
@@ -80,8 +81,11 @@ struct MySubmissionsView: View {
         NavigationStack {
             Group {
                 if isLoading {
-                    AppLoadingState(title: "Loading your submissions")
+                    AppLoadingState(title: "Loading your posts and private notes")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let loadError, notes.isEmpty {
+                    AppBanner(text: loadError, style: .error)
+                        .padding(AppTheme.Spacing.pageHorizontal)
                 } else if experiences.isEmpty && notes.isEmpty {
                     emptyState
                 } else {
@@ -89,7 +93,7 @@ struct MySubmissionsView: View {
                 }
             }
             .background(Palette.background.ignoresSafeArea())
-            .navigationTitle("My submissions")
+            .navigationTitle("My posts & notes")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
@@ -107,7 +111,7 @@ struct MySubmissionsView: View {
                 }
                 Button("Cancel", role: .cancel) { revokingKey = nil }
             } message: {
-                Text("The post is removed for everyone and its text deleted. Your one-review slot for this target frees up again. This cannot be undone.")
+                Text("The post is removed for everyone and its text deleted. You can then post about this lesson, teacher, place, or dish again. This cannot be undone.")
             }
             .alert("Delete this private note?", isPresented: Binding(
                 get: { deletingNote != nil },
@@ -130,9 +134,9 @@ struct MySubmissionsView: View {
                     Text("Nothing here yet")
                         .font(AppTheme.Typography.cardTitle)
                         .foregroundStyle(Palette.navy)
-                    Text("Published experiences are stored without an author ID. Each one hands this device a one-time ownership key — that key is the only control over the post that exists, and it is how this screen finds and revokes your posts. Private notes live here too, without ever leaving the device.")
+                    Text("Published experiences are stored without an author ID. A post-control key saved only on this iPhone is how this screen finds and revokes each post. Private notes live here too, without ever leaving the device.")
                         .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.navy.opacity(0.62))
+                        .foregroundStyle(Palette.inkSecondary)
                 }
             }
             .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
@@ -145,10 +149,13 @@ struct MySubmissionsView: View {
         ScrollView {
             VStack(spacing: 10) {
                 if !keyByExperienceId.isEmpty {
-                    AppBanner(text: "Your ownership keys exist only on this device. Losing this device permanently removes your control over these posts.", style: .warning)
+                    AppBanner(text: "Your post-control keys exist only on this iPhone. Losing them permanently removes your control over these posts.", style: .warning)
                 }
                 if let feedback {
                     AppBanner(text: feedback.text, style: feedback.kind)
+                }
+                if let loadError {
+                    AppBanner(text: loadError, style: .error)
                 }
                 ForEach(items) { item in
                     switch item {
@@ -180,32 +187,32 @@ struct MySubmissionsView: View {
                     Spacer()
                     Text(Date(timeIntervalSince1970: Double(exp.createdAt) / 1000), style: .date)
                         .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.navy.opacity(0.48))
+                        .foregroundStyle(Palette.inkSecondary)
                 }
                 Text(targetLabel(exp))
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(Palette.navy.opacity(0.62))
+                    .foregroundStyle(Palette.inkSecondary)
                 if let rating = exp.rating {
                     RatingStars(rating: rating)
                 }
                 if let body = exp.body {
                     Text(body)
                         .font(AppTheme.Typography.subheadline)
-                        .foregroundStyle(Palette.navy.opacity(0.82))
+                        .foregroundStyle(Palette.ink)
                 } else {
                     Text(exp.status == .revoked ? "(text deleted when you revoked this post)" : "(no text)")
                         .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.navy.opacity(0.48))
+                        .foregroundStyle(Palette.inkSecondary)
                 }
                 if !meta.explain.isEmpty {
                     Text(meta.explain)
                         .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.navy.opacity(0.62))
+                        .foregroundStyle(Palette.inkSecondary)
                 }
                 if let detail = exp.statusDetail {
                     Text(detail)
                         .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.navy.opacity(0.62))
+                        .foregroundStyle(Palette.inkSecondary)
                 }
                 if let ownershipKey, exp.status != .revoked {
                     Button(role: .destructive) {
@@ -216,6 +223,7 @@ struct MySubmissionsView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(Palette.error)
+                    .frame(minHeight: 44)
                     .disabled(busyKey == ownershipKey)
                 }
             }
@@ -231,26 +239,28 @@ struct MySubmissionsView: View {
                     Spacer()
                     Text(note.updatedAt, style: .date)
                         .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.navy.opacity(0.48))
+                        .foregroundStyle(Palette.inkSecondary)
                 }
                 Text(note.target.label)
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(Palette.navy.opacity(0.62))
+                    .foregroundStyle(Palette.inkSecondary)
                 if let rating = note.rating {
                     RatingStars(rating: rating)
                 }
                 Text(note.body)
                     .font(AppTheme.Typography.subheadline)
-                    .foregroundStyle(Palette.navy.opacity(0.82))
+                    .foregroundStyle(Palette.ink)
                 HStack(spacing: AppTheme.Spacing.large) {
                     Button("Edit / publish…") { editingNote = note }
                         .buttonStyle(.plain)
                         .font(AppTheme.Typography.captionBold)
                         .foregroundStyle(Palette.ocean)
+                        .frame(minHeight: 44)
                     Button("Delete", role: .destructive) { deletingNote = note }
                         .buttonStyle(.plain)
                         .font(AppTheme.Typography.captionBold)
                         .foregroundStyle(Palette.error)
+                        .frame(minHeight: 44)
                 }
             }
         }
@@ -270,6 +280,7 @@ struct MySubmissionsView: View {
 
     private func load() async {
         isLoading = true
+        loadError = nil
         defer { isLoading = false }
         notes = await model.services.privateNoteStore.list()
         let map = await model.services.ownershipKeyStore.map()
@@ -279,8 +290,13 @@ struct MySubmissionsView: View {
             experiences = []
             return
         }
-        let response = try? await model.services.honeyAPI.myExperiences(keys: Array(map.values))
-        experiences = response?.experiences ?? []
+        do {
+            let response = try await model.services.honeyAPI.myExperiences(keys: Array(map.values))
+            experiences = response.experiences
+        } catch {
+            experiences = []
+            loadError = "Published posts could not be loaded. Your private notes are still available below."
+        }
     }
 
     /// Directory ids + entity registry → display names (web NameMaps).
@@ -315,7 +331,7 @@ struct MySubmissionsView: View {
             try await model.services.honeyAPI.revokeExperience(ownershipKey: ownershipKey)
             // The ownership key is KEPT: it still proves this row is yours, and
             // the row keeps showing as Revoked (web MinePage behavior).
-            feedback = (.success, "Revoked. The post is gone and your review slot is free again.")
+            feedback = (.success, "Revoked. The post is gone, and you can share here again.")
             revokingKey = nil
             await load()
         } catch {

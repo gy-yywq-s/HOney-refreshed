@@ -1,93 +1,89 @@
 //
 //  ImportConsentView.swift
-//  HOney — step 2 of first sign-in: a SEPARATE, active import-consent choice
-//  (audit §3.2). Signing in and copying school data are different decisions,
-//  and nothing is preselected. Mirrors the web LoginPage consent step.
-//  Styled as a legacy card with primary/secondary buttons.
+//  HOney — explicit, separate permission for school-data import.
 //
 
 import SwiftUI
 
 struct ImportConsentView: View {
     @Environment(AppModel.self) private var model
-
-    /// Which choice is in flight, for the button labels.
     @State private var busyChoice: Bool?
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 70)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 30) {
+                BrandWordmarkPlaceholder()
+                    .frame(width: 190, height: 64, alignment: .leading)
 
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.xxLarge) {
-                VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
-                    HOneyLoginMark()
-                        .frame(width: 48, height: 48)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Bring in your school day?")
+                        .font(AppTheme.Typography.screenTitle)
+                        .foregroundStyle(Palette.ink)
 
-                    Text("One more choice.")
-                        .font(AppTheme.Typography.largeTitle)
-                        .foregroundStyle(Palette.navy)
+                    Text("This is separate from signing in. Nothing is imported until you choose it here.")
+                        .font(AppTheme.Typography.subheadline)
+                        .foregroundStyle(Palette.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                AppCard {
-                    Text("HOney can copy your timetable and lesson history from the school portal so your day and your History work here. Nothing is imported unless you turn it on, and you can switch it off any time in Settings.")
-                        .font(AppTheme.Typography.subheadline)
-                        .foregroundStyle(Palette.navy.opacity(0.72))
-                        .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 0) {
+                    consentRow(icon: "calendar", title: "Timetable", detail: "See today and the next lesson on Home.")
+                    Divider().padding(.leading, 42)
+                    consentRow(icon: "clock.arrow.circlepath", title: "Past lessons", detail: "Choose a lesson when you want to share an experience.")
+                    Divider().padding(.leading, 42)
+                    consentRow(icon: "arrow.triangle.2.circlepath", title: "Your choice", detail: "Turn import off later in Settings.")
                 }
 
                 if let error = model.consentError {
                     AppBanner(text: error, style: .error)
                 }
 
-                VStack(spacing: AppTheme.Spacing.medium) {
+                VStack(spacing: 12) {
                     Button {
                         choose(true)
                     } label: {
-                        Text(busyChoice == true ? "Importing…" : "Import my timetable")
-                            .font(AppTheme.Typography.subheadlineSemibold)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                busyChoice == nil ? Palette.ocean : Palette.navy.opacity(0.16),
-                                in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                            )
-                            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                        Text(busyChoice == true ? "Importing…" : "Import timetable and lesson history")
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.white)
+                    .buttonStyle(PrimaryActionButtonStyle())
                     .disabled(busyChoice != nil)
 
                     Button {
                         choose(false)
                     } label: {
                         Text(busyChoice == false ? "One moment…" : "Not now")
-                            .font(AppTheme.Typography.subheadlineSemibold)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Palette.mist.opacity(0.88), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                                    .stroke(Palette.line, lineWidth: 1)
-                            )
-                            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Palette.navy)
+                    .buttonStyle(SecondaryActionButtonStyle())
                     .disabled(busyChoice != nil)
                 }
             }
+            .frame(maxWidth: 560, alignment: .leading)
             .padding(.horizontal, AppTheme.Spacing.loginHorizontal)
-
-            Spacer(minLength: 36)
+            .padding(.top, 38)
+            .padding(.bottom, 40)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            LinearGradient(
-                colors: [.white, Palette.mist.opacity(0.62)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
+        .scrollIndicators(.hidden)
+        .background(PageBackground())
+    }
+
+    private func consentRow(icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Palette.accent)
+                .frame(width: 28, height: 28)
+                .background(Palette.accentSoft, in: RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(AppTheme.Typography.headlineSemibold)
+                    .foregroundStyle(Palette.ink)
+                Text(detail)
+                    .font(AppTheme.Typography.footnote)
+                    .foregroundStyle(Palette.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 14)
     }
 
     private func choose(_ importIt: Bool) {

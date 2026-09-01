@@ -29,12 +29,12 @@ struct ExperienceRow: View {
                 if let published = experience.publishedDate {
                     Text(published, style: .date)
                         .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.navy.opacity(0.48))
+                        .foregroundStyle(Palette.inkSecondary)
                 }
             }
             Text(experience.bodyText)
                 .font(AppTheme.Typography.subheadline)
-                .foregroundStyle(Palette.navy.opacity(0.82))
+                .foregroundStyle(Palette.ink)
                 .fixedSize(horizontal: false, vertical: true)
             if showsReactions, let reactions = experience.reactions {
                 HStack(spacing: AppTheme.Spacing.medium) {
@@ -42,7 +42,7 @@ struct ExperienceRow: View {
                     Label("\(reactions.dislikes)", systemImage: "hand.thumbsdown")
                 }
                 .font(AppTheme.Typography.caption)
-                .foregroundStyle(Palette.navy.opacity(0.48))
+                .foregroundStyle(Palette.inkSecondary)
             }
         }
     }

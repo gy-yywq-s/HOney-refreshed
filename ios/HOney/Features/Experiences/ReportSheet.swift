@@ -11,14 +11,15 @@ import SwiftUI
 
 struct ReportSheet: View {
     /// Submits the chosen category (the wire `ReportCategory`).
-    let onSubmit: (ReportCategory) async -> Void
+    let onSubmit: (ReportCategory) async throws -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var category: ReportCategory?
     @State private var submitting = false
     @State private var done = false
+    @State private var errorMessage: String?
 
-    private static let rowBackground = Color.white.opacity(0.88)
+    private static let rowBackground = Palette.surface
 
     var body: some View {
         NavigationStack {
@@ -27,10 +28,16 @@ struct ReportSheet: View {
                     Section {
                         Text("Thanks. The post has been automatically re-checked against the current community rules — no human queue, and no way to see who wrote it.")
                             .font(AppTheme.Typography.subheadline)
-                            .foregroundStyle(Palette.navy.opacity(0.82))
+                            .foregroundStyle(Palette.ink)
                     }
                     .listRowBackground(Self.rowBackground)
                 } else {
+                    if let errorMessage {
+                        Section {
+                            AppBanner(text: errorMessage, style: .error)
+                        }
+                        .listRowBackground(Color.clear)
+                    }
                     Section {
                         ForEach(ReportCategory.allCases) { option in
                             Button {
@@ -72,9 +79,14 @@ struct ReportSheet: View {
                             guard let category else { return }
                             submitting = true
                             Task {
-                                await onSubmit(category)
+                                do {
+                                    try await onSubmit(category)
+                                    done = true
+                                    errorMessage = nil
+                                } catch {
+                                    errorMessage = "The report was not sent. Check your connection and try again."
+                                }
                                 submitting = false
-                                done = true
                             }
                         }
                         .disabled(category == nil || submitting)

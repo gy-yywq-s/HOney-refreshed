@@ -1,7 +1,6 @@
 //
 //  LessonDetailView.swift
-//  HOney — lesson detail sheet with experience actions, in the legacy card
-//  grammar.
+//  HOney — lesson detail and direct, target-bound experience actions.
 //
 
 import SwiftUI
@@ -28,20 +27,20 @@ struct LessonDetailView: View {
                                 if let topic = lesson.topicName {
                                     Text(topic)
                                         .font(AppTheme.Typography.subheadline)
-                                        .foregroundStyle(Palette.navy.opacity(0.62))
+                                        .foregroundStyle(Palette.inkSecondary)
                                 }
                                 Label("\(lesson.periodLabel) · \(lesson.timeRange)", systemImage: "clock")
                                     .font(AppTheme.Typography.caption)
-                                    .foregroundStyle(Palette.navy.opacity(0.62))
+                                    .foregroundStyle(Palette.inkSecondary)
                                 if let teacher = lesson.teacherName {
                                     Label(teacher, systemImage: "person")
                                         .font(AppTheme.Typography.caption)
-                                        .foregroundStyle(Palette.navy.opacity(0.62))
+                                        .foregroundStyle(Palette.inkSecondary)
                                 }
                                 if let room = lesson.roomName {
                                     Label(room, systemImage: "mappin.and.ellipse")
                                         .font(AppTheme.Typography.caption)
-                                        .foregroundStyle(Palette.navy.opacity(0.62))
+                                        .foregroundStyle(Palette.inkSecondary)
                                 }
                             }
                         }
@@ -70,13 +69,8 @@ struct LessonDetailView: View {
                             } label: {
                                 Label("Share experience", systemImage: "square.and.pencil")
                                     .font(AppTheme.Typography.subheadlineSemibold)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 11)
-                                    .background(Palette.ocean, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                                    .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                             }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(.white)
+                            .buttonStyle(PrimaryActionButtonStyle())
                         }
                     }
                     .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
@@ -109,7 +103,7 @@ struct LessonDetailView: View {
             } trailing: {
                 Image(systemName: "chevron.right")
                     .font(AppTheme.Typography.captionBold)
-                    .foregroundStyle(Palette.navy.opacity(0.28))
+                    .foregroundStyle(Palette.inkSecondary)
             }
         }
         .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
@@ -125,12 +119,15 @@ struct LessonExperiencesView: View {
     @Environment(AppModel.self) private var model
     @State private var experiences: [PublicExperience] = []
     @State private var isLoading = true
+    @State private var errorMessage: String?
 
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
                 if isLoading {
                     AppLoadingState(title: "Loading experiences")
+                } else if let errorMessage {
+                    AppBanner(text: errorMessage, style: .error)
                 } else if experiences.isEmpty {
                     AppEmptyState(title: "No experiences yet", systemImage: "bubble.left.and.bubble.right")
                 } else {
@@ -148,8 +145,14 @@ struct LessonExperiencesView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             isLoading = true
-            let response = try? await model.services.honeyAPI.experiences(teacherId: teacherId, courseId: courseId)
-            experiences = response?.experiences ?? []
+            errorMessage = nil
+            do {
+                let response = try await model.services.honeyAPI.experiences(teacherId: teacherId, courseId: courseId)
+                experiences = response.experiences
+            } catch {
+                experiences = []
+                errorMessage = "Experiences could not be loaded. Try again."
+            }
             isLoading = false
         }
     }

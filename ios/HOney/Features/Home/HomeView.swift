@@ -1,50 +1,71 @@
 //
 //  HomeView.swift
-//  HOney — Home: greeting header card, Current/Next class cards (legacy
-//  lesson overview with the ocean progress wash), Experiences area, and the
-//  School Portal row as a legacy card row.
+//  HOney — lesson-first Home with secondary Experiences and Access actions.
 //
 
 import SwiftUI
 
 struct HomeView: View {
+    let openExperiences: () -> Void
+    let openAccess: () -> Void
+
     @Environment(AppModel.self) private var model
     @State private var viewModel: HomeViewModel?
     @State private var showPortal = false
     @State private var showSettings = false
-    @State private var composeStandalone = false
+    @State private var showLessonPicker = false
+    @State private var pendingLesson: Lesson?
+    @State private var composingLesson: Lesson?
 
     var body: some View {
         NavigationStack {
             TimelineView(.periodic(from: .now, by: 60)) { timeline in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        header(now: timeline.date)
-                        lessonOverview(now: timeline.date)
-                        experiencesArea
-                        portalRow
+                ZStack {
+                    PageBackground(includesHomeAtmosphere: true)
+
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 28) {
+                            greeting(now: timeline.date)
+
+                            if let notice = model.startupNotice {
+                                AppBanner(text: notice, style: .warning)
+                            }
+
+                            if let error = viewModel?.errorMessage {
+                                AppBanner(text: error, style: .warning)
+                            }
+
+                            lessonFocus(now: timeline.date)
+                            quickActions
+                            experiencesPreview
+                            portalRow
+                        }
+                        .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+                        .padding(.top, 12)
+                        .padding(.bottom, 32)
                     }
-                    .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
-                    .padding(.top, 18)
-                    .padding(.bottom, 24)
+                    .scrollIndicators(.hidden)
                 }
-                .scrollIndicators(.hidden)
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showSettings = true } label: {
-                        Image(systemName: "gearshape")
-                            .foregroundStyle(Palette.navy.opacity(0.62))
+                        Image(systemName: "person.crop.circle")
                     }
+                    .foregroundStyle(Palette.inkSecondary)
+                    .accessibilityLabel("Settings")
                 }
             }
             .task {
                 if viewModel == nil { viewModel = HomeViewModel(services: model.services) }
                 await viewModel?.load()
             }
-            .refreshable { await viewModel?.load() }
+            .refreshable {
+                await model.retryStartupSyncIfNeeded()
+                await viewModel?.load()
+            }
             .sheet(isPresented: $showPortal) {
                 PortalWebScreen(
                     portalURL: model.services.config.portalWebURL,
@@ -52,78 +73,244 @@ struct HomeView: View {
                 )
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(isPresented: $composeStandalone) {
-                ComposeExperienceView(context: .standalone)
+            .sheet(isPresented: $showLessonPicker, onDismiss: beginPendingComposition) {
+                NavigationStack {
+                    HistoryView { lesson in
+                        pendingLesson = lesson
+                    }
+                    .environment(model)
+                }
+            }
+            .sheet(item: $composingLesson) { lesson in
+                ComposeExperienceView(context: .lesson(lesson))
                     .environment(model)
             }
         }
     }
 
-    // MARK: - Greeting header (legacy header card)
+    private func greeting(now: Date) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Hi, " + (model.profile?.displayName ?? "Student"))
+                .font(AppTheme.Typography.screenTitle)
+                .foregroundStyle(Palette.ink)
+                .fixedSize(horizontal: false, vertical: true)
 
-    private func header(now: Date) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Hi, \(model.profile?.displayName ?? "Student")")
-                    .font(AppTheme.Typography.largeTitle)
-                    .foregroundStyle(Palette.navy)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(Self.fullDateFormatter.string(from: now))
-                    .font(AppTheme.Typography.subheadlineSemibold)
-                    .foregroundStyle(Palette.navy.opacity(0.58))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(Self.fullDateFormatter.string(from: now))
+                .font(AppTheme.Typography.subheadlineMedium)
+                .foregroundStyle(Palette.inkSecondary)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 15)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .fixedSize(horizontal: false, vertical: true)
-        .background(
-            LinearGradient(
-                colors: [Palette.ocean.opacity(0.18), Palette.mist.opacity(0.72)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                .stroke(Palette.ocean.opacity(0.28), lineWidth: 1)
-        )
     }
 
-    // MARK: - Current / Next class (legacy lesson overview)
-
-    private func lessonOverview(now: Date) -> some View {
+    @ViewBuilder
+    private func lessonFocus(now: Date) -> some View {
         let lesson = viewModel?.nextLesson
-        let currentLesson = lesson?.temporalState == .now ? lesson : nil
-        let nextLesson = (lesson != nil && currentLesson == nil && lesson?.temporalState != LessonTemporalState.none) ? lesson : nil
 
-        return VStack(spacing: 10) {
-            HomeLessonSummaryCard(
-                title: "Current Class",
-                systemImage: "play.circle.fill",
-                lesson: currentLesson,
-                detail: currentLesson.map { elapsedText(for: $0, now: now) } ?? "No class in progress",
-                progress: currentLesson.map { progress(for: $0, now: now) }
-            )
+        if viewModel?.isLoading == true && lesson == nil {
+            AppLoadingState(title: "Checking your school day")
+                .frame(minHeight: 190)
+                .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.large))
+        } else if viewModel?.nextLessonAvailable == false {
+            AppBanner(text: "Your next lesson could not be loaded. Pull to try again.", style: .error)
+                .frame(minHeight: 120)
+        } else if let lesson {
+            let isCurrent = lesson.temporalState == .now
+            VStack(alignment: .leading, spacing: 22) {
+                HStack {
+                    Text(isCurrent ? "NOW" : "NEXT")
+                        .font(AppTheme.Typography.captionBold)
+                        .tracking(1.2)
+                        .foregroundStyle(Palette.accent)
 
-            HomeLessonSummaryCard(
-                title: "Next Class",
-                systemImage: "forward.circle.fill",
-                lesson: nextLesson,
-                detail: nextLesson.map { startsText(for: $0, now: now) } ?? "No upcoming classes",
-                progress: nil
-            )
+                    Spacer()
+
+                    Text(isCurrent ? elapsedText(for: lesson, now: now) : startsText(for: lesson, now: now))
+                        .font(AppTheme.Typography.captionSemibold)
+                        .foregroundStyle(Palette.inkSecondary)
+                }
+
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(lesson.subjectName)
+                        .font(.system(.largeTitle, design: .default, weight: .bold))
+                        .foregroundStyle(Palette.ink)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.78)
+
+                    if let topic = lesson.topicName, !topic.isEmpty {
+                        Text(topic)
+                            .font(AppTheme.Typography.headline)
+                            .foregroundStyle(Palette.inkSecondary)
+                    }
+                }
+
+                HStack(spacing: 18) {
+                    metadata(icon: "clock", text: SchoolDayGrid.timeRange(start: lesson.startsAt, end: lesson.endsAt))
+                    if let room = lesson.roomName, !room.isEmpty {
+                        metadata(icon: "mappin", text: room)
+                    }
+                }
+
+                if isCurrent {
+                    ProgressView(value: progress(for: lesson, now: now))
+                        .tint(Palette.accent)
+                        .accessibilityLabel("Class progress")
+                }
+            }
+            .padding(22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.large))
+            .overlay {
+                RoundedRectangle(cornerRadius: AppTheme.Radius.large)
+                    .stroke(Palette.line, lineWidth: 1)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Your next lesson")
+                    .font(AppTheme.Typography.captionBold)
+                    .tracking(0.8)
+                    .foregroundStyle(Palette.accent)
+                Text("Nothing else is scheduled right now.")
+                    .font(AppTheme.Typography.title3)
+                    .foregroundStyle(Palette.ink)
+                Text("Open Timetable for another day, or pull to refresh if your school data changed.")
+                    .font(AppTheme.Typography.footnote)
+                    .foregroundStyle(Palette.inkSecondary)
+            }
+            .padding(.vertical, 8)
         }
+    }
+
+    private var quickActions: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            AppSectionHeader(title: "What do you need?")
+
+            HStack(spacing: 12) {
+                compactAction(
+                    title: "Share a lesson",
+                    subtitle: "Choose from past lessons",
+                    symbol: "square.and.pencil",
+                    action: { showLessonPicker = true }
+                )
+
+                compactAction(
+                    title: "Open Access",
+                    subtitle: "Permits and school gates",
+                    symbol: "door.left.hand.open",
+                    action: openAccess
+                )
+            }
+        }
+    }
+
+    private func compactAction(
+        title: String,
+        subtitle: String,
+        symbol: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 12) {
+                Image(systemName: symbol)
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(Palette.accent)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(AppTheme.Typography.subheadlineSemibold)
+                        .foregroundStyle(Palette.ink)
+                    Text(subtitle)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.inkSecondary)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 130, alignment: .leading)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+            .overlay {
+                RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
+                    .stroke(Palette.line, lineWidth: 1)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var experiencesPreview: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                AppSectionHeader(title: "From your classes")
+                Button("See all", action: openExperiences)
+                    .font(AppTheme.Typography.subheadlineSemibold)
+                    .frame(minHeight: 44)
+            }
+
+            if let recents = viewModel?.recentExperiences, !recents.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(recents) { experience in
+                        ExperienceRow(experience: experience)
+                            .padding(.vertical, 14)
+                        if experience.id != recents.last?.id {
+                            Divider().overlay(Palette.line)
+                        }
+                    }
+                }
+            } else if viewModel?.isLoading == true {
+                AppLoadingState(title: "Loading class experiences")
+            } else if viewModel?.recentExperiencesAvailable == false {
+                AppBanner(text: "Class experiences could not be loaded. Pull to try again.", style: .error)
+            } else {
+                Text("No student experiences from your classes yet.")
+                    .font(AppTheme.Typography.subheadline)
+                    .foregroundStyle(Palette.inkSecondary)
+                    .padding(.vertical, 8)
+            }
+        }
+    }
+
+    private var portalRow: some View {
+        Button { showPortal = true } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "globe")
+                    .foregroundStyle(Palette.accent)
+                    .frame(width: 34, height: 34)
+                    .background(Palette.accentSoft, in: RoundedRectangle(cornerRadius: 9))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("School Portal")
+                        .font(AppTheme.Typography.subheadlineSemibold)
+                        .foregroundStyle(Palette.ink)
+                    Text("Open OASIS in the app")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.inkSecondary)
+                }
+
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .foregroundStyle(Palette.inkSecondary)
+            }
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func metadata(icon: String, text: String) -> some View {
+        Label(text, systemImage: icon)
+            .font(AppTheme.Typography.subheadlineMedium)
+            .foregroundStyle(Palette.inkSecondary)
+    }
+
+    private func beginPendingComposition() {
+        guard let pendingLesson else { return }
+        composingLesson = pendingLesson
+        self.pendingLesson = nil
     }
 
     private func elapsedText(for lesson: NextLesson, now: Date) -> String {
         let elapsed = max(0, Int(now.timeIntervalSince(lesson.startsAt)) / 60)
         let total = max(1, Int(lesson.endsAt.timeIntervalSince(lesson.startsAt)) / 60)
-        return "\(elapsed) min elapsed · \(total - min(elapsed, total)) min left"
+        return String(elapsed) + " min · " + String(total - min(elapsed, total)) + " left"
     }
 
     private func progress(for lesson: NextLesson, now: Date) -> Double {
@@ -134,95 +321,8 @@ struct HomeView: View {
 
     private func startsText(for lesson: NextLesson, now: Date) -> String {
         let minutes = lesson.minutesUntilStart ?? max(0, Int(lesson.startsAt.timeIntervalSince(now)) / 60)
-        let range = SchoolDayGrid.timeRange(start: lesson.startsAt, end: lesson.endsAt)
-        if minutes <= 0 {
-            return "Starting now · \(range)"
-        }
-        return "Starts in \(minutes) min · \(range)"
-    }
-
-    // MARK: - Experiences area
-
-    private var experiencesArea: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            AppSectionHeader(title: "Experiences")
-
-            HStack(spacing: 10) {
-                Button {
-                    composeStandalone = true
-                } label: {
-                    Label("Share", systemImage: "square.and.pencil")
-                        .font(AppTheme.Typography.subheadlineSemibold)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(Palette.ocean, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.white)
-
-                NavigationLink {
-                    ExperiencesView()
-                } label: {
-                    Text("Browse")
-                        .font(AppTheme.Typography.subheadlineSemibold)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(Palette.ocean.opacity(0.14), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Palette.ocean)
-            }
-
-            if let recents = viewModel?.recentExperiences, !recents.isEmpty {
-                AppCard(padding: 14) {
-                    VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
-                        Text("Recent from your classes")
-                            .font(AppTheme.Typography.captionBold)
-                            .foregroundStyle(Palette.ocean)
-                        ForEach(recents) { experience in
-                            ExperienceRow(experience: experience)
-                            if experience.id != recents.last?.id {
-                                Divider().overlay(Palette.line)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - School Portal row
-
-    private var portalRow: some View {
-        Button {
-            showPortal = true
-        } label: {
-            AppCard(padding: 14) {
-                AppListRow {
-                    Image(systemName: "globe")
-                        .foregroundStyle(Palette.ocean)
-                        .frame(width: 28, height: 28)
-                        .background(Palette.mist, in: RoundedRectangle(cornerRadius: AppTheme.Radius.small))
-                } content: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("School Portal")
-                            .font(AppTheme.Typography.subheadlineSemibold)
-                            .foregroundStyle(Palette.navy)
-                        Text("open OASIS in a secure in-app browser")
-                            .font(AppTheme.Typography.caption)
-                            .foregroundStyle(Palette.navy.opacity(0.62))
-                    }
-                } trailing: {
-                    Image(systemName: "chevron.right")
-                        .font(AppTheme.Typography.captionBold)
-                        .foregroundStyle(Palette.navy.opacity(0.28))
-                }
-            }
-            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-        }
-        .buttonStyle(.plain)
+        if minutes <= 0 { return "Starting now" }
+        return "In " + String(minutes) + " min"
     }
 
     private static let fullDateFormatter: DateFormatter = {
@@ -231,63 +331,4 @@ struct HomeView: View {
         formatter.dateFormat = "EEEE, MMMM d"
         return formatter
     }()
-}
-
-/// Ported legacy Home lesson summary card — the Current Class card carries the
-/// signature ocean progress wash. Takes plain display inputs (view-layer only).
-private struct HomeLessonSummaryCard: View {
-    let title: String
-    let systemImage: String
-    let lesson: NextLesson?
-    let detail: String
-    let progress: Double?
-
-    var body: some View {
-        AppCard(padding: 14) {
-            VStack(alignment: .leading, spacing: 10) {
-                Label(title, systemImage: systemImage)
-                    .font(AppTheme.Typography.captionBold)
-                    .foregroundStyle(Palette.ocean)
-
-                if let lesson {
-                    HStack(alignment: .top, spacing: 10) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(lesson.subjectName)
-                                .font(AppTheme.Typography.cardTitle)
-                                .foregroundStyle(Palette.navy)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.82)
-
-                            Text("\(SchoolDayGrid.periodLabel(start: lesson.startsAt, end: lesson.endsAt)) · \(detail)")
-                                .font(AppTheme.Typography.subheadlineMedium)
-                                .foregroundStyle(Palette.navy.opacity(0.62))
-                                .lineLimit(2)
-                        }
-
-                        Spacer(minLength: 8)
-
-                        Text(lesson.roomName ?? "")
-                            .font(AppTheme.Typography.headlineSemibold)
-                            .foregroundStyle(Palette.navy.opacity(0.82))
-                    }
-                } else {
-                    Text(detail)
-                        .font(AppTheme.Typography.headlineSemibold)
-                        .foregroundStyle(Palette.navy.opacity(0.58))
-                }
-            }
-        }
-        .background(alignment: .leading) {
-            if let progress {
-                GeometryReader { proxy in
-                    Rectangle()
-                        .fill(Palette.ocean.opacity(0.67))
-                        .frame(width: max(0, proxy.size.width * min(max(progress, 0), 1)))
-                        .frame(maxHeight: .infinity)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                .allowsHitTesting(false)
-            }
-        }
-    }
 }

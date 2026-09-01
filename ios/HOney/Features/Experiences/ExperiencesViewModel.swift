@@ -75,8 +75,4 @@ final class ExperiencesViewModel {
             errorMessage = "Could not load experiences."
         }
     }
-
-    func react(_ experience: PublicExperience, value: Int) async {
-        try? await services.honeyAPI.react(experienceId: experience.id, value: value)
-    }
 }

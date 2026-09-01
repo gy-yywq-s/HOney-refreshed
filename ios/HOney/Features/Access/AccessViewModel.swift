@@ -19,6 +19,7 @@ final class AccessViewModel {
 
     var isLoading = false
     var isWorking = false
+    var didLoadPermits = false
     var banner: (kind: AppBanner.Style, message: String)?
 
     init(services: AppServices) {
@@ -43,8 +44,10 @@ final class AccessViewModel {
             }
             permits = try await permitsResult
             doors = try await doorsResult
+            didLoadPermits = true
             banner = nil
         } catch {
+            didLoadPermits = false
             handle(error, context: "load")
         }
         connectionState = await coordinator.currentState()
@@ -75,14 +78,9 @@ final class AccessViewModel {
 
     /// Open a gate. Non-idempotent → never auto-replayed. A timeout is surfaced
     /// as "outcome unknown" so the user verifies physically instead of retrying.
-    func openGate(route: AccessRoute, gate: GateChoice) async {
+    func openGate(route: AccessRoute, door: PortalDoor) async {
         isWorking = true
         defer { isWorking = false }
-
-        guard let door = DoorMatcher.match(gate, in: doors) else {
-            banner = (.warning, "No matching gate was found. Refresh Access and try again.")
-            return
-        }
         do {
             let token = try await coordinator.prepareForSensitiveAction()
             let response = try await api.openDoor(recordId: route.recordId, doorKey: door.key, token: token)

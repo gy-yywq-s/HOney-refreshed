@@ -24,6 +24,7 @@ final class AppModel {
     var isAuthenticating = false
     var consentError: String?
     var isSavingConsent = false
+    var startupNotice: String?
 
     init(services: AppServices = .live()) {
         self.services = services
@@ -98,8 +99,12 @@ final class AppModel {
                 consentError = "Could not turn on the import. Please check your connection and try again."
                 return
             }
-            // Initial pull; a sync failure is non-fatal here (Home retries).
-            _ = try? await services.honeyAPI.sync()
+            do {
+                _ = try await services.honeyAPI.sync()
+                startupNotice = nil
+            } catch {
+                startupNotice = "Import is on, but the first school-data sync failed. Pull Home to retry."
+            }
             profile.consent.timetable = true
         }
         // Refresh the profile like the web step; fall back to the local copy.
@@ -110,26 +115,57 @@ final class AppModel {
         }
     }
 
-    func updateConsent(timetable: Bool) async {
-        guard var profile else { return }
+    @discardableResult
+    func updateConsent(timetable: Bool) async -> Bool {
+        guard var profile else { return false }
         do {
             try await services.honeyAPI.setConsent(timetable: timetable)
             profile.consent.timetable = timetable
             phase = .signedIn(profile)
+            return true
         } catch {
-            // Leave the previous value; the toggle re-syncs on next appearance.
+            return false
+        }
+    }
+
+    func retryStartupSyncIfNeeded() async {
+        guard startupNotice != nil else { return }
+        do {
+            _ = try await services.honeyAPI.sync()
+            startupNotice = nil
+        } catch {
+            startupNotice = "Import is on, but school data still could not sync. Pull Home to try again."
         }
     }
 
     /// Re-fetch the profile (incl. live school-connection state) from the server.
-    func refreshProfile() async {
-        guard let me = try? await services.honeyAPI.me() else { return }
-        phase = .signedIn(me.profile)
+    @discardableResult
+    func refreshProfile() async -> Bool {
+        do {
+            let me = try await services.honeyAPI.me()
+            phase = .signedIn(me.profile)
+            return true
+        } catch {
+            return false
+        }
     }
 
-    func disconnectSchool() async {
-        try? await services.honeyAPI.disconnectSchool()
-        await refreshProfile()
+    @discardableResult
+    func disconnectSchool() async -> Bool {
+        do {
+            try await services.honeyAPI.disconnectSchool()
+            if !(await refreshProfile()), var profile {
+                profile.connection = HOneyConnection(
+                    connected: false,
+                    lastSyncedAt: profile.connection?.lastSyncedAt,
+                    portalTokenValid: false
+                )
+                phase = .signedIn(profile)
+            }
+            return true
+        } catch {
+            return false
+        }
     }
 
     func signOut() async {
@@ -144,14 +180,20 @@ final class AppModel {
     /// control over past anonymous posts, so the caller must pass the user's
     /// explicit choice: keep the device-local keys (still able to revoke posts
     /// later) or erase everything (keys, private notes and drafts).
-    func deleteAccount(eraseLocalData: Bool) async {
-        try? await services.honeyAPI.deleteAccount()
-        await services.sessionStore.clear()
-        if eraseLocalData {
-            await services.ownershipKeyStore.clear()
-            await services.privateNoteStore.clearAll()
-            await services.composerDraftStore.clearAll()
+    @discardableResult
+    func deleteAccount(eraseLocalData: Bool) async -> Bool {
+        do {
+            try await services.honeyAPI.deleteAccount()
+            await services.sessionStore.clear()
+            if eraseLocalData {
+                await services.ownershipKeyStore.clear()
+                await services.privateNoteStore.clearAll()
+                await services.composerDraftStore.clearAll()
+            }
+            phase = .signedOut
+            return true
+        } catch {
+            return false
         }
-        phase = .signedOut
     }
 }

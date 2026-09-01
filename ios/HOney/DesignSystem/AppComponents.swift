@@ -2,9 +2,8 @@
 //  AppComponents.swift
 //  HOney
 //
-//  Small reusable building blocks. Keep these boring and easy to edit.
-//  Ported verbatim from the legacy design system (reference/legacy-ios);
-//  the shared view-modifier block from the legacy monolith lives here too.
+//  Small reusable building blocks for the editorial, content-first system.
+//  Keep them behaviorally plain and visually consistent across all screens.
 //
 
 import SwiftUI
@@ -20,7 +19,7 @@ struct AppCard<Content: View>: View {
 
     init(
         padding: CGFloat = AppTheme.Spacing.large,
-        background: Color = .white.opacity(0.88),
+        background: Color = Palette.surface,
         border: Color = Palette.line,
         @ViewBuilder content: () -> Content
     ) {
@@ -49,7 +48,7 @@ struct AppSectionHeader: View {
     var body: some View {
         Text(title)
             .font(AppTheme.Typography.sectionTitle)
-            .foregroundStyle(Palette.navy)
+            .foregroundStyle(Palette.ink)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -63,7 +62,7 @@ struct AppLoadingState: View {
                 .tint(Palette.ocean)
             Text(title)
                 .font(AppTheme.Typography.subheadlineSemibold)
-                .foregroundStyle(Palette.navy.opacity(0.62))
+                .foregroundStyle(Palette.inkSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(AppTheme.Spacing.large)
@@ -77,7 +76,7 @@ struct AppEmptyState: View {
     var body: some View {
         Label(title, systemImage: systemImage)
             .font(AppTheme.Typography.subheadlineSemibold)
-            .foregroundStyle(Palette.navy.opacity(0.58))
+            .foregroundStyle(Palette.inkSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(AppTheme.Spacing.medium)
     }
@@ -87,30 +86,28 @@ struct AppBanner: View {
     enum Style {
         case error
         case success
-        /// HOney addition (legacy shipped error/success only): the portal
-        /// connector and composer preflight need a softer "warning" tone.
-        /// Drawn with the exact same grammar as the legacy pair.
+        /// The portal connector and composer preflight need a softer warning.
         case warning
 
         var foreground: Color {
             switch self {
             case .error:
-                return Color(red: 0.55, green: 0.13, blue: 0.13)
+                return Palette.error
             case .success:
-                return Color(red: 0.08, green: 0.36, blue: 0.19)
+                return Palette.success
             case .warning:
-                return Color(red: 0.55, green: 0.33, blue: 0.08)
+                return Palette.warning
             }
         }
 
         var background: Color {
             switch self {
             case .error:
-                return Color(red: 1.0, green: 0.93, blue: 0.92)
+                return Palette.error.opacity(0.10)
             case .success:
-                return Color(red: 0.91, green: 0.98, blue: 0.93)
+                return Palette.success.opacity(0.10)
             case .warning:
-                return Color(red: 1.0, green: 0.96, blue: 0.88)
+                return Palette.warning.opacity(0.10)
             }
         }
 
@@ -166,29 +163,69 @@ struct AppListRow<Leading: View, Content: View, Trailing: View>: View {
     }
 }
 
-/// The login/consent brand mark (ported legacy login wordmark view; the
-/// symbol is renamed per the port map).
-struct HOneyLoginMark: View {
+struct PrimaryActionButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AppTheme.Typography.headlineSemibold)
+            .foregroundStyle(isEnabled ? Palette.accentForeground : Palette.inkSecondary)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .padding(.horizontal, AppTheme.Spacing.large)
+            .background(
+                isEnabled ? Palette.accent : Palette.surfaceMuted,
+                in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
+            )
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+    }
+}
+
+struct SecondaryActionButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AppTheme.Typography.headlineSemibold)
+            .foregroundStyle(isEnabled ? Palette.ink : Palette.inkSecondary)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .padding(.horizontal, AppTheme.Spacing.large)
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
+                    .stroke(Palette.line, lineWidth: 1)
+            )
+            .opacity(configuration.isPressed ? 0.72 : 1)
+            .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+    }
+}
+
+struct PageBackground: View {
+    var includesHomeAtmosphere = false
+
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                .fill(
-                    LinearGradient(
-                        colors: [Palette.ocean.opacity(0.96), Color(red: 0.52, green: 0.86, blue: 0.83)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            Text("HO")
-                .font(AppTheme.Typography.loginMark)
-                .foregroundStyle(.white)
+            Palette.canvas
+            if includesHomeAtmosphere {
+                Palette.homeAtmosphere
+            }
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: AppTheme.Radius.large)
-                .stroke(.white.opacity(0.7), lineWidth: 1)
-        )
-        .shadow(color: Palette.ocean.opacity(0.18), radius: 10, x: 0, y: 5)
+        .ignoresSafeArea()
+    }
+}
+
+/// Temporary asset slot for the user-selected thin wordmark. Replacing the
+/// imageset swaps the brand without changing Login or consent layout.
+struct BrandWordmarkPlaceholder: View {
+    var body: some View {
+        Image("BrandWordmarkPlaceholder")
+            .resizable()
+            .renderingMode(.template)
+            .scaledToFit()
+            .frame(width: 240, height: 80)
+            .foregroundStyle(Palette.ink)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("HOney")
     }
 }
 
@@ -211,13 +248,13 @@ extension View {
         modifier(DismissKeyboardOnTapModifier())
     }
 
-    // MARK: - Shared style modifiers (legacy view-modifier block)
+    // MARK: - Shared style modifiers
 
     func formFieldStyle() -> some View {
         self
             .padding(.horizontal, 14)
             .padding(.vertical, 13)
-            .background(Palette.mist, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
                     .stroke(Palette.line, lineWidth: 1)
@@ -229,10 +266,10 @@ extension View {
             .font(AppTheme.Typography.loginField)
             .padding(.horizontal, AppTheme.Spacing.large)
             .frame(height: AppTheme.Typography.loginControlHeight)
-            .background(.white, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                    .stroke(Color.black.opacity(0.12), lineWidth: 1)
+                    .stroke(Palette.line, lineWidth: 1)
             )
     }
 
@@ -250,7 +287,7 @@ extension View {
     func preferenceCard() -> some View {
         self
             .padding(16)
-            .background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
                     .stroke(Palette.line, lineWidth: 1)

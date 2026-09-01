@@ -195,10 +195,7 @@ enum DoorMatcher {
             return match
         }
 
-        // Deterministic fallback when the portal uses opaque labels.
-        switch choice {
-        case .front: return doors.first
-        case .back:  return doors.dropFirst().first ?? doors.first
-        }
+        // Never guess a physical gate from an opaque label.
+        return nil
     }
 }

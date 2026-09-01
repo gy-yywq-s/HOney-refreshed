@@ -124,6 +124,7 @@ struct PortalWebScreen: View {
                         } label: {
                             Image(systemName: "arrow.clockwise")
                         }
+                        .accessibilityLabel("Reload School Portal")
                     }
                 }
                 .onAppear {

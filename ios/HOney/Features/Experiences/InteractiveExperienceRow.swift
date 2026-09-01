@@ -14,6 +14,8 @@ struct InteractiveExperienceRow: View {
     /// Session-local highlight only; the server keeps no per-user reaction state
     /// it can hand back, so we reflect the last tap this session.
     @State private var myVote = 0
+    @State private var sendingVote: Int?
+    @State private var reactionError: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
@@ -29,13 +31,20 @@ struct InteractiveExperienceRow: View {
                 }
                 .buttonStyle(.plain)
                 .font(AppTheme.Typography.caption)
-                .foregroundStyle(Palette.navy.opacity(0.48))
+                .foregroundStyle(Palette.inkSecondary)
+                .frame(minWidth: 44, minHeight: 44)
             }
             .font(AppTheme.Typography.caption)
+
+            if let reactionError {
+                Text(reactionError)
+                    .font(AppTheme.Typography.caption)
+                    .foregroundStyle(Palette.error)
+            }
         }
         .sheet(isPresented: $reporting) {
             ReportSheet { category in
-                try? await services.honeyAPI.report(experienceId: experience.id, category: category)
+                try await services.honeyAPI.report(experienceId: experience.id, category: category)
             }
         }
     }
@@ -45,14 +54,25 @@ struct InteractiveExperienceRow: View {
     private func reactionButton(value: Int, symbol: String, count: Int?) -> some View {
         let selected = myVote == value
         return Button {
-            myVote = selected ? 0 : value
-            let sending = myVote
-            Task { try? await services.honeyAPI.react(experienceId: experience.id, value: sending) }
+            let sending = selected ? 0 : value
+            sendingVote = sending
+            reactionError = nil
+            Task {
+                do {
+                    try await services.honeyAPI.react(experienceId: experience.id, value: sending)
+                    myVote = sending
+                } catch {
+                    reactionError = "Reaction not saved. Try again."
+                }
+                sendingVote = nil
+            }
         } label: {
             Label(count.map(String.init) ?? "", systemImage: selected ? "\(symbol).fill" : symbol)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(selected ? Palette.ocean : Palette.navy.opacity(0.48))
+        .foregroundStyle(selected ? Palette.ocean : Palette.inkSecondary)
+        .frame(minWidth: 44, minHeight: 44)
+        .disabled(sendingVote != nil)
         .accessibilityLabel(value == 1 ? "This matched my experience" : "This did not match my experience")
     }
 }

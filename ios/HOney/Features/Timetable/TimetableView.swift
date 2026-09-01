@@ -1,9 +1,7 @@
 //
 //  TimetableView.swift
-//  HOney — the signature Day canvas, ported from the legacy Schedule Day view:
-//  pastel period bands, green break bands with the leaf glyph, "P3 · Free"
-//  ghost labels, the red now-line, on a 09:00–20:00 canvas. The legacy exam
-//  strip is deliberately absent (HOney has no exams feature).
+//  HOney — an editorial day canvas: neutral period rhythm, restrained breaks,
+//  free-period labels and one precise current-time indicator.
 //
 
 import SwiftUI
@@ -66,7 +64,7 @@ struct TimetableView: View {
         )
     }
 
-    // MARK: - Header (legacy compactHeader grammar)
+    // MARK: - Header
 
     private func compactHeader(_ viewModel: TimetableViewModel) -> some View {
         VStack(spacing: 10) {
@@ -83,7 +81,7 @@ struct TimetableView: View {
                 NavigationLink {
                     HistoryView()
                 } label: {
-                    Label("History", systemImage: "clock.arrow.circlepath")
+                    Label("Past lessons", systemImage: "clock.arrow.circlepath")
                         .font(AppTheme.Typography.captionBold)
                         .foregroundStyle(Palette.ocean)
                         .padding(.horizontal, 10)
@@ -92,6 +90,7 @@ struct TimetableView: View {
                         .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .frame(minHeight: 44)
             }
 
             HStack(spacing: 8) {
@@ -109,7 +108,7 @@ struct TimetableView: View {
             }
         }
         .padding(12)
-        .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+        .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
                 .stroke(Palette.line, lineWidth: 1)
@@ -182,7 +181,7 @@ struct TimetableView: View {
     }()
 }
 
-// MARK: - School-day grid (ported legacy period/band data)
+// MARK: - School-day grid
 
 struct PeriodSlot: Identifiable {
     let startHour: Int
@@ -238,11 +237,9 @@ struct TimelineBand: Identifiable {
     var color: Color {
         switch kind {
         case .period(let number):
-            return number.isMultiple(of: 2)
-                ? Color(red: 0.78, green: 0.91, blue: 1.0).opacity(0.78)
-                : Color(red: 0.93, green: 0.985, blue: 1.0).opacity(0.96)
+            return number.isMultiple(of: 2) ? Palette.surfaceMuted.opacity(0.48) : Palette.surface
         case .longBreak:
-            return Color(red: 0.70, green: 0.90, blue: 0.77).opacity(0.82)
+            return Palette.accentSoft.opacity(0.52)
         }
     }
 
@@ -317,7 +314,7 @@ extension Lesson {
     }
 }
 
-// MARK: - Day selector (ported legacy DaySelector)
+// MARK: - Day selector
 
 private struct DaySelector: View {
     let monday: Date
@@ -338,11 +335,12 @@ private struct DaySelector: View {
                         Text(Self.dayFormatter.string(from: date))
                             .font(AppTheme.Typography.captionSemibold)
                     }
-                    .foregroundStyle(isSelected ? .white : Palette.navy)
+                    .foregroundStyle(isSelected ? Palette.accentForeground : Palette.ink)
                     .frame(maxWidth: .infinity)
+                    .frame(minHeight: 44)
                     .padding(.vertical, 7)
                     .background(
-                        isSelected ? Palette.ocean : .white.opacity(0.84),
+                        isSelected ? Palette.accent : Palette.surface,
                         in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
                     )
                     .overlay(
@@ -369,7 +367,7 @@ private struct DaySelector: View {
     }()
 }
 
-// MARK: - Day timeline (ported legacy DayTimelineView, exam strip omitted)
+// MARK: - Day timeline
 
 private struct DayTimelineView: View {
     let lessons: [Lesson]
@@ -396,6 +394,8 @@ private struct DayTimelineView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .contentShape(Rectangle().inset(by: -12))
+                        .accessibilityLabel(lesson.subjectName + ", " + lesson.timeRange + (lesson.roomName.map { ", " + $0 } ?? ""))
                         .frame(width: lessonBlockWidth(in: proxy.size.width), height: blockHeight(for: lesson, in: proxy.size.height))
                         .offset(x: 10, y: blockOffset(for: lesson, in: proxy.size.height))
                     }
@@ -407,14 +407,14 @@ private struct DayTimelineView: View {
                                 .foregroundStyle(Palette.ocean)
                             Text("No lessons today")
                                 .font(AppTheme.Typography.subheadlineSemibold)
-                                .foregroundStyle(Palette.navy.opacity(0.58))
+                                .foregroundStyle(Palette.inkSecondary)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
             }
             .frame(height: height)
-            .background(.white.opacity(0.92), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
         }
         .frame(height: height)
     }
@@ -424,7 +424,7 @@ private struct DayTimelineView: View {
             ForEach(Self.hourMarks, id: \.self) { minute in
                 Text(timeText(forMinute: minute))
                     .font(AppTheme.Typography.captionMedium)
-                    .foregroundStyle(Palette.navy.opacity(0.46))
+                    .foregroundStyle(Palette.inkSecondary)
                     .offset(y: yPosition(for: minute, in: height) - 8)
             }
         }
@@ -438,8 +438,8 @@ private struct DayTimelineView: View {
                     band.color
 
                     Rectangle()
-                        .fill(Palette.navy.opacity(0.10))
-                        .frame(height: 2.2)
+                        .fill(Palette.line.opacity(0.72))
+                        .frame(height: 1)
                 }
                 .frame(width: width, height: periodBandHeight(for: band, in: height))
                 .offset(y: yPosition(for: band.startMinute, in: height))
@@ -479,11 +479,11 @@ private struct DayTimelineView: View {
                     HStack(spacing: 6) {
                         Text("P\(index + 1)")
                             .font(AppTheme.Typography.captionBold)
-                            .foregroundStyle(Palette.ocean.opacity(0.82))
+                            .foregroundStyle(Palette.accent)
 
                         Text("Free")
                             .font(AppTheme.Typography.captionMedium)
-                            .foregroundStyle(Palette.navy.opacity(0.42))
+                            .foregroundStyle(Palette.inkSecondary)
 
                         Spacer(minLength: 0)
                     }
@@ -502,11 +502,11 @@ private struct DayTimelineView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "leaf.fill")
                             .font(AppTheme.Typography.caption2Bold)
-                            .foregroundStyle(Color(red: 0.15, green: 0.50, blue: 0.28).opacity(0.82))
+                            .foregroundStyle(Palette.accent)
 
                         Text(title)
                             .font(AppTheme.Typography.captionSemibold)
-                            .foregroundStyle(Palette.navy.opacity(0.50))
+                            .foregroundStyle(Palette.inkSecondary)
 
                         Spacer(minLength: 0)
                     }
@@ -578,11 +578,11 @@ private struct CurrentTimeLine: View {
     var body: some View {
         HStack(spacing: 0) {
             Circle()
-                .fill(Color(red: 1.0, green: 0.22, blue: 0.28))
+                .fill(Palette.error)
                 .frame(width: 7, height: 7)
 
             Rectangle()
-                .fill(Color(red: 1.0, green: 0.22, blue: 0.28))
+                .fill(Palette.error)
                 .frame(width: max(0, width - 7), height: 1.5)
         }
         .frame(width: width, height: 8, alignment: .leading)
@@ -611,7 +611,7 @@ private struct TimelineLessonBlock: View {
 
                     Text(lesson.roomName ?? "")
                         .font(AppTheme.Typography.subheadlineBold)
-                        .foregroundStyle(Palette.navy.opacity(0.82))
+                        .foregroundStyle(Palette.ink)
                         .lineLimit(1)
                 }
 
@@ -626,7 +626,7 @@ private struct TimelineLessonBlock: View {
                         .lineLimit(1)
                 }
                 .font(AppTheme.Typography.lessonTimelineMeta(isCompact: lesson.isCompactTimelineLabel))
-                .foregroundStyle(Palette.navy.opacity(0.62))
+                .foregroundStyle(Palette.inkSecondary)
             }
             .padding(.vertical, lesson.isCompactTimelineLabel ? 2 : 4)
             .padding(.trailing, 8)
@@ -644,16 +644,17 @@ private struct CompactWeekButton: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(AppTheme.Typography.captionBold)
-                .frame(width: 38, height: 30)
+                .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
         .foregroundStyle(Palette.navy)
-        .background(.white.opacity(0.78), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+        .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
         .fullHitArea()
         .overlay(
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
                 .stroke(Palette.line, lineWidth: 1)
         )
+        .accessibilityLabel(systemImage == "chevron.left" ? "Previous week" : "Next week")
     }
 }
 
@@ -668,25 +669,25 @@ private struct WeekJumpControl: View {
                     Label("Today", systemImage: "calendar")
                         .font(AppTheme.Typography.captionBold)
                         .labelStyle(.titleAndIcon)
-                        .frame(width: proxy.size.width * 0.36, height: 34)
+                        .frame(width: proxy.size.width * 0.36, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.white)
-                .background(Palette.ocean.opacity(0.95))
+                .foregroundStyle(Palette.accentForeground)
+                .background(Palette.accent)
                 .fullHitArea()
 
                 Rectangle()
                     .fill(Palette.line)
-                    .frame(width: 1, height: 34)
+                    .frame(width: 1, height: 44)
 
                 Text(rangeTitle)
                     .font(AppTheme.Typography.captionSemibold)
-                    .foregroundStyle(Palette.navy.opacity(0.64))
+                    .foregroundStyle(Palette.inkSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
-                    .frame(width: max(0, proxy.size.width * 0.64 - 1), height: 34)
-                    .background(.white.opacity(0.82))
+                    .frame(width: max(0, proxy.size.width * 0.64 - 1), height: 44)
+                    .background(Palette.surface)
             }
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
             .overlay(
@@ -694,13 +695,13 @@ private struct WeekJumpControl: View {
                     .stroke(Palette.line, lineWidth: 1)
             )
         }
-        .frame(height: 34)
+        .frame(height: 44)
     }
 }
 
 private struct LoadingCard: View {
     var body: some View {
-        AppCard(background: .white.opacity(0.82)) {
+        AppCard(background: Palette.surface) {
             AppLoadingState(title: "Loading schedule")
         }
     }

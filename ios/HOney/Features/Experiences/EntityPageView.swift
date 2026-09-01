@@ -13,6 +13,7 @@ struct EntityPageView: View {
     @State private var experiences: [PublicExperience] = []
     @State private var isLoading = true
     @State private var showCompose = false
+    @State private var errorMessage: String?
 
     var body: some View {
         ScrollView {
@@ -33,16 +34,13 @@ struct EntityPageView: View {
                 } label: {
                     Label("Share an experience", systemImage: "square.and.pencil")
                         .font(AppTheme.Typography.subheadlineSemibold)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(Palette.ocean, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.white)
+                .buttonStyle(PrimaryActionButtonStyle())
 
                 if isLoading {
                     AppLoadingState(title: "Loading experiences")
+                } else if let errorMessage {
+                    AppBanner(text: errorMessage, style: .error)
                 } else if experiences.isEmpty {
                     AppEmptyState(title: "No experiences yet", systemImage: "bubble.left.and.bubble.right")
                 } else {
@@ -66,8 +64,14 @@ struct EntityPageView: View {
 
     private func load() async {
         isLoading = true
+        errorMessage = nil
         defer { isLoading = false }
-        let response = try? await model.services.honeyAPI.experiences(entityKey: entity.entityKey)
-        experiences = response?.experiences ?? []
+        do {
+            let response = try await model.services.honeyAPI.experiences(entityKey: entity.entityKey)
+            experiences = response.experiences
+        } catch {
+            experiences = []
+            errorMessage = "Experiences could not be loaded. Try again."
+        }
     }
 }

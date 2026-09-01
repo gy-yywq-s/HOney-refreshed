@@ -1,7 +1,6 @@
 //
 //  SettingsView.swift
-//  HOney — Account, School connection, Imported data, Experiences & privacy,
-//  About — as identical stacked preference cards (legacy Prefs grammar).
+//  HOney — native, behaviorally precise account and privacy settings.
 //
 
 import SwiftUI
@@ -11,182 +10,192 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var consentTimetable = false
+    @State private var revertingConsent = false
+    @State private var isSavingConsent = false
     @State private var confirmDelete = false
+    @State private var settingsError: String?
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Palette.background.ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 12) {
-                        accountCard
-                        schoolCard
-                        importedDataCard
-                        privacyCard
-                        aboutCard
+            List {
+                if let settingsError {
+                    Section {
+                        AppBanner(text: settingsError, style: .error)
                     }
-                    .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
-                    .padding(.top, 18)
-                    .padding(.bottom, 24)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
                 }
-                .scrollIndicators(.hidden)
+
+                accountSection
+                schoolSection
+                privacySection
+                aboutSection
             }
+            .scrollContentBackground(.hidden)
+            .background(PageBackground())
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
             }
             .onAppear { consentTimetable = model.profile?.consent.timetable ?? false }
-            .task { await model.refreshProfile() }
-            // Account deletion must surface the ownership-key consequence
-            // (audit §3.6): the keys on this device are the ONLY control over
-            // past anonymous posts. Deleting the account never has to destroy
-            // them — that is a separate, explicit choice.
-            .confirmationDialog("Delete your HOney account?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete account, keep post keys on this device") {
-                    Task { await model.deleteAccount(eraseLocalData: false); dismiss() }
+            .task {
+                if await model.refreshProfile() {
+                    consentTimetable = model.profile?.consent.timetable ?? false
                 }
-                Button("Delete account and erase everything", role: .destructive) {
-                    Task { await model.deleteAccount(eraseLocalData: true); dismiss() }
+            }
+            .confirmationDialog(
+                "Delete your HOney account?",
+                isPresented: $confirmDelete,
+                titleVisibility: .visible
+            ) {
+                Button("Delete account, keep post-control keys") {
+                    deleteAccount(eraseLocalData: false)
+                }
+                Button("Delete account and local HOney data", role: .destructive) {
+                    deleteAccount(eraseLocalData: true)
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Your account and imported data are removed from the server. Posts you published are anonymous — the ownership keys stored only on this device are the only control over them that exists. Keep the keys to stay able to revoke those posts later, or erase everything on this device too (post keys, private notes and drafts).")
+                Text("Deleting removes your HOney account and imported server data. Anonymous posts remain published. Keep the post-control keys on this iPhone if you may need to revoke them later, or erase those keys together with private notes and drafts.")
             }
         }
     }
 
-    // MARK: - Cards
-
-    private var accountCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            preferenceHeader("Account", detail: "who this device is signed in as.")
-
+    private var accountSection: some View {
+        Section {
             if let profile = model.profile {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Name: \(profile.displayName)")
-                    Text("HOney ID: \(profile.honeyId)")
-                    if profile.isAdmin {
-                        Text("Role: Admin")
-                    }
+                settingValue(title: "Name", value: profile.displayName)
+                settingValue(title: "Account ID", value: profile.honeyId)
+                if profile.isAdmin {
+                    settingValue(title: "Role", value: "Admin")
                 }
-                .font(AppTheme.Typography.captionMedium)
-                .foregroundStyle(Palette.navy.opacity(0.54))
             }
 
-            Button {
-                Task { await model.signOut(); dismiss() }
-            } label: {
-                Text("Sign out")
-                    .font(AppTheme.Typography.subheadlineSemibold)
-                    .foregroundStyle(Palette.navy)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+            Button("Sign out of HOney") {
+                Task {
+                    await model.signOut()
+                    dismiss()
+                }
             }
-            .buttonStyle(.plain)
+            .foregroundStyle(Palette.ink)
 
-            Button {
+            Button("Delete HOney account", role: .destructive) {
                 confirmDelete = true
-            } label: {
-                Text("Delete account")
-                    .font(AppTheme.Typography.subheadlineSemibold)
-                    .foregroundStyle(Palette.error)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+        } header: {
+            Text("Account")
+        } footer: {
+            Text("Signing out keeps school credentials, private notes, drafts, and post-control keys on this iPhone.")
         }
-        .preferenceCard()
+        .listRowBackground(Palette.surface)
     }
 
-    private var schoolCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            preferenceHeader("School Connection", detail: "HOney signs in with your OASIS school account. Access and the School Portal use this connection directly; it is kept separate from your HOney data.")
-
+    private var schoolSection: some View {
+        Section {
             let connection = model.profile?.connection
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Status: \(schoolStatus(connection))")
-                if let synced = connection?.lastSyncedAt {
-                    Text("Last synced: \(synced.formatted(date: .abbreviated, time: .shortened))")
+            settingValue(title: "Connection", value: schoolStatus(connection))
+            if let synced = connection?.lastSyncedAt {
+                HStack {
+                    Text("Last synced")
+                    Spacer()
+                    Text(synced, format: .dateTime.month().day().hour().minute())
+                        .foregroundStyle(Palette.inkSecondary)
                 }
             }
-            .font(AppTheme.Typography.captionMedium)
-            .foregroundStyle(Palette.navy.opacity(0.54))
+
+            Toggle("Import timetable and lesson history", isOn: $consentTimetable)
+                .tint(Palette.accent)
+                .disabled(isSavingConsent)
+                .onChange(of: consentTimetable) { oldValue, newValue in
+                    if revertingConsent {
+                        revertingConsent = false
+                        return
+                    }
+                    saveConsent(previousValue: oldValue, newValue: newValue)
+                }
 
             if connection?.connected == true {
-                Button {
-                    Task { await model.disconnectSchool() }
-                } label: {
-                    Text("Disconnect school account")
-                        .font(AppTheme.Typography.subheadlineSemibold)
-                        .foregroundStyle(Palette.error)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
+                Button("Disconnect timetable sync", role: .destructive) {
+                    Task {
+                        if await model.disconnectSchool() {
+                            settingsError = nil
+                        } else {
+                            settingsError = "Timetable sync was not disconnected. Try again."
+                        }
+                    }
                 }
-                .buttonStyle(.plain)
+            }
+        } header: {
+            Text("School data")
+        } footer: {
+            Text("Disconnecting stops HOney’s server-side school-data connection. It does not erase school credentials saved on this iPhone for direct Access reauthentication.")
+        }
+        .listRowBackground(Palette.surface)
+    }
+
+    private var privacySection: some View {
+        Section {
+            Label("Published experiences store no author identity.", systemImage: "person.crop.circle.badge.questionmark")
+            Label("Private notes and drafts stay on this iPhone.", systemImage: "iphone")
+            Label("Post-control keys let this iPhone see and revoke your anonymous posts.", systemImage: "key")
+        } header: {
+            Text("Experiences and privacy")
+        } footer: {
+            Text("If these device-only keys are lost, the posts stay anonymous and published, but you can no longer revoke them.")
+        }
+        .listRowBackground(Palette.surface)
+    }
+
+    private var aboutSection: some View {
+        Section {
+            settingValue(title: "App", value: "HOney")
+            settingValue(
+                title: "Version",
+                value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+            )
+        } header: {
+            Text("About")
+        }
+        .listRowBackground(Palette.surface)
+    }
+
+    private func settingValue(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer(minLength: 16)
+            Text(value)
+                .foregroundStyle(Palette.inkSecondary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+
+    private func schoolStatus(_ connection: HOneyConnection?) -> String {
+        guard let connection, connection.connected else { return "Not connected" }
+        return connection.portalTokenValid ? "Connected" : "Reconnect needed"
+    }
+
+    private func saveConsent(previousValue: Bool, newValue: Bool) {
+        isSavingConsent = true
+        settingsError = nil
+        Task {
+            let saved = await model.updateConsent(timetable: newValue)
+            isSavingConsent = false
+            if !saved {
+                revertingConsent = true
+                consentTimetable = previousValue
+                settingsError = "The import setting was not updated. Check your connection and try again."
             }
         }
-        .preferenceCard()
     }
 
-    private func schoolStatus(_ c: HOneyConnection?) -> String {
-        guard let c, c.connected else { return "Not connected" }
-        return c.portalTokenValid ? "Connected" : "Reconnect needed"
-    }
-
-    private var importedDataCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            preferenceHeader("Imported Data", detail: "When on, HOney syncs your lessons so Timetable, History and the Next Lesson card work.")
-
-            Toggle("Import my timetable", isOn: $consentTimetable)
-                .font(AppTheme.Typography.subheadlineSemibold)
-                .foregroundStyle(Palette.navy)
-                .tint(Palette.ocean)
-                .onChange(of: consentTimetable) { _, newValue in
-                    Task { await model.updateConsent(timetable: newValue) }
-                }
-        }
-        .preferenceCard()
-    }
-
-    private var privacyCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            preferenceHeader("Experiences & Privacy", detail: "how anonymous posting actually works.")
-
-            Text("Experiences are anonymous. HOney stores no author identity on the server — not even for you.")
-                .font(AppTheme.Typography.caption)
-                .foregroundStyle(Palette.navy.opacity(0.72))
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text("The keys that let you see, re-confirm or revoke your own posts are stored only on this device. If you lose this device, those posts stay published but can no longer be managed.")
-                .font(AppTheme.Typography.caption)
-                .foregroundStyle(Palette.warning)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .preferenceCard()
-    }
-
-    private var aboutCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            preferenceHeader("About", detail: "HOney — a quiet app for school days.")
-
-            Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")")
-                .font(AppTheme.Typography.captionMedium)
-                .foregroundStyle(Palette.navy.opacity(0.54))
-        }
-        .preferenceCard()
-    }
-
-    private func preferenceHeader(_ title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(AppTheme.Typography.preferenceCardTitle)
-                .foregroundStyle(Palette.navy)
-
-            Text(detail)
-                .font(AppTheme.Typography.captionMedium)
-                .foregroundStyle(Palette.navy.opacity(0.58))
+    private func deleteAccount(eraseLocalData: Bool) {
+        Task {
+            if await model.deleteAccount(eraseLocalData: eraseLocalData) {
+                dismiss()
+            } else {
+                settingsError = "The HOney account was not deleted. No local data was erased."
+            }
         }
     }
 }

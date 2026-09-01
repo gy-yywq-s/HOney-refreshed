@@ -1,8 +1,6 @@
 //
 //  LoginView.swift
-//  HOney — sign in with the school account (no signup).
-//  Ported legacy LoginScreen: white→mist gradient, serif wordmark,
-//  48pt opaque-white fields (deliberately off the navy system).
+//  HOney — school-account sign in with a replaceable wordmark slot.
 //
 
 import SwiftUI
@@ -17,110 +15,125 @@ struct LoginView: View {
     private enum Field { case username, password }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 70)
-
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.xxLarge) {
-                VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
-                    HOneyLoginMark()
-                        .frame(width: 48, height: 48)
-
-                    Text("HOney")
-                        .font(AppTheme.Typography.loginTitle)
-                        .foregroundStyle(Palette.navy)
-
-                    Text("your school account signs you in — there is no separate signup.")
-                        .font(AppTheme.Typography.footnote)
-                        .foregroundStyle(Palette.navy.opacity(0.58))
-                }
-
-                VStack(spacing: AppTheme.Spacing.medium) {
-                    TextField("Username", text: $username)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .textContentType(.username)
-                        .keyboardType(.asciiCapable)
-                        .submitLabel(.next)
-                        .focused($focus, equals: .username)
-                        .loginFieldStyle()
-                        .onSubmit {
-                            focus = .password
-                        }
-
-                    SecureField("Password", text: $password)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .textContentType(.password)
-                        .keyboardType(.asciiCapable)
-                        .submitLabel(.go)
-                        .focused($focus, equals: .password)
-                        .loginFieldStyle()
-                        .onSubmit {
-                            submit()
-                        }
-
-                    if let errorMessage = model.loginError {
-                        Text(errorMessage)
-                            .font(AppTheme.Typography.footnote)
-                            .foregroundStyle(.red.opacity(0.86))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 2)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
-                    Button {
-                        submit()
-                    } label: {
-                        HStack(spacing: AppTheme.Spacing.small) {
-                            if model.isAuthenticating {
-                                ProgressView()
-                                    .tint(.white)
-                            }
-
-                            Text(model.isAuthenticating ? "Signing In" : "Sign In")
-                                .font(AppTheme.Typography.loginButton)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: AppTheme.Typography.loginControlHeight)
-                        .background(
-                            canSubmit ? Palette.ocean : Palette.navy.opacity(0.16),
-                            in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                        )
-                        .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.white)
-                    .disabled(!canSubmit || model.isAuthenticating)
-
-                    Text("your password is used only to sign in to the school portal and is stored securely on this device.")
-                        .font(AppTheme.Typography.caption)
-                        .foregroundStyle(Palette.navy.opacity(0.48))
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 32) {
+                brandAndIntroduction
+                credentials
+                actions
             }
+            .frame(maxWidth: 560, alignment: .leading)
             .padding(.horizontal, AppTheme.Spacing.loginHorizontal)
-
-            Spacer(minLength: 36)
+            .padding(.top, 42)
+            .padding(.bottom, 40)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            LinearGradient(
-                colors: [.white, Palette.mist.opacity(0.62)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .background(PageBackground())
         .contentShape(Rectangle())
-        .onTapGesture {
-            focus = nil
-        }
+        .onTapGesture { focus = nil }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") {
-                    focus = nil
+                Button("Done") { focus = nil }
+            }
+        }
+    }
+
+    private var brandAndIntroduction: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            BrandWordmarkPlaceholder()
+                .frame(width: 240, height: 80, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Your school day, in one place.")
+                    .font(AppTheme.Typography.screenTitle)
+                    .foregroundStyle(Palette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("Use your school account. HOney does not create a separate password.")
+                    .font(AppTheme.Typography.subheadline)
+                    .foregroundStyle(Palette.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var credentials: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            loginField(label: "School account", focused: focus == .username) {
+                TextField("Username or school email", text: $username)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .textContentType(.username)
+                    .keyboardType(.emailAddress)
+                    .submitLabel(.next)
+                    .focused($focus, equals: .username)
+                    .onSubmit { focus = .password }
+            }
+
+            loginField(label: "Password", focused: focus == .password) {
+                SecureField("School password", text: $password)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .textContentType(.password)
+                    .submitLabel(.go)
+                    .focused($focus, equals: .password)
+                    .onSubmit { submit() }
+            }
+
+            if let errorMessage = model.loginError {
+                AppBanner(text: errorMessage, style: .error)
+            }
+        }
+    }
+
+    private var actions: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Button {
+                submit()
+            } label: {
+                HStack(spacing: AppTheme.Spacing.small) {
+                    if model.isAuthenticating {
+                        ProgressView().tint(Palette.accentForeground)
+                    }
+                    Text(model.isAuthenticating ? "Signing in…" : "Sign in")
                 }
             }
+            .buttonStyle(PrimaryActionButtonStyle())
+            .disabled(!canSubmit || model.isAuthenticating)
+
+            Label {
+                Text("Your credentials are sent to HOney to sign you into the school service and saved in this iPhone’s Keychain for automatic reauthentication.")
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: "lock.shield")
+                    .foregroundStyle(Palette.accent)
+            }
+            .font(AppTheme.Typography.footnote)
+            .foregroundStyle(Palette.inkSecondary)
+        }
+    }
+
+    private func loginField<Content: View>(
+        label: String,
+        focused: Bool,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(label)
+                .font(AppTheme.Typography.captionSemibold)
+                .foregroundStyle(Palette.inkSecondary)
+
+            content()
+                .font(AppTheme.Typography.loginField)
+                .foregroundStyle(Palette.ink)
+                .padding(.horizontal, 15)
+                .frame(minHeight: AppTheme.Typography.loginControlHeight)
+                .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
+                        .stroke(focused ? Palette.accent : Palette.line, lineWidth: focused ? 2 : 1)
+                }
         }
     }
 
@@ -131,8 +144,6 @@ struct LoginView: View {
     private func submit() {
         guard canSubmit else { return }
         focus = nil
-        // Import consent is NOT part of signing in — it is a separate, active
-        // choice on the next step (audit §3.2).
         Task {
             await model.login(
                 username: username.trimmingCharacters(in: .whitespaces),

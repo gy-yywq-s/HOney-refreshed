@@ -27,6 +27,12 @@ final class AppModelLifecycleTests: XCTestCase {
     }
 
     private func seedLocalData() async throws {
+        await services.sessionStore.save(HOneySession(
+            accessToken: "access",
+            accessExpiresAt: Date().addingTimeInterval(3_600),
+            refreshToken: "refresh",
+            refreshExpiresAt: Date().addingTimeInterval(86_400)
+        ))
         await keys.add(experienceId: "exp-1", ownershipKey: "own-1")
         _ = try await services.privateNoteStore.save(
             id: nil, body: "note", rating: nil,
@@ -77,6 +83,22 @@ final class AppModelLifecycleTests: XCTestCase {
         XCTAssertTrue(notes.isEmpty, "'erase everything' clears private notes")
         let draft = await services.composerDraftStore.get("lesson:l1")
         XCTAssertNil(draft, "'erase everything' clears the draft slot")
+    }
+
+    func testDeleteAccountFailureKeepsSessionAndLocalData() async throws {
+        try await seedLocalData()
+        StubURLProtocol.responses["/api/account"] = (500, Data("server error".utf8))
+
+        let deleted = await model.deleteAccount(eraseLocalData: true)
+        let remainingKeys = await keys.keys()
+        let remainingNotes = await services.privateNoteStore.list()
+        let remainingDraft = await services.composerDraftStore.get("lesson:l1")
+
+        XCTAssertFalse(deleted)
+        XCTAssertEqual(model.phase, .loading, "failed deletion must not pretend the user is signed out")
+        XCTAssertEqual(remainingKeys, ["own-1"])
+        XCTAssertEqual(remainingNotes.count, 1)
+        XCTAssertNotNil(remainingDraft)
     }
 
     // MARK: Two-step consent (audit §3.2)

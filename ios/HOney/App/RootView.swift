@@ -1,7 +1,7 @@
 //
 //  RootView.swift
-//  HOney — gates on auth: LoginView vs MainTabView, over the fixed
-//  diagonal gradient (legacy shell: the gradient is never hidden).
+//  HOney — gates on auth without imposing one decorative treatment on every
+//  screen. Each signed-in surface owns its background composition.
 //
 
 import SwiftUI
@@ -12,7 +12,7 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            Palette.background.ignoresSafeArea()
+            PageBackground()
 
             switch model.phase {
             case .loading:

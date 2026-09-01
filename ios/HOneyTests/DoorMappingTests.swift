@@ -29,10 +29,10 @@ final class DoorMappingTests: XCTestCase {
         XCTAssertEqual(DoorMatcher.match(.back, in: doors)?.value, "后门")
     }
 
-    func testOpaqueLabelsFallBackDeterministically() {
+    func testOpaqueLabelsDoNotGuessAPhysicalGate() {
         let doors = [PortalDoor(key: "x1", value: "Door 1"), PortalDoor(key: "x2", value: "Door 2")]
-        XCTAssertEqual(DoorMatcher.match(.front, in: doors)?.key, "x1")
-        XCTAssertEqual(DoorMatcher.match(.back, in: doors)?.key, "x2")
+        XCTAssertNil(DoorMatcher.match(.front, in: doors))
+        XCTAssertNil(DoorMatcher.match(.back, in: doors))
     }
 
     func testEmptyDoorsReturnsNil() {

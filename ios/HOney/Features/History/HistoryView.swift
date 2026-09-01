@@ -1,7 +1,6 @@
 //
 //  HistoryView.swift
-//  HOney — chronological history grouped by month, with search + filters,
-//  as AppListRow rows in the legacy card grammar.
+//  HOney — past lessons grouped by month, with search and filters.
 //  Two modes: browse (tap → lesson detail) and selection (tap → returns lessonId
 //  to the composer via `onSelect`, then dismisses).
 //
@@ -9,8 +8,8 @@
 import SwiftUI
 
 struct HistoryView: View {
-    /// When set, the view is in selection mode and returns a chosen lessonId.
-    var onSelect: ((String) -> Void)? = nil
+    /// When set, the view is in selection mode and returns the chosen lesson.
+    var onSelect: ((Lesson) -> Void)? = nil
 
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -24,11 +23,11 @@ struct HistoryView: View {
             if let viewModel {
                 content(viewModel)
             } else {
-                AppLoadingState(title: "Loading history")
+                AppLoadingState(title: "Loading past lessons")
             }
         }
         .background(Palette.background.ignoresSafeArea())
-        .navigationTitle("History")
+        .navigationTitle(isSelecting ? "Choose a lesson" : "Past lessons")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isSelecting {
@@ -53,11 +52,11 @@ struct HistoryView: View {
                 filters(vm)
 
                 if vm.isLoading {
-                    AppLoadingState(title: "Loading history")
+                    AppLoadingState(title: "Loading past lessons")
                 } else if let error = vm.errorMessage {
                     AppBanner(text: error, style: .error)
                 } else if vm.lessons.isEmpty {
-                    AppEmptyState(title: "No history", systemImage: "clock.arrow.circlepath")
+                    AppEmptyState(title: "No past lessons", systemImage: "clock.arrow.circlepath")
                 } else {
                     ForEach(vm.groupedByMonth) { group in
                         VStack(alignment: .leading, spacing: 10) {
@@ -68,7 +67,7 @@ struct HistoryView: View {
                                     ForEach(group.lessons) { lesson in
                                         Button {
                                             if let onSelect {
-                                                onSelect(lesson.id)
+                                                onSelect(lesson)
                                                 dismiss()
                                             } else {
                                                 selectedLesson = lesson
@@ -141,12 +140,12 @@ struct HistoryRow: View {
                     if let teacher = lesson.teacherName { Text("· \(teacher)") }
                 }
                 .font(AppTheme.Typography.caption)
-                .foregroundStyle(Palette.navy.opacity(0.62))
+                .foregroundStyle(Palette.inkSecondary)
             }
         } trailing: {
             Image(systemName: selecting ? "plus.circle" : "chevron.right")
                 .font(AppTheme.Typography.captionBold)
-                .foregroundStyle(selecting ? Palette.ocean : Palette.navy.opacity(0.28))
+                .foregroundStyle(selecting ? Palette.ocean : Palette.inkSecondary)
         }
         .contentShape(Rectangle())
     }

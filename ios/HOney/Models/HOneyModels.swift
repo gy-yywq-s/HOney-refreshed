@@ -189,7 +189,7 @@ enum ExperienceProvenance: String, Codable, Sendable {
     var label: String {
         switch self {
         case .verifiedLesson: return "Verified lesson experience"
-        case .verifiedRetrospective: return "Verified retrospective"
+        case .verifiedRetrospective: return "Based on a past lesson"
         case .verifiedMember: return "Verified school member"
         }
     }

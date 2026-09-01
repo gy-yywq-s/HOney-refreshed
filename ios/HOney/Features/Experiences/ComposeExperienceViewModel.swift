@@ -69,7 +69,7 @@ enum ComposerStatus: Sendable, Equatable {
 @Observable
 final class ComposeExperienceViewModel {
     // Web-identical notice copy (useComposer.ts).
-    static let editRequiredCopy = "This needs a small rephrase before it can be public — say it more directly, as your own experience. Nothing was kept, so your review slot is still free."
+    static let editRequiredCopy = "This needs a small rephrase before it can be public — say it more directly, as your own experience. Nothing was kept, so you can still share here later."
     static let outOfScopeCopy = "This reads as something for the school to handle directly, not a public feed. You can keep it as a private note instead."
     static let blockedCopy = "This can't be published under the community rules. Nothing was stored — your draft is still here if you want to reshape it."
     static let failedClosedCopy = "The safety check couldn't run just now, and nothing publishes unchecked. Your draft is safe — please try again in a moment."

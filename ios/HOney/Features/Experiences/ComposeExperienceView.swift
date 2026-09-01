@@ -13,17 +13,14 @@
 import SwiftUI
 
 enum ComposeContext {
-    case standalone
     case lesson(Lesson)
     case entity(EntityRef)
     /// Re-opening a private note for a later publish (the web noteId flow).
     case note(PrivateNote)
 
-    /// The composer target, or nil when there is nothing to attach to yet.
+    /// Every reachable composer is attached to a concrete lesson or entity.
     var target: ComposerTarget? {
         switch self {
-        case .standalone:
-            return nil
         case .lesson(let lesson):
             let detail = [
                 lesson.startsAt.formatted(date: .abbreviated, time: .omitted),
@@ -69,7 +66,7 @@ struct ComposeExperienceView: View {
 
     @State private var viewModel: ComposeExperienceViewModel?
 
-    private static let rowBackground = Color.white.opacity(0.88)
+    private static let rowBackground = Palette.surface
 
     var body: some View {
         NavigationStack {
@@ -109,7 +106,8 @@ struct ComposeExperienceView: View {
         } else if viewModel.savedNote != nil {
             keptPrivateConfirmation
         } else if viewModel.target == nil {
-            noTargetGuidance
+            AppBanner(text: "This draft has no valid lesson or school item. Close it and choose the lesson again.", style: .error)
+                .padding(AppTheme.Spacing.pageHorizontal)
         } else {
             editor(viewModel)
         }
@@ -127,10 +125,10 @@ struct ComposeExperienceView: View {
                             .foregroundStyle(Palette.navy)
                         Text("Your experience is live. It is stored without an author ID — the publish request carried no account identity, so nothing links the post back to you.")
                             .font(AppTheme.Typography.subheadline)
-                            .foregroundStyle(Palette.navy.opacity(0.82))
-                        Text("Your only control over it is an ownership key just saved to this device. Keep it: it is how you revoke the post later.")
+                            .foregroundStyle(Palette.ink)
+                        Text("A post-control key was saved only on this iPhone. It is how you can find and revoke the anonymous post later.")
                             .font(AppTheme.Typography.caption)
-                            .foregroundStyle(Palette.navy.opacity(0.62))
+                            .foregroundStyle(Palette.inkSecondary)
                         Button {
                             dismiss()
                         } label: {
@@ -142,7 +140,7 @@ struct ComposeExperienceView: View {
                                 .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                         }
                         .buttonStyle(.plain)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Palette.accentForeground)
                     }
                 }
             }
@@ -160,9 +158,9 @@ struct ComposeExperienceView: View {
                         Text("Kept private")
                             .font(AppTheme.Typography.cardTitle)
                             .foregroundStyle(Palette.navy)
-                        Text("The note stays only on this device — it was never sent anywhere. You can edit, delete or publish it later from My submissions.")
+                        Text("The note stays only on this device — it was never sent anywhere. You can edit, delete or publish it later from My posts & notes.")
                             .font(AppTheme.Typography.subheadline)
-                            .foregroundStyle(Palette.navy.opacity(0.82))
+                            .foregroundStyle(Palette.ink)
                         Button {
                             dismiss()
                         } label: {
@@ -174,27 +172,7 @@ struct ComposeExperienceView: View {
                                 .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                         }
                         .buttonStyle(.plain)
-                        .foregroundStyle(.white)
-                    }
-                }
-            }
-            .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
-            .padding(.vertical, 18)
-        }
-        .background(Palette.background.ignoresSafeArea())
-    }
-
-    private var noTargetGuidance: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                AppCard {
-                    VStack(alignment: .leading, spacing: AppTheme.Spacing.medium) {
-                        Text("An experience is about one of your own lessons, or a teacher, place or dish.")
-                            .font(AppTheme.Typography.subheadline)
-                            .foregroundStyle(Palette.navy.opacity(0.82))
-                        Text("Pick a lesson from your Timetable or History, or open a teacher, place or dish from Experiences, and share from there.")
-                            .font(AppTheme.Typography.caption)
-                            .foregroundStyle(Palette.navy.opacity(0.62))
+                        .foregroundStyle(Palette.accentForeground)
                     }
                 }
             }
@@ -222,7 +200,7 @@ struct ComposeExperienceView: View {
                         if let detail = target.detail, !detail.isEmpty {
                             Text(detail)
                                 .font(AppTheme.Typography.caption)
-                                .foregroundStyle(Palette.navy.opacity(0.62))
+                                .foregroundStyle(Palette.inkSecondary)
                         }
                     }
                 }
@@ -289,7 +267,7 @@ struct ComposeExperienceView: View {
                             .foregroundStyle(Palette.ocean)
                         Text(check.prompt)
                             .font(AppTheme.Typography.caption)
-                            .foregroundStyle(Palette.navy.opacity(0.62))
+                            .foregroundStyle(Palette.inkSecondary)
                     }
                 }
             }
@@ -298,7 +276,7 @@ struct ComposeExperienceView: View {
             Section {
                 Text("Publishing runs a safety check first. Published posts carry no author ID; your only control is a key kept on this device. Private notes never leave this device.")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(Palette.navy.opacity(0.62))
+                    .foregroundStyle(Palette.inkSecondary)
             }
             .listRowBackground(Self.rowBackground)
         }
@@ -313,7 +291,7 @@ struct ComposeExperienceView: View {
             ForEach(notice.reasons, id: \.self) { reason in
                 Text("• \(reason)")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(Palette.navy.opacity(0.62))
+                    .foregroundStyle(Palette.inkSecondary)
             }
             if notice.suggestKeepPrivate {
                 Button("Keep as a private note") {
@@ -330,11 +308,11 @@ struct ComposeExperienceView: View {
         Section("Before you publish") {
             Text("This can go public as it is. A little more context often helps another student more than a verdict — but that is your call.")
                 .font(AppTheme.Typography.subheadline)
-                .foregroundStyle(Palette.navy.opacity(0.82))
+                .foregroundStyle(Palette.ink)
             ForEach(reasons, id: \.self) { reason in
                 Text("• \(reason)")
                     .font(AppTheme.Typography.caption)
-                    .foregroundStyle(Palette.navy.opacity(0.62))
+                    .foregroundStyle(Palette.inkSecondary)
             }
             Button("Publish as is") {
                 Task { await viewModel.publishAsIs() }
@@ -354,7 +332,7 @@ struct ComposeExperienceView: View {
         Section("Cooling off") {
             Text("The wording reads as very heated. Nothing was stored, and your draft is safe. You can publish the same words after a short cooling-off window — a pause, not a rejection.")
                 .font(AppTheme.Typography.subheadline)
-                .foregroundStyle(Palette.navy.opacity(0.82))
+                .foregroundStyle(Palette.ink)
             TimelineView(.periodic(from: .now, by: 30)) { timeline in
                 let remainingMs = retryAt - Int(timeline.date.timeIntervalSince1970 * 1000)
                 let ready = remainingMs <= 0
