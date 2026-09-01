@@ -36,7 +36,11 @@ export function LoginPage() {
                 mode="login"
                 onSuccess={async () => {
                   await refreshMe();
-                  setPhase("consent");
+                  // Import consent is asked once, as an active choice; a returning
+                  // account that already granted it goes straight in (iOS parity).
+                  const me = await api.me();
+                  if (me.consent.timetable) navigate("/home", { replace: true });
+                  else setPhase("consent");
                 }}
               />
             </div>
