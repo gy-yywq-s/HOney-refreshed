@@ -767,6 +767,13 @@
       min-height: 540px;
     }
   }
+  @media (max-height: 620px) and (max-width: 360px) {
+    /* The smallest legacy phones (SE-class): one more notch so a
+       09:00–18:00 day's last lesson clears the fixed nav on landing. */
+    .timeline {
+      min-height: 450px;
+    }
+  }
   .timeline__hours {
     width: 44px;
   }
