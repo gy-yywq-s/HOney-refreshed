@@ -34,13 +34,19 @@ export function LoginPage() {
             <div className="login__fields">
               <SchoolLoginForm
                 mode="login"
-                onSuccess={async () => {
-                  await refreshMe();
-                  // Import consent is asked once, as an active choice; a returning
-                  // account that already granted it goes straight in (iOS parity).
-                  const me = await api.me();
-                  if (me.consent.timetable) navigate("/home", { replace: true });
-                  else setPhase("consent");
+                onSuccess={(result) => {
+                  // Decide the destination SYNCHRONOUSLY from the login response.
+                  // Any await before setPhase re-renders with a live session while
+                  // phase is still "signin", and the guard above redirects past
+                  // the consent step (review 2026-09-01, finding 3). Consent is
+                  // asked once, as an active choice; a returning account that
+                  // already granted it goes straight in (iOS parity).
+                  if (result.consent.timetable) {
+                    navigate("/home", { replace: true });
+                  } else {
+                    setPhase("consent");
+                  }
+                  void refreshMe();
                 }}
               />
             </div>

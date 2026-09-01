@@ -133,7 +133,7 @@ export function TimetablePage() {
 
 // ---------------------------------------------------------------------------
 // The Day timeline — a faithful port of the legacy DayTimelineView: a
-// 09:00-20:00 canvas with a 38px sky exam strip, pastel period bands
+// 09:00-20:00 canvas, pastel period bands
 // (green Lunch/Dinner breaks with a leaf glyph), "P3 · Free" ghost labels,
 // hour gridlines and the red now-line. Lessons are positioned by wall time.
 // ---------------------------------------------------------------------------
@@ -179,14 +179,14 @@ function dayFraction(minute: number): number {
   return (clampMinute(minute) - DAY_START) / (DAY_END - DAY_START);
 }
 
-/** y for a minute, inside a canvas whose first 38px are the exam strip. */
+/** y for a minute on the canvas. */
 function topFor(minute: number, extraPx = 0): string {
-  return `calc(38px + (100% - 38px) * ${dayFraction(minute).toFixed(4)} + ${extraPx}px)`;
+  return `calc(100% * ${dayFraction(minute).toFixed(4)} + ${extraPx}px)`;
 }
 
 function heightBetween(startMinute: number, endMinute: number): string {
   const f = Math.max(0, dayFraction(endMinute) - dayFraction(startMinute));
-  return `calc((100% - 38px) * ${f.toFixed(4)})`;
+  return `calc(100% * ${f.toFixed(4)})`;
 }
 
 function overlapsSlot(slot: TimelineBand, start: number, end: number): boolean {
@@ -240,13 +240,9 @@ function DayTimeline({
       </div>
 
       <div className="timeline__canvas">
-        {/* The sky exam strip. The web service has no exam feed yet, so the
-            strip renders its calm empty state, as the legacy view does. */}
-        <div className="timeline__examstrip timeline__examstrip--empty">
-          <ExamGlyph />
-          <span>No exams today</span>
-        </div>
-
+        {/* No exam strip: HOney has no exams feature, and the app must not
+            assert "no exams" it cannot know (review 2026-09-01, finding 7).
+            Matches iOS, where the strip is a deliberate correct absence. */}
         {BANDS.map((band) => (
           <div
             key={band.id}
@@ -317,16 +313,6 @@ function DayTimeline({
         {showNow && <div className="timeline__now" style={{ top: topFor(nowMinute, -4) }} />}
       </div>
     </div>
-  );
-}
-
-function ExamGlyph() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-      <path d="M4 1.75h6l2.5 2.5v10H4z" strokeLinejoin="round" />
-      <circle cx="7.6" cy="8.4" r="2.1" />
-      <path d="m9.2 10 2 2" strokeLinecap="round" />
-    </svg>
   );
 }
 

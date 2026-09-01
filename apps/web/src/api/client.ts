@@ -310,6 +310,9 @@ export class ApiClient {
       res = await this.fetchFn(path, {
         method,
         headers,
+        // Unauthenticated calls (the identity-free publish) must never ride on
+        // ambient credentials: even a future backend cookie may not link them.
+        ...(auth ? {} : { credentials: "omit" as const }),
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       });
     } catch {
