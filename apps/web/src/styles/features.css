@@ -1268,3 +1268,14 @@
     margin-top: var(--sp-2);
   }
 }
+
+/* Explore inline history mark: never wraps, never competes with the name. */
+.entity-row .caption {
+  flex: none;
+  white-space: nowrap;
+  font-weight: 400;
+}
+/* Anchored sections land with breathing room under the shell padding. */
+.section-title[id] {
+  scroll-margin-top: var(--sp-4);
+}
