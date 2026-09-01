@@ -1,11 +1,18 @@
 import type { FastifyInstance } from "fastify";
 import type { AppContext } from "../context.js";
+import type {
+  SyncResponse,
+  TimetableResponse,
+  NextLessonResponse,
+  HistoryResponse,
+  DirectoryResponse,
+} from "@honey/shared/api";
 
 // Data surface (spec §14.3): UI-agnostic domain queries. Screens compose these;
 // none of them encodes a screen.
 
 export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void {
-  app.post("/api/sync", { preHandler: ctx.requireAuth }, async (req) => {
+  app.post("/api/sync", { preHandler: ctx.requireAuth }, async (req): Promise<SyncResponse> => {
     const user = ctx.userOf(req);
     const result = await ctx.importer.syncTimetable(user.honey_id);
     return result;
@@ -14,7 +21,7 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
   app.get<{ Querystring: { date?: string } }>(
     "/api/timetable",
     { preHandler: ctx.requireAuth },
-    async (req, reply) => {
+    async (req, reply): Promise<TimetableResponse> => {
       const user = ctx.userOf(req);
       const dateStr = req.query.date;
       const base = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
@@ -32,7 +39,7 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
     },
   );
 
-  app.get("/api/next-lesson", { preHandler: ctx.requireAuth }, async (req) => {
+  app.get("/api/next-lesson", { preHandler: ctx.requireAuth }, async (req): Promise<NextLessonResponse> => {
     const user = ctx.userOf(req);
     const connection = ctx.accounts.getConnection(user.honey_id);
     return {
@@ -43,7 +50,7 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
 
   app.get<{
     Querystring: { q?: string; teacherId?: string; courseId?: string; before?: string; limit?: string; order?: string };
-  }>("/api/history", { preHandler: ctx.requireAuth }, async (req) => {
+  }>("/api/history", { preHandler: ctx.requireAuth }, async (req): Promise<HistoryResponse> => {
     const user = ctx.userOf(req);
     const { q, teacherId, courseId, before, limit, order } = req.query;
     const opts: Parameters<typeof ctx.timetable.history>[1] = {};
@@ -56,7 +63,7 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
     return { lessons: ctx.timetable.history(user.honey_id, opts) };
   });
 
-  app.get("/api/directory", { preHandler: ctx.requireAuth }, async (req) => {
+  app.get("/api/directory", { preHandler: ctx.requireAuth }, async (req): Promise<DirectoryResponse> => {
     const user = ctx.userOf(req);
     return ctx.timetable.directory(user.honey_id);
   });

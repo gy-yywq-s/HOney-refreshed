@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { isPortalError } from "@honey/portal-connector";
+import type { Me, LoginResponse } from "@honey/shared/api";
 import type { AppContext } from "../context.js";
 
 // Auth surface (spec §3): school login IS signup. The password transits this
@@ -77,14 +78,22 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
     return reply.send({ ok: true });
   });
 
-  app.get("/api/me", { preHandler: ctx.requireAuth }, async (req) => {
+  app.get("/api/me", { preHandler: ctx.requireAuth }, async (req): Promise<Me> => {
     const user = ctx.userOf(req);
+    const consent = ctx.accounts.getConsent(user.honey_id);
+    const connection = ctx.accounts.getConnection(user.honey_id);
+    // Emit the wire shape explicitly (ISO strings) rather than relying on
+    // Fastify's implicit Date serialization — the contract types the wire.
     return {
       honeyId: user.honey_id,
       displayName: user.display_name,
       isAdmin: ctx.accounts.isAdmin(user.honey_id),
-      consent: ctx.accounts.getConsent(user.honey_id),
-      connection: ctx.accounts.getConnection(user.honey_id),
+      consent: { timetable: consent.timetable, grantedAt: consent.grantedAt?.toISOString() ?? null },
+      connection: {
+        connected: connection.connected,
+        lastSyncedAt: connection.lastSyncedAt?.toISOString() ?? null,
+        portalTokenValid: connection.portalTokenValid,
+      },
     };
   });
 

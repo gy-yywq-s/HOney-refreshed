@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      "@honey/shared/api": fileURLToPath(new URL("../../packages/shared/src/api/contract.ts", import.meta.url)),
       "@honey/shared": fileURLToPath(new URL("../../packages/shared/src/index.ts", import.meta.url)),
     },
   },

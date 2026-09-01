@@ -19,6 +19,9 @@
       ],
       "@honey/shared/*": [
         "../../packages/shared/src/*"
+      ],
+      "@honey/shared/api": [
+        "../../packages/shared/src/api/contract.ts"
       ]
     }
   },

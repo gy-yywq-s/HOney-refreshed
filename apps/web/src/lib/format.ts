@@ -23,7 +23,7 @@ export function shiftIsoDate(iso: string, days: number): string {
   return toIsoDate(d);
 }
 
-export function formatTime(timestamp: string): string {
+export function formatTime(timestamp: number | string): string {
   return new Date(timestamp).toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
@@ -40,7 +40,7 @@ export function formatDayHeading(iso: string): string {
   });
 }
 
-export function formatShortDate(timestamp: string): string {
+export function formatShortDate(timestamp: number | string): string {
   return new Date(timestamp).toLocaleDateString(undefined, {
     weekday: "short",
     day: "numeric",
@@ -48,7 +48,7 @@ export function formatShortDate(timestamp: string): string {
   });
 }
 
-export function monthLabel(timestamp: string): string {
+export function monthLabel(timestamp: number | string): string {
   return new Date(timestamp).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 

@@ -79,6 +79,58 @@ Per-stage documentation lives in [`docs/architecture/`](docs/architecture/):
 | — | [`regressions-2026-09-01.md`](docs/regressions-2026-09-01.md) | Live-portal fixes: timetable import, empty-body sync, admin binding |
 | — | [`legacy-design-audit.md`](docs/legacy-design-audit.md) · [`access-legacy-parity-map.md`](docs/access-legacy-parity-map.md) · [`ugc-appstore-review.md`](docs/ugc-appstore-review.md) | Legacy audit, Access parity, UGC review |
 
+## Frontend ↔ backend isolation
+
+The **only** thing connecting the clients (web, iOS) and the backend is the **HTTP JSON API**
+at `/api/*`. No client imports backend code; no backend code imports UI. Either side can be
+rebuilt independently as long as the JSON contract holds — the spec's four-band change-isolation
+guarantee (§20.30–33). Verified: `apps/web/src` has zero imports of `@honey/backend`, and the
+backend has no view code.
+
+The API contract is a **single source of truth** — `packages/shared/src/api/contract.ts`
+(published as `@honey/shared/api`):
+
+- The **backend** annotates its route responses with these DTOs (e.g. `/api/timetable` →
+  `Promise<TimetableResponse>`), so a response that drifts from the contract **fails to compile**.
+- The **web** client imports the same DTOs (`apps/web/src/api/types.ts` re-exports
+  `@honey/shared/api`), so UI and server can't disagree about a shape at build time.
+- **iOS** can't import TypeScript, so `ios/HOney/Models/` is a hand-maintained mirror with the
+  shared contract as its reference.
+
+```mermaid
+flowchart LR
+  subgraph Clients [Clients — Bands 1–2]
+    WEBUI[web pages / components] --> WEBAPI[web api client]
+    IOSUI[iOS SwiftUI views] --> IOSVM[iOS view models + services]
+  end
+  CONTRACT["@honey/shared/api — the contract (single source)"]
+  WEBAPI -->|HTTP JSON| BE[Honey backend]
+  IOSVM -->|HTTP JSON| BE
+  WEBAPI -.types.-> CONTRACT
+  BE -.types enforced.-> CONTRACT
+```
+
+Within each client, UI (Band 1) is kept separate from application logic (Band 2): web `pages/` +
+`components/` vs `api/` + `lib/` + `auth/`; iOS `Features/*View` (SwiftUI) vs `Features/*ViewModel`
++ `Services/` (no SwiftUI imports). Only the api client / view-model layer talks to the backend.
+
+### Refactoring or rebuilding the UI
+
+Because the boundary is the HTTP contract, a UI redesign is self-contained:
+
+1. **Web** — change anything under `apps/web/src/pages` and `components`, or swap the whole app for
+   a different framework. Keep calling the same `api/client.ts` methods and the backend is
+   untouched. `pnpm --filter @honey/web build` is the only thing that reruns.
+2. **iOS** — restyle any `Features/*View`; the view models, `Services/`, and the backend stay put
+   (Access networking already lives in `PortalSessionCoordinator`/`PortalAPI`, not the views).
+3. **If the API itself must change** — edit `packages/shared/src/api/contract.ts` *first*. The
+   backend won't compile until its routes produce the new shape, and the web won't compile until it
+   consumes the new shape — that compiler pressure guarantees the change lands consistently on both
+   sides (and flags that the iOS Swift mirror needs the same edit).
+
+This is the spec's §20.32 acceptance test in practice: you can redesign a screen without touching a
+backend rule, and change a backend implementation while preserving the contract.
+
 ## Repository layout
 
 ```

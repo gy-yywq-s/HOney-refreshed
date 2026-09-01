@@ -8,6 +8,7 @@ import { decide, POLICY_VERSION, type PolicyDecision } from "./policy.js";
 import { contentHashOf, contextHashOf, issuePass, markHash, verifyPass } from "./pass.js";
 import type { EntityRegistry } from "./entities.js";
 import type { SettingsService } from "./settings.js";
+import type { PublicExperience } from "@honey/shared/api";
 
 // The Experiences core (App A). Structural guarantees enforced here:
 //   - the experiences table has NO author column; ownership is provable only
@@ -54,21 +55,6 @@ export interface ExperienceRow {
 export type LlmRunner = (text: string) => Promise<LlmVerdict>;
 
 /** What the public feed exposes: no author, no raw lesson id, coarse day bucket only. */
-export interface PublicExperience {
-  id: string;
-  entity_key: string;
-  ctx_teacher_id: string | null;
-  ctx_course_id: string | null;
-  ctx_room_id: string | null;
-  body: string | null;
-  rating: number | null;
-  provenance: string;
-  status: string;
-  status_detail: string | null;
-  policy_version: number;
-  publishedDay: number | null;
-  reactions: { likes: number; dislikes: number } | null;
-}
 
 export class ExperienceService {
   /** Injectable for tests; default uses SettingsService config. */
