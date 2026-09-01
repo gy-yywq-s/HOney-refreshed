@@ -379,7 +379,7 @@ describe("reactions, kill switches, admin gate", () => {
     const nonAdminApp = buildApp({
       portalBaseUrl: app.ctx.config.portalBaseUrl,
       dbPath: join(tmp, "test2.db"),
-      config: { adminStudentId: "0088" }, // mock student is 88 → NOT admin
+      config: { adminStudentId: "9999" }, // mock student 88 ≠ 9999 → NOT admin
     });
     const login = await nonAdminApp.inject({
       method: "POST", url: "/api/auth/login",

@@ -170,6 +170,9 @@ const MIGRATIONS: string[] = [
     suspended_until INTEGER
   ) STRICT;
   `,
+  // 005 — admin is bound to the honeyId at provisioning time (Gary's rule): a
+  // stored flag, not a per-request re-derivation from the school id.
+  `ALTER TABLE honey_users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0;`,
 ];
 
 export function openDatabase(path: string): DatabaseSyncType {

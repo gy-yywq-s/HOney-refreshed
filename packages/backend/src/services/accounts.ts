@@ -13,6 +13,7 @@ export interface HoneyUserRow {
   display_name: string;
   student_type: number;
   created_at: number;
+  is_admin: number;
 }
 
 export interface IssuedSession {
@@ -40,8 +41,15 @@ export class AccountService {
    * sight (random honeyId), reconnects otherwise; always stores the fresh
    * portal token (sealed) and issues a Honey session.
    */
+  /** Leading-zero-tolerant admin match (portal id 88 vs configured "0088"). */
+  private computeIsAdmin(studentId: string): boolean {
+    const norm = (x: string) => (/^\d+$/.test(x.trim()) ? String(Number(x)) : x.trim());
+    return norm(studentId) === norm(this.config.adminStudentId);
+  }
+
   provisionFromPortal(identity: PortalIdentity, portalSession: AuthSession): ProvisionResult {
     const key = identity.schoolAccountIdentifier;
+    const admin = this.computeIsAdmin(identity.studentId) ? 1 : 0;
     let user = this.db
       .prepare("SELECT * FROM honey_users WHERE school_account_key = ?")
       .get(key) as unknown as HoneyUserRow | undefined;
@@ -51,9 +59,9 @@ export class AccountService {
       const honeyId = this.uniqueHoneyId();
       this.db
         .prepare(
-          "INSERT INTO honey_users (honey_id, school_account_key, display_name, student_type, created_at) VALUES (?, ?, ?, ?, ?)",
+          "INSERT INTO honey_users (honey_id, school_account_key, display_name, student_type, created_at, is_admin) VALUES (?, ?, ?, ?, ?, ?)",
         )
-        .run(honeyId, key, identity.name, identity.type, this.now());
+        .run(honeyId, key, identity.name, identity.type, this.now(), admin);
       this.db
         .prepare("INSERT INTO import_consents (honey_id, timetable) VALUES (?, 0)")
         .run(honeyId);
@@ -61,11 +69,17 @@ export class AccountService {
         .prepare("SELECT * FROM honey_users WHERE honey_id = ?")
         .get(honeyId) as unknown as HoneyUserRow;
       created = true;
-    } else if (user.display_name !== identity.name && identity.name) {
-      this.db
-        .prepare("UPDATE honey_users SET display_name = ? WHERE honey_id = ?")
-        .run(identity.name, user.honey_id);
-      user.display_name = identity.name;
+    } else {
+      if (user.display_name !== identity.name && identity.name) {
+        this.db
+          .prepare("UPDATE honey_users SET display_name = ? WHERE honey_id = ?")
+          .run(identity.name, user.honey_id);
+        user.display_name = identity.name;
+      }
+      if (user.is_admin !== admin) {
+        this.db.prepare("UPDATE honey_users SET is_admin = ? WHERE honey_id = ?").run(admin, user.honey_id);
+        user.is_admin = admin;
+      }
     }
 
     this.storePortalToken(user.honey_id, identity.studentId, portalSession);
@@ -223,11 +237,12 @@ export class AccountService {
     this.db.prepare("DELETE FROM user_lesson_exposures WHERE honey_id = ?").run(honeyId);
   }
 
+  /** Reads the flag bound at provisioning — no per-request permission re-derivation. */
   isAdmin(honeyId: string): boolean {
     const row = this.db
-      .prepare("SELECT student_id FROM school_connections WHERE honey_id = ?")
-      .get(honeyId) as unknown as { student_id: string } | undefined;
-    return row?.student_id === this.config.adminStudentId;
+      .prepare("SELECT is_admin FROM honey_users WHERE honey_id = ?")
+      .get(honeyId) as unknown as { is_admin: number } | undefined;
+    return row?.is_admin === 1;
   }
 
   private uniqueHoneyId(): string {

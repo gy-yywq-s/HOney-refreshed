@@ -110,10 +110,10 @@ describe("auth: school login is signup", () => {
     expect(meAfter.statusCode).toBe(401);
   });
 
-  it("admin flag derives from the configured studentId", async () => {
-    // Mock portal's student id is 88 ≠ "0088" → not admin.
+  it("admin is bound at provisioning; '0088' config matches the portal id 88", async () => {
+    // Default adminStudentId "0088"; mock portal id is 88 (leading-zero tolerant).
     const result = await login();
-    expect(result.isAdmin).toBe(false);
+    expect(result.isAdmin).toBe(true);
   });
 
   it("portal token stored sealed — raw token never appears in the database", async () => {
