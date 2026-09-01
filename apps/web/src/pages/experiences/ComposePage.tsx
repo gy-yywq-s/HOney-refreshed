@@ -17,21 +17,11 @@ import { StarInput, describeCheckReasons } from "./shared";
 import { useComposer } from "./useComposer";
 import type { ComposerTarget } from "./useComposer";
 
-// Six-Checks-derived contextual hints (spec §4: "contextually in composer
-// prompts ... rather than a mandatory six-checkbox ritual").
-const PLACEHOLDER_HINTS = [
-  "Your own experience, as you experienced it",
-  "What was it like for you? You don't have to turn it into advice",
-  "A specific moment helps another student more than a verdict",
-];
-const FOOTER_HINTS = [
-  "Was it like this every time, or that one lesson?",
-  "Feelings can be stated as feelings — “I felt lost” is real testimony.",
-  "Strong criticism is fine. Keep people human.",
-  "If it reveals something that isn't yours to publish, leave it out.",
-  "If it would need investigation or discipline, it belongs with the school, not a feed.",
-  "More context, fewer verdicts.",
-];
+// ONE stable prompt (review v3 §10.4): the composer is a quiet place to put
+// an experience into words, not a rotating morality display. Boundaries
+// appear only when a specific gate asks for something.
+const COMPOSE_PROMPT = "What do you want to share about this experience?";
+const COMPOSE_HELPER = "Specific context can help, but it is okay if what you have is only a feeling.";
 
 export function ExperiencesComposePage() {
   const [searchParams] = useSearchParams();
@@ -44,14 +34,6 @@ export function ExperiencesComposePage() {
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-
-  const hints = useMemo(
-    () => ({
-      placeholder: PLACEHOLDER_HINTS[Math.floor(Math.random() * PLACEHOLDER_HINTS.length)]!,
-      footer: FOOTER_HINTS[Math.floor(Math.random() * FOOTER_HINTS.length)]!,
-    }),
-    [],
-  );
 
   useEffect(() => {
     if (!noteId) return;
@@ -147,19 +129,20 @@ export function ExperiencesComposePage() {
   if (status.kind === "published") {
     return (
       <div className="stack">
-        <h1 className="page-title">Published</h1>
+        <h1 className="page-title">Shared.</h1>
         <section className="card card--hero">
           <p>
-            Your experience is live. It is stored without an author ID — the publish request carried
-            no account identity, so nothing links the post back to you.
+            Your school identity is not shown with this Experience — it is stored without an author
+            field, and the publish request carried no ordinary account identity.
           </p>
           <p className="text-3">
-            Your only control over it is an ownership key just saved to this browser. Keep it: it is
-            how you revoke the post later.
+            This browser keeps a private control key so you can manage or revoke the post later.
+            Keep it: what you wrote may still make you recognisable to people who know the
+            situation.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/mine">
-              My contributions
+              Your notes &amp; posts
             </Link>
             <Link className="btn btn--ghost" to="/experiences">
               Back to Experiences
@@ -177,7 +160,7 @@ export function ExperiencesComposePage() {
         <section className="card card--hero">
           <p>
             The note stays only on this device — it was never sent anywhere. You can edit, delete or
-            publish it later from My contributions.
+            publish it later from Your notes &amp; posts.
           </p>
           <p className="text-3">
             It is scrambled at rest so a casual look at browser storage won't read it, but the key
@@ -185,7 +168,7 @@ export function ExperiencesComposePage() {
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/mine">
-              My contributions
+              Your notes &amp; posts
             </Link>
             <Link className="btn btn--ghost" to="/experiences">
               Back to Experiences
@@ -230,19 +213,19 @@ export function ExperiencesComposePage() {
         <section className="stack">
           <div className="field">
             <label className="field__label" htmlFor="compose-body">
-              Your experience
+              {COMPOSE_PROMPT}
             </label>
             <textarea
               id="compose-body"
               className="input compose-textarea"
               rows={7}
               maxLength={5000}
-              placeholder={hints.placeholder}
+              placeholder="Your own experience, in your own words"
               value={body}
               onChange={(e) => setBody(e.target.value)}
               disabled={status.kind === "nudge"}
             />
-            <span className="text-4 compose-hint">{hints.footer}</span>
+            <span className="text-4 compose-hint">{COMPOSE_HELPER}</span>
           </div>
 
           {target.isDish && (
@@ -300,7 +283,7 @@ export function ExperiencesComposePage() {
                 disabled={!canAct}
                 onClick={() => void composer.publish()}
               >
-                {busy ? "Checking…" : "Publish"}
+                {busy ? "Checking…" : "Share anonymously"}
               </button>
               <button
                 className="btn btn--ghost"
@@ -343,10 +326,10 @@ function NudgePreflight({
 }) {
   return (
     <section className="card nudge" aria-label="Before you publish">
-      <span className="eyebrow">Before you publish</span>
+      <span className="eyebrow">Before you share</span>
       <p style={{ marginTop: 0 }}>
-        This can go public as it is. A little more context often helps another student more than a
-        verdict — but that is your call.
+        Would you like to add what led you to feel this way? A little context can help others
+        understand. You can still share it as written.
       </p>
       {describeCheckReasons(reasons).length > 0 && (
         <ul className="compose-reasons">
@@ -357,7 +340,7 @@ function NudgePreflight({
       )}
       <div className="card-actions compose-actions">
         <button className="btn btn--primary" disabled={busy} onClick={onPublish}>
-          {busy ? "Publishing…" : "Publish as is"}
+          {busy ? "Sharing…" : "Share as written"}
         </button>
         <button className="btn btn--ghost" disabled={busy} onClick={onAddContext}>
           Add context
@@ -390,10 +373,10 @@ function CooldownPanel({
   const ready = remaining <= 0;
   return (
     <section className="card nudge" aria-label="Cooling off">
-      <span className="eyebrow">Cooling off</span>
+      <span className="eyebrow">Publishing can wait</span>
       <p style={{ marginTop: 0 }}>
-        The wording reads as very heated. Nothing was stored, and your draft is safe. You can publish
-        the same words after a short cooling-off window — a pause, not a rejection.
+        This can still be your experience. Nothing was stored and your draft is safe — after the
+        cooling period you can decide again, with the same words if you still mean them.
       </p>
       <div className="card-actions compose-actions">
         <button className="btn btn--primary" disabled={!ready} onClick={onRecheck}>

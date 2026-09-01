@@ -85,7 +85,7 @@ export const SUBMIT_ERROR_COPY: Record<string, string> = {
   rating_not_allowed:
     "Stars are for dishes only, never for people, lessons or rooms. Remove the rating to continue.",
   already_reviewed:
-    "You've already shared an experience for this. You can revoke it in My contributions if you want to write a new one.",
+    "You've already shared an experience for this. You can revoke it in Your notes & posts if you want to write a new one.",
 };
 
 export function describeSubmitError(err: unknown): string {

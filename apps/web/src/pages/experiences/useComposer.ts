@@ -41,8 +41,8 @@ export type ComposerStatus =
   | { kind: "cooldown"; retryAt: number; reasons: string[] }
   | { kind: "published"; ownershipKey: string; experienceId: string };
 
-const EDIT_REQUIRED = "This needs a small rephrase before it can be public — say it more directly, as your own experience. Nothing was kept, so your review slot is still free.";
-const OUT_OF_SCOPE = "This reads as something for the school to handle directly, not a public feed. You can keep it as a private note instead.";
+const EDIT_REQUIRED = "This version needs a change before it can be shared. Nothing was kept — your draft is still here.";
+const OUT_OF_SCOPE = "This sounds more serious than something HOney Experiences is designed to publish. HOney will not post it or send it to the school. You can keep it privately instead.";
 const BLOCKED = "This can't be published under the community rules. Nothing was stored — your draft is still here if you want to reshape it.";
 const FAILED_CLOSED = "The safety check couldn't run just now, and nothing publishes unchecked. Your draft is safe — please try again in a moment.";
 
