@@ -8,10 +8,10 @@ that builds every surface — including iOS on macOS runners — from day one.
 ```mermaid
 flowchart TB
   subgraph workspace [pnpm workspace]
-    SHARED["@honey/shared\ndomain types + portal wire contract"]
-    CONN["@honey/portal-connector\nBand 4 implementation"]
-    BE["@honey/backend\nBands 3–4 host (Fastify)"]
-    WEB["@honey/web\nBands 1–2 (Vite + React)"]
+    SHARED["@honey/shared<br/>domain types + portal wire contract"]
+    CONN["@honey/portal-connector<br/>Band 4 implementation"]
+    BE["@honey/backend<br/>Bands 3–4 host (Fastify)"]
+    WEB["@honey/web<br/>Bands 1–2 (Vite + React)"]
   end
   CONN --> SHARED
   BE --> SHARED

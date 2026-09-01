@@ -41,7 +41,7 @@ flowchart LR
   Browser -->|"/ , /timetable, …"| BE[honey-backend]
   Browser -->|"/api/*"| BE
   BE -->|static + SPA fallback| WEB[apps/web/dist]
-  BE --> DB[("SQLite\n$HOSTD_DATA_DIR")]
+  BE --> DB[("SQLite<br/>$HOSTD_DATA_DIR")]
 ```
 
 The backend serves the built web app (`@fastify/static`) with an `index.html` fallback for

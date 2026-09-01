@@ -18,12 +18,12 @@ architecture*, moderated *without humans in the loop*, and fast enough to feel i
 
 ```mermaid
 flowchart LR
-  U[Student] -- authenticated --> E[Eligibility issuer\nsingle-use token, stored as hash\nNO user column]
-  U -- authenticated draft --> M[Moderation check\npersists NOTHING]
-  M -- "signed pass\n(content-hash bound)" --> U
+  U[Student] -- authenticated --> E[Eligibility issuer<br/>single-use token, stored as hash<br/>NO user column]
+  U -- authenticated draft --> M[Moderation check<br/>persists NOTHING]
+  M -- "signed pass<br/>(content-hash bound)" --> U
   U -- "token + pass, NO session" --> P[Publish endpoint]
   P -- "ownership key (client-held)" --> U
-  P --> DB[(experiences table\nNO author column)]
+  P --> DB[(experiences table<br/>NO author column)]
 ```
 
 - The `experiences` table has **no author column** — verified by a test against `PRAGMA table_info`.

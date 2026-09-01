@@ -37,9 +37,9 @@ sequenceDiagram
         C->>LLM: strict-schema extraction (10 booleans, temp 0, ≤300 tok)
         LLM-->>C: features | malformed | outage
         C->>C: deterministic policy engine decide()
-        C-->>U: lane publish|nudge (+ content-bound pass) · cooldown (+ ticket)\n· edit_required · blocked_serious · out_of_scope · failed_closed
+        C-->>U: lane publish|nudge (+ content-bound pass) · cooldown (+ ticket)<br/>· edit_required · blocked_serious · out_of_scope · failed_closed
     end
-    Note over U: the draft only ever lives on the client;\nnudge = a real choice (add context / publish as-is / keep private)
+    Note over U: the draft only ever lives on the client;<br/>nudge = a real choice (add context / publish as-is / keep private)
 
     U->>P: POST /api/experiences/publish {eligibilityToken, pass, body, rating?}
     P->>P: verify pass sig+expiry+nonce+content hash · token single-use · scope match
@@ -133,7 +133,7 @@ flowchart TD
     F1[slur_or_dehumanizing] --> BS
     F2[serious_allegation · targets_student · privacy_invasion] --> BO
     F3[hearsay · targeted_profanity · injection_attempt] --> RQ
-    F4[uncertain] --> RQ2[rephrase_required\n'say it more directly']
+    F4[uncertain] --> RQ2[rephrase_required<br/>'say it more directly']
     F5[high_arousal] --> CD[cooldown_24h]
     F6[none of the above] --> P[publish]
 ```

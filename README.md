@@ -31,15 +31,15 @@ backend rewrite, and domain rules never live in view components.
 ```mermaid
 flowchart LR
   subgraph Clients
-    IOS[iOS app\nSwiftUI]
-    WEB[Web app\nTypeScript + React]
+    IOS[iOS app<br/>SwiftUI]
+    WEB[Web app<br/>TypeScript + React]
   end
   subgraph HOney["HOney Core (TypeScript/Node)"]
-    API[HOney Domain APIs\naccounts · sessions · data]
-    EXP[Experiences services\neligibility · moderation · community]
-    CONN[School Portal Connector\nBand 4]
+    API[HOney Domain APIs<br/>accounts · sessions · data]
+    EXP[Experiences services<br/>eligibility · moderation · community]
+    CONN[School Portal Connector<br/>Band 4]
   end
-  PORTAL[(School portal\nexternal identity & data source)]
+  PORTAL[(School portal<br/>external identity & data source)]
 
   IOS --> API
   WEB --> API
@@ -47,7 +47,7 @@ flowchart LR
   WEB --> EXP
   API --> CONN
   CONN --> PORTAL
-  IOS -. "Access operations\n(direct, never relayed)" .-> PORTAL
+  IOS -. "Access operations<br/>(direct, never relayed)" .-> PORTAL
 ```
 
 Key properties:
