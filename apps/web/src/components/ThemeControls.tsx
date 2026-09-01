@@ -47,8 +47,8 @@ export function ThemeControls() {
         </div>
       </section>
       <section className="theme-dialog__section">
-        <h3>Interface type</h3>
-        <div className="segmented" role="group" aria-label="Interface type">
+        <h3>Font</h3>
+        <div className="segmented" role="group" aria-label="Font">
           {UI_FONT_OPTIONS.map((option) => (
             <button
               key={option.value}

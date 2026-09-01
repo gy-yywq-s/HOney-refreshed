@@ -64,7 +64,7 @@ export function HomePage() {
         {loading ? (
           <p className="muted">Loading…</p>
         ) : error ? (
-          <div className="banner banner--danger">{error}</div>
+          <div role="alert" className="banner banner--danger">{error}</div>
         ) : next ? (
           <>
             <span className="nextlesson__state">
@@ -173,14 +173,18 @@ export function HomePage() {
             ))}
           </ul>
         )}
-        <div className="card-actions">
-          <Link className="btn btn--primary" to="/experiences/compose">
-            Share an experience
-          </Link>
-          <Link className="btn btn--ghost" to="/experiences">
-            Browse Experiences
-          </Link>
-        </div>
+        {/* No Share/Browse pair here — action card 01 and the nav already
+            carry both (design audit 2026-09-01, fix 4). Link onward only when
+            there is something to continue reading. */}
+        {!fromClasses.loading &&
+          !fromClasses.error &&
+          (fromClasses.experiences?.length ?? 0) > 0 && (
+            <div className="card-actions">
+              <Link className="btn btn--ghost" to="/experiences">
+                Keep reading
+              </Link>
+            </div>
+          )}
       </Reveal>
     </div>
   );

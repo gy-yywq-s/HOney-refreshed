@@ -155,7 +155,7 @@ export function ExperiencesMinePage() {
       )}
 
       {keys.length > 0 && (
-        <div className="banner banner--warning">
+        <div role="status" className="banner banner--warning">
           Your ownership keys exist only in this browser. Clearing site data permanently removes
           your control over these posts.
         </div>
@@ -180,7 +180,7 @@ export function ExperiencesMinePage() {
       ) : mine.loading || notes === null ? (
         <p className="muted">Loading…</p>
       ) : mine.error ? (
-        <div className="banner banner--danger">{mine.error}</div>
+        <div role="alert" className="banner banner--danger">{mine.error}</div>
       ) : (
         <div className="stack">
           {items.map((item) =>

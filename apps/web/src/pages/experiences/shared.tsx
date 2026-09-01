@@ -344,7 +344,7 @@ function ReportDialog({ experienceId, onClose }: { experienceId: string; onClose
             Reports are a category only — there is no free-text box. The post is automatically
             re-checked against the current rules; sensitive detail belongs with the school, not here.
           </p>
-          {error && <div className="banner banner--danger">{error}</div>}
+          {error && <div role="alert" className="banner banner--danger">{error}</div>}
           <div className="modal__actions modal__actions--row">
             <button className="btn btn--ghost" onClick={onClose} disabled={busy}>
               Cancel

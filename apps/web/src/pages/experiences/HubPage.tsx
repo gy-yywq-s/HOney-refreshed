@@ -58,7 +58,7 @@ export function ExperiencesHubPage() {
       <input
         className="search-box"
         type="search"
-        placeholder="Search teachers, places and food by name…"
+        placeholder="Search teachers, places, food…"
         aria-label="Search entities by name"
         value={q}
         onChange={(e) => setQ(e.target.value)}
@@ -70,7 +70,7 @@ export function ExperiencesHubPage() {
           {search.loading ? (
             <p className="muted">Searching…</p>
           ) : search.error ? (
-            <div className="banner banner--danger">{search.error}</div>
+            <div role="alert" className="banner banner--danger">{search.error}</div>
           ) : (search.data?.entities.length ?? 0) === 0 ? (
             <p className="empty">Nothing by that name.</p>
           ) : (
@@ -83,7 +83,7 @@ export function ExperiencesHubPage() {
         </section>
       ) : (
         <>
-          {entities.error && <div className="banner banner--danger">{entities.error}</div>}
+          {entities.error && <div role="alert" className="banner banner--danger">{entities.error}</div>}
           <div className="browse-grid">
             {SECTION_META.map(({ type, label }, sectionIndex) => (
               <Reveal as="section" index={sectionIndex} className="card lift" key={type} aria-label={label}>
@@ -119,7 +119,7 @@ export function ExperiencesHubPage() {
         {fromClasses.loading ? (
           <p className="muted">Loading…</p>
         ) : fromClasses.error ? (
-          <div className="banner banner--danger">{fromClasses.error}</div>
+          <div role="alert" className="banner banner--danger">{fromClasses.error}</div>
         ) : !fromClasses.experiences || fromClasses.experiences.length === 0 ? (
           <p className="card empty">
             Nothing from your classes yet. Import your timetable, or be the first to share one.

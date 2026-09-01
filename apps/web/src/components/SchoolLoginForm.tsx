@@ -31,7 +31,7 @@ export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
 
   return (
     <form onSubmit={(e) => void submit(e)}>
-      {error && <div className="banner banner--danger">{error}</div>}
+      {error && <div role="alert" className="banner banner--danger">{error}</div>}
       <div className="field">
         <label className="field__label" htmlFor="school-username">
           School username

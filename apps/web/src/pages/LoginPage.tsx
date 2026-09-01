@@ -93,7 +93,7 @@ function ImportConsentStep({ onDone }: { onDone: () => void }) {
         History work here. Nothing is imported unless you turn it on, and you can switch it off any
         time in Settings.
       </p>
-      {error && <div className="banner banner--danger">{error}</div>}
+      {error && <div role="alert" className="banner banner--danger">{error}</div>}
       <div className="login__fields">
         <button
           className="btn btn--primary btn--block"

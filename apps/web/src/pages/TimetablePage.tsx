@@ -76,15 +76,15 @@ export function TimetablePage() {
       <h1 className="schedule-header">{formatDayHeading(date)}</h1>
 
       {syncFeedback?.kind === "error" && (
-        <div className="banner banner--danger">{syncFeedback.message}</div>
+        <div role="alert" className="banner banner--danger">{syncFeedback.message}</div>
       )}
       {syncFeedback?.kind === "result" && syncFeedback.result.status === "ok" && (
-        <div className="banner banner--success">
+        <div role="status" className="banner banner--success">
           Synced {syncFeedback.result.lessons} lessons from the school portal.
         </div>
       )}
       {syncFeedback?.kind === "result" && syncFeedback.result.status === "no_consent" && (
-        <div className="banner banner--warning">
+        <div role="status" className="banner banner--warning">
           <span>Timetable import is switched off, so there is nothing to sync.</span>
           <Link className="btn btn--ghost btn--small" to="/settings">
             Open Settings
@@ -93,7 +93,7 @@ export function TimetablePage() {
       )}
       {syncFeedback?.kind === "result" &&
         syncFeedback.result.status === "portal_reconnect_required" && (
-          <div className="banner banner--warning">
+          <div role="status" className="banner banner--warning">
             <span>HOney lost its connection to the school portal.</span>
             <button className="btn btn--ghost btn--small" onClick={() => setShowReconnect(true)}>
               Reconnect
@@ -104,7 +104,7 @@ export function TimetablePage() {
       {loading ? (
         <p className="fullscreen-note">Loading…</p>
       ) : error ? (
-        <div className="banner banner--danger">{error}</div>
+        <div role="alert" className="banner banner--danger">{error}</div>
       ) : (
         <>
           <DayTimeline

@@ -57,6 +57,9 @@ function AppLayout() {
 
   return (
     <>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
       {/* Desktop shell: fixed left rail — brand up top, numbered nav center,
           the active pill slides between items. Hidden ≤960px. */}
       <aside className="rail">
@@ -96,6 +99,7 @@ function AppLayout() {
           className="settings-trigger"
           type="button"
           aria-label="Appearance"
+          title="Appearance"
           onClick={() => setThemeOpen(true)}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -114,7 +118,7 @@ function AppLayout() {
       </main>
 
       {/* Mobile shell (≤960px): floating pill nav, 4 slots, sliding active pill. */}
-      <nav className="mobile-nav" aria-label="Primary">
+      <nav className="mobile-nav" aria-label="Primary, mobile">
         <span
           className="mobile-nav__pill"
           data-off={mobileIndex < 0 ? "true" : "false"}
@@ -150,8 +154,19 @@ function UserMenu({ me }: { me: Me }) {
     const onPointerDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    // Escape closes and returns focus to the trigger (design audit, fix 10).
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        ref.current?.querySelector("button")?.focus();
+      }
+    };
     document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   return (
@@ -159,28 +174,28 @@ function UserMenu({ me }: { me: Me }) {
       <button
         className="usermenu__button"
         onClick={() => setOpen((o) => !o)}
-        aria-haspopup="menu"
+        aria-haspopup="true"
         aria-expanded={open}
       >
         {me.displayName}
       </button>
       {open && (
-        <div className="usermenu__panel" role="menu">
+        <div className="usermenu__panel">
           <div className="usermenu__header">
             <strong>{me.displayName}</strong>
             <span className="caption">{me.honeyId}</span>
           </div>
-          <Link className="usermenu__item" role="menuitem" to="/settings" onClick={() => setOpen(false)}>
+          <Link className="usermenu__item" to="/settings" onClick={() => setOpen(false)}>
             Settings
           </Link>
           {me.isAdmin && (
-            <Link className="usermenu__item" role="menuitem" to="/dash" onClick={() => setOpen(false)}>
+            <Link className="usermenu__item" to="/dash" onClick={() => setOpen(false)}>
               Dash
             </Link>
           )}
           <button
             className="usermenu__item usermenu__item--danger"
-            role="menuitem"
+           
             onClick={() => void signOut()}
           >
             Sign out

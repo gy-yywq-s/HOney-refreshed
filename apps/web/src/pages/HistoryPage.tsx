@@ -58,7 +58,7 @@ export function HistoryPage() {
     <div>
       <h1 className="page-title">History</h1>
       {selectMode && (
-        <div className="banner banner--success">
+        <div role="status" className="banner banner--success">
           Pick the lesson your experience is about.
         </div>
       )}
@@ -103,7 +103,7 @@ export function HistoryPage() {
       {history.loading ? (
         <p className="fullscreen-note">Loading…</p>
       ) : history.error ? (
-        <div className="banner banner--danger">{history.error}</div>
+        <div role="alert" className="banner banner--danger">{history.error}</div>
       ) : groups.length === 0 ? (
         <p className="card empty">No lessons match.</p>
       ) : (

@@ -90,7 +90,7 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
       {feed.loading ? (
         <p className="muted">Loading…</p>
       ) : feed.error ? (
-        <div className="banner banner--danger">{feed.error}</div>
+        <div role="alert" className="banner banner--danger">{feed.error}</div>
       ) : !experiences || experiences.length === 0 ? (
         <p className="card empty">No experiences here yet.</p>
       ) : (

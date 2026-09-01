@@ -275,7 +275,7 @@ export function ExperiencesComposePage() {
               </div>
             </div>
           )}
-          {saveError && <div className="banner banner--danger">{saveError}</div>}
+          {saveError && <div role="alert" className="banner banner--danger">{saveError}</div>}
 
           {status.kind === "nudge" ? (
             <NudgePreflight
@@ -397,7 +397,7 @@ function CooldownPanel({
       </p>
       <div className="card-actions compose-actions">
         <button className="btn btn--primary" disabled={!ready} onClick={onRecheck}>
-          {ready ? "Publish now" : `Publish in ${formatRemaining(remaining)}`}
+          {ready ? "Run the check again" : `Check again in ${formatRemaining(remaining)}`}
         </button>
         <button className="btn btn--ghost" disabled={saveBusy} onClick={onKeepPrivate}>
           Keep private meanwhile

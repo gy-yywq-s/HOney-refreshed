@@ -1,3 +1,19 @@
+/* Keyboard skip link — visible only when focused. */
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  left: 12px;
+  top: -80px;
+  padding: 10px 14px;
+  border-radius: 99px;
+  background: var(--ink);
+  color: var(--surface);
+  transition: top var(--dur-fast) var(--ease);
+}
+.skip-link:focus {
+  top: 12px;
+}
+
 /*
  * Components — the reusable grammar: pill buttons and filters, hairline
  * cards, the rail + topbar shell, the floating mobile pill nav, dialog
@@ -124,6 +140,10 @@ a.btn:hover {
   background: var(--danger);
   border-color: var(--danger);
   color: #fff;
+}
+/* Night's danger fill is light — white text fails AA (2.26:1); ink passes. */
+:root[data-surface="night"] .btn--danger {
+  color: #14171a;
 }
 .btn--danger:hover:not(:disabled) {
   opacity: 0.9;

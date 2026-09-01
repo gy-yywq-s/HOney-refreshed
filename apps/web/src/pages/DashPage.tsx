@@ -84,7 +84,7 @@ export function DashPage() {
     <div className="stack admin">
       <h1 className="page-title">Dash</h1>
       {feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>}
-      {overview.error && <div className="banner banner--danger">{overview.error}</div>}
+      {overview.error && <div role="alert" className="banner banner--danger">{overview.error}</div>}
 
       <section aria-label="Overview">
         <h2 className="overline">Overview</h2>
@@ -540,7 +540,7 @@ function ReportsPanel() {
       {reports.loading ? (
         <p className="muted">Loading…</p>
       ) : reports.error ? (
-        <div className="banner banner--danger">{reports.error}</div>
+        <div role="alert" className="banner banner--danger">{reports.error}</div>
       ) : (reports.data?.reports.length ?? 0) === 0 ? (
         <p className="empty">No reports.</p>
       ) : (
