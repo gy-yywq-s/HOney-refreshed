@@ -1,12 +1,29 @@
 import type { LexicalFlag } from "./lexicon.js";
 import type { LlmFeatures } from "./llm.js";
 
-// The DETERMINISTIC policy engine (App A §16.3): given lexical flags + LLM
-// features, it — and only it — chooses the action state. The signing service
-// accepts nothing but this engine's output. No single confidence scalar; every
-// serious lane fails closed.
+// The DETERMINISTIC policy engine. Classification is parallel (lexicon + one
+// LLM feature extraction); ENFORCEMENT IS ORDERED (review v3 §11):
+//
+//   Standing → Expression → Scope → Timing   (composition help is not a gate)
+//
+//   Standing   — is this the contributor's experience to speak from?
+//   Expression — can HOney carry these exact words? (judged on the current
+//                text's transmission form, not on which institution should
+//                handle the substance)
+//   Scope      — is the substance still ordinary peer knowledge, or would
+//                accepting it reasonably call for institutional action?
+//   Timing     — publish now, or let the user decide again after arousal falls?
+//
+// The user sees only the FRONTMOST unpassed boundary: a text that is both
+// targeted profanity AND a serious allegation first gets the Expression
+// revision; only once the words are carriable does Scope answer. The engine —
+// and only it — chooses the action; the signing service accepts nothing else.
+// Every serious lane fails closed.
+//
+// Wire-lane names are kept stable for existing clients; the gate semantics
+// live in the ordered checks below and in the gate-prefixed reason codes.
 
-export const POLICY_VERSION = 6;
+export const POLICY_VERSION = 7;
 
 export type ActionState =
   | "publish"
@@ -31,74 +48,92 @@ export interface PolicyDecision {
   policyVersion: number;
 }
 
-export function decide(input: PolicyInput): PolicyDecision {
-  const reasons: string[] = [];
+function outcome(action: ActionState, ...reasons: string[]): PolicyDecision {
+  return { action, reasons, policyVersion: POLICY_VERSION };
+}
 
-  // 1. Deterministic hard blocks — the LLM cannot override these.
+export function decide(input: PolicyInput): PolicyDecision {
+  // Structural rating discipline (domain rule, not a moderation gate): scalar
+  // ratings exist ONLY for dishes (App A §8.2).
+  if (input.hasRating && input.entityType !== "dish") {
+    return outcome("rephrase_required", "rating_not_allowed_for_entity");
+  }
+
+  // ---- Expression, deterministic lexical layer -----------------------------
+  // All four lexical flags are Expression-gate findings on the exact wording.
+  // When one fires the LLM is never consulted (cheap + fail-safe), so Standing
+  // is judged on the next attempt once the words are carriable — the user
+  // still sees exactly one actionable boundary at a time.
   if (input.lexical.includes("sexual_minor_context") || input.lexical.includes("direct_threat")) {
-    return { action: "blocked_serious", reasons: ["lexical:" + input.lexical.join(",")], policyVersion: POLICY_VERSION };
+    return outcome("blocked_serious", "expression:lexical:" + input.lexical.join(","));
   }
   if (input.lexical.includes("slur_or_dehumanizing")) {
-    return { action: "blocked_serious", reasons: ["lexical:slur"], policyVersion: POLICY_VERSION };
+    return outcome("blocked_serious", "expression:lexical:slur");
   }
   if (input.lexical.includes("doxxing_pattern")) {
-    return { action: "blocked_out_of_scope", reasons: ["lexical:doxxing"], policyVersion: POLICY_VERSION };
+    // Contact/identifying details are an EXPRESSION problem — remove them and
+    // the experience can still be told (review v3 §11.6). This is deliberately
+    // no longer "out of scope": PII is not an institutional-channel matter.
+    return outcome("rephrase_required", "expression:lexical:identifying_information");
   }
 
-  // 2. Rating discipline: scalar ratings exist ONLY for dishes (App A §8.2).
-  if (input.hasRating && input.entityType !== "dish") {
-    return { action: "rephrase_required", reasons: ["rating_not_allowed_for_entity"], policyVersion: POLICY_VERSION };
-  }
-
-  // 3. Extractor outage/invalid output → fail closed (§16.5): save privately,
+  // Extractor outage/invalid output → fail closed (§16.5): save privately,
   // never publish-first-inspect-later.
   if (!input.llm) {
-    return { action: "failed_closed", reasons: ["llm_unavailable"], policyVersion: POLICY_VERSION };
+    return outcome("failed_closed", "llm_unavailable");
   }
   const f = input.llm;
 
-  // 4. Serious / out-of-scope lanes (§13.5–13.6): block even if possibly true.
-  if (f.slur_or_dehumanizing) {
-    return { action: "blocked_serious", reasons: ["llm:slur_or_dehumanizing"], policyVersion: POLICY_VERSION };
-  }
-  if (f.serious_allegation) {
-    return { action: "blocked_out_of_scope", reasons: ["llm:serious_allegation"], policyVersion: POLICY_VERSION };
-  }
-  if (f.targets_student) {
-    return { action: "blocked_out_of_scope", reasons: ["llm:targets_student"], policyVersion: POLICY_VERSION };
-  }
-  if (f.privacy_invasion) {
-    return { action: "blocked_out_of_scope", reasons: ["llm:privacy_invasion"], policyVersion: POLICY_VERSION };
+  // ---- Gate A — Standing ---------------------------------------------------
+  // Rumour reported as fact is not the contributor's experience to publish.
+  if (f.hearsay) {
+    return outcome("rephrase_required", "standing:hearsay");
   }
 
-  // 5. Correctable violations → ask for a direct rephrase (§13.4, EDIT_REQUIRED):
-  // hearsay stated as fact, profanity aimed at a person, or a manipulation attempt.
-  if (f.hearsay) {
-    return { action: "rephrase_required", reasons: ["llm:hearsay"], policyVersion: POLICY_VERSION };
+  // ---- Gate B — Expression -------------------------------------------------
+  if (f.slur_or_dehumanizing) {
+    return outcome("blocked_serious", "expression:slur_or_dehumanizing");
   }
   if (f.targeted_profanity) {
-    return { action: "rephrase_required", reasons: ["llm:targeted_profanity"], policyVersion: POLICY_VERSION };
+    return outcome("rephrase_required", "expression:targeted_profanity");
+  }
+  if (f.targets_student) {
+    // Students are not public subjects here; the wording that evaluates or
+    // identifies a fellow student must go — a revision, not a scope verdict.
+    return outcome("rephrase_required", "expression:targets_student");
+  }
+  if (f.privacy_invasion) {
+    return outcome("rephrase_required", "expression:privacy_invasion");
   }
   if (f.injection_attempt) {
-    return { action: "rephrase_required", reasons: ["llm:injection_attempt"], policyVersion: POLICY_VERSION };
+    return outcome("rephrase_required", "expression:injection_attempt");
   }
-  // Unresolved semantic uncertainty → rephrase directly (§13.7 UNCERTAIN_REPHRASE),
-  // distinct from an extractor OUTAGE (llm:null above) which is failed_closed.
+  // Unresolved semantic opacity → say it more directly (distinct from an
+  // extractor OUTAGE, which is failed_closed above).
   if (f.uncertain) {
-    return { action: "rephrase_required", reasons: ["llm:uncertain"], policyVersion: POLICY_VERSION };
+    return outcome("rephrase_required", "expression:uncertain");
   }
 
-  // 6. High-arousal ordinary opinion → 24 h private cooldown with reconfirm (§13.3).
+  // ---- Gate C — Scope ------------------------------------------------------
+  // The words are carriable; is the substance still peer context? A serious
+  // allegation may be entirely true — HOney is still not the right public
+  // institution for it (investigation/safeguarding/discipline territory).
+  if (f.serious_allegation) {
+    return outcome("blocked_out_of_scope", "scope:serious_allegation");
+  }
+
+  // ---- Gate D — Timing -----------------------------------------------------
+  // High-arousal ordinary opinion → 24 h private delay with reconfirm (§13.3).
+  // Cooldown is a timing intervention, never a wrongness verdict.
   if (f.high_arousal) {
-    return { action: "cooldown_24h", reasons: ["llm:high_arousal"], policyVersion: POLICY_VERSION };
+    return outcome("cooldown_24h", "timing:high_arousal");
   }
 
-  // 7. Low-harm vague content → publish, but with an OPTIONAL nudge to add a
-  // detail (§13.2 / §27.7). It still publishes; the nudge is advisory only.
+  // ---- Composition help (not a gate) ---------------------------------------
+  // Low-information content publishes; the nudge is advisory only.
   if (f.low_information) {
-    return { action: "publish_nudge", reasons: ["llm:low_information"], policyVersion: POLICY_VERSION };
+    return outcome("publish_nudge", "composition:low_information");
   }
 
-  // 8. Ordinary content — publish.
-  return { action: "publish", reasons, policyVersion: POLICY_VERSION };
+  return outcome("publish");
 }

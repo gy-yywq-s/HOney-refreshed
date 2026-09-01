@@ -44,8 +44,8 @@ describe("regression corpus — deterministic layers", () => {
     const flags = lexicalScan(normalizeText(c.text));
     expect(flags.length).toBeGreaterThan(0); // must be caught WITHOUT the LLM
     const decision = decide({ lexical: flags, llm: null, entityType: "lesson", hasRating: false });
-    const action = decision.action === "failed_closed" ? "blocked_serious" : decision.action;
-    expect(action).toBe(c.expect);
+    // v7 ordered engine: lexical findings resolve directly (never failed_closed).
+    expect(decision.action).toBe(c.expect);
   });
 
   it.each(corpus.lexicalBenign)("lexical benign: $id must NOT hard-block ($reason)", (c) => {

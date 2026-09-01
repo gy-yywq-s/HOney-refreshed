@@ -488,9 +488,9 @@ export class ExperienceService {
     const normalized = normalizeText(body);
     const lexical = lexicalScan(normalized);
     if (lexical.length > 0) {
-      // Lexical hard-blocks skip the LLM entirely (cheap + fail-safe).
-      const decision = decide({ lexical, llm: null, entityType, hasRating: rating !== null });
-      return decision.action === "failed_closed" ? { ...decision, action: "blocked_serious" } : decision;
+      // Lexical findings are all Expression-gate outcomes and skip the LLM
+      // entirely (cheap + fail-safe); the ordered engine resolves them directly.
+      return decide({ lexical, llm: null, entityType, hasRating: rating !== null });
     }
     const verdict = await this.llmRunner(normalized.original);
     return decide({
@@ -905,7 +905,7 @@ export class ExperienceService {
 
     const unavailable =
       decision.action === "failed_closed" ||
-      (decision.action === "rephrase_required" && decision.reasons.includes("llm:uncertain"));
+      (decision.action === "rephrase_required" && decision.reasons.includes("expression:uncertain"));
     if (unavailable) {
       // UNAVAILABLE/UNCERTAIN: keep the current public state, retry later.
       this.db

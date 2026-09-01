@@ -34,10 +34,27 @@ describe("policy engine (deterministic)", () => {
   it("ordinary negative opinion publishes", () => {
     expect(decide({ ...base, llm: { ...CLEAN } }).action).toBe("publish");
   });
-  it("serious allegation / student target / privacy → blocked out of scope", () => {
+  it("v7 ordered gates: allegation is Scope; student target / privacy are Expression revisions", () => {
     expect(decide({ ...base, llm: { ...CLEAN, serious_allegation: true } }).action).toBe("blocked_out_of_scope");
-    expect(decide({ ...base, llm: { ...CLEAN, targets_student: true } }).action).toBe("blocked_out_of_scope");
-    expect(decide({ ...base, llm: { ...CLEAN, privacy_invasion: true } }).action).toBe("blocked_out_of_scope");
+    expect(decide({ ...base, llm: { ...CLEAN, targets_student: true } }).action).toBe("rephrase_required");
+    expect(decide({ ...base, llm: { ...CLEAN, privacy_invasion: true } }).action).toBe("rephrase_required");
+  });
+  it("enforcement is ordered — the frontmost unpassed gate answers (review v3 §11.2)", () => {
+    // targeted profanity (Expression) + serious allegation (Scope): the user
+    // first fixes the wording; only carriable words get a scope verdict.
+    const both = decide({ ...base, llm: { ...CLEAN, targeted_profanity: true, serious_allegation: true } });
+    expect(both.action).toBe("rephrase_required");
+    expect(both.reasons).toEqual(["expression:targeted_profanity"]);
+    // Wording fixed → the same substance now reaches Scope.
+    const after = decide({ ...base, llm: { ...CLEAN, serious_allegation: true } });
+    expect(after.action).toBe("blocked_out_of_scope");
+    expect(after.reasons).toEqual(["scope:serious_allegation"]);
+    // Standing precedes Expression.
+    const standing = decide({ ...base, llm: { ...CLEAN, hearsay: true, targeted_profanity: true } });
+    expect(standing.reasons).toEqual(["standing:hearsay"]);
+    // Timing only ever fires once everything else passed.
+    const timing = decide({ ...base, llm: { ...CLEAN, high_arousal: true, low_information: true } });
+    expect(timing.action).toBe("cooldown_24h");
   });
   it("slur → blocked serious; injection → rephrase; uncertain/outage → failed closed", () => {
     expect(decide({ ...base, llm: { ...CLEAN, slur_or_dehumanizing: true } }).action).toBe("blocked_serious");

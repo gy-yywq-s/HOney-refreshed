@@ -13,7 +13,7 @@ import { useApi } from "../../lib/useApi";
 import { formatShortDate, formatTime, formatRemaining } from "../../lib/format";
 import { privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote } from "../../lib/ownershipKeys";
-import { StarInput } from "./shared";
+import { StarInput, describeCheckReasons } from "./shared";
 import { useComposer } from "./useComposer";
 import type { ComposerTarget } from "./useComposer";
 
@@ -256,9 +256,9 @@ export function ExperiencesComposePage() {
             <div className={`banner banner--${notice.tone === "danger" ? "danger" : "warning"}`}>
               <div>
                 <p style={{ margin: 0 }}>{notice.text}</p>
-                {notice.reasons && notice.reasons.length > 0 && (
+                {describeCheckReasons(notice.reasons).length > 0 && (
                   <ul className="compose-reasons">
-                    {notice.reasons.map((r) => (
+                    {describeCheckReasons(notice.reasons).map((r) => (
                       <li key={r}>{r}</li>
                     ))}
                   </ul>
@@ -348,9 +348,9 @@ function NudgePreflight({
         This can go public as it is. A little more context often helps another student more than a
         verdict — but that is your call.
       </p>
-      {reasons.length > 0 && (
+      {describeCheckReasons(reasons).length > 0 && (
         <ul className="compose-reasons">
-          {reasons.map((r) => (
+          {describeCheckReasons(reasons).map((r) => (
             <li key={r}>{r}</li>
           ))}
         </ul>

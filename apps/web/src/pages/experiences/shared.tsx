@@ -39,6 +39,36 @@ export function entityPath(entity: Pick<EntityRef, "entity_key" | "type">): stri
 }
 
 /** Friendly copy for every submit 422 the backend can return. */
+/**
+ * Gate-prefixed check reason codes → the ONE boundary sentence the user sees
+ * (review v3 §10.4). Unknown/internal codes render nothing — detector details
+ * are never a UI surface.
+ */
+const CHECK_REASON_COPY: Record<string, string> = {
+  "standing:hearsay": "It describes something you heard rather than your own experience.",
+  "expression:targeted_profanity":
+    "Part of the wording targets a person rather than describing the experience.",
+  "expression:targets_student":
+    "It evaluates or identifies another student — students aren't public subjects here.",
+  "expression:privacy_invasion":
+    "It includes private details that could identify or expose someone.",
+  "expression:lexical:identifying_information":
+    "It includes contact or identifying information. Remove it — the experience can still be told.",
+  "expression:injection_attempt":
+    "Part of the text reads as instructions to the system rather than an experience.",
+  "expression:uncertain":
+    "HOney could not confidently understand part of this wording. Say it more directly.",
+  "timing:high_arousal":
+    "This can still be your experience. Publishing it can wait until you'd share it the same way tomorrow.",
+  "composition:low_information":
+    "A little context about what led you here can help another student — optional.",
+  rating_not_allowed_for_entity: "Star ratings only exist for canteen dishes.",
+};
+
+export function describeCheckReasons(reasons: string[] | undefined): string[] {
+  return (reasons ?? []).map((r) => CHECK_REASON_COPY[r]).filter((r): r is string => !!r);
+}
+
 export const SUBMIT_ERROR_COPY: Record<string, string> = {
   publications_disabled:
     "Publishing is paused for everyone right now. You can still save this privately and publish once posting reopens.",
