@@ -95,10 +95,9 @@
 }
 .nextlesson__state {
   display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: #15181a;
   background: var(--glacier);
   border-radius: 99px;
@@ -153,32 +152,86 @@
 }
 .daynav {
   /* Timetable is FRAMED_SCROLL: date navigation belongs to the frame — it
-     stays put while the day timeline scrolls beneath it (§16.14.7). */
+     stays put while the day timeline scrolls beneath it (§16.14.7).
+     Order is deliberate (Gary 2026-09-01): the day stepper is the subject,
+     "Back to today" appears only when you left today, utilities sit last. */
   position: sticky;
   top: 0;
   z-index: 12;
   background: var(--surface);
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   padding: 6px 0;
 }
 .daynav__spacer {
   flex: 1;
 }
-.daynav .input {
-  flex: 0 1 160px;
-  min-width: 0;
+.daynav__stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
   border-radius: 99px;
+  background: var(--surface-solid);
+  overflow: hidden;
+}
+.daynav__arrow {
+  border: 0;
+  background: none;
+  width: 42px;
+  min-height: 42px;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.daynav__arrow:hover {
+  background: var(--soft);
+}
+.daynav__date {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 118px;
+  padding: 0 4px;
+  font-size: 14.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+}
+.daynav__picker {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  /* Phones: the stepper takes its own full row; today/utility actions form
+     a second, right-anchored row — two calm rows, nothing floats loose. */
+  .daynav__stepper {
+    flex: 1 1 100%;
+  }
+  .daynav__date {
+    flex: 1;
+  }
 }
 
 .timeline {
+  /* The day canvas fills whatever height the framed screen has; the floor
+     keeps compact phones usable — they degrade to a scroll, by design. */
+  flex: 1 1 auto;
+  min-height: 470px;
   display: flex;
   align-items: stretch;
   gap: 10px;
-  height: 656px;
 }
 .timeline__hours {
   position: relative;
@@ -234,9 +287,8 @@
   align-items: center;
   gap: 6px;
   padding: 0 12px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
   line-height: 1;
   pointer-events: none;
 }
@@ -353,15 +405,15 @@
   font-size: 11px;
 }
 .lesson-block__meta {
-  font-size: 11px;
-  opacity: 0.66;
+  font-size: 12px;
+  opacity: 0.72;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
 .lesson-block--compact .lesson-block__meta {
-  font-size: 10px;
+  font-size: 11px;
 }
 .lesson-block__meta strong {
   font-weight: 600;
@@ -425,10 +477,9 @@
 .month-group__label {
   margin: 0 0 4px;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 .month-group__list {
   list-style: none;
@@ -446,7 +497,7 @@
 .history-row__date {
   width: 92px;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -520,10 +571,9 @@
   flex-wrap: wrap;
 }
 .exp-card__provenance {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--muted);
 }
 .exp-card__context {
@@ -578,12 +628,29 @@
   margin-top: 4px;
 }
 
-/* Composer. */
+/* Composer — FRAMED_EDITOR: .compose-screen flexes inside .view, the
+   field stretches, and the textarea takes every spare pixel. One screen. */
+.compose-screen {
+  display: flex;
+  flex-direction: column;
+}
+.compose-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.compose-editor > .field {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+}
 .compose-target {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px 0;
+  padding: 10px 0 12px;
   border-bottom: 1px solid var(--line);
 }
 .compose-target__label {
@@ -593,8 +660,9 @@
   color: var(--ink);
 }
 .compose-textarea {
-  resize: vertical;
-  min-height: 160px;
+  resize: none;
+  flex: 1 1 auto;
+  min-height: 120px;
   line-height: 1.55;
   border-radius: 14px;
 }
@@ -691,21 +759,15 @@
     width: 72px;
   }
 
-  /* Timetable: tighter hours gutter; day picker takes the free row space. */
+  /* Timetable: tighter hours gutter; the flexed canvas keeps a lower floor. */
   .timeline {
-    height: 620px;
+    min-height: 420px;
   }
   .timeline__hours {
     width: 44px;
   }
-  .daynav .input {
-    flex: 1 1 130px;
-  }
 
-  /* Composer: comfortable writing + full-width actions. */
-  .compose-textarea {
-    min-height: 40vh;
-  }
+  /* Composer: the editor already fills the screen; actions go full-width. */
   .compose-actions {
     flex-direction: column;
     align-items: stretch;
@@ -844,8 +906,9 @@
   gap: 6px;
 }
 .post__context {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  color: var(--ink-2);
 }
 .post__context a {
   color: inherit;
@@ -856,7 +919,8 @@
 }
 .post__provenance {
   font-size: 12.5px;
-  color: var(--ink-3, var(--ink-2));
+  color: var(--muted);
+  min-width: 0;
 }
 .post__body {
   margin: 2px 0 0;
@@ -864,6 +928,13 @@
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+.post__body--feature {
+  /* Short posts set larger — one line still reads as the subject, never a
+     caption between two rows of metadata (Gary 2026-09-01). */
+  font-size: 20px;
+  line-height: 1.45;
+  letter-spacing: -0.008em;
 }
 .post__more {
   align-self: flex-start;
@@ -880,6 +951,25 @@
   align-items: center;
   gap: 8px;
   margin-top: 4px;
+  flex-wrap: wrap;
+}
+/* In the stream footer the reactions sit quiet: no pill borders — the
+   icon + count carries it; the on-state uses the accent tint. */
+.post__actions .react-btn {
+  border-color: transparent;
+  padding: 0 8px;
+  color: var(--muted);
+}
+.post__actions .react-btn:hover:not(:disabled) {
+  background: var(--soft);
+  color: var(--ink);
+}
+.post__actions .react-btn--on {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+:root[data-surface="night"] .post__actions .react-btn--on {
+  color: var(--accent);
 }
 .post__spacer {
   flex: 1;

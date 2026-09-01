@@ -17,6 +17,13 @@ import {
 
 type SyncFeedback = { kind: "result"; result: SyncResponse } | { kind: "error"; message: string };
 
+/** "Mon 1 Sep" for the stepper — compact, tabular, unambiguous. */
+function formatStepperDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const day = new Date(y!, (m ?? 1) - 1, d ?? 1);
+  return day.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+
 export function TimetablePage() {
   const [date, setDate] = useState(todayIsoDate());
   const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
@@ -47,38 +54,53 @@ export function TimetablePage() {
     }
   }
 
+  const isToday = date === todayIsoDate();
+
   return (
-    <div>
+    <div className="timetable-screen">
       <div className="daynav">
-        <button
-          className="btn btn--ghost"
-          aria-label="Previous day"
-          onClick={() => setDate((d) => shiftIsoDate(d, -1))}
-        >
-          &lsaquo;
-        </button>
-        <button
-          className="btn btn--ghost"
-          aria-label="Next day"
-          onClick={() => setDate((d) => shiftIsoDate(d, 1))}
-        >
-          &rsaquo;
-        </button>
-        <button className="btn btn--ghost" onClick={() => setDate(todayIsoDate())}>
-          Today
-        </button>
-        <input
-          className="input"
-          type="date"
-          aria-label="Pick a date"
-          value={date}
-          onChange={(e) => e.target.value && setDate(e.target.value)}
-        />
+        <div className="daynav__stepper" role="group" aria-label="Choose a day">
+          <button
+            className="daynav__arrow"
+            aria-label="Previous day"
+            onClick={() => setDate((d) => shiftIsoDate(d, -1))}
+          >
+            &lsaquo;
+          </button>
+          <span className="daynav__date">
+            {formatStepperDate(date)}
+            {/* The native picker rides invisibly on the label — tapping the
+                date opens it; no second date control competes. */}
+            <input
+              className="daynav__picker"
+              type="date"
+              aria-label="Pick a date"
+              value={date}
+              onChange={(e) => e.target.value && setDate(e.target.value)}
+            />
+          </span>
+          <button
+            className="daynav__arrow"
+            aria-label="Next day"
+            onClick={() => setDate((d) => shiftIsoDate(d, 1))}
+          >
+            &rsaquo;
+          </button>
+        </div>
+        {!isToday && (
+          <button className="btn btn--ghost btn--small" onClick={() => setDate(todayIsoDate())}>
+            Back to today
+          </button>
+        )}
         <span className="daynav__spacer" />
-        <Link className="btn btn--ghost" to="/history">
+        <Link className="btn btn--ghost btn--small" to="/history">
           History
         </Link>
-        <button className="btn btn--primary" onClick={() => void runSync()} disabled={syncBusy}>
+        <button
+          className="btn btn--primary btn--small"
+          onClick={() => void runSync()}
+          disabled={syncBusy}
+        >
           {syncBusy ? "Syncing…" : "Sync"}
         </button>
       </div>

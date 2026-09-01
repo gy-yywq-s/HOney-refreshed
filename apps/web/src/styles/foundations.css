@@ -102,14 +102,14 @@ a.btn:active {
 
 .eyebrow,
 .overline {
+  /* No small all-caps titles (Gary 2026-09-01): quiet sentence-case label. */
   display: block;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: var(--muted);
   font-family: var(--ui);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .section-head {
@@ -256,9 +256,9 @@ a.btn:active {
 }
 .card-index {
   color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 .primary .card-index,
 .primary .card-copy {

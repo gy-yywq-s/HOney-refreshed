@@ -218,10 +218,9 @@ a.btn:hover {
 .chip {
   display: inline-flex;
   align-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   border-radius: 99px;
   padding: 3px 12px;
   background: var(--soft);
@@ -246,7 +245,11 @@ a.btn:hover {
 
 /* Reaction pills. */
 .react-btn {
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--muted);
   background: transparent;
@@ -273,6 +276,9 @@ a.btn:hover {
   color: var(--surface);
   border-color: var(--ink);
   background: var(--ink);
+}
+.react-btn__count {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Sort toggle — segmented pill with a sliding thumb. */
@@ -353,6 +359,8 @@ a.btn:hover {
 .modal-overlay {
   position: fixed;
   inset: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
   background: rgba(11, 13, 14, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -372,6 +380,7 @@ a.btn:hover {
   width: 100%;
   max-height: min(88dvh, 850px);
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 26px;
   animation: rise-in var(--dur) var(--ease) both;
 }
@@ -575,6 +584,58 @@ a.btn:hover {
 .view {
   width: min(100%, 1080px);
   margin: 0 auto;
+  /* FIT/FRAMED screens (timetable, compose) flex to the visible height;
+     document screens simply grow past it. min-height resolves against
+     .main's content box — the area inside the shell's padding. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.view > * {
+  flex: 0 0 auto;
+}
+.view > .timetable-screen,
+.view > .compose-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Pull-to-refresh — the shell's own; body scroll lock removed the
+   browser's gesture, so the scroll owner provides one (lib/refresh.ts). ── */
+.ptr {
+  position: sticky;
+  top: 0;
+  height: 0;
+  z-index: 25;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.ptr__disc {
+  width: 36px;
+  height: 36px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.ptr__disc--spin {
+  opacity: 1 !important;
+}
+.ptr__disc--spin svg {
+  animation: ptr-rot 800ms linear infinite;
+}
+@keyframes ptr-rot {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── User menu (rail foot) ──────────────────────────────────────────────── */
@@ -705,7 +766,7 @@ a.btn:hover {
     border-radius: 11px;
     background: transparent;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1;
     font-weight: 600;
     transition: color var(--dur-fast) var(--ease);
@@ -772,7 +833,7 @@ a.btn:hover {
 }
 .option-grid span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .option-grid button[aria-pressed="true"] span {
   color: inherit;

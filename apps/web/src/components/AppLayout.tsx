@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import type { Me } from "../api/types";
 
 import { DESKTOP_TABS, MOBILE_TABS } from "./navTabs";
+import { PullToRefresh } from "./PullToRefresh";
 import { WordmarkHOney } from "./Wordmark";
 import { ThemeDialog } from "./ThemeControls";
 
@@ -103,6 +104,7 @@ function AppLayout() {
           THE scroll owner (§16.14.3): the app frame owns the viewport; only
           this region scrolls. data-scroll-owner is the restoration handle. */}
       <main className="main" id="main" data-scroll-owner>
+        <PullToRefresh />
         <div className="view" key={location.pathname}>
           <Outlet />
         </div>

@@ -1,8 +1,10 @@
-// One voice in the stream (review v3 §9.8 post anatomy): context line →
-// quiet provenance → the student's own words at the largest visual weight →
-// light reactions + entity link, report behind an overflow menu. No avatars,
-// no anonymous badges, no verification shields — provenance is context, not
-// status.
+// One voice in the stream (review v3 §9.8 post anatomy, adjusted per Gary
+// 2026-09-01): context line → the student's own words at the largest visual
+// weight → one quiet footer (provenance · day · reactions · overflow). The
+// provenance moved BELOW the words so a one-line post still reads as words
+// with context, not metadata with a caption. Short bodies render larger
+// (post__body--feature) — the words are always the figure. No avatars, no
+// anonymous badges, no verification shields.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -46,6 +48,45 @@ function contextParts(exp: PublicExperience): EntitySummary[] {
 }
 
 const CLAMP_CHARS = 700; // ~8–12 lines before "Read more" (§9.7.2)
+const FEATURE_CHARS = 180; // at/below this, the words set larger
+
+function ThumbUpIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7 10v12" />
+      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+    </svg>
+  );
+}
+
+function ThumbDownIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M17 14V2" />
+      <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
+    </svg>
+  );
+}
 
 export function ExperiencePost({ exp }: { exp: PublicExperience }) {
   const [myValue, setMyValue] = useState<1 | -1 | 0>(exp.myReaction ?? 0);
@@ -104,14 +145,12 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           })}
         </div>
       )}
-      <div className="post__provenance">
-        {provenance}
-        {exp.publishedDay !== null && <> · {formatDayBucket(exp.publishedDay)}</>}
-      </div>
-
       {exp.rating !== null && <Stars value={exp.rating} />}
-      {/* Raw-first: the words verbatim, whitespace kept, largest weight. */}
-      <p className="post__body">{shown}</p>
+      {/* Raw-first: the words verbatim, whitespace kept, largest weight.
+          Short posts set larger — one line must still read as the subject. */}
+      <p className={body.length <= FEATURE_CHARS ? "post__body post__body--feature" : "post__body"}>
+        {shown}
+      </p>
       {clamped && (
         <button type="button" className="post__more" onClick={() => setExpanded(true)}>
           Read more
@@ -119,6 +158,11 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
       )}
 
       <div className="post__actions">
+        <span className="post__provenance">
+          {provenance}
+          {exp.publishedDay !== null && <> · {formatDayBucket(exp.publishedDay)}</>}
+        </span>
+        <span className="post__spacer" />
         <button
           type="button"
           className={myValue === 1 ? "react-btn react-btn--on" : "react-btn"}
@@ -128,8 +172,8 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           disabled={busy}
           onClick={() => void react(1)}
         >
-          <span aria-hidden="true">👍</span>
-          {counts ? ` ${counts.likes}` : ""}
+          <ThumbUpIcon />
+          {counts && <span className="react-btn__count">{counts.likes}</span>}
         </button>
         <button
           type="button"
@@ -140,10 +184,9 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           disabled={busy}
           onClick={() => void react(-1)}
         >
-          <span aria-hidden="true">👎</span>
-          {counts ? ` ${counts.dislikes}` : ""}
+          <ThumbDownIcon />
+          {counts && <span className="react-btn__count">{counts.dislikes}</span>}
         </button>
-        <span className="post__spacer" />
         <div className="post__overflow">
           <button
             type="button"

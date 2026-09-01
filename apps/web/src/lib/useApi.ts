@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { describeApiError } from "../api/client";
+import { REFRESH_EVENT } from "./refresh";
 
 // Session-lived SWR cache (Gary, 2026-09-01: switching pages must not
 // refetch everything). A cache hit renders instantly with loading=false and
@@ -70,5 +71,14 @@ export function useApi<T>(
   }, [...deps, tick]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
+
+  // Pull-to-refresh: every mounted data hook re-fetches in place. The PTR
+  // handler clears the SWR cache first, so this is a true revalidation.
+  useEffect(() => {
+    const onRefresh = () => setTick((t) => t + 1);
+    window.addEventListener(REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(REFRESH_EVENT, onRefresh);
+  }, []);
+
   return { ...state, reload };
 }

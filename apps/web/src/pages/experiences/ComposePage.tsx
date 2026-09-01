@@ -184,8 +184,7 @@ export function ExperiencesComposePage() {
   const canAct = body.trim().length > 0 && !busy;
 
   return (
-    <div className="stack">
-      <div className="eyebrow">Compose</div>
+    <div className="compose-screen">
       <h1 className="page-title">Share an experience</h1>
 
       {target ? (
@@ -211,7 +210,7 @@ export function ExperiencesComposePage() {
       )}
 
       {target && (
-        <section className="stack">
+        <section className="compose-editor">
           <div className="field">
             <label className="field__label" htmlFor="compose-body">
               {COMPOSE_PROMPT}
@@ -219,7 +218,7 @@ export function ExperiencesComposePage() {
             <textarea
               id="compose-body"
               className="input compose-textarea"
-              rows={7}
+              rows={4}
               maxLength={5000}
               placeholder="Your own experience, in your own words"
               value={body}

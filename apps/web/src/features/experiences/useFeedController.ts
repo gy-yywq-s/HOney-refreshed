@@ -9,9 +9,19 @@
 // snapshots are always written under the key the items came from, and a key
 // change re-seeds items/cursors synchronously before anything else runs —
 // no cross-scope items, no cross-scope cursors, no corrupted snapshots.
+//
+// Snapshot discipline (Gary bug report 2026-09-01, "feed shows nothing"):
+// only a state that completed a successful first load may be snapshotted.
+// The old code snapshotted the initial items=[] render; leaving the page
+// before page one arrived persisted { items: [], nextCursor: null }, and
+// every return restored an empty, end=true feed without ever refetching.
+// hasLoaded gates every snapshot write, and empty-item snapshots are
+// treated as absent on restore (a truly empty feed refetches — cheap and
+// self-healing).
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, describeApiError } from "../../api/client";
+import { REFRESH_EVENT } from "../../lib/refresh";
 import type { FeedPage, FeedParams, FeedScope, PublicExperience } from "../../api/types";
 
 export interface FeedFilters {
@@ -46,7 +56,8 @@ const UPDATE_POLL_MS = 60_000;
 
 export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
   const key = keyOf(scope, filters);
-  const restored = snapshots.get(key) ?? null;
+  const stored = snapshots.get(key) ?? null;
+  const restored = stored && stored.items.length > 0 ? stored : null;
 
   const [items, setItems] = useState<PublicExperience[]>(restored?.items ?? []);
   const [loading, setLoading] = useState(restored === null);
@@ -59,6 +70,10 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
   });
   const [end, setEnd] = useState(restored !== null && restored.nextCursor === null);
   const busy = useRef(false);
+  // True once the CURRENT key's state completed a successful first load
+  // (page one applied, or restored from a loaded snapshot). Snapshots are
+  // written only while true.
+  const hasLoaded = useRef(restored !== null);
   // The key the CURRENT items/cursors belong to. Updated only in the
   // key-switch layout effect below, so snapshot writes can never mislabel.
   const stateKey = useRef(key);
@@ -74,6 +89,7 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     cursors.current.next = page.nextCursor;
     if (page.headCursor) cursors.current.head = page.headCursor;
     setEnd(page.nextCursor === null);
+    hasLoaded.current = true;
   }, []);
 
   const paramsRef = useRef<FeedParams>({ scope, ...filters });
@@ -119,6 +135,7 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
   }, [loadFirst]);
 
   const writeSnapshot = useCallback((ofKey: string) => {
+    if (!hasLoaded.current) return; // never persist a never-loaded state
     snapshots.set(ofKey, {
       items: itemsRef.current,
       nextCursor: cursors.current.next,
@@ -139,7 +156,9 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     setNewAvailable(false);
     setError(null);
     setLoadingMore(false);
-    const snap = snapshots.get(key) ?? null;
+    const raw = snapshots.get(key) ?? null;
+    const snap = raw && raw.items.length > 0 ? raw : null;
+    hasLoaded.current = snap !== null;
     if (snap) {
       setItems(snap.items);
       cursors.current = { next: snap.nextCursor, head: snap.headCursor };
@@ -159,7 +178,7 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
   // by the layout effect above; this runs once per mount.)
   useEffect(() => {
     const snap = snapshots.get(stateKey.current);
-    if (snap) {
+    if (snap && snap.items.length > 0) {
       // Restore after paint; the list must exist before scrolling to it.
       requestAnimationFrame(() => scroller().set(snap.scrollY));
     } else {
@@ -193,6 +212,17 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     const id = setInterval(() => void tick(), UPDATE_POLL_MS);
     return () => clearInterval(id);
   }, [key]);
+
+  // App-level refresh (pull-to-refresh emits REFRESH_EVENT): reload page
+  // one for the current key. The banner state resets — a refresh IS the jump.
+  useEffect(() => {
+    const onRefresh = () => {
+      setNewAvailable(false);
+      void loadFirst();
+    };
+    window.addEventListener(REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(REFRESH_EVENT, onRefresh);
+  }, [loadFirst]);
 
   return { items, loading, loadingMore, error, end, loadMore, newAvailable, jumpToNew, refresh: loadFirst };
 }
