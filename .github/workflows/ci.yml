@@ -17,9 +17,12 @@ jobs:
         with: { node-version: 24, cache: pnpm }
       - name: Brand casing gate (no 'H[o]ney' anywhere)
         # The pattern is written H[o]ney so this workflow file passes its own gate.
+        # docs/research holds imported third-party review documents verbatim —
+        # evidence is not restyled (docs/status/current.md hierarchy rule 6).
         run: |
           ! grep -rn --binary-files=without-match 'H[o]ney' . \
-            --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist
+            --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist \
+            --exclude-dir=research
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r build
       - run: pnpm -r typecheck
