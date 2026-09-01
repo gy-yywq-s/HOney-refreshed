@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AddressInfo } from "node:net";
 import type { AuthSession, StoredCredentials } from "@honey/shared";
-import { HoneyPortalConnector } from "./connector.js";
+import { HOneyPortalConnector } from "./connector.js";
 import type { CredentialVault } from "./coordinator.js";
 import { isPortalError } from "./errors.js";
 import { makeMockPortal, type MockPortalState } from "./testing/mockPortal.js";
@@ -50,7 +50,7 @@ afterEach(async () => {
 });
 
 function connectorWith(vault: MemoryVault, timeoutMs = 3_000) {
-  return new HoneyPortalConnector({ baseUrl, vault, timeoutMs });
+  return new HOneyPortalConnector({ baseUrl, vault, timeoutMs });
 }
 
 const GOOD: StoredCredentials = { username: "s0088", password: "pw-good" };

@@ -19,6 +19,6 @@ enum SixChecks {
         SixCheck(id: 3, title: "Some context?", prompt: "Can you add anything that helps another student understand?"),
         SixCheck(id: 4, title: "Private?", prompt: "Does this reveal something that is not yours to publish?"),
         SixCheck(id: 5, title: "Still human?", prompt: "Are you sharing an experience, or turning someone into an object of attack?"),
-        SixCheck(id: 6, title: "Bigger than Honey?", prompt: "Would this require investigation, safeguarding or urgent action? Then use the school's channels.")
+        SixCheck(id: 6, title: "Bigger than HOney?", prompt: "Would this require investigation, safeguarding or urgent action? Then use the school's channels.")
     ]
 }

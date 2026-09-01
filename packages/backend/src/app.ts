@@ -2,9 +2,9 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 import fastifyStatic from "@fastify/static";
-import { HoneyPortalConnector, PortalApi, PortalHttp } from "@honey/portal-connector";
+import { HOneyPortalConnector, PortalApi, PortalHttp } from "@honey/portal-connector";
 import type { CredentialVault } from "@honey/portal-connector";
-import { loadConfig, type HoneyConfig } from "./config.js";
+import { loadConfig, type HOneyConfig } from "./config.js";
 import { openDatabase } from "./db/database.js";
 import { makeAuthHelpers, type AppContext } from "./context.js";
 import { AccountService } from "./services/accounts.js";
@@ -18,7 +18,7 @@ import { EntityRegistry } from "./experiences/entities.js";
 import { ExperienceService } from "./experiences/service.js";
 import { SettingsService } from "./experiences/settings.js";
 
-// Honey Core backend (Bands 3 & 4). UI-agnostic domain API only — no screen
+// HOney Core backend (Bands 3 & 4). UI-agnostic domain API only — no screen
 // shapes here (spec §14). The server-side connector never holds a school
 // password: it acts on per-login transients or sealed short-lived tokens.
 
@@ -32,7 +32,7 @@ const emptyVault: CredentialVault = {
 };
 
 export interface BuildAppOptions {
-  config?: Partial<HoneyConfig>;
+  config?: Partial<HOneyConfig>;
   /** Override the portal base URL (tests point at the mock portal). */
   portalBaseUrl?: string;
   dbPath?: string;
@@ -41,7 +41,7 @@ export interface BuildAppOptions {
 }
 
 export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: AppContext } {
-  const config: HoneyConfig = {
+  const config: HOneyConfig = {
     ...loadConfig(),
     ...opts.config,
   };
@@ -49,7 +49,7 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   if (opts.dbPath) config.dbPath = opts.dbPath;
 
   const db = openDatabase(config.dbPath);
-  const connector = new HoneyPortalConnector({ baseUrl: config.portalBaseUrl, vault: emptyVault });
+  const connector = new HOneyPortalConnector({ baseUrl: config.portalBaseUrl, vault: emptyVault });
   const portalApi = new PortalApi(new PortalHttp({ baseUrl: config.portalBaseUrl }));
   const accounts = new AccountService(db, config);
   const entities = new EntityRegistry(db);

@@ -3,7 +3,7 @@
 //  HOney — the persistent School Portal browser (NOT a tab).
 //
 //  A single long-lived WKWebView backed by WKWebsiteDataStore.default(), kept
-//  fully separate from the Honey native session and the Access connector session.
+//  fully separate from the HOney native session and the Access connector session.
 //  It remembers a *safe* last URL (excluding login / callback / logout / error
 //  URLs) and silently reloads when it detects an expired session.
 //

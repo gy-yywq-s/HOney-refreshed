@@ -1,4 +1,4 @@
-export interface HoneyUser {
+export interface HOneyUser {
     id: string;
     schoolAccountKey: string;
     displayName: string;

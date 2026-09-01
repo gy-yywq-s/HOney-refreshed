@@ -19,7 +19,7 @@ struct LoginView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.xl) {
                 VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                    HoneyWordmark(size: 40)
+                    HOneyWordmark(size: 40)
                     Text("Continue with your school account")
                         .font(Theme.Typography.title)
                         .foregroundStyle(Theme.Palette.textPrimary)
@@ -73,7 +73,7 @@ struct LoginView: View {
                         Text("Continue")
                     }
                 }
-                .buttonStyle(HoneyPrimaryButtonStyle(enabled: canSubmit))
+                .buttonStyle(HOneyPrimaryButtonStyle(enabled: canSubmit))
                 .disabled(!canSubmit || model.isAuthenticating)
 
                 Text("Your password is used only to sign in to the school portal and is stored securely on this device.")

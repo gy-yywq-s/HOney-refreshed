@@ -1,6 +1,6 @@
 //
 //  AccessViewModel.swift
-//  HOney — Access (apply-permit + open-gate). Direct-to-school; NO Honey relay.
+//  HOney — Access (apply-permit + open-gate). Direct-to-school; NO HOney relay.
 //  Uses PortalSessionCoordinator. All failures are isolated to this screen.
 //
 

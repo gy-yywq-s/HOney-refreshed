@@ -13,7 +13,7 @@ import {
 /** Unambiguous lowercase alphabet (no 0/1/i/l/o) — honeyIds read cleanly aloud. */
 const HONEY_ID_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 
-export function generateHoneyId(length = 6): string {
+export function generateHOneyId(length = 6): string {
   let id = "";
   for (let i = 0; i < length; i++) id += HONEY_ID_ALPHABET[randomInt(HONEY_ID_ALPHABET.length)];
   return id;

@@ -27,7 +27,7 @@ struct HomeView: View {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { HoneyWordmark(size: 22) }
+                ToolbarItem(placement: .topBarLeading) { HOneyWordmark(size: 22) }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
                 }
@@ -104,14 +104,14 @@ struct HomeView: View {
                 } label: {
                     Label("Share", systemImage: "square.and.pencil")
                 }
-                .buttonStyle(HoneyPrimaryButtonStyle())
+                .buttonStyle(HOneyPrimaryButtonStyle())
 
                 NavigationLink {
                     ExperiencesView()
                 } label: {
                     Text("Browse")
                 }
-                .buttonStyle(HoneySecondaryButtonStyle())
+                .buttonStyle(HOneySecondaryButtonStyle())
             }
 
             if let recents = viewModel?.recentExperiences, !recents.isEmpty {

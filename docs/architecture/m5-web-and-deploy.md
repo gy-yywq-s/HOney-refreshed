@@ -1,6 +1,6 @@
 # M5 — Web app, admin dash, deployment
 
-**Goal:** the TypeScript web client (Bands 1–2) consuming the same Honey domain API as iOS,
+**Goal:** the TypeScript web client (Bands 1–2) consuming the same HOney domain API as iOS,
 plus the admin dash, packaged as a single deployable Node service.
 
 ## Web app (Vite + React + TS)

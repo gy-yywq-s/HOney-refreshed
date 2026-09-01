@@ -18,7 +18,7 @@ product works even when the portal is slow, down, or logged out.
 |---|---|
 | **iOS** (Swift) | Home · Experiences · Timetable (Day view) · **Access** (direct-to-school gate control) |
 | **Web** (TypeScript) | Home · Experiences · Timetable (+ admin dashboard; Access is capability-gated) |
-| **Backend** (TypeScript/Node) | Honey accounts & sessions · school-portal connector · normalized timetable/history · Experiences community with anonymous, fail-closed moderation |
+| **Backend** (TypeScript/Node) | HOney accounts & sessions · school-portal connector · normalized timetable/history · Experiences community with anonymous, fail-closed moderation |
 
 Deliberately **not** in V1: exams, week-view timetables, rankings, AI summaries, scalar ratings of
 any human (only canteen dishes can carry a 1–5), or any server relay for Access operations.
@@ -34,8 +34,8 @@ flowchart LR
     IOS[iOS app\nSwiftUI]
     WEB[Web app\nTypeScript + React]
   end
-  subgraph Honey["Honey Core (TypeScript/Node)"]
-    API[Honey Domain APIs\naccounts · sessions · data]
+  subgraph HOney["HOney Core (TypeScript/Node)"]
+    API[HOney Domain APIs\naccounts · sessions · data]
     EXP[Experiences services\neligibility · moderation · community]
     CONN[School Portal Connector\nBand 4]
   end
@@ -53,8 +53,8 @@ flowchart LR
 Key properties:
 
 - **One login.** A school account is the only credential; a successful school login provisions or
-  reconnects your Honey account. Honey, native-portal and WebView sessions stay independent —
-  portal expiry never signs you out of Honey.
+  reconnects your HOney account. HOney, native-portal and WebView sessions stay independent —
+  portal expiry never signs you out of HOney.
 - **Zero manual re-login.** Normal portal token expiry is recovered silently (device-held
   credentials; single-flight re-auth; safe reads replay once, physical actions never do).
 - **Anonymous by architecture.** Public experiences store **no author field**; eligibility uses
@@ -104,7 +104,7 @@ flowchart LR
     IOSUI[iOS SwiftUI views] --> IOSVM[iOS view models + services]
   end
   CONTRACT["@honey/shared/api — the contract (single source)"]
-  WEBAPI -->|HTTP JSON| BE[Honey backend]
+  WEBAPI -->|HTTP JSON| BE[HOney backend]
   IOSVM -->|HTTP JSON| BE
   WEBAPI -.types.-> CONTRACT
   BE -.types enforced.-> CONTRACT
@@ -136,7 +136,7 @@ backend rule, and change a backend implementation while preserving the contract.
 ```
 packages/shared            Domain types + portal wire contract (the API of the boundaries)
 packages/portal-connector  Band-4 school-portal connector (auth coordinator, endpoints, mock portal)
-packages/backend           Honey Core backend (Fastify)
+packages/backend           HOney Core backend (Fastify)
 apps/web                   Web app (Vite + React)
 ios/                       iOS app (Swift; built via GitHub Actions macOS runners)
 design/                    Brand + design tokens

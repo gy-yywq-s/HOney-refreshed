@@ -1,4 +1,4 @@
-# Honey
+# HOney
 ## Ground-Up Product & System Specification
 
 **Version:** 1.3  
@@ -11,23 +11,23 @@
 
 # 0. Executive decisions
 
-Honey is being rebuilt from the ground up. The previous **architecture** is not a compatibility target, but the previous Honey app remains an important **design reference**. Its overall visual character, product feel and recognisable identity should carry forward, while the new implementation is free to substantially improve UI hierarchy, interaction quality, component consistency, accessibility and cross-platform behavior. The **Access** module's proven product behavior remains the strongest direct legacy-parity target and will be ported/refined from the existing app bundle when that code is supplied.
+HOney is being rebuilt from the ground up. The previous **architecture** is not a compatibility target, but the previous HOney app remains an important **design reference**. Its overall visual character, product feel and recognisable identity should carry forward, while the new implementation is free to substantially improve UI hierarchy, interaction quality, component consistency, accessibility and cross-platform behavior. The **Access** module's proven product behavior remains the strongest direct legacy-parity target and will be ported/refined from the existing app bundle when that code is supplied.
 
 The new product has two conceptual system layers:
 
-1. **Honey Core** - Honey's own account system, backend, imported school data, derived product state, Experiences community, sessions and cross-platform APIs.
-2. **School Portal Integration** - the school portal as an external identity/bootstrap provider and upstream data source. It is not Honey's product database and should not dictate Honey's internal architecture.
+1. **HOney Core** - HOney's own account system, backend, imported school data, derived product state, Experiences community, sessions and cross-platform APIs.
+2. **School Portal Integration** - the school portal as an external identity/bootstrap provider and upstream data source. It is not HOney's product database and should not dictate HOney's internal architecture.
 
 Across those system layers, implementation must also preserve a strict **presentation/application/backend separation**. End to end, responsibilities are divided into four bands:
 
 1. **UI Presentation** - visual hierarchy, components, interaction rendering and platform-specific presentation;
 2. **Client Application Logic** - screen/view state, user intents, navigation coordination, local-only state and adapters to backend contracts;
-3. **Honey Backend Domain Logic** - accounts, imports, sync, derived product rules, Experiences eligibility/moderation/community rules and persistent Honey state;
+3. **HOney Backend Domain Logic** - accounts, imports, sync, derived product rules, Experiences eligibility/moderation/community rules and persistent HOney state;
 4. **School Portal Integration** - upstream authentication and source/API translation.
 
 A UI redesign must not require backend business logic to be rewritten merely because the visual presentation changed. Conversely, backend/domain rules must not live inside view components.
 
-The school account is the only enrollment credential. Users do **not** create a separate Honey username/password. A successful school-account login automatically provisions or reconnects the corresponding Honey account. After that, Honey has its own account identity and session lifecycle.
+The school account is the only enrollment credential. Users do **not** create a separate HOney username/password. A successful school-account login automatically provisions or reconnects the corresponding HOney account. After that, HOney has its own account identity and session lifecycle.
 
 V1 deliberately contains **no Exams module**.
 
@@ -49,9 +49,9 @@ Timetable has **one Day view only**. There is no Week view and no second alterna
 
 Course/Lesson History exists as one shared secondary page. It is reachable from Timetable for browsing past lessons and from Experiences in selection mode when the user wants to record or publish an experience about something they previously attended.
 
-Access is native-first and makes its operational school-API calls **directly from the client to the school API**. Honey's backend does not relay Access operations.
+Access is native-first and makes its operational school-API calls **directly from the client to the school API**. HOney's backend does not relay Access operations.
 
-Home also contains a secondary **School Portal** entry that opens the official portal in a persistent iOS WebView. Honey, native portal API, and WebView portal authentication states remain separate; iOS silently restores expired portal sessions while the school's authentication requirements remain materially unchanged.
+Home also contains a secondary **School Portal** entry that opens the official portal in a persistent iOS WebView. HOney, native portal API, and WebView portal authentication states remain separate; iOS silently restores expired portal sessions while the school's authentication requirements remain materially unchanged.
 
 Experiences remains the major community layer specified in detail in Appendix A. Human entities and lessons have **no scalar rating**. Scalar ratings are allowed only for low-stakes, naturally rateable consumption objects such as canteen food items.
 
@@ -61,7 +61,7 @@ Experiences remains the major community layer specified in detail in Appendix A.
 
 ## 1.1 Simplicity is an explicit product constraint
 
-Honey should not accumulate features merely because the school portal exposes data or because a feature is technically easy to build.
+HOney should not accumulate features merely because the school portal exposes data or because a feature is technically easy to build.
 
 A V1 feature should exist only when at least one of the following is true:
 
@@ -74,22 +74,22 @@ The default response to an unproven feature idea is **not in V1**.
 
 This is why Exams is removed, Timetable is reduced to one view, Access is ported instead of expanded, and Course History is implemented as a shared secondary route rather than a new top-level product area.
 
-## 1.2 Honey owns the product state
+## 1.2 HOney owns the product state
 
-The school portal is a source, not Honey's runtime database.
+The school portal is a source, not HOney's runtime database.
 
-Once a user explicitly agrees to import supported school data into Honey:
+Once a user explicitly agrees to import supported school data into HOney:
 
-- Honey normalizes it into Honey's own data model;
-- Honey can use it for clearly defined backend-derived features;
-- Honey can serve the same imported state to iOS and Web;
-- Honey remains usable when the school portal is temporarily unavailable, with stale-state labeling where relevant.
+- HOney normalizes it into HOney's own data model;
+- HOney can use it for clearly defined backend-derived features;
+- HOney can serve the same imported state to iOS and Web;
+- HOney remains usable when the school portal is temporarily unavailable, with stale-state labeling where relevant.
 
-This avoids making every Honey feature a live wrapper around the portal and avoids forcing all derived behavior to run locally on a device.
+This avoids making every HOney feature a live wrapper around the portal and avoids forcing all derived behavior to run locally on a device.
 
 ## 1.3 No speculative analytics
 
-The ability to store school data on Honey's backend is not permission to invent dashboards or analytics without a product purpose.
+The ability to store school data on HOney's backend is not permission to invent dashboards or analytics without a product purpose.
 
 For V1, imported timetable data has three defined uses:
 
@@ -101,12 +101,12 @@ Additional server-side analysis requires a separately approved product use case.
 
 ## 1.4 Legacy design continuity, not legacy UI parity
 
-The legacy Honey app is a **design source**, not a screen-by-screen implementation specification.
+The legacy HOney app is a **design source**, not a screen-by-screen implementation specification.
 
-The rebuild should preserve what makes the existing product recognisably Honey while being willing to redesign any element whose hierarchy, interaction, legibility or usability can be materially improved. The intended result should feel like a more mature version of the same product, not either of these extremes:
+The rebuild should preserve what makes the existing product recognisably HOney while being willing to redesign any element whose hierarchy, interaction, legibility or usability can be materially improved. The intended result should feel like a more mature version of the same product, not either of these extremes:
 
 - a pixel-for-pixel port constrained by old UI decisions; or
-- an unrelated redesign that discards Honey's established visual character merely because the codebase is new.
+- an unrelated redesign that discards HOney's established visual character merely because the codebase is new.
 
 ### What should generally be preserved
 
@@ -116,7 +116,7 @@ When the legacy app/source/assets are available, treat the following as presumpt
 - the recognisable relationship among icon, typography, spacing and surface treatment;
 - the restrained, simple feel of the existing product;
 - interaction patterns that are already clear and efficient;
-- distinctive legacy elements that users would reasonably recognise as part of Honey rather than incidental implementation details.
+- distinctive legacy elements that users would reasonably recognise as part of HOney rather than incidental implementation details.
 
 Preservation does **not** mean copying every measurement or control exactly.
 
@@ -140,7 +140,7 @@ The rebuild may and should improve:
 
 For each legacy pattern, classify it as one of:
 
-- **Preserve** - the existing pattern is part of Honey's character and already works well;
+- **Preserve** - the existing pattern is part of HOney's character and already works well;
 - **Refine** - preserve the underlying feel/mental model but improve execution;
 - **Replace** - the old pattern creates real UX cost or conflicts with the new information architecture.
 
@@ -156,7 +156,7 @@ When the legacy app bundle/source/assets are supplied, create a short **Legacy D
 
 1. screen inventory;
 2. reusable visual tokens/components;
-3. distinctive Honey design cues;
+3. distinctive HOney design cues;
 4. interaction patterns worth retaining;
 5. known UI/UX weaknesses;
 6. a `Preserve / Refine / Replace` decision for each major pattern;
@@ -166,7 +166,7 @@ This audit is a design input only. It must not reintroduce legacy architecture c
 
 ## 1.5 Presentation, client logic and backend logic are separate contracts
 
-Honey must be structured so that visual/UI work is cheap to change and cannot accidentally become the place where product rules live.
+HOney must be structured so that visual/UI work is cheap to change and cannot accidentally become the place where product rules live.
 
 The client is therefore split conceptually into two distinct layers:
 
@@ -201,13 +201,13 @@ Sits between UI and backend APIs. It owns:
 - invoking backend use cases in response to user intents;
 - client-only behaviors such as iOS WebView/session presentation and direct Access networking where explicitly required.
 
-It SHOULD be testable without rendering the actual UI. iOS and Web may implement this layer differently, but both must consume the same documented Honey backend contracts.
+It SHOULD be testable without rendering the actual UI. iOS and Web may implement this layer differently, but both must consume the same documented HOney backend contracts.
 
-### Honey Backend Domain layer
+### HOney Backend Domain layer
 
 Owns product truth and reusable business rules, including:
 
-- Honey account/session rules;
+- HOney account/session rules;
 - school import consent and sync rules;
 - normalized timetable/history data;
 - Next Lesson derivation where implemented server-side;
@@ -229,7 +229,7 @@ UI Presentation
 Client Application Logic
       | typed API contracts
       v
-Honey Backend Domain Logic
+HOney Backend Domain Logic
       | connector contracts
       v
 School Portal Integration
@@ -239,7 +239,7 @@ Higher layers may depend on lower-layer contracts. Lower layers MUST NOT depend 
 
 ### Change-isolation acceptance test
 
-For every major feature, Honey should be able to answer yes to both:
+For every major feature, HOney should be able to answer yes to both:
 
 1. **Could we redesign this screen without rewriting the backend business rule?**
 2. **Could we change the backend implementation while preserving the documented API contract and leave the UI behavior intact?**
@@ -250,12 +250,12 @@ If either answer is no without a genuine product-contract change, responsibiliti
 
 # 2. System model: two system layers
 
-## 2.1 Layer A - Honey Core
+## 2.1 Layer A - HOney Core
 
-Honey Core owns:
+HOney Core owns:
 
-- Honey accounts;
-- Honey sessions and refresh tokens;
+- HOney accounts;
+- HOney sessions and refresh tokens;
 - import consent state;
 - normalized timetable data and lesson history;
 - canonical teacher/course/room entities derived from imported school data;
@@ -264,16 +264,16 @@ Honey Core owns:
 - Web and iOS application APIs;
 - settings, privacy controls and account lifecycle.
 
-Honey Core must not depend on the school portal's database schema beyond the connector boundary.
+HOney Core must not depend on the school portal's database schema beyond the connector boundary.
 
 ## 2.2 Layer B - School Portal Integration
 
 The School Portal Integration layer owns only:
 
-- validating a school account when provisioning/reconnecting a Honey account;
+- validating a school account when provisioning/reconnecting a HOney account;
 - obtaining/refreshing school portal sessions or tokens;
 - retrieving supported upstream data;
-- translating upstream records into the normalized Honey import format;
+- translating upstream records into the normalized HOney import format;
 - direct Access operations from clients where specified.
 
 The portal is treated as a major third-party dependency, not as the product's permanent identity/session layer.
@@ -289,8 +289,8 @@ School Portal
 School Integration Layer
   |  normalized import / connector state
   v
-Honey Core Backend
-  |  Honey account + imported state + Experiences
+HOney Core Backend
+  |  HOney account + imported state + Experiences
   +--------------------+
   |                    |
   v                    v
@@ -301,7 +301,7 @@ Access is the intentional exception:
 
 ```text
 iOS Client Application Logic  -------------------->  School Access API
-          (direct client request; no Honey relay)
+          (direct client request; no HOney relay)
 ```
 
 Even in this exception, the Access **UI component itself** does not own raw networking logic; direct school-API calls belong in the Access client application/service layer so the Access interface can still be redesigned independently.
@@ -310,53 +310,53 @@ Even in this exception, the Access **UI component itself** does not own raw netw
 
 # 3. Account and authentication model
 
-## 3.1 No separate Honey registration form
+## 3.1 No separate HOney registration form
 
-Honey should not expose conventional `Sign up` and `Create a Honey password` flows.
+HOney should not expose conventional `Sign up` and `Create a HOney password` flows.
 
 The primary entry action is:
 
 > **Continue with school account**
 
-The login UI is Honey-owned. The school portal is used behind that flow as the identity verifier.
+The login UI is HOney-owned. The school portal is used behind that flow as the identity verifier.
 
 ## 3.2 First-time account provisioning
 
-1. User enters school credentials in Honey's login UI.
-2. Honey validates those credentials against the school portal.
-3. Honey obtains a stable school identity key/profile sufficient to distinguish the student.
-4. If no Honey account exists for that school identity, Honey creates one automatically.
-5. Honey issues its own session credentials.
-6. Honey presents the school-data import consent screen.
-7. If the user consents, supported portal data is imported and normalized into Honey Core.
+1. User enters school credentials in HOney's login UI.
+2. HOney validates those credentials against the school portal.
+3. HOney obtains a stable school identity key/profile sufficient to distinguish the student.
+4. If no HOney account exists for that school identity, HOney creates one automatically.
+5. HOney issues its own session credentials.
+6. HOney presents the school-data import consent screen.
+7. If the user consents, supported portal data is imported and normalized into HOney Core.
 
 There is no separate sign-up decision after successful school authentication.
 
 ## 3.3 Returning login
 
-A Honey session and a school-portal connection are separate states.
+A HOney session and a school-portal connection are separate states.
 
 A returning user may therefore be:
 
-- signed into Honey and connected to the portal;
-- signed into Honey while the portal token has expired;
-- signed into Honey with previously imported timetable data while portal refresh is temporarily unavailable.
+- signed into HOney and connected to the portal;
+- signed into HOney while the portal token has expired;
+- signed into HOney with previously imported timetable data while portal refresh is temporarily unavailable.
 
-Portal expiry must **not** sign the user out of Honey.
+Portal expiry must **not** sign the user out of HOney.
 
 ## 3.4 Three authentication/session concerns
 
-Honey must treat the following as separate state even when they reuse the same underlying school credential:
+HOney must treat the following as separate state even when they reuse the same underlying school credential:
 
-1. **Honey session** - authenticates the user to Honey Core.
+1. **HOney session** - authenticates the user to HOney Core.
 2. **Native Portal API session** - authenticates direct/native portal API requests and/or feeds the timetable connector.
-3. **Official Portal WebView session** - authenticates the official school website rendered inside Honey.
+3. **Official Portal WebView session** - authenticates the official school website rendered inside HOney.
 
 These states must not be represented by one shared `isLoggedIn` flag. In particular:
 
-- a Honey session may remain valid while either portal session has expired;
+- a HOney session may remain valid while either portal session has expired;
 - expiry of the WebView session must not invalidate the native Portal API session;
-- expiry of the native Portal API session must not invalidate the WebView session or Honey session;
+- expiry of the native Portal API session must not invalidate the WebView session or HOney session;
 - session artifacts may be synchronized between native API and WebView only when the real portal authentication model proves that they are interchangeable.
 
 The invariant is:
@@ -396,15 +396,15 @@ Manual user action is acceptable only when the upstream authentication requireme
 
 Normal token expiry, cookie expiry, app restart, device restart, portal logout due solely to expiry, and native API 401/unauthenticated responses are **not** valid reasons to ask the user to type their password again.
 
-Honey Core may store renewable portal session material when needed for server-side timetable synchronization. Whether Honey Core also needs a server-side full-login credential is intentionally left open until the real portal authentication flow is re-analysed. V1 must not duplicate raw password storage on the server merely for convenience if renewable upstream credentials or iOS-assisted renewal are sufficient.
+HOney Core may store renewable portal session material when needed for server-side timetable synchronization. Whether HOney Core also needs a server-side full-login credential is intentionally left open until the real portal authentication flow is re-analysed. V1 must not duplicate raw password storage on the server merely for convenience if renewable upstream credentials or iOS-assisted renewal are sufficient.
 
 ## 3.6 Official Portal WebView session
 
-Honey iOS includes the official School Portal as a secondary utility surface opened from Home. The portal is rendered as the official site inside a `WKWebView`; Honey does not recreate the portal's long-tail features.
+HOney iOS includes the official School Portal as a secondary utility surface opened from Home. The portal is rendered as the official site inside a `WKWebView`; HOney does not recreate the portal's long-tail features.
 
 ### Persistent website state
 
-Use a persistent `WKWebsiteDataStore`, not an ephemeral store, so ordinary portal cookies/local website state survive app restarts. Honey may additionally remember a safe `lastPortalURL` so reopening the portal can return the user to the last useful location.
+Use a persistent `WKWebsiteDataStore`, not an ephemeral store, so ordinary portal cookies/local website state survive app restarts. HOney may additionally remember a safe `lastPortalURL` so reopening the portal can return the user to the last useful location.
 
 Do not persist/restore as `lastPortalURL`:
 
@@ -436,16 +436,16 @@ Native API        WebView session
  session        (WKWebsiteDataStore)
 ```
 
-WebView cookies are managed through WebKit's own website data/cookie store. Honey should not assume that ordinary native HTTP cookie storage and WebView cookie storage are automatically identical. If explicit synchronization is used, it must be implemented deliberately after the auth flow is understood. [W3][W4]
+WebView cookies are managed through WebKit's own website data/cookie store. HOney should not assume that ordinary native HTTP cookie storage and WebView cookie storage are automatically identical. If explicit synchronization is used, it must be implemented deliberately after the auth flow is understood. [W3][W4]
 
 ### Detecting expiry inside the WebView
 
-Honey should treat navigation to the known official login/auth state as a portal-session expiry signal. The app then:
+HOney should treat navigation to the known official login/auth state as a portal-session expiry signal. The app then:
 
 1. captures the intended safe destination;
 2. silently rebuilds a valid portal WebView session;
 3. returns to the intended destination;
-4. keeps the Honey account/session untouched.
+4. keeps the HOney account/session untouched.
 
 The normal user experience should be a loading transition, not a visible manual login form.
 
@@ -453,9 +453,9 @@ The normal user experience should be a loading transition, not a visible manual 
 
 Settings must distinguish:
 
-- **Sign out of Honey** - ends the current Honey session on that device/browser;
-- **Disconnect school account** - removes/invalidates the current portal connection but does not delete the Honey account;
-- **Delete Honey account** - deletes Honey-owned account data subject to the Experiences anonymity model and applicable retention rules.
+- **Sign out of HOney** - ends the current HOney session on that device/browser;
+- **Disconnect school account** - removes/invalidates the current portal connection but does not delete the HOney account;
+- **Delete HOney account** - deletes HOney-owned account data subject to the Experiences anonymity model and applicable retention rules.
 
 ---
 
@@ -463,9 +463,9 @@ Settings must distinguish:
 
 ## 4.1 Explicit import consent
 
-School authentication alone does not silently turn all portal data into Honey backend data.
+School authentication alone does not silently turn all portal data into HOney backend data.
 
-After account provisioning, Honey presents a concise consent step describing what will be imported and why.
+After account provisioning, HOney presents a concise consent step describing what will be imported and why.
 
 V1 consent domain:
 
@@ -480,16 +480,16 @@ Purpose:
 
 Suggested UI language:
 
-> **Import timetable and lesson history to Honey**  
-> Honey will store your timetable in your Honey account so it can show your schedule across devices, keep your lesson history, and verify experiences you choose to share.
+> **Import timetable and lesson history to HOney**  
+> HOney will store your timetable in your HOney account so it can show your schedule across devices, keep your lesson history, and verify experiences you choose to share.
 
-The user can revoke future syncing and delete imported timetable/history data from Honey settings.
+The user can revoke future syncing and delete imported timetable/history data from HOney settings.
 
 ## 4.2 Access data
 
-V1 Access operations remain client-to-school and are not relayed through Honey Core.
+V1 Access operations remain client-to-school and are not relayed through HOney Core.
 
-Do **not** import Access history into Honey's backend merely because it is available. Access data may be added as a separate explicit import domain later only when a concrete product use case requires it.
+Do **not** import Access history into HOney's backend merely because it is available. Access data may be added as a separate explicit import domain later only when a concrete product use case requires it.
 
 This is a direct application of the simplicity rule: do not store data without a defined user-facing purpose.
 
@@ -503,12 +503,12 @@ V1 contains no Exams module, no Exams backend table, and no Exams import consent
 
 ## 5.1 Canonical model
 
-Upstream portal records must be normalized into Honey-owned entities rather than stored as opaque portal blobs.
+Upstream portal records must be normalized into HOney-owned entities rather than stored as opaque portal blobs.
 
 Minimum normalized entities:
 
 ```text
-HoneyUser
+HOneyUser
 Teacher
 Course
 Room
@@ -518,10 +518,10 @@ SchoolConnection
 ImportConsent
 ```
 
-### `HoneyUser`
+### `HOneyUser`
 
 - `user_id`
-- stable internal Honey identifier
+- stable internal HOney identifier
 - `school_identity_key`
 - account status
 - created/updated timestamps
@@ -565,7 +565,7 @@ ImportConsent
 - enrollment/exposure state
 - provenance/source
 
-This relation is used for Timetable/History in Honey Core and for anonymous eligibility issuance in Experiences.
+This relation is used for Timetable/History in HOney Core and for anonymous eligibility issuance in Experiences.
 
 ## 5.2 Raw portal payloads
 
@@ -594,9 +594,9 @@ A successful sync:
 
 When the portal is unavailable or the token is expired:
 
-- Honey continues showing the last imported timetable;
+- HOney continues showing the last imported timetable;
 - the UI labels stale state only when it matters;
-- Honey account and Experiences browsing remain available;
+- HOney account and Experiences browsing remain available;
 - re-authentication/sync failure is not treated as whole-app failure.
 
 ---
@@ -605,7 +605,7 @@ When the portal is unavailable or the token is expired:
 
 ## 6.0 Shared visual and interaction language
 
-All top-level surfaces should feel like one Honey product rather than independent feature mini-apps. Home, Experiences, Timetable, Access and the Portal WebView shell share the same visual system and navigation grammar.
+All top-level surfaces should feel like one HOney product rather than independent feature mini-apps. Home, Experiences, Timetable, Access and the Portal WebView shell share the same visual system and navigation grammar.
 
 The design system should be derived from the Legacy Design Audit rather than invented in isolation. At minimum it should define:
 
@@ -705,7 +705,7 @@ No recommendation model is required. `Recent from your classes` can be a determi
 
 Home includes one secondary **School Portal** row/button that opens the official portal WebView.
 
-This is deliberately not another bottom tab. It is a doorway to official long-tail functionality that Honey has chosen not to rebuild. The WebView should restore its persistent website state and, where safe, the last useful portal URL. Portal-session expiry must be recovered silently as defined in Section 3.6.
+This is deliberately not another bottom tab. It is a doorway to official long-tail functionality that HOney has chosen not to rebuild. The WebView should restore its persistent website state and, where safe, the last useful portal URL. Portal-session expiry must be recovered silently as defined in Section 3.6.
 
 ## 7.2 Explicit non-goals for Home
 
@@ -739,7 +739,7 @@ Required elements:
 - teacher;
 - room.
 
-The visual language may be ported/refined from the legacy Honey timetable where useful, but the information architecture is new and the Week view is intentionally removed.
+The visual language may be ported/refined from the legacy HOney timetable where useful, but the information architecture is new and the Week view is intentionally removed.
 
 ## 8.2 Lesson interaction
 
@@ -803,7 +803,7 @@ Optional derived counts such as `42 lessons with Ms X` may be shown only when th
 
 # 10. Experiences entry architecture
 
-The detailed community, moderation, privacy and publication rules are normative in Appendix A. This section defines how Experiences fits into the whole Honey product.
+The detailed community, moderation, privacy and publication rules are normative in Appendix A. This section defines how Experiences fits into the whole HOney product.
 
 ## 10.1 Top-level Experiences page
 
@@ -889,9 +889,9 @@ Access is intentionally **not redesigned from first principles in this specifica
 When the legacy app bundle/code is supplied:
 
 - use the legacy Access UI and behavior as the primary reference;
-- preserve its proven mental model and overall Honey feel;
+- preserve its proven mental model and overall HOney feel;
 - refine visual execution, hierarchy, states and accessibility where the rebuild can make them clearly better;
-- adapt the module to the new Honey account/navigation shell and code architecture without forcing pixel parity.
+- adapt the module to the new HOney account/navigation shell and code architecture without forcing pixel parity.
 
 The legacy code is a behavior reference, not a requirement to preserve old backend architecture.
 
@@ -899,13 +899,13 @@ The legacy code is a behavior reference, not a requirement to preserve old backe
 
 On iOS, Access school-API operations must be sent **directly from the app to the school's Access API**.
 
-Honey Core must not relay these operational calls.
+HOney Core must not relay these operational calls.
 
 Reasons are architectural simplicity and avoiding an unnecessary server intermediary for an interaction that can be completed directly by the client.
 
 ## 11.3 Backend storage
 
-V1 does not import Access history into Honey Core merely for completeness.
+V1 does not import Access history into HOney Core merely for completeness.
 
 If a later feature needs Access-derived backend state, it requires:
 
@@ -915,13 +915,13 @@ If a later feature needs Access-derived backend state, it requires:
 
 ## 11.4 Web capability gate
 
-A normal browser `fetch()`/XHR call to a different origin is permitted only when the target school API's CORS policy allows the Honey web origin. Credentialed cross-origin requests additionally require explicit credential support, and an `Authorization`-header request that triggers preflight cannot be worked around by frontend code if the target server does not cooperate. [W1][W2]
+A normal browser `fetch()`/XHR call to a different origin is permitted only when the target school API's CORS policy allows the HOney web origin. Credentialed cross-origin requests additionally require explicit credential support, and an `Authorization`-header request that triggers preflight cannot be worked around by frontend code if the target server does not cooperate. [W1][W2]
 
 Therefore:
 
 - **Default:** Access is absent from Web.
 - **Enable Web Access only if tested against the real school endpoint and confirmed to support the required CORS/authentication behavior.**
-- Honey must not introduce a server relay merely to obtain Web parity for Access.
+- HOney must not introduce a server relay merely to obtain Web parity for Access.
 
 If the capability test passes, Web may use the same conceptual Access module with browser-to-school direct requests. If it fails, iOS remains the only Access surface.
 
@@ -931,9 +931,9 @@ If the capability test passes, Web may use the same conceptual Access module wit
 
 ## 12.1 Shared product state
 
-The following are Honey Core features and should be shared across iOS and Web:
+The following are HOney Core features and should be shared across iOS and Web:
 
-- Honey account/session;
+- HOney account/session;
 - imported timetable;
 - Next Lesson;
 - History;
@@ -949,7 +949,7 @@ The following are Honey Core features and should be shared across iOS and Web:
 - four bottom tabs;
 - Home includes the official School Portal WebView as a secondary route;
 - the school credential needed for unchanged upstream re-authentication is retained in Keychain so normal portal expiry never requires manual login again;
-- Honey session, Native Portal API session and WebView Portal session remain separate state;
+- HOney session, Native Portal API session and WebView Portal session remain separate state;
 - native/WebView portal session artifacts may be synchronized only when the analysed auth protocol supports it;
 - Access direct-to-school integration;
 - native notification/OS integrations may be added only with a separate explicit product requirement.
@@ -957,7 +957,7 @@ The following are Honey Core features and should be shared across iOS and Web:
 ### Web
 
 - responsive navigation;
-- same Honey backend data for timetable/history/Experiences;
+- same HOney backend data for timetable/history/Experiences;
 - portal reconnection may require re-entering school credentials;
 - Access omitted unless the direct browser capability gate passes.
 
@@ -965,7 +965,7 @@ The following are Honey Core features and should be shared across iOS and Web:
 
 Web and iOS use the same Experiences publication protocol.
 
-The browser/app does not hold the LLM provider API key. The client sends candidate content to a Honey-controlled moderation issuer. The issuer runs the constrained moderation pipeline once and, if the content passes, returns a short-lived pass bound to the exact content hash and policy version. The Community API verifies that pass; it does **not** run the LLM a second time.
+The browser/app does not hold the LLM provider API key. The client sends candidate content to a HOney-controlled moderation issuer. The issuer runs the constrained moderation pipeline once and, if the content passes, returns a short-lived pass bound to the exact content hash and policy version. The Community API verifies that pass; it does **not** run the LLM a second time.
 
 This preserves policy parity without trusting browser JavaScript and without double-running the semantic moderation model.
 
@@ -1017,7 +1017,7 @@ lesson_instances
 user_lesson_exposures
 ```
 
-These are Honey-owned normalized records with source identifiers for reconciliation.
+These are HOney-owned normalized records with source identifiers for reconciliation.
 
 ## 13.3 Course History is a view, not a new source of truth
 
@@ -1037,15 +1037,15 @@ Community content stores no ordinary author field, as specified in Appendix A.
 
 A simple logical service split is sufficient. It need not imply separate machines or deployment stacks.
 
-All Honey backend APIs MUST be stable, typed **product/domain contracts**, not ad-hoc endpoints shaped around a particular screen. UI composition, tab placement, card layout and visual component structure are client concerns. Backend responses may expose domain state/capabilities needed by a screen, but MUST NOT require a specific UI implementation to remain valid.
+All HOney backend APIs MUST be stable, typed **product/domain contracts**, not ad-hoc endpoints shaped around a particular screen. UI composition, tab placement, card layout and visual component structure are client concerns. Backend responses may expose domain state/capabilities needed by a screen, but MUST NOT require a specific UI implementation to remain valid.
 
-## 14.1 Honey Auth / Account API
+## 14.1 HOney Auth / Account API
 
 Responsibilities:
 
 - school-account validation orchestration;
-- Honey account provisioning;
-- Honey sessions;
+- HOney account provisioning;
+- HOney sessions;
 - settings/account lifecycle.
 
 ## 14.2 School Connector
@@ -1059,7 +1059,7 @@ Responsibilities:
 
 Does **not** relay iOS Access operations.
 
-## 14.3 Honey Data API
+## 14.3 HOney Data API
 
 Responsibilities:
 
@@ -1072,7 +1072,7 @@ Responsibilities:
 
 Responsibilities:
 
-- verify that the authenticated Honey user has the required exposure;
+- verify that the authenticated HOney user has the required exposure;
 - issue one-time scoped unlinkable eligibility credentials;
 - avoid placing a persistent author identifier into the public contribution path.
 
@@ -1098,9 +1098,9 @@ Responsibilities:
 
 # 15. Privacy and data boundaries
 
-## 15.1 Honey account data
+## 15.1 HOney account data
 
-Honey intentionally stores user-linked timetable/history data after explicit import consent because that state powers defined account features.
+HOney intentionally stores user-linked timetable/history data after explicit import consent because that state powers defined account features.
 
 This is not treated as anonymous data.
 
@@ -1108,21 +1108,21 @@ This is not treated as anonymous data.
 
 Experiences deliberately has a stronger separation:
 
-- public post records do not contain Honey user IDs;
+- public post records do not contain HOney user IDs;
 - eligibility and publication use one-time unlinkable credentials from V1;
 - moderation passes are bound to content, not author identity;
 - application logs must not be designed to reconstruct `student -> post` linkage;
-- Honey does not claim impossible network-level anonymity simply because a direct network request may expose connection metadata in transit.
+- HOney does not claim impossible network-level anonymity simply because a direct network request may expose connection metadata in transit.
 
 The product should expose a legible privacy/data map explaining this distinction to users.
 
 ## 15.3 No privacy theatre
 
-Honey should say precisely what it does, not use vague `completely anonymous` wording.
+HOney should say precisely what it does, not use vague `completely anonymous` wording.
 
 Acceptable statement:
 
-> Honey uses your school account to verify that you are eligible to contribute. Published Experiences are stored without your school account attached to them, and Honey does not maintain an application record designed to map a published Experience back to its author.
+> HOney uses your school account to verify that you are eligible to contribute. Published Experiences are stored without your school account attached to them, and HOney does not maintain an application record designed to map a published Experience back to its author.
 
 ---
 
@@ -1130,7 +1130,7 @@ Acceptable statement:
 
 ## 16.1 School portal unavailable
 
-- Honey account remains usable.
+- HOney account remains usable.
 - Last imported timetable/history remains visible.
 - Next Lesson is based on last imported data and may show `Last synced` when stale.
 - Experiences browsing remains available.
@@ -1142,7 +1142,7 @@ Acceptable statement:
 - silently refresh/renew when possible;
 - otherwise silently reproduce the official login using the Keychain credential;
 - replace the native portal session and retry the failed operation where safe;
-- do not sign the user out of Honey;
+- do not sign the user out of HOney;
 - ask for manual school authentication only when the saved credential cannot satisfy the current upstream auth requirement.
 
 ## 16.3 Official Portal WebView session expired
@@ -1151,7 +1151,7 @@ Acceptable statement:
 - preserve the intended safe destination;
 - silently rebuild the WebView session using compatible shared session artifacts or the Keychain credential;
 - reload/return to the intended destination;
-- do not affect the Honey session;
+- do not affect the HOney session;
 - if the portal has introduced MFA/CAPTCHA/password reset/new login requirements, enter `USER_ACTION_REQUIRED` instead of attempting fragile infinite automation.
 
 ## 16.4 Experiences moderation unavailable
@@ -1178,7 +1178,7 @@ Required sections:
 
 - school identity/profile summary;
 - sign out;
-- delete Honey account.
+- delete HOney account.
 
 ### School connection
 
@@ -1221,7 +1221,7 @@ The following are intentionally outside V1 unless separately re-approved:
 - AI summaries of teachers;
 - teacher rankings;
 - Access server relay;
-- storing Access history in Honey backend without a concrete use case;
+- storing Access history in HOney backend without a concrete use case;
 - speculative analysis merely because imported data exists.
 
 ---
@@ -1231,11 +1231,11 @@ The following are intentionally outside V1 unless separately re-approved:
 ## 19.1 First launch
 
 ```text
-Open Honey
+Open HOney
 -> Continue with school account
 -> School credentials validated
--> Honey account auto-created
--> Honey session issued
+-> HOney account auto-created
+-> HOney session issued
 -> Import timetable/history? [clear consent]
 -> Sync
 -> Home
@@ -1282,8 +1282,8 @@ Experiences
 ## 19.4 Web user
 
 ```text
-Sign into Honey
--> Home / Experiences / Timetable use Honey backend state
+Sign into HOney
+-> Home / Experiences / Timetable use HOney backend state
 -> reconnect school portal only when refresh requires it
 -> Access appears only if browser direct-access capability is enabled
 ```
@@ -1292,27 +1292,27 @@ Sign into Honey
 
 # 20. Acceptance criteria
 
-The ground-up Honey V1 is product-complete only when all of the following are true:
+The ground-up HOney V1 is product-complete only when all of the following are true:
 
-1. School-account login automatically provisions/reconnects a Honey account.
-2. No separate Honey password-registration flow exists.
-3. Honey session lifetime is independent from Native Portal API and WebView Portal session lifetimes.
+1. School-account login automatically provisions/reconnects a HOney account.
+2. No separate HOney password-registration flow exists.
+3. HOney session lifetime is independent from Native Portal API and WebView Portal session lifetimes.
 4. iOS securely retains the credential material required to reproduce the unchanged official portal login flow.
 5. Normal native portal token/cookie expiry never asks the iOS user to manually enter school credentials again.
 6. Home provides a secondary official School Portal WebView entry.
 7. The WebView uses persistent website data and can restore a safe last portal location.
-8. Normal WebView portal-session expiry is detected and silently recovered without affecting Honey login.
+8. Normal WebView portal-session expiry is detected and silently recovered without affecting HOney login.
 9. Native Portal API and WebView sessions are not assumed to be identical; sharing/synchronization is enabled only when the analysed portal authentication model supports it.
 10. Manual portal login is required only when the upstream authentication requirement materially changes or the retained credential becomes invalid.
 11. Timetable/history import requires explicit consent.
-12. Imported timetable is normalized into Honey-owned backend entities.
+12. Imported timetable is normalized into HOney-owned backend entities.
 13. Home contains only Welcome, Next Lesson, a small Experiences area, and the secondary School Portal entry.
 14. Timetable has one Day view and no Week view.
 15. History is one reusable secondary page used by both Timetable and Experiences.
 16. Tapping a lesson provides a direct route into relevant Experiences and the composer.
 17. iOS top-level navigation is Home / Experiences / Timetable / Access.
 18. Access behavior is ported from the legacy implementation when supplied.
-19. iOS Access calls the school API directly; Honey does not relay Access operations.
+19. iOS Access calls the school API directly; HOney does not relay Access operations.
 20. Web contains Home / Experiences / Timetable.
 21. Web Access is enabled only if direct browser-to-school API compatibility is proven; otherwise it is absent.
 22. Exams does not exist in V1 navigation, backend model, consent or import.
@@ -1321,17 +1321,17 @@ The ground-up Honey V1 is product-complete only when all of the following are tr
 25. Experiences eligibility derives from imported lesson exposure without public author identity.
 26. App and Web use the same Experiences moderation/publication protocol.
 27. Community publication fails closed when moderation is unavailable or uncertain.
-28. No public Experiences post stores an ordinary Honey author field.
+28. No public Experiences post stores an ordinary HOney author field.
 29. The user-facing privacy page explains the actual account/import/community data boundaries.
-30. UI Presentation, Client Application Logic and Honey Backend Domain Logic are implemented as distinct responsibility layers.
+30. UI Presentation, Client Application Logic and HOney Backend Domain Logic are implemented as distinct responsibility layers.
 31. Backend domain rules are testable without rendering iOS/Web UI.
 32. Major UI redesigns can preserve existing backend API/domain contracts unless the product contract itself changes.
 33. Access direct-school networking is isolated from Access view components in a client service/application layer.
 34. No additional V1 feature is added without a concrete product purpose.
 35. A Legacy Design Audit has been completed from the supplied legacy app/source/assets before final UI implementation.
 36. Major legacy patterns are explicitly classified as Preserve, Refine or Replace.
-37. iOS and Web share a coherent Honey design language while allowing platform-appropriate interaction differences.
-38. The rebuilt product is recognisably continuous with legacy Honey in overall feel, without requiring pixel-level UI parity.
+37. iOS and Web share a coherent HOney design language while allowing platform-appropriate interaction differences.
+38. The rebuilt product is recognisably continuous with legacy HOney in overall feel, without requiring pixel-level UI parity.
 39. Known legacy UX weaknesses are not retained solely for familiarity.
 
 ---
@@ -1340,7 +1340,7 @@ The ground-up Honey V1 is product-complete only when all of the following are tr
 
 The exact Access behavior and the legacy visual system are intentionally not reconstructed from memory in this document.
 
-**Pending implementation input:** the existing Honey app bundle/source code and available visual assets.
+**Pending implementation input:** the existing HOney app bundle/source code and available visual assets.
 
 When provided, first create the `Legacy Design Audit` defined in §1.4, then create a focused `Access Legacy Parity Map` containing:
 
@@ -1350,7 +1350,7 @@ When provided, first create the `Legacy Design Audit` defined in §1.4, then cre
 - credential/token behavior;
 - states/errors;
 - pieces to port unchanged;
-- pieces that must be adapted to the new Honey shell.
+- pieces that must be adapted to the new HOney shell.
 
 Until that map exists, this master specification's Access requirement is behavioral inheritance plus direct client-to-school networking.
 
@@ -1362,36 +1362,36 @@ Until that map exists, this master specification's Access requirement is behavio
 
 [W2] MDN Web Docs, **Access-Control-Allow-Credentials** / credentialed requests. Cross-origin credentials require the target response to explicitly permit credentials and the requesting origin. https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Allow-Credentials
 
-[W3] Apple Developer Documentation, **WKWebsiteDataStore**. WebKit website data storage is the authoritative store for WKWebView website data; Honey should use the persistent/default store for the official portal surface. https://developer.apple.com/documentation/webkit/wkwebsitedatastore
+[W3] Apple Developer Documentation, **WKWebsiteDataStore**. WebKit website data storage is the authoritative store for WKWebView website data; HOney should use the persistent/default store for the official portal surface. https://developer.apple.com/documentation/webkit/wkwebsitedatastore
 
-[W4] Apple Developer Documentation, **WKHTTPCookieStore**. WKWebView cookies are managed through WebKit's cookie store and can be accessed/synchronized deliberately when Honey's analysed portal auth protocol requires it. https://developer.apple.com/documentation/webkit/wkhttpcookiestore
+[W4] Apple Developer Documentation, **WKHTTPCookieStore**. WKWebView cookies are managed through WebKit's cookie store and can be accessed/synchronized deliberately when HOney's analysed portal auth protocol requires it. https://developer.apple.com/documentation/webkit/wkhttpcookiestore
 
 ---
 
-# Appendix A - Honey Experiences normative sub-specification
+# Appendix A - HOney Experiences normative sub-specification
 
-The following Experiences specification is part of the Honey V1 baseline. Where the master specification and this appendix address the same navigation/account topic, the master specification controls. Community culture, content boundaries, moderation, anonymous publication, reactions and Experiences privacy are controlled by this appendix.
+The following Experiences specification is part of the HOney V1 baseline. Where the master specification and this appendix address the same navigation/account topic, the master specification controls. Community culture, content boundaries, moderation, anonymous publication, reactions and Experiences privacy are controlled by this appendix.
 
-# Honey Experiences
+# HOney Experiences
 ## Final Product, Community, Moderation and Privacy Specification
 
 **Version:** 1.0  
 **Date:** 2026-09-01  
 **Status:** Product baseline for implementation  
-**Scope:** The Experiences community layer of Honey. In this master specification it is a normative sub-specification; Honey account, timetable/history and access architecture are specified in the main document.
+**Scope:** The Experiences community layer of HOney. In this master specification it is a normative sub-specification; HOney account, timetable/history and access architecture are specified in the main document.
 
 ---
 
 ## 0. Executive summary
 
-Honey Experiences is a student-to-student, anonymous, raw-first information layer for school life. It allows verified students to share what it was like to have a teacher, take a course, sit in a classroom, use a facility, or eat a particular canteen item. Teachers are a major primary entity, not a hidden or secondary subject; however, the product is deliberately not a teacher verdict, complaint system, disciplinary channel or popularity ranking.
+HOney Experiences is a student-to-student, anonymous, raw-first information layer for school life. It allows verified students to share what it was like to have a teacher, take a course, sit in a classroom, use a facility, or eat a particular canteen item. Teachers are a major primary entity, not a hidden or secondary subject; however, the product is deliberately not a teacher verdict, complaint system, disciplinary channel or popularity ranking.
 
 The product rests on four principles:
 
 1. **Different audiences are legitimate.** A student may reasonably tell peers something that they do not need or want to say directly to the person being discussed.
 2. **Experience has two-sided value.** A contribution can help other students understand the school, and it can also matter to the contributor as an act of voice and self-expression. A user does not need to pretend that helping others is their only reason for sharing.
 3. **Respect does not require positivity or perfect articulation.** Strongly negative, mixed and hard-to-explain feelings are legitimate. Specificity is encouraged because it helps readers, but inability to explain a feeling does not erase its value.
-4. **Scope makes anonymity defensible.** Honey only publishes the class of speech for which it is prepared to defend anonymous participation. Serious matters that require investigation, safeguarding, discipline or emergency action do not enter the public feed at all.
+4. **Scope makes anonymity defensible.** HOney only publishes the class of speech for which it is prepared to defend anonymous participation. Serious matters that require investigation, safeguarding, discipline or emergency action do not enter the public feed at all.
 
 This produces a simple governance model:
 
@@ -1400,11 +1400,11 @@ This produces a simple governance model:
 > **Negative is allowed. Cruelty is not.**  
 > **You do not have to turn your experience into advice. You can simply say what it was like.**
 
-The public system is raw-first: compliant original contributions remain directly browsable. Honey does not create an overall teacher rating, AI summary, teacher leaderboard, or algorithmic "truth" score. Like/dislike reactions are allowed only from students with relevant verified exposure and are never used for ranking or moderation.
+The public system is raw-first: compliant original contributions remain directly browsable. HOney does not create an overall teacher rating, AI summary, teacher leaderboard, or algorithmic "truth" score. Like/dislike reactions are allowed only from students with relevant verified exposure and are never used for ranking or moderation.
 
-The normal moderation path contains **no human review**. The system uses deterministic rules plus an LLM as a constrained feature extractor. The LLM never decides policy in free-form language and has no tools. Unknown, coded, evasive or semantically uncertain content fails closed and asks the user to rephrase. Serious content is blocked from public Honey and the student is shown appropriate school channels. High-arousal ordinary opinion may be held privately for 24 hours and can be published after the user actively reconfirms.
+The normal moderation path contains **no human review**. The system uses deterministic rules plus an LLM as a constrained feature extractor. The LLM never decides policy in free-form language and has no tools. Unknown, coded, evasive or semantically uncertain content fails closed and asks the user to rephrase. Serious content is blocked from public HOney and the student is shown appropriate school channels. High-arousal ordinary opinion may be held privately for 24 hours and can be published after the user actively reconfirms.
 
-Honey's privacy goal is strong but legible rather than mystical. The public community database has no author field. Eligibility and publication use one-time unlinkable credentials modeled on Privacy Pass-style authenticators. A separate moderation issuer can see the text needed for semantic checking but does not need the student's identity; it signs a short-lived pass bound to the exact content hash. The community service verifies that pass and does not run the LLM a second time. Honey does not claim network-level anonymity against a global traffic observer; it does commit not to store an application-level author-content relation or logs designed to reconstruct one.
+HOney's privacy goal is strong but legible rather than mystical. The public community database has no author field. Eligibility and publication use one-time unlinkable credentials modeled on Privacy Pass-style authenticators. A separate moderation issuer can see the text needed for semantic checking but does not need the student's identity; it signs a short-lived pass bound to the exact content hash. The community service verifies that pass and does not run the LLM a second time. HOney does not claim network-level anonymity against a global traffic observer; it does commit not to store an application-level author-content relation or logs designed to reconstruct one.
 
 Experiences is available in both the native app and a web surface. The same publication protocol and rules apply to both. The LLM provider API key remains server-side.
 
@@ -1460,7 +1460,7 @@ The intended social model is:
 
 James Rachels argues that privacy helps make different kinds of social relationships possible because people legitimately reveal different information to different people. Helen Nissenbaum's theory of contextual integrity likewise treats privacy as the appropriateness of an information flow within a particular social context, rather than as a requirement that information be absolutely secret. [R1][R2]
 
-For Honey, these are distinct social acts:
+For HOney, these are distinct social acts:
 
 - `student -> peer`: sharing context about school life;
 - `student -> teacher`: giving interpersonal feedback;
@@ -1468,7 +1468,7 @@ For Honey, these are distinct social acts:
 
 The fact that a teacher is the subject of a statement does not make the teacher the intended audience of every conversation about that statement.
 
-**Product consequence:** Experiences is student-facing. Honey does not provide teacher reply tools, teacher-facing review dashboards, or a normal mechanism that converts peer speech into an author-identification request.
+**Product consequence:** Experiences is student-facing. HOney does not provide teacher reply tools, teacher-facing review dashboards, or a normal mechanism that converts peer speech into an author-identification request.
 
 **Community phrase:**
 
@@ -1478,7 +1478,7 @@ The fact that a teacher is the subject of a statement does not make the teacher 
 
 Research on gossip as cultural learning emphasizes that third-party stories transmit social knowledge and let people learn beyond their own direct observation. Research on the social sharing of emotion shows that people commonly share emotionally significant experiences with others and that this process has interpersonal and social functions; it is not merely information transfer. Speaker-centered theories of expression also recognize an expressive interest in stating one's views and experiences, not only in producing a useful outcome for an audience. [R3][R4][R5]
 
-Honey therefore does **not** require a contributor's motive to be purely altruistic.
+HOney therefore does **not** require a contributor's motive to be purely altruistic.
 
 A user may post because:
 
@@ -1490,7 +1490,7 @@ A user may post because:
 
 This is not the same as endorsing "venting" as an anger-management technique. A 2024 meta-analysis found that popular catharsis-style venting does not reliably reduce anger or aggression, and social-sharing research likewise does not support the simple claim that sharing automatically produces emotional recovery. [R4][R6]
 
-**Product consequence:** Honey validates expression, but it separates expression from impulsive publication. Private notes are always available; high-arousal ordinary speech may cool for 24 hours before public release.
+**Product consequence:** HOney validates expression, but it separates expression from impulsive publication. Private notes are always available; high-arousal ordinary speech may cool for 24 hours before public release.
 
 **Community phrases:**
 
@@ -1502,7 +1502,7 @@ This is not the same as endorsing "venting" as an anger-management technique. A 
 
 Philosophical work on gossip does not support the rule that talking about an absent person is inherently wrong. Westacott instead evaluates considerations such as deliberate falsehood, breach of confidence and expected harm. Fabre likewise treats gossip as morally complex: it can have valuable relational and social functions, while some forms fail to show the concern and respect owed to persons. [R7][R8]
 
-Honey therefore allows:
+HOney therefore allows:
 
 - praise without evidence essays;
 - strong negative opinion;
@@ -1510,7 +1510,7 @@ Honey therefore allows:
 - feelings that cannot be fully decomposed into observable facts;
 - contradictory experiences from different students.
 
-Honey does not require:
+HOney does not require:
 
 - a positive sentence to "balance" every negative one;
 - pros and cons;
@@ -1526,31 +1526,31 @@ The boundary is not negativity. The boundary is avoidable humiliation, dehumaniz
 
 ### 2.4 Foundation D - Scope makes anonymity defensible
 
-Kathleen Wallace's account of anonymity highlights its relationship to both privacy and accountability. Honey resolves that tension at the publication boundary rather than by making anonymity conditional after publication. [R9]
+Kathleen Wallace's account of anonymity highlights its relationship to both privacy and accountability. HOney resolves that tension at the publication boundary rather than by making anonymity conditional after publication. [R9]
 
-Honey's own synthesis is:
+HOney's own synthesis is:
 
-> **Honey only publishes speech for which anonymous protection remains morally defensible.**
+> **HOney only publishes speech for which anonymous protection remains morally defensible.**
 
-If a type of content is serious enough that Honey itself would feel unable to defend anonymous public dissemination, that content should not enter public Experiences in the first place.
+If a type of content is serious enough that HOney itself would feel unable to defend anonymous public dissemination, that content should not enter public Experiences in the first place.
 
 This means:
 
 - moderation acts on content before public persistence;
 - ordinary disagreement does not justify identifying a contributor;
 - an inappropriate post is blocked or removed, not deanonymized;
-- serious allegations are routed away from public Honey rather than published first and investigated later;
+- serious allegations are routed away from public HOney rather than published first and investigated later;
 - normal product logic contains no author-disclosure branch.
 
 **Community phrase:**
 
-> **Honey protects the speaker by first being strict about what Honey itself is willing to publish.**
+> **HOney protects the speaker by first being strict about what HOney itself is willing to publish.**
 
 ---
 
 ## 3. Six moral concerns
 
-The following six concerns synthesize the recurring concerns in Westacott, Fabre, privacy theory and mature review-platform rules. They are the normative source of Honey's executable rules. [R2][R7][R8][R10][R11]
+The following six concerns synthesize the recurring concerns in Westacott, Fabre, privacy theory and mature review-platform rules. They are the normative source of HOney's executable rules. [R2][R7][R8][R10][R11]
 
 ### 3.1 Falsehood and fabrication
 
@@ -1570,11 +1570,11 @@ Strong criticism is compatible with respect. Speech whose main purpose is ridicu
 
 ### 3.5 Disproportionate harm
 
-Some claims carry consequences that an anonymous review system cannot responsibly host even when they may be true. If the appropriate next step is investigation, protection, discipline, evidence preservation or emergency action, Honey is not the right public channel.
+Some claims carry consequences that an anonymous review system cannot responsibly host even when they may be true. If the appropriate next step is investigation, protection, discipline, evidence preservation or emergency action, HOney is not the right public channel.
 
 ### 3.6 Context and audience mismatch
 
-A statement can be acceptable in one context and inappropriate in another. Honey is specifically a verified student peer context about school experience. Private information, institutional casework and content about students as rated objects are outside that context.
+A statement can be acceptable in one context and inappropriate in another. HOney is specifically a verified student peer context about school experience. Private information, institutional casework and content about students as rated objects are outside that context.
 
 ---
 
@@ -1612,17 +1612,17 @@ Do not expose another student's identity, contact information, family, medical i
 
 Strong criticism is allowed. Slurs, sexualization, dehumanization, appearance attacks, humiliating nicknames, threats and dogpiling are not.
 
-### Check 6 - **Bigger than Honey?**
+### Check 6 - **Bigger than HOney?**
 
 > **Would this reasonably require investigation, safeguarding, discipline or urgent action?**
 
-If yes, it does not belong in the public Experiences feed. Honey shows the appropriate school channels but does not relay the report.
+If yes, it does not belong in the public Experiences feed. HOney shows the appropriate school channels but does not relay the report.
 
 ---
 
 ## 5. Culture is a product surface, not a policy page
 
-A large field experiment in online discussions found that visibly announcing community rules increased compliance and newcomer participation. Honey should therefore make the intended social norm visible in the product, not hide it in Terms. [R12]
+A large field experiment in online discussions found that visibly announcing community rules increased compliance and newcomer participation. HOney should therefore make the intended social norm visible in the product, not hide it in Terms. [R12]
 
 ### 5.1 Core community language
 
@@ -1640,16 +1640,16 @@ The following short statements are canonical and may be reused across the interf
 
 > **Verified exposure, not verified truth.**
 
-> **If it needs investigation, Honey is not the right public channel.**
+> **If it needs investigation, HOney is not the right public channel.**
 
 ### 5.2 Landing-page statement
 
 Recommended copy:
 
 > **People are more than one experience. Experiences still matter.**  
-> Honey is a place for students to share what school felt like to them - good, bad, mixed, or hard to explain. Add context when you can. You do not need to turn every experience into advice.  
+> HOney is a place for students to share what school felt like to them - good, bad, mixed, or hard to explain. Add context when you can. You do not need to turn every experience into advice.  
 >  
-> Honey verifies relevant school exposure where possible; it does not certify every interpretation as fact. No single contribution is a verdict.
+> HOney verifies relevant school exposure where possible; it does not certify every interpretation as fact. No single contribution is a verdict.
 
 ### 5.3 Composer posture
 
@@ -1672,7 +1672,7 @@ Avoid:
 - "Make sure your review is fair."
 - "Always give pros and cons."
 - "Think about how the teacher will feel before posting."
-- "Use Honey to vent."
+- "Use HOney to vent."
 
 The first group creates unnecessary self-censorship; the last falsely frames the product as a catharsis mechanism.
 
@@ -1696,7 +1696,7 @@ The first group creates unnecessary self-censorship; the last falsely frames the
 - **School service**
 - **Activity / event**
 
-Teachers are a prominent primary entity. Honey does not disguise the fact that students want to browse experiences about particular teachers.
+Teachers are a prominent primary entity. HOney does not disguise the fact that students want to browse experiences about particular teachers.
 
 ### 6.2 Relationships
 
@@ -1732,7 +1732,7 @@ A different contribution from the same lesson may use Room 403 as the primary en
 
 ### 7.1 Lesson-linked experience
 
-After a completed timetable lesson, Honey may offer an experience entry point. The contribution is text-first. There is **no 1-5 lesson rating**.
+After a completed timetable lesson, HOney may offer an experience entry point. The contribution is text-first. There is **no 1-5 lesson rating**.
 
 A student may:
 
@@ -1744,7 +1744,7 @@ The lesson serves as verified context, not as a numerical score event.
 
 ### 7.2 Retrospective experience
 
-Honey may invite students with substantial verified prior exposure to write a broader retrospective experience about a teacher or course.
+HOney may invite students with substantial verified prior exposure to write a broader retrospective experience about a teacher or course.
 
 The invitation is useful for both cold start and longitudinal context.
 
@@ -1752,15 +1752,15 @@ Public provenance may say:
 
 `Verified retrospective experience`
 
-This means only that Honey verified meaningful prior exposure. It does not mean the contributor is an expert, trusted reviewer or official representative.
+This means only that HOney verified meaningful prior exposure. It does not mean the contributor is an expert, trusted reviewer or official representative.
 
 ### 7.3 General school experience
 
-For places and objects where the portal cannot prove precise usage, Honey may allow contributions from authenticated students with honest provenance such as:
+For places and objects where the portal cannot prove precise usage, HOney may allow contributions from authenticated students with honest provenance such as:
 
 `Verified school member`
 
-Honey must not label this `Verified use` unless actual exposure was verified.
+HOney must not label this `Verified use` unless actual exposure was verified.
 
 ### 7.4 Private note
 
@@ -1781,7 +1781,7 @@ Requirements:
 
 ## 8. Rating policy
 
-Honey should be unusually cautious with scalar ratings.
+HOney should be unusually cautious with scalar ratings.
 
 ### 8.1 Forbidden scalar ratings
 
@@ -1794,7 +1794,7 @@ V1 must not provide a 1-5, star, percentage or equivalent scalar rating for:
 - any student;
 - any other human being.
 
-Honey also must not infer a hidden teacher score from reactions or sentiment.
+HOney also must not infer a hidden teacher score from reactions or sentiment.
 
 ### 8.2 Allowed scalar ratings
 
@@ -1817,9 +1817,9 @@ Facilities remain text/tags only in V1. A future version may add a clearly label
 
 > **Every compliant contribution remains directly browsable in the user-approved wording in which it was published.**
 
-Raw-first does not mean unfiltered. It means Honey does not replace compliant user speech with an algorithmic interpretation.
+Raw-first does not mean unfiltered. It means HOney does not replace compliant user speech with an algorithmic interpretation.
 
-Honey must not:
+HOney must not:
 
 - replace raw text with an AI summary;
 - generate an overall teacher verdict;
@@ -1864,13 +1864,13 @@ Not allowed in V1:
 
 ### 9.4 Contradiction is a feature, not an error
 
-If one student says "extremely patient" and another says "I found her impatient," both may remain. Honey does not need to resolve the contradiction.
+If one student says "extremely patient" and another says "I found her impatient," both may remain. HOney does not need to resolve the contradiction.
 
 ---
 
 ## 10. Reactions
 
-Honey may display simple `Like` / `Dislike` reactions, visually as thumbs-up and thumbs-down, with a clear explanation that they are **experiential resonance**, not fact checking.
+HOney may display simple `Like` / `Dislike` reactions, visually as thumbs-up and thumbs-down, with a clear explanation that they are **experiential resonance**, not fact checking.
 
 Requirements:
 
@@ -1897,7 +1897,7 @@ For small cohorts, exact reaction counts may be hidden until a minimum count is 
 
 ## 11. Principle: no human moderation in the normal flow
 
-Honey's normal community pipeline has no manual review queue.
+HOney's normal community pipeline has no manual review queue.
 
 There is no state called:
 
@@ -1908,7 +1908,7 @@ There is no state called:
 
 Operational shutdown is separate from content flow.
 
-This is a deliberate departure from platforms such as RateMyProfessors, which use human moderators, and from the Santa Clara Principles' recommendation of human appeal. Honey adopts those sources' useful rule clarity and transparency lessons, but does not copy their human moderation model because it conflicts with the intended privacy, scale and operational design. [R10][R13]
+This is a deliberate departure from platforms such as RateMyProfessors, which use human moderators, and from the Santa Clara Principles' recommendation of human appeal. HOney adopts those sources' useful rule clarity and transparency lessons, but does not copy their human moderation model because it conflicts with the intended privacy, scale and operational design. [R10][R13]
 
 ---
 
@@ -1972,7 +1972,7 @@ Examples:
 
 High-arousal or sweeping hostile opinion that remains within ordinary opinion rather than serious allegation.
 
-The cooling period is not a finding that the opinion is wrong or inappropriate. It separates immediate emotional arousal from a deliberate public decision. Research supports pre-posting friction as behaviorally meaningful, while catharsis research cautions against treating immediate venting as inherently beneficial. The exact 24-hour duration is Honey's product choice, not a scientific constant. [R6][R14]
+The cooling period is not a finding that the opinion is wrong or inappropriate. It separates immediate emotional arousal from a deliberate public decision. Research supports pre-posting friction as behaviorally meaningful, while catharsis research cautions against treating immediate venting as inherently beneficial. The exact 24-hour duration is HOney's product choice, not a scientific constant. [R6][R14]
 
 During cooldown:
 
@@ -2044,20 +2044,20 @@ Examples include:
 - serious protected-trait discrimination allegations;
 - child-safety matters;
 - severe food/building safety incidents requiring action;
-- other serious conduct Honey cannot responsibly turn into anonymous public review content.
+- other serious conduct HOney cannot responsibly turn into anonymous public review content.
 
 This category is not "probably false." It applies even when the allegation may be true.
 
 The UI says:
 
-> **This sounds more serious than something Honey Experiences is designed to publish.**  
-> Honey will not publish or send this text to the school. You can keep it privately, delete it, or use one of the school channels below.
+> **This sounds more serious than something HOney Experiences is designed to publish.**  
+> HOney will not publish or send this text to the school. You can keep it privately, delete it, or use one of the school channels below.
 
-The product provides static information for the student's mentor, safeguarding lead or appropriate office. Honey does not relay the allegation.
+The product provides static information for the student's mentor, safeguarding lead or appropriate office. HOney does not relay the allegation.
 
 ### 13.7 UNCERTAIN_REPHRASE
 
-Honey cannot confidently determine what a phrase means or whether it sits within the publication boundary.
+HOney cannot confidently determine what a phrase means or whether it sits within the publication boundary.
 
 Examples:
 
@@ -2074,7 +2074,7 @@ Uncertainty is itself a publish-blocking signal.
 
 Copy:
 
-> **Honey could not confidently understand part of this wording.**  
+> **HOney could not confidently understand part of this wording.**  
 > Say it more directly before publishing. Your draft remains private.
 
 The system should not disclose detailed detector logic that would make bypass easier.
@@ -2111,9 +2111,9 @@ The following examples are part of the canonical regression test suite:
 
 Regex is necessary but insufficient. OWASP's current prompt-injection guidance documents encoding, Unicode smuggling, misspellings, typoglycemia and other obfuscation strategies, and recommends defense in depth rather than a single pattern filter. [R15]
 
-Honey's rule is not "the model can identify every code word." No model can reliably know every new local euphemism. The rule is:
+HOney's rule is not "the model can identify every code word." No model can reliably know every new local euphemism. The rule is:
 
-> **The model may abstain, and Honey treats unresolved semantic uncertainty as a reason not to publish.**
+> **The model may abstain, and HOney treats unresolved semantic uncertainty as a reason not to publish.**
 
 ### 15.1 Normalization layer
 
@@ -2160,7 +2160,7 @@ Any sufficiently high unresolved uncertainty routes to `UNCERTAIN_REPHRASE`, not
 
 ## 16. Prompt-injection-resistant moderation design
 
-Honey's moderation LLM is intentionally not an agent.
+HOney's moderation LLM is intentionally not an agent.
 
 It has:
 
@@ -2246,7 +2246,7 @@ The signing service accepts only the deterministic engine's result.
 
 ### 16.4 No trust in model self-confidence alone
 
-Honey must not rely on a single scalar such as `confidence=0.97`. Uncertainty is constructed from multiple observable signals: unsupported language, semantic opacity, injection/evasion features, inconsistent structured fields, unknown encoded content and model abstention.
+HOney must not rely on a single scalar such as `confidence=0.97`. Uncertainty is constructed from multiple observable signals: unsupported language, semantic opacity, injection/evasion features, inconsistent structured fields, unknown encoded content and model abstention.
 
 ### 16.5 Model failure behavior
 
@@ -2264,9 +2264,9 @@ not
 
 ## 17. Privacy goal
 
-Honey should provide strong application/protocol unlinkability without making an impossible claim of absolute network anonymity.
+HOney should provide strong application/protocol unlinkability without making an impossible claim of absolute network anonymity.
 
-### 17.1 What Honey commits to
+### 17.1 What HOney commits to
 
 - Published Experiences are not stored with the student's school account ID.
 - The community database has no `author_id` field.
@@ -2276,9 +2276,9 @@ Honey should provide strong application/protocol unlinkability without making an
 - Eligibility and publication are separated by privacy-preserving one-time credentials.
 - The public post cannot be linked to the issuance flow from protocol data alone when the chosen credential scheme provides unlinkability.
 
-### 17.2 What Honey does not claim
+### 17.2 What HOney does not claim
 
-Honey does not claim that:
+HOney does not claim that:
 
 - nobody on the internet can ever observe connection metadata;
 - a global traffic observer cannot perform timing correlation;
@@ -2289,7 +2289,7 @@ Honey does not claim that:
 
 Recommended:
 
-> **Honey uses your school account to check whether you are eligible to contribute. Published Experiences are stored without your school identity attached. Honey does not maintain an author field for public Experiences or application logs designed to identify who wrote a particular post.**
+> **HOney uses your school account to check whether you are eligible to contribute. Published Experiences are stored without your school identity attached. HOney does not maintain an author field for public Experiences or application logs designed to identify who wrote a particular post.**
 
 Additional note:
 
@@ -2299,9 +2299,9 @@ Additional note:
 
 ## 18. Eligibility credentials
 
-Experiences depends on Honey's authenticated portal layer and timetable history.
+Experiences depends on HOney's authenticated portal layer and timetable history.
 
-For eligible human/course contexts, the identity service verifies exposure and issues a one-time anonymous credential. Privacy Pass is an IETF-standard family of unlinkable authenticators designed so that a client can prove it obtained an authorization token without letting the relying party link redemption to issuance. Honey may implement Privacy Pass directly or use the same architectural primitive. [R16][R17]
+For eligible human/course contexts, the identity service verifies exposure and issues a one-time anonymous credential. Privacy Pass is an IETF-standard family of unlinkable authenticators designed so that a client can prove it obtained an authorization token without letting the relying party link redemption to issuance. HOney may implement Privacy Pass directly or use the same architectural primitive. [R16][R17]
 
 Credential scope examples:
 
@@ -2411,13 +2411,13 @@ It does not contain:
 - author IP
 ```
 
-Precise infrastructure metadata may transiently exist at the network layer, but Honey should not intentionally persist it in a form linked to a public post.
+Precise infrastructure metadata may transiently exist at the network layer, but HOney should not intentionally persist it in a form linked to a public post.
 
 ---
 
 ## 21. Abuse restriction without author-linked public posts
 
-App-store UGC policies expect platforms to be able to restrict abusive users. Honey can do this without creating an author field for published posts. Apple and Google Play both require robust UGC safeguards, reporting and user restriction capabilities. [R18][R19]
+App-store UGC policies expect platforms to be able to restrict abusive users. HOney can do this without creating an author field for published posts. Apple and Google Play both require robust UGC safeguards, reporting and user restriction capabilities. [R18][R19]
 
 Recommended design:
 
@@ -2426,7 +2426,7 @@ Recommended design:
 - Repeated high-confidence prohibited attempts may suspend future community credential issuance.
 - This does not create a link between a successfully published Experience and an account.
 
-If an already published post is later removed under a revised rule, Honey may be unable to identify and suspend its author by design. The remedy is content removal, filter correction and, if necessary, community shutdown. This trade-off is explicit.
+If an already published post is later removed under a revised rule, HOney may be unable to identify and suspend its author by design. The remedy is content removal, filter correction and, if necessary, community shutdown. This trade-off is explicit.
 
 ---
 
@@ -2442,7 +2442,7 @@ Report reasons:
 2. Threat, hate or targeted harassment
 3. Sexualization or inappropriate personal content
 4. Hearsay/fake/manipulated experience
-5. Serious content that belongs outside Honey
+5. Serious content that belongs outside HOney
 6. Spam/coordinated content
 7. Other specific guideline violation
 
@@ -2465,21 +2465,21 @@ Because the normal flow has no human moderation:
 
 ### 22.2 User notice
 
-If the contributor later sees their own post removed through their private local reference, Honey should explain:
+If the contributor later sees their own post removed through their private local reference, HOney should explain:
 
 - the rule category;
 - whether a policy update was involved;
 - whether the user can edit and re-submit.
 
-There is no manual appeal queue. For ordinary editable cases, the practical appeal is revision and re-submission. Honey should publish this limitation honestly.
+There is no manual appeal queue. For ordinary editable cases, the practical appeal is revision and re-submission. HOney should publish this limitation honestly.
 
-The Santa Clara Principles are useful as a transparency benchmark for clear rules, notice, automated-system disclosure and measurement, even though Honey intentionally does not adopt their human-review recommendation. [R13]
+The Santa Clara Principles are useful as a transparency benchmark for clear rules, notice, automated-system disclosure and measurement, even though HOney intentionally does not adopt their human-review recommendation. [R13]
 
 ---
 
 ## 23. Shutdown is outside the moderation flow
 
-Honey should prefer temporary loss of community functionality to operating a community whose consequences it cannot safely contain. This is consistent with Safety by Design's emphasis on provider responsibility, user autonomy and transparency. [R20]
+HOney should prefer temporary loss of community functionality to operating a community whose consequences it cannot safely contain. This is consistent with Safety by Design's emphasis on provider responsibility, user autonomy and transparency. [R20]
 
 Required operational controls:
 
@@ -2506,7 +2506,7 @@ Shutdown never requires identifying authors.
 
 ## 24. Seed cohort and norm formation
 
-Early participants strongly influence what later users perceive as normal. Matias's field experiment supports making community norms visible; Honey should also make them visible through actual early content. [R12]
+Early participants strongly influence what later users perceive as normal. Matias's field experiment supports making community norms visible; HOney should also make them visible through actual early content. [R12]
 
 ### 24.1 Seed cohort
 
@@ -2549,7 +2549,7 @@ Do not seed only highly polished, philosophically nuanced reviews. That would cr
 
 Recommended:
 
-> **You have had substantial experience with this part of school. We are inviting you to help establish what honest, normal student-to-student sharing looks like on Honey. Positive, negative, mixed or difficult-to-explain experiences are all useful. We are not asking for a particular kind of review.**
+> **You have had substantial experience with this part of school. We are inviting you to help establish what honest, normal student-to-student sharing looks like on HOney. Positive, negative, mixed or difficult-to-explain experiences are all useful. We are not asking for a particular kind of review.**
 
 ---
 
@@ -2559,10 +2559,10 @@ Recommended:
 
 Experiences is available in both:
 
-- Honey native app;
-- Honey web application.
+- HOney native app;
+- HOney web application.
 
-The web surface lowers friction for students who want to browse or contribute without installing the app. Timetable is available from Honey's imported backend data on both surfaces. Access remains native-first and is enabled on the web only if the school API permits direct browser-side calls without a Honey relay.
+The web surface lowers friction for students who want to browse or contribute without installing the app. Timetable is available from HOney's imported backend data on both surfaces. Access remains native-first and is enabled on the web only if the school API permits direct browser-side calls without a HOney relay.
 
 ### 25.1 Parity requirements for Experiences
 
@@ -2582,7 +2582,7 @@ The same moderation issuer and community acceptance protocol apply to both. Brow
 
 ### 25.2 Teacher access posture
 
-Honey does not provide a teacher/staff community interface. It cannot promise that teachers never see screenshots or borrowed student access. The product promise is about intended access and author privacy, not impossible social secrecy.
+HOney does not provide a teacher/staff community interface. It cannot promise that teachers never see screenshots or borrowed student access. The product promise is about intended access and author privacy, not impossible social secrecy.
 
 ---
 
@@ -2592,7 +2592,7 @@ Honey does not provide a teacher/staff community interface. It cannot promise th
 
 NIST's AI Risk Management Framework emphasizes pre-deployment and ongoing testing, quantitative/qualitative measurement, uncertainty, benchmarks and documented performance. [R21]
 
-Honey must maintain a versioned, human-authored regression corpus even though runtime moderation has no human queue.
+HOney must maintain a versioned, human-authored regression corpus even though runtime moderation has no human queue.
 
 ### 26.1 Required test dimensions
 
@@ -2688,7 +2688,7 @@ Experiences v1 is not ready for broad release until all of the following are tru
 
 ## 28. How external sources are used
 
-Honey does not copy any one platform or ethical framework wholesale. The sources serve different roles:
+HOney does not copy any one platform or ethical framework wholesale. The sources serve different roles:
 
 - **Rachels / Nissenbaum** - adopts audience differentiation and context-appropriate information flow; does not define privacy as absolute secrecy.
 - **Baumeister / Rimé / speaker-expression theory** - adopts the social-learning and first-person value of sharing experience; does not claim that sharing is automatically therapeutic.
@@ -2697,7 +2697,7 @@ Honey does not copy any one platform or ethical framework wholesale. The sources
 - **CHI employee voice** - adopts civility, validity, safety, egalitarianism, anonymity, slowness and controlled access as design goals; does not adopt its runtime human-moderation model.
 - **RateMyProfessors** - adopts firsthand focus, no hearsay, the principle that negative review is not itself a violation, and routing serious matters elsewhere; does not adopt mandatory human moderation, teacher reply, scalar professor ratings or pro/con balancing.
 - **Apple / Google Play UGC** - adopts filtering, reporting, abuse restriction and clear rules; does not design people as popularity objects.
-- **Santa Clara Principles** - adopts rule clarity, transparency, notice and measurement of automated moderation; does not make human appeal a normal Honey runtime requirement.
+- **Santa Clara Principles** - adopts rule clarity, transparency, notice and measurement of automated moderation; does not make human appeal a normal HOney runtime requirement.
 - **eSafety Safety by Design** - adopts provider responsibility, user autonomy, transparency and emergency controls; does not take on a broad institutional case-handling role.
 - **NIST AI RMF / OWASP** - adopts testing, uncertainty, structured untrusted-data handling and prompt-injection defense; does not treat LLM output as self-authorizing policy.
 - **IETF Privacy Pass** - adopts the unlinkable authorization primitive; does not claim global network anonymity.
@@ -2754,4 +2754,4 @@ Honey does not copy any one platform or ethical framework wholesale. The sources
 
 ## Final internal definition
 
-> **Honey Experiences is a student-to-student shared memory of school life. It protects room for praise, criticism, discomfort, uncertainty and self-expression without pretending that every experience is a final verdict. Culture makes nuance normal; executable rules keep the public boundary appropriate; pre-publication moderation keeps serious harm outside; privacy architecture prevents public content from being stored as a student record.**
+> **HOney Experiences is a student-to-student shared memory of school life. It protects room for praise, criticism, discomfort, uncertainty and self-expression without pretending that every experience is a final verdict. Culture makes nuance normal; executable rules keep the public boundary appropriate; pre-publication moderation keeps serious harm outside; privacy architecture prevents public content from being stored as a student record.**

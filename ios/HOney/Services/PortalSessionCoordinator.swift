@@ -80,7 +80,7 @@ actor PortalSessionCoordinator {
         self.safetyWindow = safetyWindow
     }
 
-    /// Store freshly-entered credentials (from the Honey login screen) so the
+    /// Store freshly-entered credentials (from the HOney login screen) so the
     /// connector can silently re-login later.
     func authorizeCredentials(_ credentials: PortalCredentials) throws {
         try vault.saveCredentials(credentials)

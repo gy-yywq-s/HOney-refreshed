@@ -9,8 +9,8 @@
 
 import Foundation
 
-enum HoneyCoding {
-    /// Decoder for the Honey backend. Tolerant date parsing (ISO-8601 with or
+enum HOneyCoding {
+    /// Decoder for the HOney backend. Tolerant date parsing (ISO-8601 with or
     /// without fractional seconds, or a Unix epoch number).
     static let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -31,7 +31,7 @@ enum HoneyCoding {
         return decoder
     }()
 
-    /// Encoder for Honey request bodies. Model properties for request bodies use
+    /// Encoder for HOney request bodies. Model properties for request bodies use
     /// explicit CodingKeys where the wire format is snake_case, so no key
     /// conversion is applied here.
     static let encoder: JSONEncoder = {

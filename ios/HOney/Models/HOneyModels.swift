@@ -1,35 +1,35 @@
 //
-//  HoneyModels.swift
-//  HOney — Codable models for the Honey backend API (Band 2/4, no SwiftUI).
+//  HOneyModels.swift
+//  HOney — Codable models for the HOney backend API (Band 2/4, no SwiftUI).
 //
 
 import Foundation
 
 // MARK: - Auth & account
 
-struct HoneySession: Codable, Sendable, Equatable {
+struct HOneySession: Codable, Sendable, Equatable {
     let accessToken: String
     let accessExpiresAt: Date
     let refreshToken: String
     let refreshExpiresAt: Date
 }
 
-struct HoneyConsent: Codable, Sendable, Equatable {
+struct HOneyConsent: Codable, Sendable, Equatable {
     var timetable: Bool
 }
 
-struct HoneyConnection: Codable, Sendable, Equatable {
+struct HOneyConnection: Codable, Sendable, Equatable {
     let connected: Bool
     let lastSyncedAt: Date?
     let portalTokenValid: Bool
 }
 
-struct HoneyProfile: Codable, Sendable, Equatable {
+struct HOneyProfile: Codable, Sendable, Equatable {
     let honeyId: String
     let displayName: String
     let isAdmin: Bool
-    var consent: HoneyConsent
-    var connection: HoneyConnection?
+    var consent: HOneyConsent
+    var connection: HOneyConnection?
 }
 
 struct LoginResponse: Codable, Sendable {
@@ -37,11 +37,11 @@ struct LoginResponse: Codable, Sendable {
     let displayName: String
     let created: Bool
     let isAdmin: Bool
-    let consent: HoneyConsent
-    let session: HoneySession
+    let consent: HOneyConsent
+    let session: HOneySession
 
-    var profile: HoneyProfile {
-        HoneyProfile(honeyId: honeyId, displayName: displayName, isAdmin: isAdmin, consent: consent, connection: nil)
+    var profile: HOneyProfile {
+        HOneyProfile(honeyId: honeyId, displayName: displayName, isAdmin: isAdmin, consent: consent, connection: nil)
     }
 }
 
@@ -49,11 +49,11 @@ struct MeResponse: Codable, Sendable {
     let honeyId: String
     let displayName: String
     let isAdmin: Bool
-    let consent: HoneyConsent
-    let connection: HoneyConnection?
+    let consent: HOneyConsent
+    let connection: HOneyConnection?
 
-    var profile: HoneyProfile {
-        HoneyProfile(honeyId: honeyId, displayName: displayName, isAdmin: isAdmin, consent: consent, connection: connection)
+    var profile: HOneyProfile {
+        HOneyProfile(honeyId: honeyId, displayName: displayName, isAdmin: isAdmin, consent: consent, connection: connection)
     }
 }
 

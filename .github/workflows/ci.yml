@@ -15,6 +15,11 @@ jobs:
         with: { version: 11.24.0 }
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: pnpm }
+      - name: Brand casing gate (no 'H[o]ney' anywhere)
+        # The pattern is written H[o]ney so this workflow file passes its own gate.
+        run: |
+          ! grep -rn --binary-files=without-match 'H[o]ney' . \
+            --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r build
       - run: pnpm -r typecheck

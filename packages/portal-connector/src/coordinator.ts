@@ -20,7 +20,7 @@ export type PortalSessionState =
   | { state: "incompatible" };
 
 /**
- * Credential/session persistence boundary. Server-side Honey stores only
+ * Credential/session persistence boundary. Server-side HOney stores only
  * token+exp (never the school password); a credential-holding vault exists on
  * iOS (Keychain) and in tests. loadAuthorizedCredentialsSilently must never
  * trigger an interactive prompt (no biometric binding on this path).

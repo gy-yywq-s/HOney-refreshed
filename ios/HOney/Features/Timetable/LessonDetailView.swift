@@ -69,7 +69,7 @@ struct LessonDetailView: View {
                         } label: {
                             Label("Share experience", systemImage: "square.and.pencil")
                         }
-                        .buttonStyle(HoneyPrimaryButtonStyle())
+                        .buttonStyle(HOneyPrimaryButtonStyle())
                     }
                 }
                 .padding(Theme.Spacing.lg)

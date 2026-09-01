@@ -3,7 +3,7 @@
 Required by master spec §21. Maps the legacy Access implementation
 (`reference/legacy-ios/`, `AccessScreen` + `PortalStore` + `PortalAPI`) to the V1 rebuild, so the
 proven behavior is preserved while the architecture is replaced. V1 Access is **native-first and
-calls the school Access API directly from the client — Honey never relays** (§11.2, verified:
+calls the school Access API directly from the client — HOney never relays** (§11.2, verified:
 the backend exposes no Access route).
 
 ## Current screens & user actions

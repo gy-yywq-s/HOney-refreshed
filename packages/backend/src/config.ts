@@ -1,18 +1,18 @@
 import { scryptSync } from "node:crypto";
 
-export interface HoneyConfig {
+export interface HOneyConfig {
   dbPath: string;
   /** 32-byte key for sealing portal tokens at rest (AES-256-GCM). */
   sealKey: Buffer;
   portalBaseUrl: string;
-  /** Honey access-token TTL (ms). */
+  /** HOney access-token TTL (ms). */
   accessTtlMs: number;
-  /** Honey refresh-token TTL (ms). */
+  /** HOney refresh-token TTL (ms). */
   refreshTtlMs: number;
   adminStudentId: string;
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): HoneyConfig {
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
   const secret = env.HONEY_SECRET ?? "";
   if (!secret && env.NODE_ENV === "production") {
     throw new Error("HONEY_SECRET is required in production");

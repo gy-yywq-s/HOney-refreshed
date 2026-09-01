@@ -32,7 +32,7 @@ struct EntityPageView: View {
                 } label: {
                     Label("Share an experience", systemImage: "square.and.pencil")
                 }
-                .buttonStyle(HoneyPrimaryButtonStyle())
+                .buttonStyle(HOneyPrimaryButtonStyle())
 
                 if isLoading {
                     LoadingView().frame(height: 160)

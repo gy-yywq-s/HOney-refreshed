@@ -9,7 +9,7 @@ import Observation
 enum AuthPhase: Equatable {
     case loading
     case signedOut
-    case signedIn(HoneyProfile)
+    case signedIn(HOneyProfile)
 }
 
 @MainActor
@@ -24,7 +24,7 @@ final class AppModel {
         self.services = services
     }
 
-    var profile: HoneyProfile? {
+    var profile: HOneyProfile? {
         if case .signedIn(let profile) = phase { return profile }
         return nil
     }
@@ -63,7 +63,7 @@ final class AppModel {
                 PortalCredentials(username: username, password: password)
             )
             phase = .signedIn(response.profile)
-        } catch HoneyAPIError.http(let status, _) where status == 401 {
+        } catch HOneyAPIError.http(let status, _) where status == 401 {
             loginError = "Incorrect school account or password."
         } catch {
             loginError = "Could not sign in. Please check your connection and try again."

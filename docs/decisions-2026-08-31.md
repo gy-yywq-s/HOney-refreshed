@@ -41,6 +41,6 @@ These are binding refinements on top of `honey_master_spec_v1.md`. Where silent,
 ## HOney account provisioning (Gary, later same night)
 - No standalone signup: **school-portal login + import IS signup**. On first successful login,
   assign a random **honeyId** (6 chars, unambiguous alphabet, collision-checked) as the user's
-  Honey identity.
+  HOney identity.
 - Engineering standard: optimal solution within feasible/no-high-cost range for every technical
   detail; standard library first (`node:sqlite` for storage, `node:crypto` for ids/tokens/crypto).

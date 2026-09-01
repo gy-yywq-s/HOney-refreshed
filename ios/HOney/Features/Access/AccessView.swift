@@ -116,7 +116,7 @@ struct AccessView: View {
                         Label("Open \(gate.title)", systemImage: "lock.open")
                     }
                 }
-                .buttonStyle(HoneyPrimaryButtonStyle(enabled: canOpen(vm)))
+                .buttonStyle(HOneyPrimaryButtonStyle(enabled: canOpen(vm)))
                 .disabled(!canOpen(vm) || vm.isWorking)
             }
         }
@@ -160,7 +160,7 @@ struct AccessView: View {
                     Button("Submit permit") {
                         Task { await vm.applyPermit(start: applyStart, end: applyEnd, reason: applyReason.isEmpty ? "Exit" : applyReason) }
                     }
-                    .buttonStyle(HoneySecondaryButtonStyle())
+                    .buttonStyle(HOneySecondaryButtonStyle())
                     .disabled(vm.isWorking)
                 } else {
                     Text("Quick apply requests a 2-hour exit starting now.")
@@ -171,7 +171,7 @@ struct AccessView: View {
                             await vm.applyPermit(start: Date(), end: Date().addingTimeInterval(2 * 3600), reason: "Exit")
                         }
                     }
-                    .buttonStyle(HoneySecondaryButtonStyle())
+                    .buttonStyle(HOneySecondaryButtonStyle())
                     .disabled(vm.isWorking)
                 }
             }

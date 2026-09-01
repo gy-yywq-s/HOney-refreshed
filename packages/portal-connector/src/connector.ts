@@ -19,7 +19,7 @@ import { PortalSessionCoordinator, type CredentialVault } from "./coordinator.js
  * these calls (spec §5.2) — everything returned is normalized or a typed wire
  * record consumed immediately by the integration layer.
  */
-export class HoneyPortalConnector implements PortalConnector {
+export class HOneyPortalConnector implements PortalConnector {
   readonly api: PortalApi;
   readonly coordinator: PortalSessionCoordinator;
 

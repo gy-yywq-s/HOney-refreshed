@@ -1,13 +1,13 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { AuthSession, PortalIdentity } from "@honey/shared";
-import type { HoneyConfig } from "../config.js";
-import { generateHoneyId, generateToken, hashToken, open, seal } from "../crypto.js";
+import type { HOneyConfig } from "../config.js";
+import { generateHOneyId, generateToken, hashToken, open, seal } from "../crypto.js";
 
 // Account lifecycle (spec §3): there is no signup. A validated school login
-// provisions (or reconnects) the Honey account and issues Honey's own session,
+// provisions (or reconnects) the HOney account and issues HOney's own session,
 // whose lifetime is fully independent of the portal session.
 
-export interface HoneyUserRow {
+export interface HOneyUserRow {
   honey_id: string;
   school_account_key: string;
   display_name: string;
@@ -24,7 +24,7 @@ export interface IssuedSession {
 }
 
 export interface ProvisionResult {
-  user: HoneyUserRow;
+  user: HOneyUserRow;
   created: boolean;
   session: IssuedSession;
 }
@@ -32,14 +32,14 @@ export interface ProvisionResult {
 export class AccountService {
   constructor(
     private readonly db: DatabaseSync,
-    private readonly config: HoneyConfig,
+    private readonly config: HOneyConfig,
     private readonly now: () => number = Date.now,
   ) {}
 
   /**
    * Called after the portal validated a school login. Provisions on first
    * sight (random honeyId), reconnects otherwise; always stores the fresh
-   * portal token (sealed) and issues a Honey session.
+   * portal token (sealed) and issues a HOney session.
    */
   /** Leading-zero-tolerant admin match (portal id 88 vs configured "0088"). */
   private computeIsAdmin(studentId: string): boolean {
@@ -52,11 +52,11 @@ export class AccountService {
     const admin = this.computeIsAdmin(identity.studentId) ? 1 : 0;
     let user = this.db
       .prepare("SELECT * FROM honey_users WHERE school_account_key = ?")
-      .get(key) as unknown as HoneyUserRow | undefined;
+      .get(key) as unknown as HOneyUserRow | undefined;
     let created = false;
 
     if (!user) {
-      const honeyId = this.uniqueHoneyId();
+      const honeyId = this.uniqueHOneyId();
       this.db
         .prepare(
           "INSERT INTO honey_users (honey_id, school_account_key, display_name, student_type, created_at, is_admin) VALUES (?, ?, ?, ?, ?, ?)",
@@ -67,7 +67,7 @@ export class AccountService {
         .run(honeyId);
       user = this.db
         .prepare("SELECT * FROM honey_users WHERE honey_id = ?")
-        .get(honeyId) as unknown as HoneyUserRow;
+        .get(honeyId) as unknown as HOneyUserRow;
       created = true;
     } else {
       if (user.display_name !== identity.name && identity.name) {
@@ -150,13 +150,13 @@ export class AccountService {
     return { accessToken, accessExpiresAt, refreshToken, refreshExpiresAt };
   }
 
-  authenticate(accessToken: string): HoneyUserRow | null {
+  authenticate(accessToken: string): HOneyUserRow | null {
     const row = this.db
       .prepare(
         `SELECT u.* FROM honey_sessions s JOIN honey_users u ON u.honey_id = s.honey_id
          WHERE s.access_hash = ? AND s.access_expires_at > ?`,
       )
-      .get(hashToken(accessToken), this.now()) as unknown as HoneyUserRow | undefined;
+      .get(hashToken(accessToken), this.now()) as unknown as HOneyUserRow | undefined;
     return row ?? null;
   }
 
@@ -176,7 +176,7 @@ export class AccountService {
     this.db.prepare("DELETE FROM honey_sessions WHERE access_hash = ?").run(hashToken(accessToken));
   }
 
-  /** Disconnect school account: drop portal material; Honey account stays (spec §3.7). */
+  /** Disconnect school account: drop portal material; HOney account stays (spec §3.7). */
   disconnectSchool(honeyId: string): void {
     this.db
       .prepare(
@@ -185,7 +185,7 @@ export class AccountService {
       .run(honeyId);
   }
 
-  /** Delete the Honey account (cascades sessions/connections/consents/exposures). */
+  /** Delete the HOney account (cascades sessions/connections/consents/exposures). */
   deleteAccount(honeyId: string): void {
     this.db.prepare("DELETE FROM honey_users WHERE honey_id = ?").run(honeyId);
   }
@@ -245,9 +245,9 @@ export class AccountService {
     return row?.is_admin === 1;
   }
 
-  private uniqueHoneyId(): string {
+  private uniqueHOneyId(): string {
     for (let attempt = 0; attempt < 20; attempt++) {
-      const id = generateHoneyId();
+      const id = generateHOneyId();
       const exists = this.db
         .prepare("SELECT 1 FROM honey_users WHERE honey_id = ?")
         .get(id);

@@ -8,4 +8,4 @@ export {
   type PortalSessionState,
   type ReplayPolicy,
 } from "./coordinator.js";
-export { HoneyPortalConnector } from "./connector.js";
+export { HOneyPortalConnector } from "./connector.js";

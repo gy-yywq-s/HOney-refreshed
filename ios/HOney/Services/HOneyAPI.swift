@@ -1,6 +1,6 @@
 //
-//  HoneyAPI.swift
-//  HOney — typed async client for the Honey backend (Band 2/4, no SwiftUI).
+//  HOneyAPI.swift
+//  HOney — typed async client for the HOney backend (Band 2/4, no SwiftUI).
 //
 //  Bearer access token; single-flight refresh-on-401 with one retry. All request
 //  timeouts are bounded via the URLSession configuration.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum HoneyAPIError: Error, Equatable {
+enum HOneyAPIError: Error, Equatable {
     case notAuthenticated
     case invalidResponse
     case http(status: Int, body: String?)
@@ -17,13 +17,13 @@ enum HoneyAPIError: Error, Equatable {
 
 private struct NoBody: Encodable {}
 
-actor HoneyAPI {
+actor HOneyAPI {
     private let baseURL: URL
     private let session: URLSession
     private let store: SessionStore
-    private var refreshTask: Task<HoneySession, Error>?
+    private var refreshTask: Task<HOneySession, Error>?
 
-    init(baseURL: URL, store: SessionStore, session: URLSession = HoneyAPI.makeSession()) {
+    init(baseURL: URL, store: SessionStore, session: URLSession = HOneyAPI.makeSession()) {
         self.baseURL = baseURL
         self.store = store
         self.session = session
@@ -189,9 +189,9 @@ actor HoneyAPI {
 
     private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
         do {
-            return try HoneyCoding.decoder.decode(T.self, from: data)
+            return try HOneyCoding.decoder.decode(T.self, from: data)
         } catch {
-            throw HoneyAPIError.decoding(String(describing: error))
+            throw HOneyAPIError.decoding(String(describing: error))
         }
     }
 
@@ -205,23 +205,23 @@ actor HoneyAPI {
     ) async throws -> Data {
         var components = URLComponents(url: baseURL.appending(path: path), resolvingAgainstBaseURL: false)
         if !query.isEmpty { components?.queryItems = query }
-        guard let url = components?.url else { throw HoneyAPIError.invalidResponse }
+        guard let url = components?.url else { throw HOneyAPIError.invalidResponse }
 
         var request = URLRequest(url: url)
         request.httpMethod = method
         if let body {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try HoneyCoding.encoder.encode(body)
+            request.httpBody = try HOneyCoding.encoder.encode(body)
         }
         if authed {
             guard let token = await store.current()?.accessToken else {
-                throw HoneyAPIError.notAuthenticated
+                throw HOneyAPIError.notAuthenticated
             }
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw HoneyAPIError.invalidResponse }
+        guard let http = response as? HTTPURLResponse else { throw HOneyAPIError.invalidResponse }
 
         if http.statusCode == 401, authed, !isRetry {
             // Single-flight refresh, then retry exactly once.
@@ -230,32 +230,32 @@ actor HoneyAPI {
         }
 
         guard 200..<300 ~= http.statusCode else {
-            throw HoneyAPIError.http(status: http.statusCode, body: String(data: data, encoding: .utf8))
+            throw HOneyAPIError.http(status: http.statusCode, body: String(data: data, encoding: .utf8))
         }
         return data
     }
 
     /// Single-flight refresh: concurrent 401s share one in-flight refresh.
-    private func refreshSession() async throws -> HoneySession {
+    private func refreshSession() async throws -> HOneySession {
         if let refreshTask {
             return try await refreshTask.value
         }
         let store = self.store
         let baseURL = self.baseURL
         let session = self.session
-        let task = Task<HoneySession, Error> {
-            guard let current = await store.current() else { throw HoneyAPIError.notAuthenticated }
+        let task = Task<HOneySession, Error> {
+            guard let current = await store.current() else { throw HOneyAPIError.notAuthenticated }
             struct Body: Encodable { let refreshToken: String }
             var request = URLRequest(url: baseURL.appending(path: "/api/auth/refresh"))
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try HoneyCoding.encoder.encode(Body(refreshToken: current.refreshToken))
+            request.httpBody = try HOneyCoding.encoder.encode(Body(refreshToken: current.refreshToken))
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse, 200..<300 ~= http.statusCode else {
                 await store.clear()
-                throw HoneyAPIError.notAuthenticated
+                throw HOneyAPIError.notAuthenticated
             }
-            let refreshed = try HoneyCoding.decoder.decode(HoneySession.self, from: data)
+            let refreshed = try HOneyCoding.decoder.decode(HOneySession.self, from: data)
             await store.save(refreshed)
             return refreshed
         }

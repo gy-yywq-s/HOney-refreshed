@@ -39,7 +39,7 @@ struct SettingsView: View {
         Section("Account") {
             if let profile = model.profile {
                 LabeledContent("Name", value: profile.displayName)
-                LabeledContent("Honey ID", value: profile.honeyId)
+                LabeledContent("HOney ID", value: profile.honeyId)
                 if profile.isAdmin {
                     LabeledContent("Role", value: "Admin")
                 }
@@ -70,7 +70,7 @@ struct SettingsView: View {
         .task { await model.refreshProfile() }
     }
 
-    private func schoolStatus(_ c: HoneyConnection?) -> String {
+    private func schoolStatus(_ c: HOneyConnection?) -> String {
         guard let c, c.connected else { return "Not connected" }
         return c.portalTokenValid ? "Connected" : "Reconnect needed"
     }

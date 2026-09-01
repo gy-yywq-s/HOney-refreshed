@@ -71,7 +71,7 @@ describe("auth: school login is signup", () => {
     expect(users.n).toBe(0);
   });
 
-  it("issues independent Honey sessions: refresh rotates, logout invalidates", async () => {
+  it("issues independent HOney sessions: refresh rotates, logout invalidates", async () => {
     const { session } = await login();
 
     const me1 = await app.inject({

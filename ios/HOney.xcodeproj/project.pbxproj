@@ -12,13 +12,13 @@
 		12C40819ABE3E85F1873C6FE /* NextLessonFormattingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB74CE892ACD0873A13B4D0F /* NextLessonFormattingTests.swift */; };
 		148E586D2202E4DAAF69D28A /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC041D83BECFA81B18827FC /* AppConfig.swift */; };
 		16133F47E4FE17CBAC8AFF14 /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A998BDD415C65F89F951D25F /* HistoryViewModel.swift */; };
+		1A512CEA8E8C74AF946FA79A /* HOneyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F532A8B84BDA206CB77520D4 /* HOneyModels.swift */; };
 		1AD4648926867F8A0708D2B5 /* TimetableViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18156D40772142B77D20BD13 /* TimetableViewModel.swift */; };
 		212D96AADD3BC12FEF15E4A2 /* ExperienceRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908D7D9CBE46149B3BC73192 /* ExperienceRow.swift */; };
 		22DF92A89A2B5C5533662BF9 /* ReportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126DEF0CCF30ADCDDA1E3B88 /* ReportSheet.swift */; };
 		27EB99FA047928C509C22DA0 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE078AA4F847DF609D0F9022 /* HomeViewModel.swift */; };
 		298F44ADD2A4D8D5686EA716 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75AA5731978C35F35FF1DAFB /* LoginView.swift */; };
 		2BA5A6AF111594E7321F7260 /* PortalAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B940A27FCE6CB8F0F852FEC7 /* PortalAPI.swift */; };
-		2BFC1AAFF18472E841477528 /* HoneyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A75A3C86AA4A2BD2812C4C /* HoneyModels.swift */; };
 		35B17A088EFA8E1401C4D10C /* PortalSessionCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA3E49D4215C4090BF9464E /* PortalSessionCoordinatorTests.swift */; };
 		3665817862EFEE80DF37DBA4 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33FB65E14953017E37EA7445 /* SessionStore.swift */; };
 		36CD1C639828574E164C3CDD /* PortalDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DDDEFBAFE3FD930524786BA /* PortalDecodingTests.swift */; };
@@ -26,6 +26,7 @@
 		38C80D1FE0D64D1DEEBCCF9A /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DD00820629A17B873526DD /* AppModel.swift */; };
 		398C71E407C51DE9775DD754 /* ExperiencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58539FC01E1EBB6756E81FFE /* ExperiencesViewModel.swift */; };
 		3FD1910C824F9435BEA5FC35 /* PortalWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4AA02D9639646A85BAB4377 /* PortalWebView.swift */; };
+		4D82A416EFF3D23126A231BD /* HOneyAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F9EAFAED8917921D27F81A /* HOneyAPI.swift */; };
 		51FBEDDE9E38A5A80EB2A9BC /* SixChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07D369A95CEEE2209B2B53CF /* SixChecks.swift */; };
 		52DC8A5CD6A08D6705D76CCE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C93BD16337820929B8960F52 /* Assets.xcassets */; };
 		545386FF16AE32D3E592C35E /* Coding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FAACDFE0B2C0F0FE96276A3 /* Coding.swift */; };
@@ -51,7 +52,6 @@
 		D5502469D931E12D1BAFF5BB /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84AC28714A7AD6FCC0BB97E6 /* AppServices.swift */; };
 		D8F5F0E1CEAF6785A2914685 /* TimetableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E08E72E38A6C69DC3C9E3F /* TimetableView.swift */; };
 		E986DBD70986AC5E3000A97E /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D2BD524110D9A45EE819E49 /* Components.swift */; };
-		F0C5EFE7F01CF83FB5A575C3 /* HoneyAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B48092F9A75152C655A7F56E /* HoneyAPI.swift */; };
 		F5EE1858F4A375A8B938FE59 /* APP_ICON_PLACEHOLDER.md in Resources */ = {isa = PBXBuildFile; fileRef = F66DDC5996D98DE44F9487B3 /* APP_ICON_PLACEHOLDER.md */; };
 		FFD2D7687A27241D9BB91610 /* MySubmissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0612D0FC289F8132E25E6E /* MySubmissionsView.swift */; };
 /* End PBXBuildFile section */
@@ -96,12 +96,11 @@
 		84AC28714A7AD6FCC0BB97E6 /* AppServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServices.swift; sourceTree = "<group>"; };
 		8F4E35ADFB9D3D3D47F553BA /* ExperiencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperiencesView.swift; sourceTree = "<group>"; };
 		908D7D9CBE46149B3BC73192 /* ExperienceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceRow.swift; sourceTree = "<group>"; };
-		A7A75A3C86AA4A2BD2812C4C /* HoneyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoneyModels.swift; sourceTree = "<group>"; };
 		A998BDD415C65F89F951D25F /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
 		AE078AA4F847DF609D0F9022 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		AE444897BB93883336E39674 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B0747AB07A24286F94F1F6F0 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		B48092F9A75152C655A7F56E /* HoneyAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoneyAPI.swift; sourceTree = "<group>"; };
+		B8F9EAFAED8917921D27F81A /* HOneyAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HOneyAPI.swift; sourceTree = "<group>"; };
 		B940A27FCE6CB8F0F852FEC7 /* PortalAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalAPI.swift; sourceTree = "<group>"; };
 		C2D60DEB4E5CCD5BC12EA801 /* InteractiveExperienceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveExperienceRow.swift; sourceTree = "<group>"; };
 		C5DD00820629A17B873526DD /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -113,6 +112,7 @@
 		EBA3E49D4215C4090BF9464E /* PortalSessionCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalSessionCoordinatorTests.swift; sourceTree = "<group>"; };
 		EDD3E8C8668A740838959857 /* DoorMappingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoorMappingTests.swift; sourceTree = "<group>"; };
 		F29626E1E818B41193CDC858 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		F532A8B84BDA206CB77520D4 /* HOneyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HOneyModels.swift; sourceTree = "<group>"; };
 		F66DDC5996D98DE44F9487B3 /* APP_ICON_PLACEHOLDER.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = APP_ICON_PLACEHOLDER.md; sourceTree = "<group>"; };
 		F6C13C7FAB7A165D40FB3033 /* HOney.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HOney.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F914932AA354C797E7E588F1 /* KeychainCredentialVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainCredentialVault.swift; sourceTree = "<group>"; };
@@ -156,7 +156,7 @@
 			isa = PBXGroup;
 			children = (
 				2FAACDFE0B2C0F0FE96276A3 /* Coding.swift */,
-				B48092F9A75152C655A7F56E /* HoneyAPI.swift */,
+				B8F9EAFAED8917921D27F81A /* HOneyAPI.swift */,
 				21623DFD133A10987DA3936F /* Keychain.swift */,
 				F914932AA354C797E7E588F1 /* KeychainCredentialVault.swift */,
 				3E6CB998A1EA7FC0F494C15F /* OwnershipKeyStore.swift */,
@@ -202,7 +202,7 @@
 		7C58D38EF3C720CE19EC1CFF /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				A7A75A3C86AA4A2BD2812C4C /* HoneyModels.swift */,
+				F532A8B84BDA206CB77520D4 /* HOneyModels.swift */,
 				35537186FE26E282CE2051DA /* NextLessonPresentation.swift */,
 				31B53AE03A3A304EE3B5E1A9 /* PortalModels.swift */,
 			);
@@ -424,13 +424,13 @@
 				212D96AADD3BC12FEF15E4A2 /* ExperienceRow.swift in Sources */,
 				CEA063A0BDBBCA06C6FD2560 /* ExperiencesView.swift in Sources */,
 				398C71E407C51DE9775DD754 /* ExperiencesViewModel.swift in Sources */,
+				4D82A416EFF3D23126A231BD /* HOneyAPI.swift in Sources */,
 				CF40D046940DBDD4B3BAD1E8 /* HOneyApp.swift in Sources */,
+				1A512CEA8E8C74AF946FA79A /* HOneyModels.swift in Sources */,
 				CFD03D225C4AE76F5E85D40E /* HistoryView.swift in Sources */,
 				16133F47E4FE17CBAC8AFF14 /* HistoryViewModel.swift in Sources */,
 				687DE7552830BC890F0C5F35 /* HomeView.swift in Sources */,
 				27EB99FA047928C509C22DA0 /* HomeViewModel.swift in Sources */,
-				F0C5EFE7F01CF83FB5A575C3 /* HoneyAPI.swift in Sources */,
-				2BFC1AAFF18472E841477528 /* HoneyModels.swift in Sources */,
 				916FCC8D54D4F770A9FDFE36 /* InteractiveExperienceRow.swift in Sources */,
 				5B160BE7214B4BB967ACCE3F /* Keychain.swift in Sources */,
 				9B8C5B24F4896937B2CD3F8D /* KeychainCredentialVault.swift in Sources */,

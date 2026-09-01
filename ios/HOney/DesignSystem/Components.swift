@@ -7,7 +7,7 @@ import SwiftUI
 
 // MARK: - Wordmark
 
-struct HoneyWordmark: View {
+struct HOneyWordmark: View {
     var size: CGFloat = 28
     var body: some View {
         Text("HOney")
@@ -104,7 +104,7 @@ struct EmptyStateView: View {
             }
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .buttonStyle(HoneyPrimaryButtonStyle())
+                    .buttonStyle(HOneyPrimaryButtonStyle())
             }
         }
         .padding(Theme.Spacing.xl)
@@ -209,7 +209,7 @@ struct ListRow: View {
 
 // MARK: - Button styles
 
-struct HoneyPrimaryButtonStyle: ButtonStyle {
+struct HOneyPrimaryButtonStyle: ButtonStyle {
     var enabled: Bool = true
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -224,7 +224,7 @@ struct HoneyPrimaryButtonStyle: ButtonStyle {
     }
 }
 
-struct HoneySecondaryButtonStyle: ButtonStyle {
+struct HOneySecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Theme.Typography.headline)
