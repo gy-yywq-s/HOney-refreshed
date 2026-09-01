@@ -19,7 +19,7 @@
   width: 100%;
   max-width: 380px;
   margin: 0 auto;
-  animation: settle 0.5s var(--ease) both;
+  animation: settle 0.5s var(--ease) backwards;
 }
 .login__wordmark {
   font-family: var(--reading);
@@ -98,7 +98,7 @@
   font-size: var(--fs-micro);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #15181a;
+  color: var(--ink); /* tokenized: the literal failed 1.54:1 on night (r2) */
   background: var(--glacier);
   border-radius: 99px;
   padding: 4px 12px;
@@ -1238,6 +1238,7 @@
    18-19px tall links) without shifting the visual line. */
 .feed-identity a,
 .home-voices__head a,
+.post__context a,
 .nextlesson .caption {
   padding-block: 10px;
   margin-block: -10px;
@@ -1254,7 +1255,7 @@
 .history-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 var(--sp-4);
   border: 1px solid var(--line);
   border-radius: 999px;

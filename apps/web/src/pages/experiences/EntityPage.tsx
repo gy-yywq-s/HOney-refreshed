@@ -4,11 +4,13 @@
 // scores, no summaries, no ranking. Course is first-class (§9.10) — course
 // retrospectives compose directly. Scroll model: FRAMED_SCROLL.
 
-import { useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
 import { useFeedController, type FeedFilters } from "../../features/experiences/useFeedController";
 import { Skeleton } from "../../lib/motion";
+import { api } from "../../api/client";
+import { useApi } from "../../lib/useApi";
+import { useLoadMoreSentinel } from "../../features/experiences/useLoadMoreSentinel";
 import { useNames } from "./shared";
 
 export type EntityPageKind = "teacher" | "course" | "room" | "dish";
@@ -25,7 +27,7 @@ const KIND_INTRO: Record<EntityPageKind, (name: string) => string> = {
   teacher: (n) => `What students have experienced in classes with ${n}.`,
   course: () => "Experiences of this course across lessons and teachers.",
   room: () => "What students have experienced in this place.",
-  dish: () => "What students actually thought of it.",
+  dish: () => "What students thought of it.",
 };
 
 export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
@@ -41,25 +43,12 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
 
   // Entity pages read the school-wide stream, narrowed to this entity.
   const feed = useFeedController("school", filters);
+  const sentinel = useLoadMoreSentinel(feed.loadMore);
 
-  const sentinel = useRef<HTMLDivElement>(null);
-  // Depend on the STABLE loadMore only (review H2): a per-render dependency
-  // would rebuild the observer every render, and each rebuild's initial
-  // callback re-fires on a still-visible sentinel — a hot retry loop when a
-  // page fetch keeps failing.
-  const loadMore = feed.loadMore;
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) void loadMore();
-      },
-      { rootMargin: "600px 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [loadMore]);
+  // Delisted entries (deduped rooms, placeholders) stay reachable by URL
+  // but must not offer a composer that the server will refuse (r2).
+  const registry = useApi(() => api.entities(), [], "entities");
+  const listed = !registry.data || registry.data.entities.some((e) => e.entity_key === entityKey);
 
   const name =
     (kind === "teacher" && (names.teacher.get(id) ?? names.entity.get(entityKey))) ||
@@ -77,13 +66,16 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
             {name}
           </h1>
         </div>
-        <Link
-          className="btn btn--primary"
-          to={`/experiences/compose?entityKey=${encodeURIComponent(entityKey)}`}
-        >
-          Share your experience
-        </Link>
+        {listed && (
+          <Link
+            className="btn btn--primary"
+            to={`/experiences/compose?entityKey=${encodeURIComponent(entityKey)}`}
+          >
+            Share your experience
+          </Link>
+        )}
       </header>
+      {!listed && <p className="muted entity-intro">This entry is no longer listed.</p>}
 
       <p className="muted entity-intro">
         {KIND_INTRO[kind](name)} No single Experience is the whole picture.
@@ -92,7 +84,12 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
       {feed.loading ? (
         <Skeleton lines={4} />
       ) : feed.error ? (
-        <div role="alert" className="banner banner--danger">{feed.error}</div>
+        <div role="alert" className="banner banner--danger">
+          <span>{feed.error}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => void feed.refresh()}>
+            Try again
+          </button>
+        </div>
       ) : feed.items.length === 0 ? (
         <p className="empty">No experiences here yet — yours could be the first.</p>
       ) : (

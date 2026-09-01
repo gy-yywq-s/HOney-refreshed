@@ -149,7 +149,7 @@ export function ExperiencesMinePage() {
           <p className="muted">
             Published experiences are stored without an author ID. Each one hands this browser a
             one-time ownership key — that key is the only control over the post that exists, and it
-            is how this page finds and revokes your posts. Private notes live here too, scrambled at
+            is how this page finds and removes your posts. Private notes live here too, scrambled at
             rest, without ever leaving the device.
           </p>
           <div className="card-actions">
@@ -255,7 +255,7 @@ function MineExperienceCard({
             disabled={busy}
             onClick={() => onRevoke(ownershipKey)}
           >
-            Revoke…
+            Remove…
           </button>
         </div>
       )}

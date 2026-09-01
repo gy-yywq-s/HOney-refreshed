@@ -2,9 +2,9 @@
 // star display / input, name resolution, and the "from your classes" hook.
 // (The stream's post card lives in features/experiences/ExperiencePost.)
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { api, ApiError } from "../../api/client";
-import type { DirectoryResponse, EntityRef, PublicExperience } from "../../api/types";
+import type { DirectoryResponse, EntityRef } from "../../api/types";
 import { useApi } from "../../lib/useApi";
 
 // ---------------------------------------------------------------------------
@@ -182,6 +182,3 @@ export function useFromYourClasses(limit = 100) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// The post card
-// ---------------------------------------------------------------------------

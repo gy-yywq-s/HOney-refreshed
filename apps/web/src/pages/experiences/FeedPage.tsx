@@ -5,10 +5,11 @@
 // invitation, and the persistent student-to-student identity line.
 // Scroll model: FRAMED_SCROLL (web-lab.md).
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
 import { useFeedController } from "../../features/experiences/useFeedController";
+import { useLoadMoreSentinel } from "../../features/experiences/useLoadMoreSentinel";
 import { Skeleton } from "../../lib/motion";
 import type { FeedScope } from "../../api/types";
 
@@ -26,25 +27,9 @@ export function ExperiencesFeedPage() {
     localStorage.setItem(SCOPE_STORAGE, next);
   }
 
-  // Infinite scroll: load the next page as the sentinel nears the viewport.
-  const sentinel = useRef<HTMLDivElement>(null);
-  // Depend on the STABLE loadMore only (review H2): a per-render dependency
-  // would rebuild the observer every render, and each rebuild's initial
-  // callback re-fires on a still-visible sentinel — a hot retry loop when a
-  // page fetch keeps failing.
-  const loadMore = feed.loadMore;
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) void loadMore();
-      },
-      { rootMargin: "600px 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [loadMore]);
+  const sentinel = useLoadMoreSentinel(feed.loadMore);
+  // The empty states carry their own share CTA — one per screen (r2).
+  const showHeaderShare = feed.loading || feed.error !== null || feed.items.length > 0;
 
   return (
     <div className="feed-screen">
@@ -52,9 +37,11 @@ export function ExperiencesFeedPage() {
         <div className="feed-head__row">
           <h1 className="page-title">Experiences</h1>
           <div className="feed-head__tools">
-            <Link className="btn btn--primary btn--small" to="/experiences/compose">
-              Share
-            </Link>
+            {showHeaderShare && (
+              <Link className="btn btn--primary btn--small" to="/experiences/compose">
+                Share
+              </Link>
+            )}
             <Link className="btn btn--ghost btn--small" to="/experiences/explore">
               Find someone or something
             </Link>
@@ -116,7 +103,12 @@ export function ExperiencesFeedPage() {
         {feed.loading ? (
           <Skeleton lines={6} />
         ) : feed.error ? (
-          <div role="alert" className="banner banner--danger">{feed.error}</div>
+          <div role="alert" className="banner banner--danger">
+            <span>{feed.error}</span>
+            <button className="btn btn--ghost btn--small" onClick={() => void feed.refresh()}>
+              Try again
+            </button>
+          </div>
         ) : feed.items.length === 0 ? (
           scope === "my_classes" ? (
             <div className="feed-empty">

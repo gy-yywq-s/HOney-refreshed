@@ -1,5 +1,5 @@
 // Scroll model: FRAMED_SCROLL (§16.14.2).
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiCache } from "../lib/useApi";
 import { api, describeApiError } from "../api/client";
@@ -14,6 +14,13 @@ import { ownershipKeys } from "../lib/ownershipKeys";
 type PendingConfirm = "disconnect" | "delete-data" | "delete-account" | null;
 
 export function SettingsPage() {
+  // Deep links like /settings#privacy land ON the section, not the page top
+  // (the shell resets the scroll owner on every route change).
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
+  }, []);
   const { me, refreshMe, signOut } = useAuth();
   const navigate = useNavigate();
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -196,7 +203,7 @@ export function SettingsPage() {
       </section>
 
       <section className="card settings-section" aria-label="Experiences and privacy">
-        <h2 className="section-title">How privacy works</h2>
+        <h2 className="section-title" id="privacy">How privacy works</h2>
         <p className="muted">
           The plain version: HOney checks you actually have the relevant experience, published posts
           are not attached to your school account, and your device holds the control needed to
@@ -212,7 +219,7 @@ export function SettingsPage() {
           <li>
             <strong>Your control is a device-held key.</strong> Each publish returns a one-time
             ownership key stored only in this browser; the server keeps only a hash. Presenting the
-            key is the only way to find or revoke your post.
+            key is the only way to find or remove your post.
           </li>
           <li>
             <strong>Public dates are coarse.</strong> Posts show a calendar day only; exact

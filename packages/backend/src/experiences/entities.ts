@@ -14,15 +14,19 @@ export type EntityType = "teacher" | "course" | "room" | "dish";
  * Portal course names arrive as "Subject 班名 teacher 学生名册串" — the
  * trailing roster is a run of student surnames (design-is r1: student
  * surnames must not surface in a product that says students aren't public
- * subjects). Display rule: with ≥3 tokens, drop a trailing token that is
- * ≥4 chars of pure CJK (teachers' own names are ≤3 CJK chars or Latin).
+ * subjects). Rule: with ≥3 tokens, drop a trailing token that is ≥4 chars
+ * of pure CJK UNLESS it is the lesson's own teacher name (r2: "活动课老师"
+ * is a 5-char teacher, and the ≤3-char assumption over-stripped it).
+ * Applied ONCE, at import — the registry mirrors the stored name verbatim,
+ * so the directory and the registry can never disagree.
  */
-export function sanitizeCourseName(raw: string): string {
+export function sanitizeCourseName(raw: string, teacherName?: string | null): string {
   const name = raw.trim().replace(/\s+/g, " ");
   const tokens = name.split(" ");
   if (tokens.length >= 3) {
     const last = tokens[tokens.length - 1]!;
-    if (last.length >= 4 && /^[\u3400-\u9fff]+$/.test(last)) {
+    const isTeacher = teacherName !== undefined && teacherName !== null && last === teacherName.trim();
+    if (!isTeacher && last.length >= 4 && /^[\u3400-\u9fff]+$/.test(last)) {
       return tokens.slice(0, -1).join(" ");
     }
   }
@@ -57,8 +61,7 @@ export class EntityRegistry {
       id: string;
       name: string;
     }[];
-    for (const c of courses)
-      upsert.run(`course:${c.id}`, "course", sanitizeCourseName(c.name), this.now());
+    for (const c of courses) upsert.run(`course:${c.id}`, "course", c.name, this.now());
 
     // Rooms: hygiene before mirroring (design-is r1). Placeholder names
     // ("Not selected") never surface, and duplicate names across import

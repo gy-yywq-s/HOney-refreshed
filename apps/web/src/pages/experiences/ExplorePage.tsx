@@ -65,7 +65,7 @@ export function ExperiencesExplorePage() {
         <div>
           <h1 className="page-title">Find someone or something</h1>
           <p className="muted" style={{ margin: 0 }}>
-            Search teachers, courses, places, and food.
+            Teachers, courses, places and food are all listed below — typing only narrows the list.
           </p>
         </div>
         <Link className="btn btn--ghost" to="/experiences">

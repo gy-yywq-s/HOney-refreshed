@@ -127,7 +127,7 @@ export class ImportService {
         let courseId: string | null = null;
         if (l.classId) {
           courseId = `c_${l.classId}`;
-          courseStmt.run(courseId, l.subjectId ?? null, sanitizeCourseName(l.className ?? l.subjectName));
+          courseStmt.run(courseId, l.subjectId ?? null, sanitizeCourseName(l.className ?? l.subjectName, l.teacherDisplayName));
           courses.add(courseId);
         }
         let roomId: string | null = null;

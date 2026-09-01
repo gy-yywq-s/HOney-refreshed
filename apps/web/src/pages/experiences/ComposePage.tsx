@@ -82,7 +82,8 @@ export function ExperiencesComposePage() {
       );
       const type = effectiveEntityKey.split(":")[0] ?? "";
       return {
-        label: entity?.name ?? effectiveEntityKey,
+        // Never flash the raw key while the registry loads (r2 visual).
+        label: entity?.name ?? (entities.data ? effectiveEntityKey : "Loading…"),
         detail: type === "room" ? "Place" : type === "dish" ? "Food" : "Teacher",
         entityKey: effectiveEntityKey,
         isDish: (entity?.type ?? type) === "dish",
@@ -137,7 +138,7 @@ export function ExperiencesComposePage() {
             field, and the publish request carried no ordinary account identity.
           </p>
           <p className="text-3">
-            This browser keeps a private control key so you can manage or revoke the post later.
+            This browser keeps a private control key so you can manage or remove the post later.
             Keep it: what you wrote may still make you recognisable to people who know the
             situation.
           </p>
@@ -203,7 +204,7 @@ export function ExperiencesComposePage() {
               Pick a lesson from History
             </Link>
             <Link className="btn btn--ghost" to="/experiences/explore">
-              Browse teachers, places &amp; food
+              Find someone or something
             </Link>
           </div>
         </section>
@@ -247,13 +248,9 @@ export function ExperiencesComposePage() {
                   </ul>
                 )}
                 {notice.suggestKeepPrivate && (
-                  <button
-                    className="btn btn--ghost btn--small"
-                    disabled={saveBusy}
-                    onClick={() => void savePrivately()}
-                  >
-                    Keep as a private note
-                  </button>
+                  <p className="text-4" style={{ margin: "6px 0 0" }}>
+                    You can keep it as a private note instead.
+                  </p>
                 )}
               </div>
             </div>
@@ -299,9 +296,8 @@ export function ExperiencesComposePage() {
           )}
 
           <p className="text-4" style={{ marginBottom: 0 }}>
-            Publishing runs a safety check first. Published posts carry no author ID; your only
-            control is a key kept in this browser. Private notes never leave this device.{" "}
-            <Link to="/settings">How privacy works</Link>
+            A safety check runs first. Published posts carry no author ID; private notes never
+            leave this device. <Link to="/settings#privacy">How privacy works</Link>
           </p>
         </section>
       )}

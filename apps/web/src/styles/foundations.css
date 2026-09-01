@@ -295,7 +295,7 @@ a.btn:active {
 .primary .action-cta {
   border: 0;
   background: var(--glacier);
-  color: #15181a;
+  color: var(--ink);
 }
 
 /* Hairline list rows (History, entities, Mine, Settings rows). */
