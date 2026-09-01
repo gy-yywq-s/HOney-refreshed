@@ -1,8 +1,10 @@
 # Legacy HOney — design port reference
 
-The V1 UI reproduces the legacy iOS design (Gary, 2026-09-01). This is the token/grammar
-source of truth for both the SwiftUI port and the Web mirror. Legacy source lives at
-`reference/legacy-ios/` (`DesignSystem/AppTheme.swift` is the original "edit first" file).
+The V1 **iOS** UI reproduces the legacy design (Gary, 2026-09-01) — this file is the
+token/grammar source of truth for the SwiftUI port. **Scope change (2026-09-01, late): the Web
+app no longer mirrors this** — it has its own experimental design system, documented in
+[`web-style.md`](web-style.md). Legacy source lives at `reference/legacy-ios/`
+(`DesignSystem/AppTheme.swift` is the original "edit first" file).
 
 ## Colors (sRGB → hex)
 - navy `#12305C` — the ONLY text color; hierarchy is opacity, not hue

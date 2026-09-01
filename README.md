@@ -78,6 +78,7 @@ Per-stage documentation lives in [`docs/architecture/`](docs/architecture/):
 | — | [`acceptance.md`](docs/acceptance.md) | **Line-by-line acceptance** (§20 / §27 / §26.2) |
 | — | [`regressions-2026-09-01.md`](docs/regressions-2026-09-01.md) | Live-portal fixes: timetable import, empty-body sync, admin binding |
 | — | [`legacy-design-audit.md`](docs/legacy-design-audit.md) · [`access-legacy-parity-map.md`](docs/access-legacy-parity-map.md) · [`ugc-appstore-review.md`](docs/ugc-appstore-review.md) | Legacy audit, Access parity, UGC review |
+| — | [`design/legacy-port-map.md`](docs/design/legacy-port-map.md) · [`design/web-style.md`](docs/design/web-style.md) | **Two design systems**: iOS carries the legacy design; web is an independent style lab (cool editorial system, selectable themes, living motion) |
 
 ## Frontend ↔ backend isolation
 
