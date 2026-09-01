@@ -3,7 +3,7 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
 import { formatDayBucket, formatTime, isStale, timeAgo, todayIsoDate } from "../lib/format";
-import { Reveal, useCountUp, useNowTick } from "../lib/motion";
+import { Reveal, useCountUp, useNowTick , Skeleton } from "../lib/motion";
 import { provenanceLabel, useFromYourClasses } from "./experiences/shared";
 
 export function HomePage() {
@@ -62,7 +62,7 @@ export function HomePage() {
           {next?.temporalState === "now" ? "Current lesson" : "Next lesson"}
         </span>
         {loading ? (
-          <p className="muted">Loading…</p>
+          <Skeleton lines={2} />
         ) : error ? (
           <div role="alert" className="banner banner--danger">{error}</div>
         ) : next ? (
@@ -152,7 +152,7 @@ export function HomePage() {
       <Reveal as="section" index={5} className="card" aria-label="Experiences">
         <span className="eyebrow">From your classes</span>
         {fromClasses.loading ? (
-          <p className="muted">Loading…</p>
+          <Skeleton lines={2} />
         ) : fromClasses.error ? (
           <p className="muted">Experiences are unavailable right now.</p>
         ) : !fromClasses.experiences || fromClasses.experiences.length === 0 ? (

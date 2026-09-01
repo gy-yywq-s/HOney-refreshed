@@ -4,6 +4,7 @@
 // anywhere here (App A §22.2) — the API cannot answer it.
 
 import { useMemo, useState } from "react";
+import { Skeleton } from "../lib/motion";
 import { Navigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type {
@@ -335,7 +336,7 @@ function EntityAdmin({
         onChange={(e) => setQ(e.target.value)}
       />
       {entities.loading ? (
-        <p className="muted">Loading…</p>
+        <Skeleton lines={3} />
       ) : (
         <ul className="entity-list" style={{ marginTop: "var(--space-md)" }}>
           {shown.map((e) => (
@@ -538,7 +539,7 @@ function ReportsPanel() {
     <section className="card" aria-label="Reports">
       <h2 className="section-title">Reports</h2>
       {reports.loading ? (
-        <p className="muted">Loading…</p>
+        <Skeleton lines={3} />
       ) : reports.error ? (
         <div role="alert" className="banner banner--danger">{reports.error}</div>
       ) : (reports.data?.reports.length ?? 0) === 0 ? (

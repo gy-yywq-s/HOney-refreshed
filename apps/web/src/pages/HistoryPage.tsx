@@ -4,7 +4,7 @@ import { api } from "../api/client";
 import type { Lesson } from "../api/types";
 import { useApi } from "../lib/useApi";
 import { formatShortDate, formatTime, monthLabel } from "../lib/format";
-import { staggerStyle } from "../lib/motion";
+import { staggerStyle , Skeleton } from "../lib/motion";
 
 interface MonthGroup {
   label: string;
@@ -101,7 +101,7 @@ export function HistoryPage() {
       </div>
 
       {history.loading ? (
-        <p className="fullscreen-note">Loading…</p>
+        <Skeleton lines={4} />
       ) : history.error ? (
         <div role="alert" className="banner banner--danger">{history.error}</div>
       ) : groups.length === 0 ? (

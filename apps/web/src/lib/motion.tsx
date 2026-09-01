@@ -163,3 +163,14 @@ export function useAmbientMotion(): void {
     };
   }, []);
 }
+
+/** Hairline skeleton rows for loading states (shimmer under the motion kill rule). */
+export function Skeleton({ lines = 2 }: { lines?: number }) {
+  return (
+    <div className="skeleton" role="status" aria-label="Loading">
+      {Array.from({ length: lines }, (_, i) => (
+        <span key={i} className="skeleton__row" style={{ width: `${88 - i * 14}%` }} />
+      ))}
+    </div>
+  );
+}

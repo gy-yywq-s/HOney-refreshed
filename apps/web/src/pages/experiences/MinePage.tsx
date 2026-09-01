@@ -10,7 +10,7 @@ import { ConfirmDialog } from "../../components/Modal";
 import { formatCoarseDate } from "../../lib/format";
 import { ownershipKeys, privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote, StoredOwnershipKey } from "../../lib/ownershipKeys";
-import { Reveal, useCountUp } from "../../lib/motion";
+import { Reveal, useCountUp , Skeleton } from "../../lib/motion";
 import { useApi } from "../../lib/useApi";
 import { Stars, provenanceLabel, useNames } from "./shared";
 
@@ -178,7 +178,7 @@ export function ExperiencesMinePage() {
           </div>
         </section>
       ) : mine.loading || notes === null ? (
-        <p className="muted">Loading…</p>
+        <Skeleton lines={3} />
       ) : mine.error ? (
         <div role="alert" className="banner banner--danger">{mine.error}</div>
       ) : (

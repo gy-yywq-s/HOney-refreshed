@@ -4,6 +4,7 @@
 // surface here too; dish pages filter by entity_key. Course pages are a
 // context filter only (courses are not standalone entities).
 
+import { Skeleton } from "../../lib/motion";
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -88,7 +89,7 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
       </div>
 
       {feed.loading ? (
-        <p className="muted">Loading…</p>
+        <Skeleton lines={3} />
       ) : feed.error ? (
         <div role="alert" className="banner banner--danger">{feed.error}</div>
       ) : !experiences || experiences.length === 0 ? (

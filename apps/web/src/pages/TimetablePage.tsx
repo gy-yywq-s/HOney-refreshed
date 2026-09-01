@@ -1,3 +1,4 @@
+import { Skeleton } from "../lib/motion";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
@@ -102,7 +103,7 @@ export function TimetablePage() {
         )}
 
       {loading ? (
-        <p className="fullscreen-note">Loading…</p>
+        <Skeleton lines={4} />
       ) : error ? (
         <div role="alert" className="banner banner--danger">{error}</div>
       ) : (
@@ -227,7 +228,6 @@ function DayTimeline({
   return (
     <div className="timeline">
       <div className="timeline__hours" aria-hidden="true">
-        <span className="timeline__allday">All-day</span>
         {HOUR_MARKS.map((minute) => (
           <span
             key={minute}

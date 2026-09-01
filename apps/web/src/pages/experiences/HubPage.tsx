@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, EntityType } from "../../api/types";
 import { useApi } from "../../lib/useApi";
-import { Reveal } from "../../lib/motion";
+import { Reveal , Skeleton } from "../../lib/motion";
 import { ExperienceCard, entityPath, useFromYourClasses, useNames } from "./shared";
 
 const SECTION_META: { type: EntityType; label: string }[] = [
@@ -89,7 +89,7 @@ export function ExperiencesHubPage() {
               <Reveal as="section" index={sectionIndex} className="card lift" key={type} aria-label={label}>
                 <h2 className="overline">{label}</h2>
                 {entities.loading ? (
-                  <p className="muted">Loading…</p>
+                  <Skeleton lines={3} />
                 ) : byType[type].length === 0 ? (
                   <p className="empty">Nothing here yet.</p>
                 ) : (
@@ -117,7 +117,7 @@ export function ExperiencesHubPage() {
           ranked.
         </p>
         {fromClasses.loading ? (
-          <p className="muted">Loading…</p>
+          <Skeleton lines={3} />
         ) : fromClasses.error ? (
           <div role="alert" className="banner banner--danger">{fromClasses.error}</div>
         ) : !fromClasses.experiences || fromClasses.experiences.length === 0 ? (
