@@ -39,6 +39,8 @@ final class SurfacePaletteTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(contrast(spec.controlBorder.dark, spec.surface.dark), 3.0, palette.title + " dark border/surface")
             XCTAssertGreaterThanOrEqual(contrast(spec.ink.light, spec.surface.light), 4.5, palette.title + " light wordmark")
             XCTAssertGreaterThanOrEqual(contrast(spec.ink.dark, spec.surface.dark), 4.5, palette.title + " dark wordmark")
+            XCTAssertGreaterThanOrEqual(contrast(spec.ink.light, spec.muted.light), 4.5, palette.title + " light status chip")
+            XCTAssertGreaterThanOrEqual(contrast(spec.ink.dark, spec.muted.dark), 4.5, palette.title + " dark status chip")
             XCTAssertGreaterThanOrEqual(contrast(spec.accent.light, spec.accentSoft.light), 4.5, palette.title + " light accent/soft")
             XCTAssertGreaterThanOrEqual(contrast(spec.accent.dark, spec.accentSoft.dark), 4.5, palette.title + " dark accent/soft")
             assertStatusContrast(palette: palette, spec: spec, foreground: AppTheme.Colors.successRGB, name: "success")

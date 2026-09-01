@@ -19,6 +19,7 @@ struct AccessView: View {
     @State private var confirmRequest: (route: AccessRoute, door: PortalDoor)?
     @State private var isPermitPickerPresented = false
     @State private var isQuickApplyPromptPresented = false
+    @State private var showSchoolReconnect = false
 
     // Apply-permit draft
     @State private var permitStartDate = Date()
@@ -117,6 +118,9 @@ struct AccessView: View {
             .presentationDetents([field == .reason ? .fraction(0.28) : .medium])
             .presentationBackground(Palette.background)
         }
+        .sheet(isPresented: $showSchoolReconnect) {
+            SchoolReconnectView().environment(model)
+        }
     }
 
     // MARK: - Apply permit
@@ -200,15 +204,20 @@ struct AccessView: View {
 
             if vm.isLoading && permits.isEmpty {
                 AppLoadingState(title: "Loading permits")
-            } else if visible.isEmpty {
-                AppEmptyState(title: vm.didLoadPermits ? "No permits" : "Permits unavailable", systemImage: "doc.text")
             } else {
                 if let permitsError = vm.permitsError {
                     AppBanner(text: permitsError + " Previously loaded permits cannot be used until refresh succeeds.", style: .warning)
+                    Button("Try permits again") { Task { await vm.refresh() } }
+                        .font(AppTheme.Typography.subheadlineSemibold)
+                        .frame(minHeight: 44)
                 }
-                ForEach(visible) { permit in
-                    PermitListRow(permit: permit, isActionable: vm.didLoadPermits && !vm.isWorking) {
-                        beginGateFlow(route: .permit(recordId: permit.recordId))
+                if visible.isEmpty {
+                    AppEmptyState(title: vm.didLoadPermits ? "No permits" : "Permits unavailable", systemImage: "doc.text")
+                } else {
+                    ForEach(visible) { permit in
+                        PermitListRow(permit: permit, isActionable: vm.didLoadPermits && !vm.isWorking) {
+                            beginGateFlow(route: .permit(recordId: permit.recordId))
+                        }
                     }
                 }
             }
@@ -247,6 +256,16 @@ struct AccessView: View {
             }
             if let doorsError = vm.doorsError, vm.banner == nil {
                 AppBanner(text: doorsError, style: .warning)
+            }
+            if vm.permitsError != nil || vm.doorsError != nil {
+                Button("Try Access again") { Task { await vm.refresh() } }
+                    .font(AppTheme.Typography.subheadlineSemibold)
+                    .frame(minHeight: 44)
+            }
+            if vm.connectionState == .noCredentials || vm.connectionState == .userActionRequired {
+                Button("Update school sign-in") { showSchoolReconnect = true }
+                    .font(AppTheme.Typography.subheadlineSemibold)
+                    .frame(minHeight: 44)
             }
         }
         .padding(.horizontal, AppTheme.Spacing.pageHorizontal)

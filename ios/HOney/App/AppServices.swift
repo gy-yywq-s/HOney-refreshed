@@ -51,9 +51,18 @@ struct ExperienceTargetMetadata: Sendable {
     let directory: DirectoryResponse?
     let entities: [EntityRef]
     let names: [String: String]
+    let directoryRequestSucceeded: Bool
+    let entitiesRequestSucceeded: Bool
     let isComplete: Bool
 
-    static let empty = ExperienceTargetMetadata(directory: nil, entities: [], names: [:], isComplete: false)
+    static let empty = ExperienceTargetMetadata(
+        directory: nil,
+        entities: [],
+        names: [:],
+        directoryRequestSucceeded: false,
+        entitiesRequestSucceeded: false,
+        isComplete: false
+    )
 }
 
 /// App-scoped, account-invalidated metadata used to name Experience targets.
@@ -95,14 +104,22 @@ actor ExperienceTargetRepository {
         let api = api
         let requestScope = scope
         let task = Task {
-            async let directoryAttempt: DirectoryResponse? = try? await api.directory()
-            async let entitiesAttempt: EntitiesResponse? = try? await api.entities(type: nil, query: nil)
+            async let directoryAttempt: (DirectoryResponse?, Bool) = {
+                do { return (try await api.directory(), true) }
+                catch { return (nil, false) }
+            }()
+            async let entitiesAttempt: (EntitiesResponse?, Bool) = {
+                do { return (try await api.entities(type: nil, query: nil), true) }
+                catch { return (nil, false) }
+            }()
             let (directory, entities) = await (directoryAttempt, entitiesAttempt)
             return ExperienceTargetMetadata(
-                directory: directory,
-                entities: entities?.entities ?? [],
-                names: ExperienceTargetNaming.names(directory: directory, entities: entities),
-                isComplete: directory != nil && entities != nil
+                directory: directory.0,
+                entities: entities.0?.entities ?? [],
+                names: ExperienceTargetNaming.names(directory: directory.0, entities: entities.0),
+                directoryRequestSucceeded: directory.1,
+                entitiesRequestSucceeded: entities.1,
+                isComplete: directory.1 && entities.1
             )
         }
         inFlight = InFlight(scope: requestScope, task: task)

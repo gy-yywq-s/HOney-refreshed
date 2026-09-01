@@ -64,11 +64,7 @@ struct ExperiencesView: View {
             .sheet(isPresented: $showExplore) {
                 if let viewModel {
                     NavigationStack {
-                        ExperiencesExploreView(
-                            teachers: viewModel.teachers,
-                            courses: viewModel.courses,
-                            entities: viewModel.entities
-                        )
+                        ExperiencesExploreView(viewModel: viewModel)
                         .environment(model)
                     }
                 }
@@ -116,7 +112,7 @@ struct ExperiencesView: View {
             Button("Why this space exists") { showAbout = true }
                 .font(AppTheme.Typography.footnoteMedium)
                 .foregroundStyle(Palette.accent)
-                .frame(minHeight: 32, alignment: .leading)
+                .frame(minHeight: 44, alignment: .leading)
         }
     }
 
@@ -224,30 +220,49 @@ private enum ExperienceExploreTarget: Hashable, Identifiable {
 }
 
 private struct ExperiencesExploreView: View {
-    let teachers: [DirectoryEntry]
-    let courses: [DirectoryEntry]
-    let entities: [EntityRef]
+    let viewModel: ExperiencesViewModel
 
     @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
 
     var body: some View {
         List {
             Section {
-                Text("Every available option is listed below. Search is not required to reveal more choices.")
-                    .font(AppTheme.Typography.footnote)
-                    .foregroundStyle(Palette.inkSecondary)
+                if viewModel.isLoadingTargets {
+                    AppLoadingState(title: teacherTargets.isEmpty && courseTargets.isEmpty && placeTargets.isEmpty && foodTargets.isEmpty
+                                    ? "Loading every available choice"
+                                    : "Refreshing available choices")
+                    if !teacherTargets.isEmpty || !courseTargets.isEmpty || !placeTargets.isEmpty || !foodTargets.isEmpty {
+                        Text("Previously loaded choices remain visible below while the complete list refreshes.")
+                            .font(AppTheme.Typography.footnote)
+                            .foregroundStyle(Palette.inkSecondary)
+                    }
+                } else {
+                    if let message = viewModel.targetLoadMessage {
+                        AppBanner(text: message, style: viewModel.directoryAvailable || viewModel.entitiesAvailable ? .warning : .error)
+                        Button("Try loading choices again") {
+                            Task { await viewModel.retryFilters() }
+                        }
+                        .frame(minHeight: 44)
+                    } else {
+                        Text("Every available option is listed below. Search only filters this complete list.")
+                            .font(AppTheme.Typography.footnote)
+                            .foregroundStyle(Palette.inkSecondary)
+                    }
+                }
             }
             .listRowBackground(Palette.surface)
 
-            targetSection("Teachers", targets: teacherTargets)
-            targetSection("Courses", targets: courseTargets)
-            targetSection("Places", targets: placeTargets)
-            targetSection("Food", targets: foodTargets)
+            targetSection("Teachers", targets: filtered(teacherTargets), sourceAvailable: viewModel.directoryAvailable)
+            targetSection("Courses", targets: filtered(courseTargets), sourceAvailable: viewModel.directoryAvailable)
+            targetSection("Places", targets: filtered(placeTargets), sourceAvailable: viewModel.entitiesAvailable)
+            targetSection("Food", targets: filtered(foodTargets), sourceAvailable: viewModel.entitiesAvailable)
         }
         .scrollContentBackground(.hidden)
         .background(PageBackground())
         .navigationTitle("Explore")
         .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $query, prompt: "Filter the choices shown below")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
         }
@@ -257,9 +272,19 @@ private struct ExperiencesExploreView: View {
     }
 
     @ViewBuilder
-    private func targetSection(_ title: String, targets: [ExperienceExploreTarget]) -> some View {
+    private func targetSection(
+        _ title: String,
+        targets: [ExperienceExploreTarget],
+        sourceAvailable: Bool
+    ) -> some View {
         Section(title) {
-            if targets.isEmpty {
+            if !sourceAvailable {
+                Text("\(title) could not be loaded.")
+                    .foregroundStyle(Palette.inkSecondary)
+            } else if targets.isEmpty && !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text("No shown choices match this filter.")
+                    .foregroundStyle(Palette.inkSecondary)
+            } else if targets.isEmpty {
                 Text("No \(title.lowercased()) are available yet.")
                     .foregroundStyle(Palette.inkSecondary)
             } else {
@@ -280,27 +305,33 @@ private struct ExperiencesExploreView: View {
     }
 
     private var teacherTargets: [ExperienceExploreTarget] {
-        teachers.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { teacher in
-            let direct = entities.first { $0.entityKey == "teacher:" + teacher.id }
-                ?? entities.first { $0.type == .teacher && $0.name.caseInsensitiveCompare(teacher.name) == .orderedSame }
+        viewModel.teachers.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map { teacher in
+            let direct = viewModel.entities.first { $0.entityKey == "teacher:" + teacher.id }
+                ?? viewModel.entities.first { $0.type == .teacher && $0.name.caseInsensitiveCompare(teacher.name) == .orderedSame }
             return .teacher(teacher, direct)
         }
     }
 
     private var courseTargets: [ExperienceExploreTarget] {
-        courses.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map(ExperienceExploreTarget.course)
+        viewModel.courses.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.map(ExperienceExploreTarget.course)
     }
 
     private var placeTargets: [ExperienceExploreTarget] {
-        entities.filter { $0.type == .room }
+        viewModel.entities.filter { $0.type == .room }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             .map(ExperienceExploreTarget.entity)
     }
 
     private var foodTargets: [ExperienceExploreTarget] {
-        entities.filter { $0.type == .dish }
+        viewModel.entities.filter { $0.type == .dish }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             .map(ExperienceExploreTarget.entity)
+    }
+
+    private func filtered(_ targets: [ExperienceExploreTarget]) -> [ExperienceExploreTarget] {
+        let cleaned = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return targets }
+        return targets.filter { $0.title.localizedCaseInsensitiveContains(cleaned) }
     }
 }
 

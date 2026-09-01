@@ -239,6 +239,8 @@ final class AppModel {
             catch { remaining.append("drafts") }
             do { try await services.publishedKeyRecoveryStore.clearAll() }
             catch { remaining.append("published-key recovery record") }
+            do { try await services.portalCoordinator.clearSavedCredentials() }
+            catch { remaining.append("saved school sign-in") }
         }
         phase = .signedOut
         startupNotice = nil

@@ -36,7 +36,14 @@ struct HomeView: View {
                             }
 
                             if let error = viewModel?.errorMessage {
-                                AppBanner(text: error, style: .warning)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    AppBanner(text: error, style: .warning)
+                                    Button("Try Home again") {
+                                        Task { await viewModel?.load(forceRefresh: true) }
+                                    }
+                                    .font(AppTheme.Typography.subheadlineSemibold)
+                                    .frame(minHeight: 44)
+                                }
                             }
 
                             lessonFocus(now: timeline.date)
@@ -259,7 +266,7 @@ struct HomeView: View {
                     Text("School Portal")
                         .font(AppTheme.Typography.subheadlineSemibold)
                         .foregroundStyle(Palette.ink)
-                    Text("Open OASIS in the app")
+                    Text("Open the school portal in the app")
                         .font(AppTheme.Typography.caption)
                         .foregroundStyle(Palette.inkSecondary)
                 }

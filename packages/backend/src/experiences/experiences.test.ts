@@ -361,6 +361,22 @@ describe("two-call publication flow", () => {
 });
 
 describe("standalone entities & eligibility", () => {
+  it("unfiltered entity list never silently truncates selectable options", async () => {
+    const items = Array.from({ length: 510 }, (_, index) => ({
+      type: "dish" as const,
+      name: `Dish ${String(index).padStart(3, "0")}`,
+    }));
+    const imported = await app.inject({
+      method: "POST", url: "/api/admin/entities/import", headers: auth,
+      payload: { items },
+    });
+    expect(imported.statusCode).toBe(200);
+
+    const response = await app.inject({ method: "GET", url: "/api/entities", headers: auth });
+    const entities = (response.json() as { entities: { entity_key: string }[] }).entities;
+    expect(entities.length).toBeGreaterThanOrEqual(510);
+  });
+
   it("verified mode: teacher review allowed with exposure; dish needs admin import; rating rules hold", async () => {
     const entities = await app.inject({ method: "GET", url: "/api/entities?type=teacher", headers: auth });
     const teacher = (entities.json() as { entities: { entity_key: string }[] }).entities[0]!;

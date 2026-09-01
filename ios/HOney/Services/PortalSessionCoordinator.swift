@@ -72,6 +72,8 @@ actor PortalSessionCoordinator {
 
     private var session: PortalSession?
     private var loginTask: Task<PortalSession, Error>?
+    private var loginTaskGeneration: Int?
+    private var credentialGeneration = 0
     private(set) var state: PortalSessionState = .restoring
 
     init(api: any PortalAuthAPI, vault: any PortalCredentialVault, safetyWindow: TimeInterval = 5 * 60) {
@@ -83,13 +85,29 @@ actor PortalSessionCoordinator {
     /// Store freshly-entered credentials (from the HOney login screen) so the
     /// connector can silently re-login later.
     func authorizeCredentials(_ credentials: PortalCredentials) throws {
+        credentialGeneration += 1
+        loginTask?.cancel()
+        loginTask = nil
+        loginTaskGeneration = nil
         try vault.saveCredentials(credentials)
-        if state == .noCredentials || state == .userActionRequired {
-            state = .restoring
-        }
+        session = nil
+        try vault.deleteSession()
+        state = .restoring
+    }
+
+    func clearSavedCredentials() throws {
+        credentialGeneration += 1
+        loginTask?.cancel()
+        loginTask = nil
+        loginTaskGeneration = nil
+        session = nil
+        try vault.deleteSession()
+        try vault.deleteCredentials()
+        state = .noCredentials
     }
 
     func restore() async {
+        let restoreGeneration = credentialGeneration
         do {
             session = try vault.loadSession()
             if (try? vault.loadAuthorizedCredentialsSilently()) == nil, session == nil {
@@ -97,19 +115,20 @@ actor PortalSessionCoordinator {
                 return
             }
             _ = try await ensureFreshSession()
-        } catch PortalSessionError.networkUnavailable {
+        } catch PortalSessionError.networkUnavailable where credentialGeneration == restoreGeneration {
             state = .temporarilyUnavailable
-        } catch PortalSessionError.serverUnavailable {
+        } catch PortalSessionError.serverUnavailable where credentialGeneration == restoreGeneration {
             state = .temporarilyUnavailable
-        } catch PortalSessionError.credentialsRejected {
+        } catch PortalSessionError.credentialsRejected where credentialGeneration == restoreGeneration {
             state = .userActionRequired
-        } catch PortalSessionError.interactiveChallenge {
+        } catch PortalSessionError.interactiveChallenge where credentialGeneration == restoreGeneration {
             state = .userActionRequired
-        } catch PortalSessionError.keychainUnavailable {
+        } catch PortalSessionError.keychainUnavailable where credentialGeneration == restoreGeneration {
             state = .noCredentials
-        } catch PortalSessionError.incompatibleResponse {
+        } catch PortalSessionError.incompatibleResponse where credentialGeneration == restoreGeneration {
             state = .incompatible
         } catch {
+            guard credentialGeneration == restoreGeneration else { return }
             // Retry after protected data becomes available; never erase secrets.
             state = .temporarilyUnavailable
         }
@@ -159,50 +178,60 @@ actor PortalSessionCoordinator {
     }
 
     private func reauthenticateSingleFlight() async throws -> PortalSession {
-        if let loginTask {
+        if let loginTask, loginTaskGeneration == credentialGeneration {
             return try await loginTask.value
         }
 
         let api = self.api
         let vault = self.vault
+        let requestGeneration = credentialGeneration
         let task = Task<PortalSession, Error> {
+            try Task.checkCancellation()
             guard let credentials = try vault.loadAuthorizedCredentialsSilently() else {
                 throw PortalSessionError.keychainUnavailable
             }
             let token = try await api.login(credentials)
+            try Task.checkCancellation()
             let identity = try await api.identity(token: token)
-            let session = PortalSession(token: token, expiresAt: identity.expiresAt, studentID: identity.studentID)
-            try vault.saveSession(session)
-            return session
+            try Task.checkCancellation()
+            return PortalSession(token: token, expiresAt: identity.expiresAt, studentID: identity.studentID)
         }
 
         loginTask = task
-        defer { loginTask = nil }
+        loginTaskGeneration = requestGeneration
+        defer {
+            if loginTaskGeneration == requestGeneration {
+                loginTask = nil
+                loginTaskGeneration = nil
+            }
+        }
 
         do {
             let renewed = try await task.value
+            guard credentialGeneration == requestGeneration else { throw CancellationError() }
+            try vault.saveSession(renewed)
             session = renewed
             state = .authenticated(renewed)
             return renewed
-        } catch PortalSessionError.credentialsRejected {
-            try? vault.deleteSession()
-            try? vault.deleteCredentials()
-            session = nil
-            state = .userActionRequired
-            throw PortalSessionError.credentialsRejected
-        } catch PortalSessionError.interactiveChallenge {
-            state = .userActionRequired
-            throw PortalSessionError.interactiveChallenge
-        } catch PortalSessionError.keychainUnavailable {
-            state = .noCredentials
-            throw PortalSessionError.keychainUnavailable
-        } catch PortalSessionError.incompatibleResponse {
-            state = .incompatible
-            throw PortalSessionError.incompatibleResponse
         } catch {
+            guard credentialGeneration == requestGeneration else { throw CancellationError() }
+            switch error as? PortalSessionError {
+            case .credentialsRejected:
+                try? vault.deleteSession()
+                try? vault.deleteCredentials()
+                session = nil
+                state = .userActionRequired
+            case .interactiveChallenge:
+                state = .userActionRequired
+            case .keychainUnavailable:
+                state = .noCredentials
+            case .incompatibleResponse:
+                state = .incompatible
+            default:
             // Preserve credentials across offline, timeout, 5xx and transient
             // parsing failures. These do not prove the password is bad.
-            state = .temporarilyUnavailable
+                state = .temporarilyUnavailable
+            }
             throw error
         }
     }

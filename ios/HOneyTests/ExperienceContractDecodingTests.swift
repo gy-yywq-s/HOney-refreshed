@@ -390,3 +390,34 @@ final class ExperienceFeedRepositoryTests: XCTestCase {
         XCTAssertEqual(counts.school, 3)
     }
 }
+
+@MainActor
+final class ExperienceTargetStateTests: XCTestCase {
+    func testPartialMetadataIsNotPresentedAsACompleteEmptyList() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("experience-target-tests-\(UUID().uuidString)")
+        defer {
+            try? FileManager.default.removeItem(at: tempDir)
+            StubURLProtocol.responses = [:]
+        }
+        let services = AppServices.stub(tempDir: tempDir)
+        try await services.sessionStore.save(HOneySession(
+            accessToken: "access",
+            accessExpiresAt: Date().addingTimeInterval(3600),
+            refreshToken: "refresh",
+            refreshExpiresAt: Date().addingTimeInterval(7200)
+        ))
+        StubURLProtocol.responses["/api/directory"] = (200, Data("""
+        {"teachers":[{"id":"t1","name":"Ms Lin"}],"courses":[],"rooms":[]}
+        """.utf8))
+        StubURLProtocol.responses["/api/entities"] = (503, Data("unavailable".utf8))
+
+        let viewModel = ExperiencesViewModel(services: services)
+        await viewModel.loadFilters()
+
+        XCTAssertTrue(viewModel.directoryAvailable)
+        XCTAssertFalse(viewModel.entitiesAvailable)
+        XCTAssertEqual(viewModel.teachers.map(\.name), ["Ms Lin"])
+        XCTAssertTrue(viewModel.targetLoadMessage?.contains("incomplete") == true)
+    }
+}

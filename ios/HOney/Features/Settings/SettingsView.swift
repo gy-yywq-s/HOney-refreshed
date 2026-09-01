@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var revertingConsent = false
     @State private var isSavingConsent = false
     @State private var confirmDelete = false
+    @State private var showSchoolReconnect = false
     @State private var settingsError: String?
     @AppStorage(SurfacePalette.storageKey) private var persistedSurfacePalette = SurfacePalette.paper.rawValue
     @State private var pendingSurfacePalette = SurfacePalette.current
@@ -63,15 +64,18 @@ struct SettingsView: View {
                 isPresented: $confirmDelete,
                 titleVisibility: .visible
             ) {
-                Button("Delete account, keep post-control keys") {
+                Button("Delete account, keep data on this iPhone") {
                     deleteAccount(eraseLocalData: false)
                 }
-                Button("Delete account and local HOney data", role: .destructive) {
+                Button("Delete account and erase data on this iPhone", role: .destructive) {
                     deleteAccount(eraseLocalData: true)
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Deleting removes your HOney account and imported server data. Anonymous posts remain published. Keep the post-control keys on this iPhone if you may need to revoke them later, or erase those keys together with private notes and drafts.")
+                Text("Deleting removes your HOney account and imported server data. Anonymous posts remain published. Keeping device data preserves the saved school sign-in, private notes, saved draft and post-control keys. Erasing device data removes all of those from this iPhone.")
+            }
+            .sheet(isPresented: $showSchoolReconnect) {
+                SchoolReconnectView().environment(model)
             }
         }
     }
@@ -90,7 +94,7 @@ struct SettingsView: View {
         } header: {
             Text("Appearance")
         } footer: {
-            Text("Every available surface is shown here. Each uses its own tuned blue accent in light and dark mode.")
+            Text("Every available surface is shown here. Each uses an accent tuned for its surface in light and dark mode.")
         }
         .listRowBackground(Palette.surface)
     }
@@ -158,7 +162,7 @@ struct SettingsView: View {
         } header: {
             Text("Account")
         } footer: {
-            Text("Signing out keeps school credentials, private notes, drafts, and post-control keys on this iPhone.")
+            Text("Signing out keeps the saved school sign-in, private notes, saved draft and post-control keys on this iPhone.")
         }
         .listRowBackground(Palette.surface)
     }
@@ -187,6 +191,10 @@ struct SettingsView: View {
                     saveConsent(previousValue: oldValue, newValue: newValue)
                 }
 
+            Button("Update school sign-in for Access") {
+                showSchoolReconnect = true
+            }
+
             if connection?.connected == true {
                 Button("Disconnect timetable sync", role: .destructive) {
                     Task {
@@ -209,7 +217,7 @@ struct SettingsView: View {
     private var privacySection: some View {
         Section {
             Label("Published experiences store no author identity.", systemImage: "person.crop.circle.badge.questionmark")
-            Label("Private notes and drafts stay on this iPhone.", systemImage: "iphone")
+            Label("Private notes and the saved draft stay on this iPhone.", systemImage: "iphone")
             Label("Post-control keys let this iPhone see and revoke your anonymous posts.", systemImage: "key")
         } header: {
             Text("Experiences and privacy")
@@ -269,6 +277,91 @@ struct SettingsView: View {
             case .serverFailed:
                 settingsError = "The HOney account was not deleted. No local data was erased."
             }
+        }
+    }
+}
+
+struct SchoolReconnectView: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var username = ""
+    @State private var password = ""
+    @State private var isWorking = false
+    @State private var feedback: (AppBanner.Style, String)?
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case username, password }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let feedback {
+                    Section { AppBanner(text: feedback.1, style: feedback.0) }
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
+                }
+
+                Section {
+                    TextField("School account", text: $username)
+                        .textContentType(.username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .focused($focusedField, equals: .username)
+                    SecureField("School password", text: $password)
+                        .textContentType(.password)
+                        .focused($focusedField, equals: .password)
+                } footer: {
+                    Text("This updates the device-only school sign-in used for silent Access and School Portal reconnection. It does not change your HOney account or timetable-import choice.")
+                }
+
+                Section {
+                    Button(isWorking ? "Checking…" : "Save and check connection") {
+                        Task { await reconnect() }
+                    }
+                    .disabled(isWorking || username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(PageBackground())
+            .navigationTitle("School sign-in")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } }
+            }
+        }
+    }
+
+    private func reconnect() async {
+        guard !isWorking else { return }
+        isWorking = true
+        feedback = nil
+        focusedField = nil
+        defer { isWorking = false }
+
+        do {
+            try await model.services.portalCoordinator.authorizeCredentials(PortalCredentials(
+                username: username.trimmingCharacters(in: .whitespacesAndNewlines),
+                password: password
+            ))
+            await model.services.portalCoordinator.restore()
+            switch await model.services.portalCoordinator.currentState() {
+            case .authenticated:
+                model.portalCredentialNotice = nil
+                dismiss()
+            case .temporarilyUnavailable:
+                feedback = (.warning, "The school sign-in was saved, but the portal is temporarily unavailable, so HOney could not verify it yet.")
+            case .userActionRequired:
+                feedback = (.error, "The school did not accept this sign-in, or it requires a manual challenge.")
+            case .incompatible:
+                feedback = (.error, "The school portal changed and this version of HOney cannot reconnect yet.")
+            case .noCredentials:
+                feedback = (.error, "This iPhone could not save the school sign-in.")
+            case .restoring:
+                feedback = (.warning, "The school connection is still being checked. Try again in a moment.")
+            }
+        } catch {
+            feedback = (.error, "This iPhone could not save the school sign-in.")
         }
     }
 }

@@ -273,13 +273,19 @@ struct MySubmissionsView: View {
     }
 
     private func chip(_ text: String, tint: Color) -> some View {
-        Text(text)
+        HStack(spacing: 5) {
+            Circle()
+                .fill(tint)
+                .frame(width: 6, height: 6)
+                .accessibilityHidden(true)
+            Text(text)
+        }
             .font(AppTheme.Typography.caption2Bold)
             .padding(.horizontal, AppTheme.Spacing.small)
-            .padding(.vertical, 2)
-            .background(tint.opacity(0.15))
-            .foregroundStyle(tint)
-            .clipShape(Capsule())
+            .padding(.vertical, 4)
+            .background(Palette.surfaceMuted, in: Capsule())
+            .foregroundStyle(Palette.ink)
+            .overlay(Capsule().stroke(tint.opacity(0.72), lineWidth: 1))
     }
 
     // MARK: - Data

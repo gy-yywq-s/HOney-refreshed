@@ -6,6 +6,24 @@
 import XCTest
 @testable import HOney
 
+private actor CredentialEchoPortalAPI: PortalAuthAPI {
+    private(set) var usernames: [String] = []
+
+    func login(_ credentials: PortalCredentials) async throws -> String {
+        usernames.append(credentials.username)
+        if credentials.username == "old" {
+            try? await Task.sleep(for: .milliseconds(120))
+        } else {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        return "token-" + credentials.username
+    }
+
+    func identity(token: String) async throws -> (studentID: Int, expiresAt: Date) {
+        (88, Date().addingTimeInterval(3600))
+    }
+}
+
 final class PortalSessionCoordinatorTests: XCTestCase {
 
     private func makeCoordinator(
@@ -125,5 +143,56 @@ final class PortalSessionCoordinatorTests: XCTestCase {
         XCTAssertNil(vault.credentials)
         let state = await coordinator.currentState()
         XCTAssertEqual(state, .userActionRequired)
+    }
+
+    func testExplicitCredentialClearRemovesSessionAndCredentials() async throws {
+        let api = MockPortalAuthAPI()
+        let session = PortalSession(token: "valid", expiresAt: Date().addingTimeInterval(3600), studentID: 88)
+        let vault = InMemoryVault(session: session, credentials: .init(username: "u", password: "p"))
+        let coordinator = makeCoordinator(api: api, vault: vault)
+
+        try await coordinator.clearSavedCredentials()
+
+        XCTAssertNil(vault.session)
+        XCTAssertNil(vault.credentials)
+        XCTAssertTrue(vault.deleteCredentialsCalled)
+        let state = await coordinator.currentState()
+        XCTAssertEqual(state, .noCredentials)
+    }
+
+    func testReplacingCredentialsInvalidatesAValidOldSessionBeforeVerification() async throws {
+        let api = MockPortalAuthAPI()
+        let oldSession = PortalSession(token: "old-valid", expiresAt: Date().addingTimeInterval(3600), studentID: 88)
+        let vault = InMemoryVault(session: oldSession, credentials: .init(username: "old", password: "old"))
+        let coordinator = makeCoordinator(api: api, vault: vault)
+        await coordinator.restore()
+        let initialLoginCount = await api.loginCount
+        XCTAssertEqual(initialLoginCount, 0)
+
+        try await coordinator.authorizeCredentials(.init(username: "new", password: "new"))
+        await coordinator.restore()
+
+        XCTAssertEqual(vault.credentials, .init(username: "new", password: "new"))
+        let replacementLoginCount = await api.loginCount
+        XCTAssertEqual(replacementLoginCount, 1, "The replacement credentials must be checked instead of reusing the old session")
+    }
+
+    func testLateOldLoginCannotOverwriteTheReplacementSession() async throws {
+        let api = CredentialEchoPortalAPI()
+        let vault = InMemoryVault(credentials: .init(username: "old", password: "old"))
+        let coordinator = PortalSessionCoordinator(api: api, vault: vault, safetyWindow: 300)
+
+        let oldAttempt = Task { try? await coordinator.freshTokenForWebBridge() }
+        try await Task.sleep(for: .milliseconds(20))
+        try await coordinator.authorizeCredentials(.init(username: "new", password: "new"))
+        await coordinator.restore()
+        _ = await oldAttempt.value
+
+        XCTAssertEqual(vault.session?.token, "token-new")
+        let state = await coordinator.currentState()
+        guard case .authenticated(let session) = state else {
+            return XCTFail("Expected the replacement session to remain authenticated")
+        }
+        XCTAssertEqual(session.token, "token-new")
     }
 }

@@ -20,6 +20,10 @@ final class ExperiencesViewModel {
     var courses: [DirectoryEntry] = []
     var entities: [EntityRef] = []
     var targetNames: [String: String] = [:]
+    var isLoadingTargets = false
+    var directoryAvailable = false
+    var entitiesAvailable = false
+    var targetLoadMessage: String?
 
     var scope: ExperienceFeedScope = .myClasses
 
@@ -33,13 +37,28 @@ final class ExperiencesViewModel {
     }
 
     func loadFilters() async {
+        isLoadingTargets = true
+        targetLoadMessage = nil
+        defer { isLoadingTargets = false }
         let metadata = await services.experienceTargetRepository.load()
+        directoryAvailable = metadata.directoryRequestSucceeded
+        entitiesAvailable = metadata.entitiesRequestSucceeded
         if let directory = metadata.directory {
             teachers = directory.teachers
             courses = directory.courses
         }
         entities = metadata.entities
         targetNames = metadata.names
+        if !directoryAvailable && !entitiesAvailable {
+            targetLoadMessage = "Choices could not be loaded. Nothing is being shown as an empty complete list."
+        } else if !metadata.isComplete {
+            targetLoadMessage = "Some choices could not be loaded. The available sections below may be incomplete."
+        }
+    }
+
+    func retryFilters() async {
+        await services.experienceTargetRepository.invalidate()
+        await loadFilters()
     }
 
     func targetLabel(for experience: PublicExperience) -> String {

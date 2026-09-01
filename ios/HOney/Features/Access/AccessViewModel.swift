@@ -12,6 +12,7 @@ import Observation
 final class AccessViewModel {
     private let coordinator: PortalSessionCoordinator
     private let api: PortalAPI
+    private var refreshTask: Task<Void, Never>?
 
     var permits: [PortalPermitRow] = []
     var doors: [PortalDoor] = []
@@ -33,6 +34,20 @@ final class AccessViewModel {
     var approvedPermits: [PortalPermitRow] { permits.filter { $0.isApproved } }
 
     func refresh(preservingBanner: Bool = false) async {
+        if let refreshTask {
+            await refreshTask.value
+            return
+        }
+        let task = Task<Void, Never> { @MainActor [weak self] in
+            guard let self else { return }
+            await self.performRefresh(preservingBanner: preservingBanner)
+        }
+        refreshTask = task
+        await task.value
+        refreshTask = nil
+    }
+
+    private func performRefresh(preservingBanner: Bool) async {
         isLoading = true
         defer { isLoading = false }
         if !preservingBanner { banner = nil }
@@ -150,12 +165,16 @@ final class AccessViewModel {
         case .unauthorized:
             banner = (.warning, "Your portal session expired. Please try again.")
         case .credentialsRejected:
-            banner = (.error, "Your school password may have changed. Reconnect in Settings.")
+            connectionState = .userActionRequired
+            banner = (.error, "Your school password may have changed. Update the school sign-in in Settings.")
         case .interactiveChallenge:
+            connectionState = .userActionRequired
             banner = (.error, "The portal needs a manual sign-in. Open the School Portal to continue.")
         case .keychainUnavailable:
-            banner = (.error, "Access needs your school sign-in. Reconnect in Settings.")
+            connectionState = .noCredentials
+            banner = (.error, "Access needs your school sign-in. Update it in Settings.")
         case .incompatibleResponse:
+            connectionState = .incompatible
             banner = (.error, "The school portal changed and Access needs an update.")
         case .mutationOutcomeUnknown:
             banner = (.warning, "The request timed out. Verify the gate physically before retrying.")
@@ -168,9 +187,9 @@ final class AccessViewModel {
         case .networkUnavailable: return "You appear to be offline."
         case .serverUnavailable: return "The school portal is temporarily unavailable."
         case .unauthorized: return "Your school session expired. Try again."
-        case .credentialsRejected: return "Your school password may have changed. Reconnect in Settings."
+        case .credentialsRejected: return "Your school password may have changed. Update the school sign-in in Settings."
         case .interactiveChallenge: return "The school portal needs a manual sign-in."
-        case .keychainUnavailable: return "Access needs your saved school sign-in."
+        case .keychainUnavailable: return "Access needs a saved school sign-in. Update it in Settings."
         case .incompatibleResponse: return "The school portal changed and Access needs an update."
         case .mutationOutcomeUnknown: return "The previous physical action has an unknown outcome."
         }
