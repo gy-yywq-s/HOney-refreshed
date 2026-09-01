@@ -7,7 +7,7 @@
 import SwiftUI
 
 struct InteractiveExperienceRow: View {
-    let experience: Experience
+    let experience: PublicExperience
     let services: AppServices
 
     @State private var reporting = false
@@ -34,8 +34,8 @@ struct InteractiveExperienceRow: View {
             .font(Theme.Typography.caption)
         }
         .sheet(isPresented: $reporting) {
-            ReportSheet { category, note in
-                try? await services.honeyAPI.report(experienceId: experience.id, category: category, note: note)
+            ReportSheet { category in
+                try? await services.honeyAPI.report(experienceId: experience.id, category: category)
             }
         }
     }

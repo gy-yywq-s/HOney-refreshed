@@ -12,7 +12,9 @@ struct AppServices: Sendable {
     let portalAPI: PortalAPI
     let credentialVault: KeychainCredentialVault
     let portalCoordinator: PortalSessionCoordinator
-    let ownershipKeyStore: OwnershipKeyStore
+    let ownershipKeyStore: any OwnershipKeyStoring
+    let composerDraftStore: ComposerDraftStore
+    let privateNoteStore: PrivateNoteStore
 
     static func live(config: AppConfig = .default) -> AppServices {
         let sessionStore = SessionStore()
@@ -27,7 +29,9 @@ struct AppServices: Sendable {
             portalAPI: portalAPI,
             credentialVault: vault,
             portalCoordinator: coordinator,
-            ownershipKeyStore: OwnershipKeyStore()
+            ownershipKeyStore: OwnershipKeyStore(),
+            composerDraftStore: ComposerDraftStore(),
+            privateNoteStore: PrivateNoteStore()
         )
     }
 }

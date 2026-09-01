@@ -26,11 +26,20 @@ struct SettingsView: View {
                 ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
             }
             .onAppear { consentTimetable = model.profile?.consent.timetable ?? false }
-            .alert("Delete your HOney account?", isPresented: $confirmDelete) {
-                Button("Delete", role: .destructive) { Task { await model.deleteAccount(); dismiss() } }
+            // Account deletion must surface the ownership-key consequence
+            // (audit §3.6): the keys on this device are the ONLY control over
+            // past anonymous posts. Deleting the account never has to destroy
+            // them — that is a separate, explicit choice.
+            .confirmationDialog("Delete your HOney account?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Delete account, keep post keys on this device") {
+                    Task { await model.deleteAccount(eraseLocalData: false); dismiss() }
+                }
+                Button("Delete account and erase everything", role: .destructive) {
+                    Task { await model.deleteAccount(eraseLocalData: true); dismiss() }
+                }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This removes your account and imported data. Experiences you posted remain anonymous and are managed with device-only keys.")
+                Text("Your account and imported data are removed from the server. Posts you published are anonymous — the ownership keys stored only on this device are the only control over them that exists. Keep the keys to stay able to revoke those posts later, or erase everything on this device too (post keys, private notes and drafts).")
             }
         }
     }

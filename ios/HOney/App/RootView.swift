@@ -17,6 +17,8 @@ struct RootView: View {
                     .screenBackground()
             case .signedOut:
                 LoginView()
+            case .consentPending:
+                ImportConsentView()
             case .signedIn:
                 MainTabView()
             }

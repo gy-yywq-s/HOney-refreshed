@@ -2,69 +2,76 @@
 //  ReportSheet.swift
 //  HOney — report a published experience against the community rules.
 //  A report is a rule-based flag, NOT a disagreement vote (App A §22).
+//  Category-only (audit §3.9): there is no free-text box, and nothing is
+//  preselected. The post is automatically re-checked against the current
+//  rules — no human queue, and no way to see who wrote it.
 //
 
 import SwiftUI
 
 struct ReportSheet: View {
-    /// Submits (category, note). The category strings match the backend's
-    /// rule-based report categories.
-    let onSubmit: (String, String) async -> Void
+    /// Submits the chosen category (the wire `ReportCategory`).
+    let onSubmit: (ReportCategory) async -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var category: ReportCategory = .notExperience
-    @State private var note = ""
+    @State private var category: ReportCategory?
     @State private var submitting = false
-
-    enum ReportCategory: String, CaseIterable, Identifiable {
-        case seriousAllegation = "serious_allegation"
-        case doxxing = "doxxing"
-        case slur = "slur"
-        case targetsStudent = "targets_student"
-        case notExperience = "not_experience"
-        case otherRule = "other_rule"
-
-        var id: String { rawValue }
-        var label: String {
-            switch self {
-            case .seriousAllegation: return "Serious allegation"
-            case .doxxing: return "Private information"
-            case .slur: return "Slur or dehumanizing"
-            case .targetsStudent: return "Targets a student"
-            case .notExperience: return "Not an experience"
-            case .otherRule: return "Other rule break"
-            }
-        }
-    }
+    @State private var done = false
 
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    Picker("Reason", selection: $category) {
-                        ForEach(ReportCategory.allCases) { Text($0.label).tag($0) }
+                if done {
+                    Section {
+                        Text("Thanks. The post has been automatically re-checked against the current community rules — no human queue, and no way to see who wrote it.")
+                            .font(Theme.Typography.body)
+                            .foregroundStyle(Theme.Palette.textPrimary)
                     }
-                    TextField("Add a note (optional)", text: $note, axis: .vertical)
-                        .lineLimit(1...4)
-                } footer: {
-                    Text("Reports are checked against the community rules — they are not a disagreement vote. Disliking a post is not a reason to report it.")
+                } else {
+                    Section {
+                        ForEach(ReportCategory.allCases) { option in
+                            Button {
+                                category = option
+                            } label: {
+                                HStack {
+                                    Text(option.label)
+                                        .font(Theme.Typography.body)
+                                        .foregroundStyle(Theme.Palette.textPrimary)
+                                        .multilineTextAlignment(.leading)
+                                    Spacer()
+                                    if category == option {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(Theme.Palette.accent)
+                                    }
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("A report is for a rule violation — it is not a disagreement vote. If you simply disagree, that is what Dislike is for.")
+                    } footer: {
+                        Text("Reports are a category only — there is no free-text box. The post is automatically re-checked against the current rules; sensitive detail belongs with the school, not here.")
+                    }
                 }
             }
             .navigationTitle("Report")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(done ? "Done" : "Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Submit") {
-                        submitting = true
-                        Task {
-                            await onSubmit(category.rawValue, note)
-                            dismiss()
+                if !done {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(submitting ? "Sending…" : "Send report") {
+                            guard let category else { return }
+                            submitting = true
+                            Task {
+                                await onSubmit(category)
+                                submitting = false
+                                done = true
+                            }
                         }
+                        .disabled(category == nil || submitting)
                     }
-                    .disabled(submitting)
                 }
             }
         }

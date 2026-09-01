@@ -1,6 +1,8 @@
 //
 //  ExperiencesView.swift
-//  HOney — browse feed with raw-first ordering, filters and sort.
+//  HOney — the community hub: the "from your classes" feed by default
+//  (chronological, never ranked) plus a filtered browse. Ordering is always the
+//  server's; nothing is re-ranked client-side.
 //
 
 import SwiftUI
@@ -63,10 +65,17 @@ struct ExperiencesView: View {
                 } else if vm.experiences.isEmpty {
                     EmptyStateView(
                         systemImage: "bubble.left.and.bubble.right",
-                        title: "No experiences yet",
-                        message: "Be the first to share what a lesson, teacher, room or dish was really like."
+                        title: vm.showingFromMyClasses ? "Nothing from your classes yet" : "No experiences yet",
+                        message: vm.showingFromMyClasses
+                            ? "Import your timetable, or be the first to share one."
+                            : "Be the first to share what a lesson, teacher, place or dish was really like."
                     )
                 } else {
+                    if vm.showingFromMyClasses {
+                        Text("From your classes — experiences involving your own teachers and courses, newest first. Chronological, never ranked.")
+                            .font(Theme.Typography.caption)
+                            .foregroundStyle(Theme.Palette.textSecondary)
+                    }
                     ForEach(vm.experiences) { experience in
                         Card { InteractiveExperienceRow(experience: experience, services: model.services) }
                     }

@@ -1,51 +1,44 @@
 //
 //  ExperienceRow.swift
-//  HOney — a single experience in a feed or list.
+//  HOney — a single public experience in a feed or list. Raw-first: the body is
+//  rendered verbatim; provenance is labeled honestly; the only date shown is
+//  the coarse public day bucket; reactions stay hidden while the server
+//  withholds counts (small-cohort threshold → `reactions == nil`).
 //
 
 import SwiftUI
 
 struct ExperienceRow: View {
-    let experience: Experience
-    var showsPrivacyBadge: Bool = false
+    let experience: PublicExperience
     var showsReactions: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
             HStack(spacing: Theme.Spacing.sm) {
-                if let label = experience.provenanceLabel {
-                    Text(label)
-                        .font(Theme.Typography.caption)
-                        .foregroundStyle(Theme.Palette.accent)
-                }
+                Text(experience.provenance.label)
+                    .font(Theme.Typography.caption)
+                    .foregroundStyle(Theme.Palette.accent)
                 if let rating = experience.rating {
                     RatingStars(rating: rating)
                 }
                 Spacer()
-                if showsPrivacyBadge {
-                    Text(experience.isPrivate ? "Private" : "Public")
-                        .font(.caption2.weight(.semibold))
-                        .padding(.horizontal, Theme.Spacing.sm)
-                        .padding(.vertical, 2)
-                        .background(experience.isPrivate ? Theme.Palette.warning.opacity(0.15) : Theme.Palette.accentSoft)
-                        .foregroundStyle(experience.isPrivate ? Theme.Palette.warning : Theme.Palette.accent)
-                        .clipShape(Capsule())
+                if let published = experience.publishedDate {
+                    Text(published, style: .date)
+                        .font(Theme.Typography.caption)
+                        .foregroundStyle(Theme.Palette.textSecondary)
                 }
             }
             Text(experience.bodyText)
                 .font(Theme.Typography.body)
                 .foregroundStyle(Theme.Palette.textPrimary)
-            HStack(spacing: Theme.Spacing.md) {
-                if showsReactions, let reactions = experience.reactions {
+            if showsReactions, let reactions = experience.reactions {
+                HStack(spacing: Theme.Spacing.md) {
                     Label("\(reactions.likes)", systemImage: "hand.thumbsup")
                     Label("\(reactions.dislikes)", systemImage: "hand.thumbsdown")
                 }
-                if let published = experience.publishedDate {
-                    Text(published, style: .date)
-                }
+                .font(Theme.Typography.caption)
+                .foregroundStyle(Theme.Palette.textSecondary)
             }
-            .font(Theme.Typography.caption)
-            .foregroundStyle(Theme.Palette.textSecondary)
         }
     }
 }

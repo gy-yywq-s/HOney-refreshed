@@ -1,15 +1,15 @@
 //
 //  EntityPageView.swift
-//  HOney — a teacher / course / room / dish page: its experiences + compose.
+//  HOney — a teacher / place / dish page: its experiences + compose.
 //
 
 import SwiftUI
 
 struct EntityPageView: View {
-    let entity: Entity
+    let entity: EntityRef
 
     @Environment(AppModel.self) private var model
-    @State private var experiences: [Experience] = []
+    @State private var experiences: [PublicExperience] = []
     @State private var isLoading = true
     @State private var showCompose = false
 

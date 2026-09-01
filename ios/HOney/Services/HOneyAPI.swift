@@ -13,6 +13,15 @@ enum HOneyAPIError: Error, Equatable {
     case invalidResponse
     case http(status: Int, body: String?)
     case decoding(String)
+
+    /// The backend's `{ "error": "<code>" }` body of a non-2xx response, when
+    /// present. Error handling matches codes as strings so unknown additions
+    /// degrade to generic copy.
+    var apiErrorCode: String? {
+        guard case .http(_, let body) = self, let body, let data = body.data(using: .utf8) else { return nil }
+        struct ErrorBody: Decodable { let error: String? }
+        return (try? JSONDecoder().decode(ErrorBody.self, from: data))?.error
+    }
 }
 
 private struct NoBody: Encodable {}
@@ -107,7 +116,7 @@ actor HOneyAPI {
         roomId: String? = nil,
         query: String? = nil,
         sort: ExperienceSort = .newest
-    ) async throws -> ExperiencesResponse {
+    ) async throws -> ExperiencesFeedResponse {
         var items: [URLQueryItem] = []
         if let entityKey { items.append(URLQueryItem(name: "entityKey", value: entityKey)) }
         if let teacherId { items.append(URLQueryItem(name: "teacherId", value: teacherId)) }
@@ -118,16 +127,41 @@ actor HOneyAPI {
         return try await send("GET", "/api/experiences", query: items, authed: true)
     }
 
-    func createExperience(_ request: CreateExperienceRequest) async throws -> CreateExperienceResponse {
-        try await send("POST", "/api/experiences", body: request, authed: true)
+    /// Domain query (audit §4.2): posts relevant to my verified exposure —
+    /// chronological, never ranked. The server knows the caller's exposure.
+    func fromMyClasses(before: Int? = nil, limit: Int? = nil) async throws -> ExperiencesFeedResponse {
+        var items: [URLQueryItem] = []
+        if let before { items.append(URLQueryItem(name: "before", value: String(before))) }
+        if let limit { items.append(URLQueryItem(name: "limit", value: String(limit))) }
+        return try await send("GET", "/api/experiences/from-my-classes", query: items, authed: true)
     }
 
-    func myExperiences(keys: [String]) async throws -> ExperiencesResponse {
+    // MARK: Publication flow: eligibility → check → publish (contract §Experiences)
+
+    /// Step 1: authenticated, single-use, scope-bound eligibility token.
+    func experienceEligibility(lessonId: String? = nil, entityKey: String? = nil) async throws -> ExperienceEligibilityResponse {
+        try await send(
+            "POST", "/api/experiences/eligibility",
+            body: ExperienceEligibilityRequest(lessonId: lessonId, entityKey: entityKey),
+            authed: true
+        )
+    }
+
+    /// Step 2: synchronous moderation preflight. The draft is NEVER persisted
+    /// by the server, and nothing is published without an explicit user action.
+    func checkExperience(_ request: CheckExperienceRequest) async throws -> CheckExperienceResponse {
+        try await send("POST", "/api/experiences/check", body: request, authed: true)
+    }
+
+    /// Step 3: publish. Sent WITHOUT session auth — the eligibility token and
+    /// content-bound pass are the only proof; the request carries no identity.
+    func publishExperience(_ request: PublishExperienceRequest) async throws -> PublishExperienceResponse {
+        try await send("POST", "/api/experiences/publish", body: request, authed: false)
+    }
+
+    /// Own submissions (any status), proved by client-held ownership keys.
+    func myExperiences(keys: [String]) async throws -> MyExperiencesResponse {
         try await send("POST", "/api/experiences/mine", body: MineRequest(keys: keys), authed: true)
-    }
-
-    func reconfirmExperience(ownershipKey: String) async throws {
-        try await sendNoContent("POST", "/api/experiences/reconfirm", body: OwnershipKeyRequest(ownershipKey: ownershipKey), authed: true)
     }
 
     func revokeExperience(ownershipKey: String) async throws {
@@ -138,8 +172,9 @@ actor HOneyAPI {
         try await sendNoContent("POST", "/api/experiences/\(experienceId)/react", body: ReactRequest(value: value), authed: true)
     }
 
-    func report(experienceId: String, category: String, note: String) async throws {
-        try await sendNoContent("POST", "/api/experiences/\(experienceId)/report", body: ReportRequest(category: category, note: note), authed: true)
+    /// Reports are category-only (audit §3.9): the backend rejects any free text.
+    func report(experienceId: String, category: ReportCategory) async throws {
+        try await sendNoContent("POST", "/api/experiences/\(experienceId)/report", body: ReportExperienceRequest(category: category), authed: true)
     }
 
     /// Push a client-obtained portal token for server-side sync.

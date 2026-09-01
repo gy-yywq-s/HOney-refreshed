@@ -94,7 +94,7 @@ struct LessonExperiencesView: View {
     let courseId: String?
 
     @Environment(AppModel.self) private var model
-    @State private var experiences: [Experience] = []
+    @State private var experiences: [PublicExperience] = []
     @State private var isLoading = true
 
     var body: some View {

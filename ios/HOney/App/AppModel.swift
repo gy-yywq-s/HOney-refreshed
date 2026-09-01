@@ -9,6 +9,9 @@ import Observation
 enum AuthPhase: Equatable {
     case loading
     case signedOut
+    /// Authenticated, but the separate import-consent step (audit §3.2) is
+    /// still pending: signing in and copying school data are different decisions.
+    case consentPending(HOneyProfile)
     case signedIn(HOneyProfile)
 }
 
@@ -19,6 +22,8 @@ final class AppModel {
     var phase: AuthPhase = .loading
     var loginError: String?
     var isAuthenticating = false
+    var consentError: String?
+    var isSavingConsent = false
 
     init(services: AppServices = .live()) {
         self.services = services
@@ -47,26 +52,61 @@ final class AppModel {
         }
     }
 
-    func login(username: String, password: String, consentTimetable: Bool) async {
+    func login(username: String, password: String) async {
         isAuthenticating = true
         loginError = nil
         defer { isAuthenticating = false }
         do {
+            // Signing in never imports the timetable: the request carries no
+            // consent (audit §3.2). Import is a separate, active choice on the
+            // next step, with nothing preselected.
             let response = try await services.honeyAPI.login(
                 username: username,
                 password: password,
-                consentTimetable: consentTimetable
+                consentTimetable: nil
             )
             // Authorize the portal connector to silently re-login for Access using
             // the same school credentials (device-only Keychain, not biometric).
             try? await services.portalCoordinator.authorizeCredentials(
                 PortalCredentials(username: username, password: password)
             )
-            phase = .signedIn(response.profile)
+            if response.profile.consent.timetable {
+                // Already granted on a previous device/session — skip the step.
+                phase = .signedIn(response.profile)
+            } else {
+                phase = .consentPending(response.profile)
+            }
         } catch HOneyAPIError.http(let status, _) where status == 401 {
             loginError = "Incorrect school account or password."
         } catch {
             loginError = "Could not sign in. Please check your connection and try again."
+        }
+    }
+
+    /// The import-consent step's active choice. "Import" grants consent and runs
+    /// the initial sync (so Home has data on first render); "Not now" leaves
+    /// consent off — it can be turned on any time in Settings.
+    func completeImportConsent(importTimetable: Bool) async {
+        guard case .consentPending(var profile) = phase else { return }
+        isSavingConsent = true
+        consentError = nil
+        defer { isSavingConsent = false }
+        if importTimetable {
+            do {
+                try await services.honeyAPI.setConsent(timetable: true)
+            } catch {
+                consentError = "Could not turn on the import. Please check your connection and try again."
+                return
+            }
+            // Initial pull; a sync failure is non-fatal here (Home retries).
+            _ = try? await services.honeyAPI.sync()
+            profile.consent.timetable = true
+        }
+        // Refresh the profile like the web step; fall back to the local copy.
+        if let me = try? await services.honeyAPI.me() {
+            phase = .signedIn(me.profile)
+        } else {
+            phase = .signedIn(profile)
         }
     }
 
@@ -94,16 +134,24 @@ final class AppModel {
 
     func signOut() async {
         await services.honeyAPI.logout()
-        await services.ownershipKeyStore.clear()
+        // Ownership keys, private notes and drafts are the user's device-local
+        // property, not session state — an ordinary sign-out never deletes them
+        // (audit §3.6). Only "delete account + erase everything" does.
         phase = .signedOut
     }
 
-    /// Account deletion is a server operation; here we clear local state and drop
-    /// to signed-out. (The backend delete endpoint is invoked server-side.)
-    func deleteAccount() async {
+    /// Account deletion is a server operation. Ownership keys are the ONLY
+    /// control over past anonymous posts, so the caller must pass the user's
+    /// explicit choice: keep the device-local keys (still able to revoke posts
+    /// later) or erase everything (keys, private notes and drafts).
+    func deleteAccount(eraseLocalData: Bool) async {
         try? await services.honeyAPI.deleteAccount()
         await services.sessionStore.clear()
-        await services.ownershipKeyStore.clear()
+        if eraseLocalData {
+            await services.ownershipKeyStore.clear()
+            await services.privateNoteStore.clearAll()
+            await services.composerDraftStore.clearAll()
+        }
         phase = .signedOut
     }
 }

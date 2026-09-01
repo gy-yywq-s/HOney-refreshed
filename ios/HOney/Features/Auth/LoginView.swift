@@ -10,7 +10,6 @@ struct LoginView: View {
 
     @State private var username = ""
     @State private var password = ""
-    @State private var importTimetable = true
     @FocusState private var focus: Field?
 
     private enum Field { case username, password }
@@ -46,18 +45,7 @@ struct LoginView: View {
                                 .focused($focus, equals: .password)
                                 .submitLabel(.go)
                                 .onSubmit { submit() }
-                        }
-                        Toggle(isOn: $importTimetable) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Import my timetable")
-                                    .font(Theme.Typography.body)
-                                    .foregroundStyle(Theme.Palette.textPrimary)
-                                Text("Lets HOney sync your lessons. You can change this later in Settings.")
-                                    .font(Theme.Typography.caption)
-                                    .foregroundStyle(Theme.Palette.textSecondary)
-                            }
-                        }
-                    }
+                        }                    }
                 }
 
                 if let error = model.loginError {
@@ -95,11 +83,12 @@ struct LoginView: View {
     private func submit() {
         guard canSubmit else { return }
         focus = nil
+        // Import consent is NOT part of signing in — it is a separate, active
+        // choice on the next step (audit §3.2).
         Task {
             await model.login(
                 username: username.trimmingCharacters(in: .whitespaces),
-                password: password,
-                consentTimetable: importTimetable
+                password: password
             )
         }
     }

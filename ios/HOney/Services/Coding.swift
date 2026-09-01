@@ -2,26 +2,29 @@
 //  Coding.swift
 //  HOney — shared JSON coders (Band 2/4, no SwiftUI).
 //
-//  A single decoder handles both the camelCase auth/timetable payloads and the
-//  snake_case Experiences payloads: `.convertFromSnakeCase` leaves camelCase keys
-//  (which contain no underscores) untouched while normalising snake_case keys.
+//  The HOney wire contract is camelCase except the Experiences objects, whose
+//  snake_case fields are mapped with explicit CodingKeys on the models (see
+//  HOneyModels.swift) — no key-conversion strategy, so mixed-shape objects like
+//  PublicExperience (snake_case fields + camelCase `publishedDay`) stay exact.
 //
 
 import Foundation
 
 enum HOneyCoding {
-    /// Decoder for the HOney backend. Tolerant date parsing (ISO-8601 with or
-    /// without fractional seconds, or a Unix epoch number).
+    /// Decoder for the HOney backend. Tolerant date parsing: ISO-8601 with or
+    /// without fractional seconds, or a Unix epoch number — epoch values large
+    /// enough to be milliseconds (the contract sends epoch ms for lesson times)
+    /// are scaled accordingly.
     static let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             if let string = try? container.decode(String.self) {
                 if let date = ISO8601.date(from: string) { return date }
             }
             if let epoch = try? container.decode(Double.self) {
-                return Date(timeIntervalSince1970: epoch)
+                // > 1e12 can only be milliseconds (seconds would be year 33658+).
+                return Date(timeIntervalSince1970: epoch > 1e12 ? epoch / 1000 : epoch)
             }
             throw DecodingError.dataCorruptedError(
                 in: container,

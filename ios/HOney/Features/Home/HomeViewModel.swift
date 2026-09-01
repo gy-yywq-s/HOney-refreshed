@@ -13,7 +13,7 @@ final class HomeViewModel {
 
     var nextLesson: NextLesson?
     var nextLessonSummary: String = ""
-    var recentExperiences: [Experience] = []
+    var recentExperiences: [PublicExperience] = []
     var isLoading = false
 
     init(services: AppServices) {
@@ -25,7 +25,9 @@ final class HomeViewModel {
         defer { isLoading = false }
 
         async let next = try? services.honeyAPI.nextLesson()
-        async let recent = try? services.honeyAPI.experiences(sort: .newest)
+        // "Recent from your classes" is the backend domain query (audit §4.2):
+        // posts relevant to my verified exposure, chronological, never ranked.
+        async let recent = try? services.honeyAPI.fromMyClasses(limit: 20)
 
         let nextResult = await next
         nextLesson = nextResult?.nextLesson
