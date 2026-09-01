@@ -63,7 +63,7 @@ export function ExperiencesExplorePage() {
     <div className="stack explore">
       <header className="section-head">
         <div>
-          <h1 className="page-title">Find something at school</h1>
+          <h1 className="page-title">Find someone or something</h1>
           <p className="muted" style={{ margin: 0 }}>
             Search teachers, courses, places, and food.
           </p>
@@ -85,18 +85,15 @@ export function ExperiencesExplorePage() {
       {!q && fromHistory.length > 0 && (
         <section aria-label="From your history">
           <h2 className="overline">From your history</h2>
-          <ul className="entity-list">
+          <div className="history-chips">
             {fromHistory.map((r) => (
-              <li key={r.key}>
-                <Link className="entity-row" to={r.path}>
-                  <span>{r.name}</span>
-                </Link>
-              </li>
+              <Link key={r.key} className="history-chip" to={r.path}>
+                {r.name}
+              </Link>
             ))}
-          </ul>
+          </div>
         </section>
       )}
-
       {entities.error && <div role="alert" className="banner banner--danger">{entities.error}</div>}
       {entities.loading ? (
         <Skeleton lines={6} />

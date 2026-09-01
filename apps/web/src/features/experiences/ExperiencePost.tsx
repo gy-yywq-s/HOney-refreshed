@@ -6,7 +6,7 @@
 // (post__body--feature) — the words are always the figure. No avatars, no
 // anonymous badges, no verification shields.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "../../api/client";
 import type { EntitySummary, PublicExperience, ReportCategory } from "../../api/types";
@@ -96,6 +96,10 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  // Focus home for the report dialog: its opener (the menu item) unmounts
+  // when the menu closes, so Modal's restore would land on <body> (a11y
+  // audit) — return focus to the persistent overflow trigger instead.
+  const moreBtnRef = useRef<HTMLButtonElement>(null);
 
   const parts = contextParts(exp);
   const provenance = PROVENANCE_LINE[exp.provenance] ?? PROVENANCE_LINE.verified_member;
@@ -189,7 +193,8 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
         <div className="post__overflow">
           <button
             type="button"
-            className="react-btn"
+            className="react-btn react-btn--more"
+            ref={moreBtnRef}
             aria-label="More options"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
@@ -213,7 +218,15 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
         </div>
       </div>
       {note && <div className="caption post__note">{note}</div>}
-      {reporting && <PostReportDialog experienceId={exp.id} onClose={() => setReporting(false)} />}
+      {reporting && (
+        <PostReportDialog
+          experienceId={exp.id}
+          onClose={() => {
+            setReporting(false);
+            moreBtnRef.current?.focus();
+          }}
+        />
+      )}
     </article>
   );
 }

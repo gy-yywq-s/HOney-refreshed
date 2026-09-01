@@ -202,7 +202,7 @@ export function ExperiencesComposePage() {
             <Link className="btn btn--primary" to="/history?select=1">
               Pick a lesson from History
             </Link>
-            <Link className="btn btn--ghost" to="/experiences">
+            <Link className="btn btn--ghost" to="/experiences/explore">
               Browse teachers, places &amp; food
             </Link>
           </div>

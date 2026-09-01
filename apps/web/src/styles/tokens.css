@@ -21,7 +21,7 @@
 
   --ink: #232b31; /* deep blue-gray */
   --ink-2: #5c6770; /* secondary text */
-  --ink-3: #7d868e; /* tertiary/meta */
+  --ink-3: #667079; /* ≥4.5:1 on stone/white (design-is r1: was #7d868e, 3.41:1) */ /* tertiary/meta */
   --muted: #5c6770;
   --line: rgba(35, 43, 49, 0.14);
   --wash: rgba(35, 43, 49, 0.05);
@@ -44,6 +44,30 @@
     "Segoe UI", "Helvetica Neue", sans-serif;
   --reading: var(--ui);
   --display: var(--ui);
+
+  /* Type ramp (design-is r1, move 1): EVERY rendered size traces here.
+     Mobile-native: body 16-17, secondary 15, caption 13, micro 12 —
+     nothing below 12px anywhere. Display sizes clamp up on desktop. */
+  --fs-micro: 12px; /* canvas labels, nav labels, chips, tabular meta */
+  --fs-caption: 13px; /* captions, provenance, helper text */
+  --fs-secondary: 15px; /* secondary rows, small buttons, identity lines */
+  --fs-body: 16px; /* default UI text, inputs */
+  --fs-reading: 17px; /* the student's words (post body), buttons */
+  --fs-title-sm: 20px; /* short-post feature text, compact screen titles */
+  --fs-title: 22px; /* card subjects, modal titles (mobile) */
+  --fs-display: 28px; /* page titles (mobile); clamps to 36 on desktop */
+
+  /* Spacing scale (design-is r1, move 1): rhythm values only ever step
+     through this ladder. (Canvas geometry — timeline band math — is
+     positioning, not rhythm, and stays numeric.) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 44px;
 
   --shadow: 0 14px 40px rgba(22, 30, 34, 0.1);
 

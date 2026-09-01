@@ -2,7 +2,10 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { RequireAuth } from "./components/AppLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { DashPage } from "./pages/DashPage";
+import { Suspense, lazy } from "react";
+
+// Admin console: code-split — students never download it (design-is r1).
+const DashPage = lazy(() => import("./pages/DashPage").then((m) => ({ default: m.DashPage })));
 import { ExperiencesComposePage } from "./pages/experiences/ComposePage";
 import { ExperienceEntityPage } from "./pages/experiences/EntityPage";
 import { ExperiencesFeedPage } from "./pages/experiences/FeedPage";
@@ -48,7 +51,14 @@ export function App() {
               <Route path="/experiences/place/:id" element={<ExperienceEntityPage kind="room" />} />
               <Route path="/experiences/food/:id" element={<ExperienceEntityPage kind="dish" />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/dash" element={<DashPage />} />
+              <Route
+                path="/dash"
+                element={
+                  <Suspense fallback={<div className="fullscreen-note">Loading…</div>}>
+                    <DashPage />
+                  </Suspense>
+                }
+              />
             </Route>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="*" element={<NotFoundPage />} />

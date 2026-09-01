@@ -30,12 +30,12 @@ const STATUS_META: Record<string, StatusMeta> = {
     chip: "Hidden",
     tone: "danger",
     explain:
-      "This was hidden after a re-check against the current community rules. You can revoke it to free your review slot for this target.",
+      "This was hidden after a re-check against the current community rules. You can remove it if you want to write a new one about this.",
   },
   revoked: {
-    chip: "Revoked",
+    chip: "Removed",
     tone: "muted",
-    explain: "You removed this post; your review slot for this target is free again.",
+    explain: "You removed this post — you can write a new one about this whenever you want.",
   },
 };
 
@@ -100,12 +100,12 @@ export function ExperiencesMinePage() {
       apiCache.invalidate("experiences");
       setFeedback({
         tone: "success",
-        text: "Revoked. The post is gone and your review slot is free again.",
+        text: "Removed. The post is gone — you can write a new one about this any time.",
       });
       setRevoking(null);
       mine.reload();
     } catch {
-      setFeedback({ tone: "danger", text: "Could not revoke. Please try again." });
+      setFeedback({ tone: "danger", text: "Could not remove the post. Please try again." });
     } finally {
       setBusyKey(null);
     }
@@ -196,9 +196,9 @@ export function ExperiencesMinePage() {
 
       {revoking && (
         <ConfirmDialog
-          title="Revoke this experience?"
-          body="The post is removed for everyone and its text deleted. Your one-review slot for this target frees up again. This cannot be undone."
-          confirmLabel="Revoke post"
+          title="Remove this post?"
+          body="The post disappears for everyone and its text is deleted. You can write a new one about this later. This cannot be undone."
+          confirmLabel="Remove post"
           danger
           busy={busyKey === revoking}
           onClose={() => setRevoking(null)}
@@ -242,7 +242,7 @@ function MineExperienceCard({
         <p className="exp-card__body">{exp.body}</p>
       ) : (
         <p className="muted">
-          {exp.status === "revoked" ? "(text deleted when you revoked this post)" : "(no text)"}
+          {exp.status === "revoked" ? "(text deleted when you removed this post)" : "(no text)"}
         </p>
       )}
       {meta.explain && <p className="caption exp-card__note">{meta.explain}</p>}

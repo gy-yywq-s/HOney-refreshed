@@ -10,6 +10,25 @@ import type { DatabaseSync } from "node:sqlite";
 
 export type EntityType = "teacher" | "course" | "room" | "dish";
 
+/**
+ * Portal course names arrive as "Subject 班名 teacher 学生名册串" — the
+ * trailing roster is a run of student surnames (design-is r1: student
+ * surnames must not surface in a product that says students aren't public
+ * subjects). Display rule: with ≥3 tokens, drop a trailing token that is
+ * ≥4 chars of pure CJK (teachers' own names are ≤3 CJK chars or Latin).
+ */
+export function sanitizeCourseName(raw: string): string {
+  const name = raw.trim().replace(/\s+/g, " ");
+  const tokens = name.split(" ");
+  if (tokens.length >= 3) {
+    const last = tokens[tokens.length - 1]!;
+    if (last.length >= 4 && /^[\u3400-\u9fff]+$/.test(last)) {
+      return tokens.slice(0, -1).join(" ");
+    }
+  }
+  return name;
+}
+
 export interface EntityRow {
   entity_key: string;
   type: EntityType;
@@ -38,12 +57,42 @@ export class EntityRegistry {
       id: string;
       name: string;
     }[];
-    for (const c of courses) upsert.run(`course:${c.id}`, "course", c.name, this.now());
+    for (const c of courses)
+      upsert.run(`course:${c.id}`, "course", sanitizeCourseName(c.name), this.now());
+
+    // Rooms: hygiene before mirroring (design-is r1). Placeholder names
+    // ("Not selected") never surface, and duplicate names across import
+    // eras collapse — the id the most recent lesson actually uses wins;
+    // the losers' registry rows deactivate so Explore lists each real
+    // room exactly once. (Old per-id feeds stay reachable by URL.)
     const rooms = this.db.prepare("SELECT id, name FROM rooms").all() as unknown as {
       id: string;
       name: string;
     }[];
-    for (const r of rooms) upsert.run(`room:${r.id}`, "room", r.name, this.now());
+    const lastUse = this.db.prepare(
+      "SELECT MAX(starts_at) AS t FROM lesson_instances WHERE room_id = ?",
+    );
+    const deactivate = this.db.prepare(
+      "UPDATE entity_registry SET active = 0 WHERE entity_key = ? AND source = 'organic'",
+    );
+    const byName = new Map<string, { id: string; name: string; t: number }>();
+    for (const r of rooms) {
+      const name = r.name.trim();
+      if (!name || name.toLowerCase() === "not selected") {
+        deactivate.run(`room:${r.id}`);
+        continue;
+      }
+      const t = Number((lastUse.get(r.id) as { t: number | null } | undefined)?.t ?? 0);
+      const fold = name.toLowerCase();
+      const cur = byName.get(fold);
+      if (!cur || t > cur.t) {
+        if (cur) deactivate.run(`room:${cur.id}`);
+        byName.set(fold, { id: r.id, name, t });
+      } else {
+        deactivate.run(`room:${r.id}`);
+      }
+    }
+    for (const w of byName.values()) upsert.run(`room:${w.id}`, "room", w.name, this.now());
   }
 
   /**

@@ -107,7 +107,7 @@ a.btn:active {
   margin: 0 0 8px;
   color: var(--muted);
   font-family: var(--ui);
-  font-size: 13px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -139,7 +139,7 @@ a.btn:active {
 .section-title {
   margin: 0 0 12px;
   font-family: var(--display);
-  font-size: 21px;
+  font-size: var(--fs-title-sm);
   letter-spacing: -0.01em;
   line-height: 1.2;
   font-weight: 650;
@@ -149,7 +149,7 @@ a.btn:active {
 .reading {
   font-family: var(--reading);
   font-optical-sizing: auto;
-  font-size: 19px;
+  font-size: var(--fs-title-sm);
   line-height: 1.62;
 }
 
@@ -163,16 +163,16 @@ a.btn:active {
   color: var(--muted);
 }
 .caption {
-  font-size: 13px;
+  font-size: var(--fs-caption);
   line-height: 1.4;
 }
 .text-4 {
-  color: color-mix(in srgb, var(--muted) 80%, var(--surface));
-  font-size: 13px;
+  color: var(--muted);
+  font-size: var(--fs-caption);
   line-height: 1.4;
 }
 :root[data-surface="night"] .text-4 {
-  color: color-mix(in srgb, var(--muted) 84%, var(--surface));
+  color: var(--muted);
 }
 .empty {
   color: var(--muted);
@@ -185,7 +185,7 @@ a.btn:active {
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--sp-4);
 }
 .fullscreen-note {
   min-height: 60vh;
@@ -223,7 +223,7 @@ a.btn:active {
   display: block;
   margin-top: 7px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 
 /* Numbered action-card grid (Home). */
@@ -239,7 +239,7 @@ a.btn:active {
   padding: 26px;
   display: grid;
   grid-template-rows: 22px minmax(80px, auto) minmax(56px, 1fr) 46px;
-  gap: 12px;
+  gap: var(--sp-3);
   border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--card);
@@ -256,7 +256,7 @@ a.btn:active {
 }
 .card-index {
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -283,7 +283,7 @@ a.btn:active {
   align-self: end;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   min-height: 44px;
   padding: 0 18px;
   border: 1px solid currentColor;
@@ -338,14 +338,18 @@ a.btn:active {
   }
 }
 
-/* Route-level settle: every view change eases up into place. */
+/* Route-level settle: every view change eases up into place.
+   fill-mode is BACKWARDS on purpose (design-is r1, move 2): `both` kept an
+   identity transform after the animation, which made .view the containing
+   block for every position:fixed overlay — modals rendered inside the
+   content box and the bottom nav stayed tappable behind them. */
 .view {
-  animation: settle 0.46s var(--ease) both;
+  animation: settle 0.46s var(--ease) backwards;
 }
 
 /* Staggered entrances: index-based delay, capped at 8 (set by markup). */
 .stagger {
-  animation: rise-in 0.5s var(--ease) both;
+  animation: rise-in 0.5s var(--ease) backwards;
   animation-delay: calc(min(var(--i, 0), 8) * 40ms);
 }
 

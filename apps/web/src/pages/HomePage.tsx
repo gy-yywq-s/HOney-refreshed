@@ -100,9 +100,6 @@ export function HomePage() {
       <section className="home-voices" aria-label="From your classes">
         <div className="home-voices__head">
           <span className="eyebrow">From your classes</span>
-          <Link className="caption" to="/experiences">
-            See all
-          </Link>
         </div>
         {fromClasses.loading ? (
           <Skeleton lines={2} />

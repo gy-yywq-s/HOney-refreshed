@@ -58,7 +58,10 @@ export function SettingsPage() {
         <div className="setting-row">
           <div className="setting-row__main">
             <span>{me.displayName}</span>
-            <span className="caption">HOney ID: {me.honeyId}</span>
+            <span className="caption">
+              HOney ID: {me.honeyId} — your account name inside HOney; it is never shown on
+              published experiences.
+            </span>
           </div>
           <button className="btn btn--ghost" onClick={() => void signOut()}>
             Sign out

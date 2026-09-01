@@ -18,6 +18,9 @@
         try {
           var surfaces = { stone: 1, white: 1, mist: 1, night: 1 };
           var s = localStorage.getItem("honey.theme.surface");
+          if (!surfaces[s] && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            s = "night"; // system preference honored until the user chooses
+          }
           var root = document.documentElement;
           root.dataset.surface = surfaces[s] ? s : "stone";
           var colors = { stone: "#f4f6f7", white: "#ffffff", mist: "#eef2f2", night: "#14171a" };

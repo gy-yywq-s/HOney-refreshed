@@ -52,6 +52,9 @@ export function ExperiencesFeedPage() {
         <div className="feed-head__row">
           <h1 className="page-title">Experiences</h1>
           <div className="feed-head__tools">
+            <Link className="btn btn--primary btn--small" to="/experiences/compose">
+              Share
+            </Link>
             <Link className="btn btn--ghost btn--small" to="/experiences/explore">
               Find someone or something
             </Link>
@@ -65,9 +68,26 @@ export function ExperiencesFeedPage() {
           For students, between students — not a teacher feedback channel.{" "}
           <Link to="/experiences/why">Why this space exists</Link>
         </p>
-        <div className="scope-switch" role="tablist" aria-label="Feed scope">
+        <div
+          className="scope-switch"
+          role="tablist"
+          aria-label="Feed scope"
+          onKeyDown={(e) => {
+            // ARIA tabs pattern: arrows move AND select (two tabs only).
+            if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+              e.preventDefault();
+              const next = scope === "my_classes" ? "school" : "my_classes";
+              switchScope(next);
+              const btn = e.currentTarget.querySelector<HTMLElement>(
+                `[data-scope="${next}"]`,
+              );
+              btn?.focus();
+            }
+          }}
+        >
           <button
             role="tab"
+            data-scope="my_classes"
             aria-selected={scope === "my_classes"}
             className={scope === "my_classes" ? "scope-switch__btn scope-switch__btn--on" : "scope-switch__btn"}
             onClick={() => switchScope("my_classes")}
@@ -76,6 +96,7 @@ export function ExperiencesFeedPage() {
           </button>
           <button
             role="tab"
+            data-scope="school"
             aria-selected={scope === "school"}
             className={scope === "school" ? "scope-switch__btn scope-switch__btn--on" : "scope-switch__btn"}
             onClick={() => switchScope("school")}

@@ -5,6 +5,7 @@ import { PortalApi, joinLessons, mergeLessonsById, normalizeTableLessons, retryS
 import { portalWeekIndex } from "@honey/shared";
 import type { AccountService } from "./accounts.js";
 import type { EntityRegistry } from "../experiences/entities.js";
+import { sanitizeCourseName } from "../experiences/entities.js";
 
 // Timetable import (Band 4 → Band 3 handoff): pulls upstream weeks with the
 // stored portal token, normalizes into canonical entities, records the user's
@@ -126,7 +127,7 @@ export class ImportService {
         let courseId: string | null = null;
         if (l.classId) {
           courseId = `c_${l.classId}`;
-          courseStmt.run(courseId, l.subjectId ?? null, l.className ?? l.subjectName);
+          courseStmt.run(courseId, l.subjectId ?? null, sanitizeCourseName(l.className ?? l.subjectName));
           courses.add(courseId);
         }
         let roomId: string | null = null;

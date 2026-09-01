@@ -14,7 +14,7 @@ import { useApi } from "../../lib/useApi";
 /** Spec §7.3: provenance is labeled honestly — never "verified use" for dishes. */
 const PROVENANCE_LABELS: Record<string, string> = {
   verified_lesson: "Verified lesson experience",
-  verified_retrospective: "Verified retrospective",
+  verified_retrospective: "Verified — has taken this over time",
   verified_member: "Verified school member",
 };
 
@@ -75,9 +75,9 @@ export const SUBMIT_ERROR_COPY: Record<string, string> = {
   rating_not_allowed:
     "Stars are for dishes only, never for people, lessons or rooms. Remove the rating to continue.",
   cooldown_ticket_invalid:
-    "The cooling-off pass didn't match this draft (it changed since then). Run the check again — nothing was lost.",
+    "You edited the text since the waiting period started, so the check needs to run once more. Nothing was lost.",
   already_reviewed:
-    "You've already shared an experience for this. You can revoke it in Your notes & posts if you want to write a new one.",
+    "You've already shared an experience for this. Remove it in Your notes & posts if you want to write a new one.",
 };
 
 export function describeSubmitError(err: unknown): string {

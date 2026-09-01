@@ -79,7 +79,7 @@ export function PullToRefresh() {
       window.setTimeout(() => {
         setRefreshing(false);
         reset();
-      }, Math.max(0, MIN_SPIN_MS - (Date.now() - started)) + MIN_SPIN_MS);
+      }, Math.max(0, MIN_SPIN_MS - (Date.now() - started)));
     };
 
     owner.addEventListener("touchstart", onStart, { passive: true });
