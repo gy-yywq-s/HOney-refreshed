@@ -30,6 +30,7 @@
 		37E3CC6DCE7CEA5C08824FB2 /* DoorMappingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD3E8C8668A740838959857 /* DoorMappingTests.swift */; };
 		38C80D1FE0D64D1DEEBCCF9A /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DD00820629A17B873526DD /* AppModel.swift */; };
 		398C71E407C51DE9775DD754 /* ExperiencesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58539FC01E1EBB6756E81FFE /* ExperiencesViewModel.swift */; };
+		3F5369E09520AA83DACF3640 /* TimetableViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4450088845014DB264695889 /* TimetableViewModelTests.swift */; };
 		3FD1910C824F9435BEA5FC35 /* PortalWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4AA02D9639646A85BAB4377 /* PortalWebView.swift */; };
 		4C06CC78D6E1DDC947655467 /* AppModelLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F076C03E36A14BAAF8E99E91 /* AppModelLifecycleTests.swift */; };
 		4D82A416EFF3D23126A231BD /* HOneyAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F9EAFAED8917921D27F81A /* HOneyAPI.swift */; };
@@ -63,6 +64,7 @@
 		DB55BD511D194C75A7913704 /* AppComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2A8DE034E374FEA8556714 /* AppComponents.swift */; };
 		E67EC31BEDDDF4A609E810AD /* PrivateNoteStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52015FA7328CAA4C89F4B846 /* PrivateNoteStoreTests.swift */; };
 		EA3830E7F32C9F517ABB074D /* PortalWebSessionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5449CF3E1EB60FC0129B5E36 /* PortalWebSessionBridge.swift */; };
+		EF891CBA0B72E03ECB1707CF /* TimetableRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = D964CE0759FB50BC42D442BC /* TimetableRepository.swift */; };
 		F5EE1858F4A375A8B938FE59 /* APP_ICON_PLACEHOLDER.md in Resources */ = {isa = PBXBuildFile; fileRef = F66DDC5996D98DE44F9487B3 /* APP_ICON_PLACEHOLDER.md */; };
 		FFD2D7687A27241D9BB91610 /* MySubmissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0612D0FC289F8132E25E6E /* MySubmissionsView.swift */; };
 /* End PBXBuildFile section */
@@ -100,6 +102,7 @@
 		3AFF224F2CD4F3B89B316D6D /* LessonDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonDetailView.swift; sourceTree = "<group>"; };
 		3BDF5A1FEE9FA522C1B3E9DA /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		3E6CB998A1EA7FC0F494C15F /* OwnershipKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnershipKeyStore.swift; sourceTree = "<group>"; };
+		4450088845014DB264695889 /* TimetableViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableViewModelTests.swift; sourceTree = "<group>"; };
 		4E3C05F19D85BECD71C00423 /* ComposeExperienceViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeExperienceViewModelTests.swift; sourceTree = "<group>"; };
 		52015FA7328CAA4C89F4B846 /* PrivateNoteStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateNoteStoreTests.swift; sourceTree = "<group>"; };
 		5449CF3E1EB60FC0129B5E36 /* PortalWebSessionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalWebSessionBridge.swift; sourceTree = "<group>"; };
@@ -127,6 +130,7 @@
 		C5DD00820629A17B873526DD /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		C93BD16337820929B8960F52 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CEA49B4DBF5CCDFAB661B9DC /* ExperienceContractDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceContractDecodingTests.swift; sourceTree = "<group>"; };
+		D964CE0759FB50BC42D442BC /* TimetableRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableRepository.swift; sourceTree = "<group>"; };
 		DB74CE892ACD0873A13B4D0F /* NextLessonFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextLessonFormattingTests.swift; sourceTree = "<group>"; };
 		E4AA02D9639646A85BAB4377 /* PortalWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalWebView.swift; sourceTree = "<group>"; };
 		E4C059BEE8E946D5C9473234 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -189,6 +193,7 @@
 				5449CF3E1EB60FC0129B5E36 /* PortalWebSessionBridge.swift */,
 				6CCF891D240B4DFBFE195C03 /* PrivateNoteStore.swift */,
 				33FB65E14953017E37EA7445 /* SessionStore.swift */,
+				D964CE0759FB50BC42D442BC /* TimetableRepository.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -311,6 +316,7 @@
 				EBA3E49D4215C4090BF9464E /* PortalSessionCoordinatorTests.swift */,
 				52015FA7328CAA4C89F4B846 /* PrivateNoteStoreTests.swift */,
 				0EF83AD65015BCE646B84B7A /* TestDoubles.swift */,
+				4450088845014DB264695889 /* TimetableViewModelTests.swift */,
 			);
 			path = HOneyTests;
 			sourceTree = "<group>";
@@ -443,6 +449,7 @@
 				35B17A088EFA8E1401C4D10C /* PortalSessionCoordinatorTests.swift in Sources */,
 				E67EC31BEDDDF4A609E810AD /* PrivateNoteStoreTests.swift in Sources */,
 				709F7068EEED3F108C47FF9B /* TestDoubles.swift in Sources */,
+				3F5369E09520AA83DACF3640 /* TimetableViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -494,6 +501,7 @@
 				3665817862EFEE80DF37DBA4 /* SessionStore.swift in Sources */,
 				C449DFF2555F5981A615E44F /* SettingsView.swift in Sources */,
 				51FBEDDE9E38A5A80EB2A9BC /* SixChecks.swift in Sources */,
+				EF891CBA0B72E03ECB1707CF /* TimetableRepository.swift in Sources */,
 				D8F5F0E1CEAF6785A2914685 /* TimetableView.swift in Sources */,
 				1AD4648926867F8A0708D2B5 /* TimetableViewModel.swift in Sources */,
 			);

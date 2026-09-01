@@ -76,7 +76,24 @@ struct TimetableView: View {
                     .truncationMode(.tail)
                     .frame(height: 36, alignment: .leading)
 
+                if viewModel.isRefreshing {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel("Updating timetable")
+                }
+
                 Spacer()
+
+                Button {
+                    Task { await viewModel.refresh() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Palette.inkSecondary)
+                .disabled(viewModel.isLoading || viewModel.isRefreshing)
+                .accessibilityLabel("Refresh timetable")
 
                 NavigationLink {
                     HistoryView()
@@ -131,8 +148,7 @@ struct TimetableView: View {
 
     private func move(_ viewModel: TimetableViewModel, byDays days: Int) {
         guard let date = Calendar.current.date(byAdding: .day, value: days, to: viewModel.selectedDate) else { return }
-        viewModel.selectedDate = Calendar.current.startOfDay(for: date)
-        Task { await viewModel.load() }
+        viewModel.selectDate(date)
     }
 
     // MARK: - Day canvas
@@ -143,8 +159,7 @@ struct TimetableView: View {
                 monday: SchoolDayGrid.monday(of: viewModel.selectedDate),
                 selectedDate: viewModel.selectedDate
             ) { date in
-                viewModel.selectedDate = date
-                Task { await viewModel.load() }
+                viewModel.selectDate(date)
             }
 
             DayTimelineView(

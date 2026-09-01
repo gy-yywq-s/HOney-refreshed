@@ -38,6 +38,13 @@ This file contains the active instructions for work in the local repository at
   equivalent.
 - A redesigned Home gradient is allowed only when it is newly composed, restrained, dimensional,
   and validated in simulator/device screenshots. Merely changing opacity is insufficient.
+- Settings must offer a persisted Surface palette choice instead of locking the app to the current
+  pale paper/brown canvas. Candidate surfaces include current paper, neutral white, cool mist, and
+  soft gray; every choice must define coherent light/dark canvas, surface, muted-surface, line, and
+  ink roles without becoming a large saturated-color skin.
+- The blue-teal accent remains one semantic family, but each Surface palette must tune its own
+  `accent`, `accentSoft`, and `accentForeground` values to harmonize with that surface and pass
+  contrast in light/dark mode. Do not paste one unchanged accent RGB tuple onto every background.
 - Replace the Login screen completely. Do not preserve the serif `HOney` title, text-only `HO` icon,
   or current layout.
 - ImageGen may be used for bounded wordmark/mark exploration. Selected concepts must be translated
@@ -61,6 +68,15 @@ This file contains the active instructions for work in the local repository at
   one isolated screen while leaving the rest in an incompatible system.
 - Final UI acceptance requires a design review across all relevant surfaces and a `design-is` score
   of at least 22/30, with no unresolved load-bearing honesty, usefulness, or understandability failure.
+- Design scope includes runtime experience, not appearance alone: cold launch, first interaction,
+  navigation latency, main-thread stalls, scrolling smoothness, network-bound loading feedback,
+  cancellation, timeout behavior, repeated-open behavior, and perceived responsiveness are all
+  reviewable product-design concerns.
+- The scope is the whole app, including business logic, state machines, caching, request
+  coordination, cancellation, stale-response protection, data consistency, persistence, and error
+  recovery. Do not classify a logic or runtime defect as out of scope merely because it is not visual.
+- A visually correct screen is not acceptable if opening it freezes, blocks interaction, or leaves
+  the user without truthful progress. Runtime regressions are prioritized before cosmetic refinement.
 
 ## Product and honesty constraints
 
@@ -87,6 +103,16 @@ This file contains the active instructions for work in the local repository at
   a locked appearance.
 - Retain the low-attention baseline: no idle animation, badges, or notifications without a concrete
   product need. Motion must respect Reduce Motion.
+- Measure and inspect high-risk runtime paths, especially first-open WebViews and physical Access:
+  expensive setup must stay off the main actor, loading must be visible and cancellable where
+  practical, timeouts must become actionable states, and a second open must not inherit a wedged
+  first-open state.
+- Treat a long unresponsive first tap or apparent freeze as a P0 defect. Reproduce it with timestamps
+  and logs, locate the blocking work, fix the cause, and verify both cold and warm paths.
+- Navigation over network-backed data must be responsive and race-safe: use appropriate in-memory
+  caching/prefetch, cancel obsolete work, prevent stale responses from overwriting current state,
+  preserve previously loaded content during refresh, and distinguish cached, loading, empty, error,
+  and refreshed states truthfully.
 - For iOS changes, regenerate the project if needed, compile a signed arm64 Debug device build, run
   the full unit-test suite, and inspect representative simulator/device screenshots before claiming
   completion.

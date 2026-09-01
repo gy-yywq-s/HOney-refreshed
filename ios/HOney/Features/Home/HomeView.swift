@@ -62,6 +62,11 @@ struct HomeView: View {
                 if viewModel == nil { viewModel = HomeViewModel(services: model.services) }
                 await viewModel?.load()
             }
+            .task {
+                await Task.yield()
+                guard !Task.isCancelled else { return }
+                PortalWebController.shared.prepare(coordinator: model.services.portalCoordinator)
+            }
             .refreshable {
                 await model.retryStartupSyncIfNeeded()
                 await viewModel?.load()
@@ -136,19 +141,14 @@ struct HomeView: View {
                         .lineLimit(2)
                         .minimumScaleFactor(0.78)
 
-                    if let topic = lesson.topicName, !topic.isEmpty {
+                    if let topic = distinctTopic(for: lesson) {
                         Text(topic)
                             .font(AppTheme.Typography.headline)
                             .foregroundStyle(Palette.inkSecondary)
                     }
                 }
 
-                HStack(spacing: 18) {
-                    metadata(icon: "clock", text: SchoolDayGrid.timeRange(start: lesson.startsAt, end: lesson.endsAt))
-                    if let room = lesson.roomName, !room.isEmpty {
-                        metadata(icon: "mappin", text: room)
-                    }
-                }
+                lessonMetadata(lesson)
 
                 if isCurrent {
                     ProgressView(value: progress(for: lesson, now: now))
@@ -299,6 +299,53 @@ struct HomeView: View {
         Label(text, systemImage: icon)
             .font(AppTheme.Typography.subheadlineMedium)
             .foregroundStyle(Palette.inkSecondary)
+    }
+
+    @ViewBuilder
+    private func lessonMetadata(_ lesson: NextLesson) -> some View {
+        let items: [(String, String)] = [
+            ("clock", SchoolDayGrid.timeRange(start: lesson.startsAt, end: lesson.endsAt)),
+            ("person", normalizedMetadata(lesson.teacherName) ?? ""),
+            ("mappin", normalizedMetadata(lesson.roomName) ?? "")
+        ].filter { !$0.1.isEmpty }
+
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 18) {
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    metadata(icon: item.0, text: item.1)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    metadata(icon: item.0, text: item.1)
+                }
+            }
+        }
+    }
+
+    private func distinctTopic(for lesson: NextLesson) -> String? {
+        guard let topic = lesson.topicName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !topic.isEmpty else { return nil }
+        let topicKey = comparisonKey(topic)
+        let subjectKey = comparisonKey(lesson.subjectName)
+        let courseKey = comparisonKey(lesson.courseName ?? "")
+        guard topicKey != subjectKey, topicKey != courseKey else { return nil }
+        return topic
+    }
+
+    private func normalizedMetadata(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let normalized = value.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return normalized.isEmpty ? nil : normalized
+    }
+
+    private func comparisonKey(_ value: String) -> String {
+        value
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+            .trimmingCharacters(in: CharacterSet(charactersIn: " -—·:"))
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
     }
 
     private func beginPendingComposition() {

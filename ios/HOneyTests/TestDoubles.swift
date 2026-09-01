@@ -188,6 +188,7 @@ extension AppServices {
             config: config,
             sessionStore: sessionStore,
             honeyAPI: honeyAPI,
+            timetableRepository: TimetableRepository(provider: honeyAPI),
             portalAPI: PortalAPI(baseURL: config.portalBaseURL),
             credentialVault: KeychainCredentialVault(keychain: Keychain(service: "test.portal.\(unique)")),
             portalCoordinator: PortalSessionCoordinator(api: MockPortalAuthAPI(), vault: vault),

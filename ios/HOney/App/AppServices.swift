@@ -9,6 +9,7 @@ struct AppServices: Sendable {
     let config: AppConfig
     let sessionStore: SessionStore
     let honeyAPI: HOneyAPI
+    let timetableRepository: TimetableRepository
     let portalAPI: PortalAPI
     let credentialVault: KeychainCredentialVault
     let portalCoordinator: PortalSessionCoordinator
@@ -19,6 +20,7 @@ struct AppServices: Sendable {
     static func live(config: AppConfig = .default) -> AppServices {
         let sessionStore = SessionStore()
         let honeyAPI = HOneyAPI(baseURL: config.honeyBaseURL, store: sessionStore)
+        let timetableRepository = TimetableRepository(provider: honeyAPI)
         let portalAPI = PortalAPI(baseURL: config.portalBaseURL)
         let vault = KeychainCredentialVault()
         let coordinator = PortalSessionCoordinator(api: portalAPI, vault: vault)
@@ -26,6 +28,7 @@ struct AppServices: Sendable {
             config: config,
             sessionStore: sessionStore,
             honeyAPI: honeyAPI,
+            timetableRepository: timetableRepository,
             portalAPI: portalAPI,
             credentialVault: vault,
             portalCoordinator: coordinator,
