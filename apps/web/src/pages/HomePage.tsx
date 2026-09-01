@@ -139,7 +139,7 @@ export function HomePage() {
           <span>
             <a
               className="action-cta"
-              href="https://www.huayaopudong.com"
+              href="https://www.huayaopudong.com/student/notification"
               target="_blank"
               rel="noopener noreferrer"
             >
