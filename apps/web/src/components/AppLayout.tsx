@@ -16,16 +16,6 @@ export function RequireAuth() {
 }
 
 /** Topbar context per route — chrome only, no behavior. */
-function pageContext(path: string): { eyebrow: string; title: string } {
-  if (path.startsWith("/experiences/mine")) return { eyebrow: "Experiences", title: "My contributions" };
-  if (path.startsWith("/experiences/compose")) return { eyebrow: "Experiences", title: "Share an experience" };
-  if (path.startsWith("/experiences")) return { eyebrow: "Community", title: "Experiences" };
-  if (path.startsWith("/timetable")) return { eyebrow: "Schedule", title: "Timetable" };
-  if (path.startsWith("/history")) return { eyebrow: "Schedule", title: "History" };
-  if (path.startsWith("/settings")) return { eyebrow: "Account", title: "Settings" };
-  if (path.startsWith("/dash")) return { eyebrow: "Admin", title: "Dash" };
-  return { eyebrow: "Today", title: "Home" };
-}
 
 function tabIndex(path: string, tabs: { to: string }[]): number {
   return tabs.findIndex((tab) => path === tab.to || path.startsWith(`${tab.to}/`));
@@ -51,7 +41,6 @@ function AppLayout() {
     );
   }
 
-  const ctx = pageContext(location.pathname);
   const railIndex = tabIndex(location.pathname, DESKTOP_TABS);
   const mobileIndex = tabIndex(location.pathname, MOBILE_TABS);
 
@@ -87,28 +76,25 @@ function AppLayout() {
             </NavLink>
           ))}
         </nav>
-      </aside>
-
-      {/* Fixed blurred topbar: page context + appearance trigger + user menu. */}
-      <header className="topbar">
-        <div className="top-context">
-          <span className="eyebrow">{ctx.eyebrow}</span>
-          <strong>{ctx.title}</strong>
+        {/* No topbar: appearance + account live at the rail's foot (Gary,
+            2026-09-01 — the bar duplicated the nav and the pages' own titles).
+            On mobile both live in the Settings tab instead. */}
+        <div className="rail-foot">
+          <button
+            className="settings-trigger"
+            type="button"
+            aria-label="Appearance"
+            title="Appearance"
+            onClick={() => setThemeOpen(true)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2" />
+              <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4" />
+            </svg>
+          </button>
+          <UserMenu me={me} />
         </div>
-        <button
-          className="settings-trigger"
-          type="button"
-          aria-label="Appearance"
-          title="Appearance"
-          onClick={() => setThemeOpen(true)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.2" />
-            <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4" />
-          </svg>
-        </button>
-        <UserMenu me={me} />
-      </header>
+      </aside>
 
       {/* Route-level settle: the keyed .view re-runs the entrance per route. */}
       <main className="main" id="main">

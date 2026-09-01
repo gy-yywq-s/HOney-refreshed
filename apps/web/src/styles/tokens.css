@@ -32,7 +32,6 @@
 
   /* Shell geometry. */
   --rail: 216px;
-  --top: 78px;
 
   /* Type — self-hosted variable fonts (@fontsource), no runtime CDN. */
   --ui:
