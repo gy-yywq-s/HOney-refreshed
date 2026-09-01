@@ -38,7 +38,7 @@ struct ExperiencesView: View {
                     }
                     .accessibilityLabel("Choose a lesson to share")
 
-                    Button("Yours") { showMine = true }
+                    Button("Posts & notes") { showMine = true }
                         .accessibilityLabel("Your posts and private notes")
                 }
             }
@@ -84,12 +84,28 @@ struct ExperiencesView: View {
                 communityIdentity
                     .padding(.bottom, 14)
 
-                Picker("Feed", selection: $vm.scope) {
-                    Text("Your classes").tag(ExperienceFeedScope.myClasses)
-                    Text("Around school").tag(ExperienceFeedScope.school)
+                HStack(spacing: 10) {
+                    Picker("Feed", selection: $vm.scope) {
+                        Text("Your classes").tag(ExperienceFeedScope.myClasses)
+                        Text("Around school").tag(ExperienceFeedScope.school)
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: vm.scope) { Task { await vm.reload() } }
+
+                    Button {
+                        Task { await vm.reload(forceRefresh: true) }
+                    } label: {
+                        if vm.isLoading && !vm.experiences.isEmpty {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .frame(width: 44, height: 44)
+                    .foregroundStyle(Palette.inkSecondary)
+                    .disabled(vm.isLoading)
+                    .accessibilityLabel("Refresh Experiences")
                 }
-                .pickerStyle(.segmented)
-                .onChange(of: vm.scope) { Task { await vm.reload() } }
                 .padding(.bottom, 10)
 
                 feedContent(vm)
@@ -99,7 +115,6 @@ struct ExperiencesView: View {
             .padding(.bottom, 28)
         }
         .scrollIndicators(.hidden)
-        .refreshable { await vm.reload(forceRefresh: true) }
     }
 
     private var communityIdentity: some View {
@@ -258,6 +273,7 @@ private struct ExperiencesExploreView: View {
             targetSection("Places", targets: filtered(placeTargets), sourceAvailable: viewModel.entitiesAvailable)
             targetSection("Food", targets: filtered(foodTargets), sourceAvailable: viewModel.entitiesAvailable)
         }
+        .textCase(nil)
         .scrollContentBackground(.hidden)
         .background(PageBackground())
         .navigationTitle("Explore")
@@ -347,15 +363,15 @@ private struct ExperienceExploreResultsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text(target.kindLabel.uppercased())
-                    .font(AppTheme.Typography.captionBold)
-                    .tracking(1)
-                    .foregroundStyle(Palette.accent)
+                Text(target.kindLabel)
+                    .font(AppTheme.Typography.subheadlineSemibold)
+                    .foregroundStyle(Palette.communityMarker)
                 Text(target.title)
                     .font(AppTheme.Typography.screenTitle)
                     .foregroundStyle(Palette.ink)
                     .padding(.top, 3)
-                Text("No single Experience is the whole picture.")
+                    .accessibilityAddTraits(.isHeader)
+                Text("One post is only part of the picture.")
                     .font(AppTheme.Typography.footnote)
                     .foregroundStyle(Palette.inkSecondary)
                     .padding(.top, 5)
@@ -370,10 +386,10 @@ private struct ExperienceExploreResultsView: View {
 
                 Divider().overlay(Palette.line).padding(.top, 8)
 
-                if isLoading {
+                if isLoading && experiences.isEmpty {
                     AppLoadingState(title: "Loading experiences")
                         .padding(.vertical, 28)
-                } else if let errorMessage {
+                } else if let errorMessage, experiences.isEmpty {
                     AppBanner(text: errorMessage, style: .error)
                         .padding(.top, 16)
                 } else if experiences.isEmpty {
@@ -389,6 +405,11 @@ private struct ExperienceExploreResultsView: View {
                             }
                         }
                     }
+
+                    if let errorMessage {
+                        AppBanner(text: errorMessage, style: .warning)
+                            .padding(.top, 14)
+                    }
                 }
             }
             .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
@@ -398,32 +419,51 @@ private struct ExperienceExploreResultsView: View {
         .background(Palette.background.ignoresSafeArea())
         .navigationTitle(target.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Task { await load(forceRefresh: true) }
+                } label: {
+                    if isLoading && !experiences.isEmpty {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                .disabled(isLoading)
+                .accessibilityLabel("Refresh experiences for " + target.title)
+            }
+        }
         .task { await load() }
-        .refreshable { await load() }
-        .sheet(isPresented: $showCompose, onDismiss: { Task { await load() } }) {
+        .sheet(isPresented: $showCompose, onDismiss: { Task { await load(forceRefresh: true) } }) {
             if let entity = target.composeEntity {
                 ComposeExperienceView(context: .entity(entity)).environment(model)
             }
         }
     }
 
-    private func load() async {
+    private func load(forceRefresh: Bool = false) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            let response: ExperiencesFeedResponse
-            switch target {
-            case .teacher(let teacher, _):
-                response = try await model.services.honeyAPI.experiences(teacherId: teacher.id)
-            case .course(let course):
-                response = try await model.services.honeyAPI.experiences(courseId: course.id)
-            case .entity(let entity):
-                response = try await model.services.honeyAPI.experiences(entityKey: entity.entityKey)
-            }
+            let response = try await model.services.experienceFeedRepository.load(
+                feedScope,
+                policy: forceRefresh ? .reload : .cacheFirst
+            )
             experiences = response.experiences
         } catch {
-            errorMessage = "Experiences could not be loaded. Try again."
+            errorMessage = experiences.isEmpty
+                ? "Experiences could not be loaded. Try again."
+                : "Saved experiences remain visible, but they could not be refreshed."
+        }
+    }
+
+    private var feedScope: ExperienceFeedScope {
+        switch target {
+        case .teacher(let teacher, _): return .teacher(teacher.id)
+        case .course(let course): return .course(course.id)
+        case .entity(let entity): return .entity(entity.entityKey)
         }
     }
 }
@@ -451,6 +491,7 @@ private struct CommunityMeaningView: View {
                     Text("Why this space exists")
                         .font(AppTheme.Typography.screenTitle)
                         .foregroundStyle(Palette.ink)
+                        .accessibilityAddTraits(.isHeader)
                     Text("A place to understand school through one another’s experiences.")
                         .font(AppTheme.Typography.headline)
                         .foregroundStyle(Palette.inkSecondary)
@@ -460,6 +501,7 @@ private struct CommunityMeaningView: View {
                             Text(section.0)
                                 .font(AppTheme.Typography.headlineSemibold)
                                 .foregroundStyle(Palette.ink)
+                                .accessibilityAddTraits(.isHeader)
                             Text(section.1)
                                 .font(AppTheme.Typography.subheadline)
                                 .foregroundStyle(Palette.inkSecondary)

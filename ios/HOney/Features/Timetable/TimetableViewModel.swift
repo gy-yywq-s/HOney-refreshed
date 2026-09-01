@@ -18,7 +18,6 @@ final class TimetableViewModel {
 
     var selectedDate: Date = Calendar.current.startOfDay(for: .now)
     var lessons: [Lesson] = []
-    var lastSyncedAt: Date?
     var isLoading = false
     var isRefreshing = false
     var errorMessage: String?
@@ -147,7 +146,6 @@ final class TimetableViewModel {
     private func apply(_ response: TimetableResponse, for key: String) {
         guard isSelected(key) else { return }
         lessons = response.lessons.sorted { $0.startsAt < $1.startsAt }
-        lastSyncedAt = response.lastSyncedAt
         isLoading = false
         isRefreshing = false
     }

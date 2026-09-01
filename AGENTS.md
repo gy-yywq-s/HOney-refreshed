@@ -50,6 +50,23 @@ This file contains the active instructions for work in the local repository at
   contrast in light/dark mode. Do not paste one unchanged accent RGB tuple onto every background.
 - Replace the Login screen completely. Do not preserve the serif `HOney` title, text-only `HO` icon,
   or current layout.
+- Never use small uppercase or small-caps text as a heading, eyebrow, section label, status label, or
+  navigation aid anywhere in the app. Use natural title case or sentence case at a legible semantic
+  size. Native list/form section headers must explicitly preserve their natural casing instead of
+  inheriting an all-uppercase treatment.
+- Judge color, fill, borders and cards as a composition, not as individually banned ingredients.
+  White cards, repeated accents, borders and tonal fills are allowed when their contrast, proportion,
+  repetition, surrounding ground and hierarchy make the whole screen coherent. The Home failure to
+  avoid is one isolated high-contrast pure-white bordered hero floating on an otherwise colored or
+  gradient screen; the problem is that relationship, not white or borders themselves.
+- A Surface palette defines the page atmosphere, but its tokens may still be used in fills when that
+  use belongs to the composition and semantic role. Porcelain and other background hues can be page
+  ground, a quiet surface, or a small detail; decide from the whole screen instead of turning the
+  token name into a universal rule. Reusing one accent is desirable when it expresses the same
+  interaction or state. Add supporting colors only where they clarify distinct content or hierarchy,
+  not to satisfy a color quota, and do not mechanically assign every icon a different color.
+- Keep earlier approved color directions available as persisted Settings choices when exploring new
+  palettes. Adding a candidate must not silently replace the user's ability to compare prior choices.
 - Never tell users to use search to reveal selectable options that the product omitted. If an item is
   available to choose, provide a complete scrollable, grouped, paginated, or progressively disclosed
   list; search may filter that complete set but cannot be the only route to the remaining choices.
@@ -85,6 +102,14 @@ This file contains the active instructions for work in the local repository at
   recovery. Do not classify a logic or runtime defect as out of scope merely because it is not visual.
 - A visually correct screen is not acceptable if opening it freezes, blocks interaction, or leaves
   the user without truthful progress. Runtime regressions are prioritized before cosmetic refinement.
+- Do not attach standard whole-screen pull-to-refresh behavior to app pages. Pulling a long fixed
+  viewport down is a disproportionate gesture and can conflict with navigation and reading. Refresh
+  through a compact, explicit control near the relevant data or in the toolbar, preserve existing
+  content while refreshing, and expose failures next to the affected content.
+- Timetable day changes must use explicit controls. Do not bind a broad full-screen horizontal drag
+  gesture to day navigation; it is too easy to trigger accidentally and competes with scrolling and
+  card interaction. Every lesson must be presented as its own clearly bounded card with subject,
+  teacher (or an honest unavailable label), time, and room context.
 
 ## Product and honesty constraints
 
@@ -138,7 +163,8 @@ This file contains the active instructions for work in the local repository at
 
 ## Engineering standard
 
-- Prefer the strongest feasible solution without unnecessary cost or complexity. Use standard-library
+- Prefer the strongest feasible solution without unnecessary cost, complexity should not be a consideration in most circumstances.
+- Use standard-library
   capabilities before adding dependencies when they meet the requirement.
 - Keep changes cohesive, testable, and reviewable. Do not call a partial visual pass a completed
   redesign.

@@ -191,6 +191,8 @@ extension AppServices {
             config: config,
             sessionStore: sessionStore,
             honeyAPI: honeyAPI,
+            nextLessonRepository: NextLessonRepository(provider: honeyAPI),
+            historyRepository: HistoryRepository(provider: honeyAPI),
             timetableRepository: TimetableRepository(provider: honeyAPI),
             experienceFeedRepository: ExperienceFeedRepository(provider: honeyAPI),
             experienceTargetRepository: ExperienceTargetRepository(api: honeyAPI),

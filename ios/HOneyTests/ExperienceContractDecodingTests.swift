@@ -348,6 +348,90 @@ private actor CountingExperienceFeedProvider: ExperienceFeedProviding {
     }
 }
 
+private actor CountingSchoolDataProvider: NextLessonProviding, HistoryProviding {
+    private var nextCalls = 0
+    private var historyCalls: [HistoryCacheKey: Int] = [:]
+    private var delay: Duration = .zero
+
+    func configure(delay: Duration) { self.delay = delay }
+
+    func nextLesson() async throws -> NextLessonResponse {
+        nextCalls += 1
+        if delay > .zero { try await Task.sleep(for: delay) }
+        return NextLessonResponse(nextLesson: nil, lastSyncedAt: nil)
+    }
+
+    func history(
+        query: String?,
+        teacherId: String?,
+        courseId: String?,
+        order: String?
+    ) async throws -> HistoryResponse {
+        let key = HistoryCacheKey(
+            query: query,
+            teacherId: teacherId,
+            courseId: courseId,
+            order: order
+        )
+        historyCalls[key, default: 0] += 1
+        if delay > .zero { try await Task.sleep(for: delay) }
+        return HistoryResponse(lessons: [])
+    }
+
+    func counts() -> (next: Int, history: [HistoryCacheKey: Int]) {
+        (nextCalls, historyCalls)
+    }
+}
+
+final class SchoolDataRepositoryTests: XCTestCase {
+    func testNextLessonCacheCoalescesAndExplicitReloadBypassesFreshness() async throws {
+        let provider = CountingSchoolDataProvider()
+        await provider.configure(delay: .milliseconds(60))
+        let repository = NextLessonRepository(provider: provider)
+
+        async let first = repository.load()
+        async let second = repository.load()
+        _ = try await (first, second)
+        _ = try await repository.load()
+        _ = try await repository.load(.reload)
+
+        let counts = await provider.counts()
+        XCTAssertEqual(counts.next, 2)
+    }
+
+    func testHistoryCacheIsKeyedAndCoalescesSameQuery() async throws {
+        let provider = CountingSchoolDataProvider()
+        await provider.configure(delay: .milliseconds(60))
+        let repository = HistoryRepository(provider: provider)
+        let all = HistoryCacheKey(query: nil, teacherId: nil, courseId: nil, order: "desc")
+        let teacher = HistoryCacheKey(query: nil, teacherId: "t1", courseId: nil, order: "desc")
+
+        async let first = repository.load(key: all)
+        async let second = repository.load(key: all)
+        _ = try await (first, second)
+        _ = try await repository.load(key: all)
+        _ = try await repository.load(key: teacher)
+
+        let counts = await provider.counts()
+        XCTAssertEqual(counts.history[all], 1)
+        XCTAssertEqual(counts.history[teacher], 1)
+    }
+
+    func testHistoryReloadAndInvalidationRequestFreshData() async throws {
+        let provider = CountingSchoolDataProvider()
+        let repository = HistoryRepository(provider: provider)
+        let key = HistoryCacheKey(query: "math", teacherId: nil, courseId: nil, order: "desc")
+
+        _ = try await repository.load(key: key)
+        _ = try await repository.load(key: key, policy: .reload)
+        await repository.invalidate()
+        _ = try await repository.load(key: key)
+
+        let counts = await provider.counts()
+        XCTAssertEqual(counts.history[key], 3)
+    }
+}
+
 final class ExperienceFeedRepositoryTests: XCTestCase {
     func testFreshFeedIsSharedAcrossViewRecreation() async throws {
         let provider = CountingExperienceFeedProvider()

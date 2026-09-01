@@ -51,6 +51,28 @@ struct AccessView: View {
     private func content(_ vm: AccessViewModel) -> some View {
         GeometryReader { proxy in
             VStack(spacing: 12) {
+                HStack {
+                    Text("Access")
+                        .font(AppTheme.Typography.screenTitle)
+                        .foregroundStyle(Palette.ink)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer()
+                    Button {
+                        Task { await vm.refresh() }
+                    } label: {
+                        if vm.isLoading {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .frame(width: 44, height: 44)
+                    .foregroundStyle(Palette.inkSecondary)
+                    .disabled(vm.isLoading)
+                    .accessibilityLabel("Refresh Access")
+                }
+                .padding(.horizontal, AppTheme.Spacing.pageHorizontal)
+
                 ScrollView {
                     VStack(spacing: 12) {
                         permitTemplate(vm)
@@ -60,7 +82,6 @@ struct AccessView: View {
                     .padding(.top, 8)
                 }
                 .scrollIndicators(.hidden)
-                .refreshable { await vm.refresh() }
 
                 fixedAccessStatus(vm)
 
@@ -100,8 +121,8 @@ struct AccessView: View {
         } message: {
             Text("Select the permit to use for this gate opening.")
         }
-        .confirmationDialog("No Active Permit", isPresented: $isQuickApplyPromptPresented, titleVisibility: .visible) {
-            Button("Quick Apply") {
+        .confirmationDialog("No active permit", isPresented: $isQuickApplyPromptPresented, titleVisibility: .visible) {
+            Button("Apply with this draft") {
                 Task { await vm.applyPermit(start: permitStartDate, end: permitEndDate, reason: cleanedReason) }
             }
             Button("Cancel", role: .cancel) {}
@@ -131,6 +152,7 @@ struct AccessView: View {
                 Text("Apply Permit")
                     .font(AppTheme.Typography.cardTitle)
                     .foregroundStyle(Palette.navy)
+                    .accessibilityAddTraits(.isHeader)
 
                 Spacer()
 
@@ -192,6 +214,7 @@ struct AccessView: View {
                 Text("Permits")
                     .font(AppTheme.Typography.cardTitle)
                     .foregroundStyle(Palette.navy)
+                    .accessibilityAddTraits(.isHeader)
 
                 Spacer()
 
@@ -207,9 +230,6 @@ struct AccessView: View {
             } else {
                 if let permitsError = vm.permitsError {
                     AppBanner(text: permitsError + " Previously loaded permits cannot be used until refresh succeeds.", style: .warning)
-                    Button("Try permits again") { Task { await vm.refresh() } }
-                        .font(AppTheme.Typography.subheadlineSemibold)
-                        .frame(minHeight: 44)
                 }
                 if visible.isEmpty {
                     AppEmptyState(title: vm.didLoadPermits ? "No permits" : "Permits unavailable", systemImage: "doc.text")
@@ -277,6 +297,7 @@ struct AccessView: View {
                 Text("School access")
                     .font(AppTheme.Typography.cardTitle)
                     .foregroundStyle(Palette.navy)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text("Sent directly to the school")
                     .font(AppTheme.Typography.caption2Semibold)
@@ -462,7 +483,7 @@ private struct PermitListRow: View {
                     Button {
                         onOpen()
                     } label: {
-                        Label("Open", systemImage: "lock.open")
+                        Label("Choose gate", systemImage: "lock.open")
                             .font(AppTheme.Typography.captionBold)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
@@ -620,7 +641,7 @@ private struct PermitDraftEditor: View {
                         }
                     }
 
-                editorHint("ends after it starts — that is the whole rule.")
+                editorHint("End time must be after the start time.")
             }
 
         case .reason:
@@ -636,7 +657,7 @@ private struct PermitDraftEditor: View {
                             .stroke(Palette.line, lineWidth: 1)
                     )
 
-                editorHint("a word or two is plenty. 简单写写就行。")
+                editorHint("Add a short reason.")
             }
         }
     }
@@ -722,6 +743,7 @@ private struct MergedGatePicker: View {
                 Text(routeTitle)
                     .font(AppTheme.Typography.cardTitle)
                     .foregroundStyle(Palette.navy)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text("Choose gate")
                     .font(AppTheme.Typography.captionSemibold)

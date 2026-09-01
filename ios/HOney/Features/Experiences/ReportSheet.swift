@@ -26,7 +26,7 @@ struct ReportSheet: View {
             Form {
                 if done {
                     Section {
-                        Text("Thanks. The post has been automatically re-checked against the current community rules — no human queue, and no way to see who wrote it.")
+                        Text("Thanks. The post has been automatically re-checked against the current community rules. The report adds no author field or free-text note.")
                             .font(AppTheme.Typography.subheadline)
                             .foregroundStyle(Palette.ink)
                     }
@@ -64,6 +64,7 @@ struct ReportSheet: View {
                     .listRowBackground(Self.rowBackground)
                 }
             }
+            .textCase(nil)
             .scrollContentBackground(.hidden)
             .background(Palette.background.ignoresSafeArea())
             .tint(Palette.ocean)

@@ -19,6 +19,7 @@ struct ImportConsentView: View {
                     Text("Bring in your school day?")
                         .font(AppTheme.Typography.screenTitle)
                         .foregroundStyle(Palette.ink)
+                        .accessibilityAddTraits(.isHeader)
 
                     Text("This is separate from signing in. Nothing is imported until you choose it here.")
                         .font(AppTheme.Typography.subheadline)

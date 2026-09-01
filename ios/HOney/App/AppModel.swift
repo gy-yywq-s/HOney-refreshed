@@ -8,6 +8,7 @@ import Observation
 
 enum AuthPhase: Equatable {
     case loading
+    case startupUnavailable
     case signedOut
     /// Authenticated, but the separate import-consent step (audit §3.2) is
     /// still pending: signing in and copying school data are different decisions.
@@ -45,10 +46,13 @@ final class AppModel {
     /// Restore an existing session on launch; kick off the portal connector's
     /// silent restore in the background.
     func bootstrap() async {
+        phase = .loading
         Task { await services.portalCoordinator.restore() }
 
         guard await services.sessionStore.current() != nil else {
             await services.timetableRepository.invalidateAll()
+            await services.nextLessonRepository.invalidate()
+            await services.historyRepository.invalidate()
             await services.experienceFeedRepository.invalidate()
             await services.experienceTargetRepository.invalidate()
             startupNotice = nil
@@ -58,11 +62,28 @@ final class AppModel {
         }
         do {
             let me = try await services.honeyAPI.me()
+            startupNotice = nil
             phase = .signedIn(me.profile)
-        } catch {
-            // Token unusable and refresh failed → signed out.
+        } catch HOneyAPIError.notAuthenticated {
+            await invalidateAccountCaches()
             phase = .signedOut
+        } catch HOneyAPIError.http(let status, _) where status == 401 {
+            await invalidateAccountCaches()
+            phase = .signedOut
+        } catch {
+            // A temporary network/server failure is not a sign-out. Keep the
+            // session and offer an honest retry instead of asking for a password.
+            startupNotice = "HOney could not check your saved session. Your sign-in is still on this iPhone."
+            phase = .startupUnavailable
         }
+    }
+
+    private func invalidateAccountCaches() async {
+        await services.timetableRepository.invalidateAll()
+        await services.nextLessonRepository.invalidate()
+        await services.historyRepository.invalidate()
+        await services.experienceFeedRepository.invalidate()
+        await services.experienceTargetRepository.invalidate()
     }
 
     func login(username: String, password: String) async {
@@ -71,6 +92,8 @@ final class AppModel {
         startupNotice = nil
         portalCredentialNotice = nil
         await services.timetableRepository.invalidateAll()
+        await services.nextLessonRepository.invalidate()
+        await services.historyRepository.invalidate()
         await services.experienceFeedRepository.invalidate()
         await services.experienceTargetRepository.invalidate()
         defer { isAuthenticating = false }
@@ -119,11 +142,13 @@ final class AppModel {
             do {
                 _ = try await services.honeyAPI.sync()
                 await services.timetableRepository.invalidateAll()
+                await services.nextLessonRepository.invalidate()
+                await services.historyRepository.invalidate()
                 await services.experienceFeedRepository.invalidate()
                 await services.experienceTargetRepository.invalidate()
                 startupNotice = nil
             } catch {
-                startupNotice = "Import is on, but the first school-data sync failed. Pull Home to retry."
+                startupNotice = "Import is on, but the first school-data sync failed. Use Refresh Home to retry."
             }
             profile.consent.timetable = true
         }
@@ -144,6 +169,8 @@ final class AppModel {
             phase = .signedIn(profile)
             if !timetable {
                 await services.timetableRepository.invalidateAll()
+                await services.nextLessonRepository.invalidate()
+                await services.historyRepository.invalidate()
                 await services.experienceFeedRepository.invalidate()
                 await services.experienceTargetRepository.invalidate()
             }
@@ -158,11 +185,13 @@ final class AppModel {
         do {
             _ = try await services.honeyAPI.sync()
             await services.timetableRepository.invalidateAll()
+            await services.nextLessonRepository.invalidate()
+            await services.historyRepository.invalidate()
             await services.experienceFeedRepository.invalidate()
             await services.experienceTargetRepository.invalidate()
             startupNotice = nil
         } catch {
-            startupNotice = "Import is on, but school data still could not sync. Pull Home to try again."
+            startupNotice = "Import is on, but school data still could not sync. Use Refresh Home to try again."
         }
     }
 
@@ -183,6 +212,8 @@ final class AppModel {
         do {
             try await services.honeyAPI.disconnectSchool()
             await services.timetableRepository.invalidateAll()
+            await services.nextLessonRepository.invalidate()
+            await services.historyRepository.invalidate()
             await services.experienceFeedRepository.invalidate()
             await services.experienceTargetRepository.invalidate()
             if !(await refreshProfile()), var profile {
@@ -202,6 +233,8 @@ final class AppModel {
     func signOut() async {
         await services.honeyAPI.logout()
         await services.timetableRepository.invalidateAll()
+        await services.nextLessonRepository.invalidate()
+        await services.historyRepository.invalidate()
         await services.experienceFeedRepository.invalidate()
         await services.experienceTargetRepository.invalidate()
         // Ownership keys, private notes and drafts are the user's device-local
@@ -225,6 +258,8 @@ final class AppModel {
         }
 
         await services.timetableRepository.invalidateAll()
+        await services.nextLessonRepository.invalidate()
+        await services.historyRepository.invalidate()
         await services.experienceFeedRepository.invalidate()
         await services.experienceTargetRepository.invalidate()
         var remaining: [String] = []

@@ -3,6 +3,20 @@
 SwiftUI app (iOS 17+). Four-band architecture: `DesignSystem/`, `Services/` (no SwiftUI),
 `Features/` (views + view models), `Models/`.
 
+## Current signed-in experience
+
+- Home keeps the current/next lesson as the focal object on a continuous tonal surface; class
+  Experiences, Share, Access and School Portal remain secondary.
+- Settings exposes six persisted Surface palettes directly, including the earlier warm-paper and
+  original-blue directions. Every palette tunes its own light/dark interaction and detail colors.
+- Timetable uses explicit date controls and one card per lesson. Each card always shows a teacher
+  name or the honest `Teacher not listed` fallback; broad swipe-to-change-day is intentionally absent.
+- Refresh is local and explicit rather than whole-screen pull-to-refresh. Previously loaded content
+  stays visible when a refresh fails.
+- Next lesson, History, Timetable, Experience targets and Experience feeds use app-scoped freshness
+  caches, same-key request coalescing and stale-response guards. Account, consent and school-data
+  changes invalidate the affected caches.
+
 ## Run on your iPhone (Mac + Xcode)
 
 1. **Clone** the repo and open **`ios/HOney.xcodeproj`** in Xcode (double-click).

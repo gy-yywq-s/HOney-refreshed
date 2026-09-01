@@ -51,4 +51,59 @@ final class NextLessonFormattingTests: XCTestCase {
         XCTAssertEqual(NextLessonPresentation.summary(for: lesson(minutes: nil, state: .now)), "Now")
         XCTAssertEqual(NextLessonPresentation.summary(for: lesson(minutes: nil, state: .upcoming)), "Upcoming")
     }
+
+    @MainActor
+    func testHomeRefreshFailureKeepsPreviouslyLoadedLessonAndExperiences() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("home-cache-tests-\(UUID().uuidString)")
+        defer {
+            try? FileManager.default.removeItem(at: tempDir)
+            StubURLProtocol.responses = [:]
+        }
+        let services = AppServices.stub(tempDir: tempDir)
+        try await services.sessionStore.save(HOneySession(
+            accessToken: "access",
+            accessExpiresAt: Date().addingTimeInterval(3600),
+            refreshToken: "refresh",
+            refreshExpiresAt: Date().addingTimeInterval(7200)
+        ))
+        StubURLProtocol.responses["/api/next-lesson"] = (200, Data("""
+        {
+          "nextLesson": {
+            "id": "next-1", "subjectName": "Maths", "topicName": null,
+            "teacherName": "Ms Lin", "courseName": "Maths", "roomName": "201",
+            "startsAt": 1788300000000, "endsAt": 1788303600000,
+            "temporalState": "upcoming", "minutesUntilStart": 20
+          },
+          "lastSyncedAt": null
+        }
+        """.utf8))
+        StubURLProtocol.responses["/api/experiences/from-my-classes"] = (200, Data("""
+        {"experiences":[{
+          "id":"e1", "entity_key":"teacher:t1", "ctx_teacher_id":"t1",
+          "ctx_course_id":null, "ctx_room_id":null, "body":"Clear explanations.",
+          "rating":null, "provenance":"verified_lesson", "publishedDay":null,
+          "reactions":null
+        }]}
+        """.utf8))
+        StubURLProtocol.responses["/api/directory"] = (200, Data("""
+        {"teachers":[{"id":"t1","name":"Ms Lin"}],"courses":[],"rooms":[]}
+        """.utf8))
+        StubURLProtocol.responses["/api/entities"] = (200, Data("{\"entities\":[]}".utf8))
+
+        let viewModel = HomeViewModel(services: services)
+        await viewModel.load()
+        XCTAssertEqual(viewModel.nextLesson?.id, "next-1")
+        XCTAssertEqual(viewModel.recentExperiences.map(\.id), ["e1"])
+
+        StubURLProtocol.responses["/api/next-lesson"] = (503, Data("unavailable".utf8))
+        StubURLProtocol.responses["/api/experiences/from-my-classes"] = (503, Data("unavailable".utf8))
+        await viewModel.load(forceRefresh: true)
+
+        XCTAssertEqual(viewModel.nextLesson?.id, "next-1")
+        XCTAssertEqual(viewModel.recentExperiences.map(\.id), ["e1"])
+        XCTAssertFalse(viewModel.nextLessonAvailable)
+        XCTAssertFalse(viewModel.recentExperiencesAvailable)
+        XCTAssertNotNil(viewModel.errorMessage)
+    }
 }

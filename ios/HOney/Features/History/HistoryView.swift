@@ -33,6 +33,19 @@ struct HistoryView: View {
             if isSelecting {
                 ToolbarItem(placement: .topBarLeading) { Button("Cancel") { dismiss() } }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Task { await viewModel?.reload(forceRefresh: true) }
+                } label: {
+                    if viewModel?.isLoading == true && viewModel?.lessons.isEmpty == false {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+                .disabled(viewModel?.isLoading == true)
+                .accessibilityLabel("Refresh past lessons")
+            }
         }
         .task {
             if viewModel == nil { viewModel = HistoryViewModel(services: model.services) }
@@ -51,9 +64,20 @@ struct HistoryView: View {
             VStack(alignment: .leading, spacing: 14) {
                 filters(vm)
 
-                if vm.isLoading {
+                if let filterError = vm.filterErrorMessage {
+                    VStack(alignment: .leading, spacing: 8) {
+                        AppBanner(text: filterError, style: .warning)
+                        Button("Try loading filter choices again") {
+                            Task { await vm.loadFilters(forceRefresh: true) }
+                        }
+                        .font(AppTheme.Typography.subheadlineSemibold)
+                        .frame(minHeight: 44)
+                    }
+                }
+
+                if vm.isLoading && vm.lessons.isEmpty {
                     AppLoadingState(title: "Loading past lessons")
-                } else if let error = vm.errorMessage {
+                } else if let error = vm.errorMessage, vm.lessons.isEmpty {
                     AppBanner(text: error, style: .error)
                 } else if vm.lessons.isEmpty {
                     AppEmptyState(title: "No past lessons", systemImage: "clock.arrow.circlepath")
@@ -84,6 +108,10 @@ struct HistoryView: View {
                                 }
                             }
                         }
+                    }
+
+                    if let error = vm.errorMessage {
+                        AppBanner(text: error, style: .warning)
                     }
                 }
             }

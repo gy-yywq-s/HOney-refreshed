@@ -43,6 +43,10 @@ final class SurfacePaletteTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(contrast(spec.ink.dark, spec.muted.dark), 4.5, palette.title + " dark status chip")
             XCTAssertGreaterThanOrEqual(contrast(spec.accent.light, spec.accentSoft.light), 4.5, palette.title + " light accent/soft")
             XCTAssertGreaterThanOrEqual(contrast(spec.accent.dark, spec.accentSoft.dark), 4.5, palette.title + " dark accent/soft")
+            for (index, detail) in [spec.accent, spec.accentSecondary, spec.accentTertiary, spec.accentQuaternary].enumerated() {
+                XCTAssertGreaterThanOrEqual(contrast(detail.light, spec.canvas.light), 4.5, palette.title + " light detail \(index + 1)")
+                XCTAssertGreaterThanOrEqual(contrast(detail.dark, spec.canvas.dark), 4.5, palette.title + " dark detail \(index + 1)")
+            }
             assertStatusContrast(palette: palette, spec: spec, foreground: AppTheme.Colors.successRGB, name: "success")
             assertStatusContrast(palette: palette, spec: spec, foreground: AppTheme.Colors.warningRGB, name: "warning")
             assertStatusContrast(palette: palette, spec: spec, foreground: AppTheme.Colors.errorRGB, name: "error")

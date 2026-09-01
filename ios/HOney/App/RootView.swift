@@ -18,6 +18,22 @@ struct RootView: View {
             switch model.phase {
             case .loading:
                 AppLoadingState(title: "Getting things ready…")
+            case .startupUnavailable:
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("HOney is temporarily unavailable")
+                        .font(AppTheme.Typography.screenTitle)
+                        .foregroundStyle(Palette.ink)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(model.startupNotice ?? "Your saved sign-in could not be checked.")
+                        .font(AppTheme.Typography.subheadline)
+                        .foregroundStyle(Palette.inkSecondary)
+                    Button("Try again") {
+                        Task { await model.bootstrap() }
+                    }
+                    .buttonStyle(PrimaryActionButtonStyle())
+                }
+                .padding(AppTheme.Spacing.pageHorizontal)
+                .frame(maxWidth: 460)
             case .signedOut:
                 LoginView()
             case .consentPending:

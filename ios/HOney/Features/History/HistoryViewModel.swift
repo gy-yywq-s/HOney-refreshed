@@ -10,6 +10,7 @@ import Observation
 @Observable
 final class HistoryViewModel {
     private let services: AppServices
+    private var loadGeneration = 0
 
     var lessons: [Lesson] = []
     var teachers: [DirectoryEntry] = []
@@ -22,6 +23,7 @@ final class HistoryViewModel {
 
     var isLoading = false
     var errorMessage: String?
+    var filterErrorMessage: String?
 
     init(services: AppServices) {
         self.services = services
@@ -50,27 +52,42 @@ final class HistoryViewModel {
         }
     }
 
-    func loadFilters() async {
-        if let directory = try? await services.honeyAPI.directory() {
-            teachers = directory.teachers
-            courses = directory.courses
+    func loadFilters(forceRefresh: Bool = false) async {
+        filterErrorMessage = nil
+        if forceRefresh { await services.experienceTargetRepository.invalidate() }
+        let metadata = await services.experienceTargetRepository.load()
+        guard let directory = metadata.directory else {
+            filterErrorMessage = "Teacher and course choices could not be loaded."
+            return
         }
+        teachers = directory.teachers
+        courses = directory.courses
     }
 
-    func reload() async {
+    func reload(forceRefresh: Bool = false) async {
+        loadGeneration += 1
+        let generation = loadGeneration
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
         do {
-            let response = try await services.honeyAPI.history(
+            let key = HistoryCacheKey(
                 query: query,
                 teacherId: selectedTeacherId,
                 courseId: selectedCourseId,
                 order: order
             )
+            let response = try await services.historyRepository.load(
+                key: key,
+                policy: forceRefresh ? .reload : .cacheFirst
+            )
+            guard generation == loadGeneration else { return }
             lessons = response.lessons
         } catch {
-            errorMessage = "Could not load history."
+            guard generation == loadGeneration else { return }
+            errorMessage = lessons.isEmpty
+                ? "Could not load past lessons."
+                : "Past lessons remain visible, but they could not be refreshed."
         }
+        if generation == loadGeneration { isLoading = false }
     }
 }

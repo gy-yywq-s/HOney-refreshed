@@ -49,6 +49,7 @@ struct LoginView: View {
                     .font(AppTheme.Typography.screenTitle)
                     .foregroundStyle(Palette.ink)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text("Use your school account. HOney does not create a separate password.")
                     .font(AppTheme.Typography.subheadline)

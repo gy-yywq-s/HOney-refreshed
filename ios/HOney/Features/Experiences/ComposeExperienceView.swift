@@ -364,6 +364,7 @@ struct ComposeExperienceView: View {
             }
             .listRowBackground(Self.rowBackground)
         }
+        .textCase(nil)
         .scrollContentBackground(.hidden)
         .background(Palette.background.ignoresSafeArea())
         .tint(Palette.ocean)

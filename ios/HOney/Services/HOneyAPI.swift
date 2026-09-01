@@ -286,9 +286,18 @@ actor HOneyAPI {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try HOneyCoding.encoder.encode(Body(refreshToken: current.refreshToken))
             let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse, 200..<300 ~= http.statusCode else {
+            guard let http = response as? HTTPURLResponse else {
+                throw HOneyAPIError.invalidResponse
+            }
+            if http.statusCode == 401 || http.statusCode == 403 {
                 try? await store.clear()
                 throw HOneyAPIError.notAuthenticated
+            }
+            guard 200..<300 ~= http.statusCode else {
+                throw HOneyAPIError.http(
+                    status: http.statusCode,
+                    body: String(data: data, encoding: .utf8)
+                )
             }
             let refreshed = try HOneyCoding.decoder.decode(HOneySession.self, from: data)
             try await store.save(refreshed)

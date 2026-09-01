@@ -14,6 +14,7 @@ import Observation
 @Observable
 final class ExperiencesViewModel {
     private let services: AppServices
+    private var feedGeneration = 0
 
     var experiences: [PublicExperience] = []
     var teachers: [DirectoryEntry] = []
@@ -66,19 +67,24 @@ final class ExperiencesViewModel {
     }
 
     func reload(forceRefresh: Bool = false) async {
+        feedGeneration += 1
+        let generation = feedGeneration
+        let requestedScope = scope
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
         do {
             let response = try await services.experienceFeedRepository.load(
-                scope,
+                requestedScope,
                 policy: forceRefresh ? .reload : .cacheFirst
             )
+            guard generation == feedGeneration, scope == requestedScope else { return }
             experiences = response.experiences
         } catch {
+            guard generation == feedGeneration, scope == requestedScope else { return }
             errorMessage = showingFromMyClasses
                 ? "Could not load experiences from your classes."
                 : "Could not load experiences from around school."
         }
+        if generation == feedGeneration { isLoading = false }
     }
 }

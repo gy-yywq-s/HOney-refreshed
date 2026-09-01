@@ -9,6 +9,8 @@ struct AppServices: Sendable {
     let config: AppConfig
     let sessionStore: SessionStore
     let honeyAPI: HOneyAPI
+    let nextLessonRepository: NextLessonRepository
+    let historyRepository: HistoryRepository
     let timetableRepository: TimetableRepository
     let experienceFeedRepository: ExperienceFeedRepository
     let experienceTargetRepository: ExperienceTargetRepository
@@ -23,6 +25,8 @@ struct AppServices: Sendable {
     static func live(config: AppConfig = .default) -> AppServices {
         let sessionStore = SessionStore()
         let honeyAPI = HOneyAPI(baseURL: config.honeyBaseURL, store: sessionStore)
+        let nextLessonRepository = NextLessonRepository(provider: honeyAPI)
+        let historyRepository = HistoryRepository(provider: honeyAPI)
         let timetableRepository = TimetableRepository(provider: honeyAPI)
         let experienceFeedRepository = ExperienceFeedRepository(provider: honeyAPI)
         let experienceTargetRepository = ExperienceTargetRepository(api: honeyAPI)
@@ -33,6 +37,8 @@ struct AppServices: Sendable {
             config: config,
             sessionStore: sessionStore,
             honeyAPI: honeyAPI,
+            nextLessonRepository: nextLessonRepository,
+            historyRepository: historyRepository,
             timetableRepository: timetableRepository,
             experienceFeedRepository: experienceFeedRepository,
             experienceTargetRepository: experienceTargetRepository,
@@ -44,6 +50,167 @@ struct AppServices: Sendable {
             privateNoteStore: PrivateNoteStore(),
             publishedKeyRecoveryStore: PublishedKeyRecoveryStore()
         )
+    }
+}
+
+// MARK: - Home and History caches
+
+protocol NextLessonProviding: Sendable {
+    func nextLesson() async throws -> NextLessonResponse
+}
+
+protocol HistoryProviding: Sendable {
+    func history(
+        query: String?,
+        teacherId: String?,
+        courseId: String?,
+        order: String?
+    ) async throws -> HistoryResponse
+}
+
+extension HOneyAPI: NextLessonProviding, HistoryProviding {}
+
+actor NextLessonRepository {
+    enum Policy: Equatable, Sendable {
+        case cacheFirst
+        case reload
+    }
+
+    private struct Cached: Sendable {
+        let response: NextLessonResponse
+        let loadedAt: Date
+    }
+
+    private struct InFlight: Sendable {
+        let generation: Int
+        let task: Task<NextLessonResponse, Error>
+    }
+
+    private let provider: any NextLessonProviding
+    private let freshness: TimeInterval
+    private var cached: Cached?
+    private var inFlight: InFlight?
+    private var generation = 0
+
+    init(provider: any NextLessonProviding, freshness: TimeInterval = 60) {
+        self.provider = provider
+        self.freshness = freshness
+    }
+
+    func load(_ policy: Policy = .cacheFirst, now: Date = .now) async throws -> NextLessonResponse {
+        if policy == .cacheFirst,
+           let cached,
+           now.timeIntervalSince(cached.loadedAt) < freshness {
+            return cached.response
+        }
+        if let inFlight { return try await inFlight.task.value }
+
+        let requestGeneration = generation
+        let provider = provider
+        let task = Task { try await provider.nextLesson() }
+        inFlight = InFlight(generation: requestGeneration, task: task)
+        do {
+            let response = try await task.value
+            guard generation == requestGeneration else { throw CancellationError() }
+            cached = Cached(response: response, loadedAt: now)
+            inFlight = nil
+            return response
+        } catch {
+            if inFlight?.generation == requestGeneration { inFlight = nil }
+            throw error
+        }
+    }
+
+    func invalidate() {
+        generation += 1
+        inFlight?.task.cancel()
+        inFlight = nil
+        cached = nil
+    }
+}
+
+struct HistoryCacheKey: Hashable, Sendable {
+    let query: String?
+    let teacherId: String?
+    let courseId: String?
+    let order: String?
+
+    init(query: String?, teacherId: String?, courseId: String?, order: String?) {
+        let cleaned = query?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.query = cleaned?.isEmpty == false ? cleaned : nil
+        self.teacherId = teacherId
+        self.courseId = courseId
+        self.order = order
+    }
+}
+
+actor HistoryRepository {
+    enum Policy: Equatable, Sendable {
+        case cacheFirst
+        case reload
+    }
+
+    private struct Cached: Sendable {
+        let response: HistoryResponse
+        let loadedAt: Date
+    }
+
+    private struct InFlight: Sendable {
+        let generation: Int
+        let task: Task<HistoryResponse, Error>
+    }
+
+    private let provider: any HistoryProviding
+    private let freshness: TimeInterval
+    private var cache: [HistoryCacheKey: Cached] = [:]
+    private var inFlight: [HistoryCacheKey: InFlight] = [:]
+    private var generation = 0
+
+    init(provider: any HistoryProviding, freshness: TimeInterval = 10 * 60) {
+        self.provider = provider
+        self.freshness = freshness
+    }
+
+    func load(
+        key: HistoryCacheKey,
+        policy: Policy = .cacheFirst,
+        now: Date = .now
+    ) async throws -> HistoryResponse {
+        if policy == .cacheFirst,
+           let cached = cache[key],
+           now.timeIntervalSince(cached.loadedAt) < freshness {
+            return cached.response
+        }
+        if let request = inFlight[key] { return try await request.task.value }
+
+        let requestGeneration = generation
+        let provider = provider
+        let task = Task {
+            try await provider.history(
+                query: key.query,
+                teacherId: key.teacherId,
+                courseId: key.courseId,
+                order: key.order
+            )
+        }
+        inFlight[key] = InFlight(generation: requestGeneration, task: task)
+        do {
+            let response = try await task.value
+            guard generation == requestGeneration else { throw CancellationError() }
+            cache[key] = Cached(response: response, loadedAt: now)
+            inFlight[key] = nil
+            return response
+        } catch {
+            if inFlight[key]?.generation == requestGeneration { inFlight[key] = nil }
+            throw error
+        }
+    }
+
+    func invalidate() {
+        generation += 1
+        for request in inFlight.values { request.task.cancel() }
+        inFlight.removeAll()
+        cache.removeAll()
     }
 }
 
@@ -157,11 +324,15 @@ extension HOneyAPI: ExperienceFeedProviding {}
 enum ExperienceFeedScope: Hashable, Sendable {
     case myClasses
     case school
+    case entity(String)
+    case teacher(String)
+    case course(String)
+    case room(String)
 }
 
 /// Home and Experiences share these feeds so tab switches and view recreation
-/// do not cause an avoidable request or a new loading screen. Pull-to-refresh
-/// explicitly bypasses freshness; account and school-data changes invalidate it.
+/// do not cause an avoidable request or a new loading screen. An explicit local
+/// refresh bypasses freshness; account and school-data changes invalidate it.
 actor ExperienceFeedRepository {
     enum Policy: Sendable {
         case cacheFirst
@@ -215,6 +386,42 @@ actor ExperienceFeedRepository {
                     teacherId: nil,
                     courseId: nil,
                     roomId: nil,
+                    query: nil,
+                    sort: .newest
+                )
+            case .entity(let entityKey):
+                return try await provider.experiences(
+                    entityKey: entityKey,
+                    teacherId: nil,
+                    courseId: nil,
+                    roomId: nil,
+                    query: nil,
+                    sort: .newest
+                )
+            case .teacher(let teacherId):
+                return try await provider.experiences(
+                    entityKey: nil,
+                    teacherId: teacherId,
+                    courseId: nil,
+                    roomId: nil,
+                    query: nil,
+                    sort: .newest
+                )
+            case .course(let courseId):
+                return try await provider.experiences(
+                    entityKey: nil,
+                    teacherId: nil,
+                    courseId: courseId,
+                    roomId: nil,
+                    query: nil,
+                    sort: .newest
+                )
+            case .room(let roomId):
+                return try await provider.experiences(
+                    entityKey: nil,
+                    teacherId: nil,
+                    courseId: nil,
+                    roomId: roomId,
                     query: nil,
                     sort: .newest
                 )

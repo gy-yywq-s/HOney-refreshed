@@ -36,6 +36,7 @@ struct SettingsView: View {
                 privacySection
                 aboutSection
             }
+            .textCase(nil)
             .scrollContentBackground(.hidden)
             .background(PageBackground())
             .navigationTitle("Settings")
@@ -94,7 +95,7 @@ struct SettingsView: View {
         } header: {
             Text("Appearance")
         } footer: {
-            Text("Every available surface is shown here. Each uses an accent tuned for its surface in light and dark mode.")
+            Text("Every available surface is shown here, including the earlier color directions. Each has a small set of detail colors tuned for light and dark mode.")
         }
         .listRowBackground(Palette.surface)
     }
@@ -103,8 +104,10 @@ struct SettingsView: View {
         HStack(spacing: 12) {
             HStack(spacing: 4) {
                 paletteSwatch(palette.spec.canvas)
-                paletteSwatch(palette.spec.surface)
                 paletteSwatch(palette.spec.accent)
+                paletteSwatch(palette.spec.accentSecondary)
+                paletteSwatch(palette.spec.accentTertiary)
+                paletteSwatch(palette.spec.accentQuaternary)
             }
 
             Text(palette.title)
@@ -127,7 +130,7 @@ struct SettingsView: View {
         Circle()
             .fill(previewColor(value))
             .overlay(Circle().stroke(Palette.line, lineWidth: 1))
-            .frame(width: 22, height: 22)
+            .frame(width: 18, height: 18)
             .accessibilityHidden(true)
     }
 
@@ -191,7 +194,7 @@ struct SettingsView: View {
                     saveConsent(previousValue: oldValue, newValue: newValue)
                 }
 
-            Button("Update school sign-in for Access") {
+            Button("Update school sign-in") {
                 showSchoolReconnect = true
             }
 
@@ -209,7 +212,7 @@ struct SettingsView: View {
         } header: {
             Text("School data")
         } footer: {
-            Text("Disconnecting stops HOney’s server-side school-data connection. It does not erase school credentials saved on this iPhone for direct Access reauthentication.")
+            Text("Disconnecting stops HOney’s school-data sync. It does not erase the school sign-in saved on this iPhone for Access.")
         }
         .listRowBackground(Palette.surface)
     }
@@ -312,7 +315,7 @@ struct SchoolReconnectView: View {
                         .textContentType(.password)
                         .focused($focusedField, equals: .password)
                 } footer: {
-                    Text("This updates the device-only school sign-in used for silent Access and School Portal reconnection. It does not change your HOney account or timetable-import choice.")
+                    Text("This replaces the school account and password saved on this iPhone for Access and School Portal. It does not change your HOney account or timetable-import choice.")
                 }
 
                 Section {
@@ -322,6 +325,7 @@ struct SchoolReconnectView: View {
                     .disabled(isWorking || username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
                 }
             }
+            .textCase(nil)
             .scrollContentBackground(.hidden)
             .background(PageBackground())
             .navigationTitle("School sign-in")

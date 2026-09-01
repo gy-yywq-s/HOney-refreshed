@@ -1,0 +1,17 @@
+# Verdict
+
+**REFINE — 22/30, with no principle at 0: the current iOS bones are useful, restrained and honest enough to preserve, but label-to-behavior clarity, signed-in whole-screen visual validation and accessibility/runtime evidence still need a focused refinement pass.**
+
+## Highest-leverage moves
+
+1. **P1 · Principle #4 — Understandable:** Make every visible label describe the immediate next behavior: show `Today` on the Timetable shortcut (or make the range open a real chooser), rename `Yours` to `Your posts & notes`, rename permit-row `Open` to `Choose gate`, and rename Settings reconnect to `Update school sign-in`. Evidence: `ios/HOney/Features/Timetable/TimetableView.swift:114-116,347-367`; `ios/HOney/Features/Experiences/ExperiencesView.swift:41-42`; `ios/HOney/Features/Access/AccessView.swift:482-496`; `ios/HOney/Features/Settings/SettingsView.swift:197,318`.
+2. **P1 · Principles #3/#8 — Aesthetic and thorough:** Capture fresh signed-in iOS screenshots for Home, Timetable, Experiences, History, Access and Settings in all six palettes/light-dark, then tune hero/surface/marker proportions only from whole-screen evidence; never infer final beauty from tokens or use Login as Home evidence. Evidence: `ios/HOney/DesignSystem/AppTheme.swift:37-162`; `ios/HOney/Features/Home/HomeView.swift:142-319`; `01-evidence.md#known-gaps`.
+3. **P1 · Principle #8 — Thorough:** Add heading traits and verify VoiceOver order, Switch Control, accessibility Dynamic Type, Reduce Motion and 44pt targets on device; specifically stress Home's scaled title, Timetable's fixed header/seven-day strip and Access's one-line cards. Evidence: `ios/HOney/DesignSystem/AppComponents.swift:65-73`; `ios/HOney/Features/Home/HomeView.swift:178-183`; `ios/HOney/Features/Timetable/TimetableView.swift:68-75,273-367`; `ios/HOney/Features/Access/AccessView.swift:533-573,673-731`.
+4. **P2 · Principle #6 — Honest:** Replace the permit-rule overclaim and implementation jargon, then live-verify the strongest authorlessness/report statements before treating them as closed: `End time must be after the start time`, plain recovery-key language, `One post is only part of the picture`, and `Apply with this draft`. Evidence: `ios/HOney/Features/Access/AccessView.swift:123-129,643,659`; `ios/HOney/Features/Experiences/ExperiencesView.swift:373`; `ios/HOney/Features/Experiences/ComposeExperienceView.swift:145-215`; `ios/HOney/Features/Experiences/ReportSheet.swift:29,60-62`.
+5. **P2 · Principles #8/#9 — Thorough and resource-conscious:** Measure signed-in cold/warm Home and School Portal TTI plus physical Access, add delayed stale-response tests for Home/History/Experiences, and plan feed cursor append/scroll restoration without increasing repeat requests. Evidence: `ios/HOney/Features/Home/PortalWebView.swift:37-49,129-170`; `ios/HOney/Features/Home/HomeViewModel.swift:31-72`; `ios/HOney/Features/History/HistoryViewModel.swift:67-92`; `ios/HOney/Features/Experiences/ExperiencesViewModel.swift:69-89`; `ios/HOney/App/AppServices.swift:381-383`.
+
+## Priority interpretation
+
+- **P0:** none found in the inspected implementation. Physical Access and device timing remain unverified gaps, not claimed passes.
+- **P1:** moves 1–3. They block a higher score because they affect visible meaning, final composition and inclusive use.
+- **P2:** moves 4–5. They should be completed before calling the redesign fully verified, but current code has truthful fallback states and no observed deceptive flow.

@@ -41,6 +41,64 @@ final class AppModelLifecycleTests: XCTestCase {
         try await services.composerDraftStore.save(targetKey: "lesson:l1", body: "draft", rating: nil)
     }
 
+    func testTemporaryBootstrapFailureDoesNotPretendTheUserSignedOut() async throws {
+        try await seedLocalData()
+        StubURLProtocol.responses["/api/me"] = (503, Data("temporarily unavailable".utf8))
+
+        await model.bootstrap()
+
+        let retainedSession = await services.sessionStore.current()
+        XCTAssertEqual(model.phase, .startupUnavailable)
+        XCTAssertNotNil(retainedSession)
+        XCTAssertTrue(model.startupNotice?.contains("saved session") == true)
+    }
+
+    func testRejectedSavedSessionSignsOutAndClearsSession() async throws {
+        try await seedLocalData()
+        StubURLProtocol.responses["/api/me"] = (401, Data("unauthorized".utf8))
+        StubURLProtocol.responses["/api/auth/refresh"] = (401, Data("unauthorized".utf8))
+
+        await model.bootstrap()
+
+        let clearedSession = await services.sessionStore.current()
+        XCTAssertEqual(model.phase, .signedOut)
+        XCTAssertNil(clearedSession)
+    }
+
+    func testTemporaryRefreshServiceFailureKeepsSavedSession() async throws {
+        try await seedLocalData()
+        StubURLProtocol.responses["/api/me"] = (401, Data("expired access token".utf8))
+        StubURLProtocol.responses["/api/auth/refresh"] = (503, Data("temporarily unavailable".utf8))
+
+        await model.bootstrap()
+
+        let retainedSession = await services.sessionStore.current()
+        XCTAssertEqual(model.phase, .startupUnavailable)
+        XCTAssertNotNil(retainedSession)
+    }
+
+    func testSuccessfulBootstrapRetryClearsTheOldFailureNotice() async throws {
+        try await seedLocalData()
+        StubURLProtocol.responses["/api/me"] = (503, Data("temporarily unavailable".utf8))
+        await model.bootstrap()
+        XCTAssertEqual(model.phase, .startupUnavailable)
+        XCTAssertNotNil(model.startupNotice)
+
+        StubURLProtocol.responses["/api/me"] = (200, Data("""
+        {
+          "honeyId": "h1", "displayName": "Gary", "isAdmin": false,
+          "consent": { "timetable": true },
+          "connection": { "connected": true, "lastSyncedAt": null, "portalTokenValid": true }
+        }
+        """.utf8))
+        await model.bootstrap()
+
+        guard case .signedIn = model.phase else {
+            return XCTFail("expected signedIn after retry, got \(model.phase)")
+        }
+        XCTAssertNil(model.startupNotice)
+    }
+
     // MARK: Sign-out (audit §3.6)
 
     func testSignOutKeepsOwnershipKeysNotesAndDrafts() async throws {

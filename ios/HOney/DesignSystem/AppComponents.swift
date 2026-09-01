@@ -70,6 +70,7 @@ struct AppSectionHeader: View {
             .font(AppTheme.Typography.sectionTitle)
             .foregroundStyle(Palette.ink)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -221,16 +222,8 @@ struct SecondaryActionButtonStyle: ButtonStyle {
 }
 
 struct PageBackground: View {
-    var includesHomeAtmosphere = false
-
     var body: some View {
-        ZStack {
-            Palette.canvas
-            if includesHomeAtmosphere {
-                Palette.homeAtmosphere
-            }
-        }
-        .ignoresSafeArea()
+        Palette.canvas.ignoresSafeArea()
     }
 }
 
@@ -298,6 +291,7 @@ extension View {
             .font(AppTheme.Typography.sectionTitle)
             .foregroundStyle(Palette.navy)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
     }
 
     func fullHitArea() -> some View {
