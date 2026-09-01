@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { Lesson } from "../api/types";
 import { useApi } from "../lib/useApi";
 import { formatShortDate, formatTime, monthLabel } from "../lib/format";
+import { staggerStyle } from "../lib/motion";
 
 interface MonthGroup {
   label: string;
@@ -110,8 +111,8 @@ export function HistoryPage() {
           <section className="month-group" key={group.label}>
             <h2 className="month-group__label">{group.label}</h2>
             <ul className="month-group__list">
-              {group.lessons.map((lesson) => (
-                <li className="history-row" key={lesson.id}>
+              {group.lessons.map((lesson, rowIndex) => (
+                <li className="history-row stagger" style={staggerStyle(rowIndex)} key={lesson.id}>
                   <span className="history-row__date">
                     {formatShortDate(lesson.startsAt)}
                     <br />

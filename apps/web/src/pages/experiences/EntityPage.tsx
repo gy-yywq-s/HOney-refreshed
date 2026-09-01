@@ -5,6 +5,7 @@
 // context filter only (courses are not standalone entities).
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../../api/client";
 import type { ExperiencesFeedParams } from "../../api/types";
@@ -67,7 +68,12 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
         )}
       </header>
 
-      <div className="sort-toggle" role="group" aria-label="Sort order">
+      <div
+        className="sort-toggle"
+        role="group"
+        aria-label="Sort order"
+        style={{ "--n": 2, "--active": sort === "newest" ? 0 : 1 } as CSSProperties}
+      >
         {(["newest", "oldest"] as const).map((s) => (
           <button
             key={s}

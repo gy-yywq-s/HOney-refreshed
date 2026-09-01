@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
+import { ThemeControls } from "../components/ThemeControls";
 import { ReconnectDialog } from "../components/ReconnectDialog";
 import { timeAgo } from "../lib/format";
 import { ownershipKeys } from "../lib/ownershipKeys";
@@ -42,6 +43,11 @@ export function SettingsPage() {
       {feedback && (
         <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>
       )}
+
+      <section className="card settings-section" aria-label="Appearance">
+        <h2 className="section-title">Appearance</h2>
+        <ThemeControls />
+      </section>
 
       <section className="card settings-section" aria-label="Account">
         <h2 className="section-title">Account</h2>

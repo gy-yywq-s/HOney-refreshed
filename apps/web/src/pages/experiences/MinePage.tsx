@@ -10,6 +10,7 @@ import { ConfirmDialog } from "../../components/Modal";
 import { formatCoarseDate } from "../../lib/format";
 import { ownershipKeys, privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote, StoredOwnershipKey } from "../../lib/ownershipKeys";
+import { Reveal, useCountUp } from "../../lib/motion";
 import { useApi } from "../../lib/useApi";
 import { Stars, provenanceLabel, useNames } from "./shared";
 
@@ -120,6 +121,13 @@ export function ExperiencesMinePage() {
 
   const empty = keys.length === 0 && (notes?.length ?? 0) === 0;
 
+  // Stat strip: post counts (spec layout grammar — numbers get a strip).
+  const publishedCount = useCountUp(
+    mine.data ? mine.data.experiences.filter((e) => e.status === "published").length : null,
+  );
+  const noteCount = useCountUp(notes === null ? null : notes.length);
+  const keyCount = useCountUp(keys.length);
+
   return (
     <div className="stack">
       <header className="page-head">
@@ -128,6 +136,23 @@ export function ExperiencesMinePage() {
           Share an experience
         </Link>
       </header>
+
+      {!empty && (
+        <Reveal as="section" className="stat-strip" aria-label="Your contributions in numbers">
+          <div className="stat">
+            <strong>{mine.loading ? "…" : (publishedCount ?? "—")}</strong>
+            <span>Published posts</span>
+          </div>
+          <div className="stat">
+            <strong>{notes === null ? "…" : (noteCount ?? "—")}</strong>
+            <span>Private notes on this device</span>
+          </div>
+          <div className="stat">
+            <strong>{keyCount ?? "—"}</strong>
+            <span>Ownership keys held</span>
+          </div>
+        </Reveal>
+      )}
 
       {keys.length > 0 && (
         <div className="banner banner--warning">

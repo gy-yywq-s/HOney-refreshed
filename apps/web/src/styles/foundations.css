@@ -1,37 +1,67 @@
 /*
- * Foundations — reset, the fixed page gradient, typography and layout
- * primitives. No component grammar lives here.
+ * Foundations — reset, the stone dot-grid page, editorial type grammar
+ * (eyebrow + oversized heads), layout primitives and the motion kit's
+ * shared keyframes. Component grammar lives in components.css.
  */
 
 * {
   box-sizing: border-box;
 }
 
-html,
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  padding: 0;
+  min-width: 320px;
+  min-height: 100dvh;
+  font: 400 16px/1.5 var(--ui);
+  color: var(--ink);
+  background-color: var(--surface);
 }
 
-body {
-  font: 400 16px/1.5 var(--font-body);
-  color: var(--text-1);
-  /* Solid fallback only — the real gradient is the fixed layer below.
-     (background-attachment: fixed is broken on iOS Safari.) */
-  background: #f2faff;
-  min-height: 100vh;
-}
-
-/* The page gradient: a fixed, full-viewport layer behind everything.
-   Never scrolls, never hidden — and works on iOS Safari, unlike
-   background-attachment: fixed. */
+/* The 9px dot-grid texture, on a fixed layer so it can drift — ambient idle
+   life: a barely perceptible 90s breathing loop, transform-only. White surface
+   drops the grid (clean sheet). */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -48px;
   z-index: -1;
-  background: var(--page-gradient);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--ink) 14%, transparent) 0.65px,
+    transparent 0.65px
+  );
+  background-size: 9px 9px;
   pointer-events: none;
+  animation: grid-drift 90s var(--ease) infinite alternate;
+  will-change: transform;
+}
+:root[data-surface="white"] body::before {
+  display: none;
+}
+@keyframes grid-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(14px, 9px, 0);
+  }
+  to {
+    transform: translate3d(4px, 18px, 0);
+  }
+}
+
+/* Theme crossfade: html gets .theme-anim for ~450ms around a surface switch. */
+.theme-anim,
+.theme-anim body,
+.theme-anim * {
+  transition:
+    background-color 0.4s var(--ease),
+    border-color 0.4s var(--ease),
+    color 0.4s var(--ease) !important;
 }
 
 a {
@@ -42,97 +72,406 @@ a:hover {
   text-decoration: underline;
 }
 
-button {
-  font: inherit;
+button,
+input,
+select,
+textarea {
   color: inherit;
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Headings + eyebrows use the rounded stack; body stays system default. */
-.page-title,
-.section-title,
-.eyebrow,
-.modal__title {
-  font-family: var(--font-rounded);
+/* Focus — the reference site's 3px accent style, everywhere. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }
 
-.page-title {
-  font-size: 28px;
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text-1);
-  margin: 0 0 var(--space-lg);
-}
-.section-title {
-  font-size: 20px;
-  line-height: 1.2;
-  font-weight: 700;
-  color: var(--text-1);
-  margin: 0 0 var(--space-md);
+/* Buttons respond to the hand: pressed = slight scale (addendum, pointer response). */
+button:active:not(:disabled),
+a.btn:active {
+  transform: scale(0.98);
 }
 
-/* Eyebrow label — quiet ocean, small. Used sparingly, not as default hierarchy. */
+[hidden] {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Editorial type grammar ─────────────────────────────────────────────── */
+
 .eyebrow,
 .overline {
   display: block;
-  font-family: var(--font-rounded);
-  font-size: 12px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-family: var(--ui);
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--accent);
-  margin: 0 0 var(--space-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-/* Navy-opacity text utilities — the whole hierarchy, one hue. */
+.section-head {
+  margin: 4px 0 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 18px;
+}
+.section-head h1,
+.page-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(42px, 6vw, 82px);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+.section-head > p:last-child,
+.section-head__copy {
+  max-width: 520px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.section-title {
+  margin: 0 0 12px;
+  font-family: var(--display);
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-weight: 600;
+}
+
+/* Hero (Home greeting, Login): oversized head, serif-italic accent line. */
+.hero {
+  padding: clamp(20px, 4vw, 44px) 0 8px;
+}
+.hero h1 {
+  max-width: 1080px;
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(44px, 7vw, 96px);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  font-weight: 600;
+}
+.hero h1 .hero__accent {
+  display: block;
+  margin-left: 6vw;
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-weight: 420;
+  font-style: italic;
+  letter-spacing: -0.02em;
+}
+.hero-copy {
+  max-width: 650px;
+  margin: 18px 0 0 6vw;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+/* Reading serif — Experiences post bodies. */
+.reading {
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: 19px;
+  line-height: 1.62;
+}
+
+/* Muted-ink utilities kept from the old grammar (many screens use them). */
 .text-2 {
-  color: var(--text-2);
+  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
 }
 .text-3,
 .caption,
 .muted {
-  color: var(--text-3);
+  color: var(--muted);
 }
 .caption {
   font-size: 13px;
   line-height: 1.4;
 }
 .text-4 {
-  color: var(--text-4);
+  color: color-mix(in srgb, var(--muted) 80%, var(--surface));
   font-size: 13px;
   line-height: 1.4;
 }
+:root[data-surface="night"] .text-4 {
+  color: color-mix(in srgb, var(--muted) 84%, var(--surface));
+}
 .empty {
-  color: var(--text-3);
+  color: var(--muted);
   text-align: center;
-  padding: var(--space-xl);
+  padding: 24px;
 }
 
-/* Layout primitives. */
-.container {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: var(--space-xl) var(--page-h) var(--space-3xl);
-}
+/* ── Layout primitives ──────────────────────────────────────────────────── */
+
 .stack {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-section, 14px);
+  gap: 16px;
 }
 .fullscreen-note {
   min-height: 60vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-3);
+  color: var(--muted);
 }
 
+/* Hairline-divided stat strip (Home, Mine). */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.stat {
+  min-height: 108px;
+  padding: 20px 20px;
+  border-right: 1px solid var(--line);
+  min-width: 0;
+}
+.stat:last-child {
+  border-right: 0;
+}
+.stat strong {
+  display: block;
+  font-family: var(--display);
+  font-size: clamp(28px, 4vw, 50px);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.stat span {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Numbered action-card grid (Home). */
+.action-grid {
+  margin: 8px 0;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+.action-card {
+  min-height: 280px;
+  padding: 26px;
+  display: grid;
+  grid-template-rows: 22px minmax(80px, auto) minmax(56px, 1fr) 46px;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--card);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+.action-card:hover {
+  text-decoration: none;
+}
+.action-card.primary {
+  background: var(--ink);
+  color: var(--surface);
+}
+.card-index {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.primary .card-index,
+.primary .card-copy {
+  color: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+.card-title {
+  align-self: end;
+  font-family: var(--display);
+  font-size: clamp(30px, 3.4vw, 48px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+.card-copy {
+  margin: 0;
+  align-self: start;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.action-cta {
+  justify-self: start;
+  align-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid currentColor;
+  border-radius: 99px;
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+}
+.primary .action-cta {
+  border: 0;
+  background: var(--glacier);
+  color: #15181a;
+}
+
+/* Hairline list rows (History, entities, Mine, Settings rows). */
+.hairline-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── Motion kit — shared keyframes & scroll-reveal states ───────────────── */
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes sweep {
+  0%,
+  62% {
+    transform: translateX(-130%) skewX(-14deg);
+  }
+  88%,
+  100% {
+    transform: translateX(230%) skewX(-14deg);
+  }
+}
+
+/* Route-level settle: every view change eases up into place. */
+.view {
+  animation: settle 0.46s var(--ease) both;
+}
+
+/* Staggered entrances: index-based delay, capped at 8 (set by markup). */
+.stagger {
+  animation: rise-in 0.5s var(--ease) both;
+  animation-delay: calc(min(var(--i, 0), 8) * 40ms);
+}
+
+/* Scroll-linked reveal (IntersectionObserver adds .is-in; re-armed per route). */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity var(--dur-slow) var(--ease),
+    transform var(--dur-slow) var(--ease);
+  transition-delay: calc(min(var(--i, 0), 8) * 40ms);
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Ambient light sweep across hero display type (60s+ loop, barely there). */
+.sweep-host {
+  position: relative;
+  overflow: hidden;
+}
+.sweep-host::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    color-mix(in srgb, var(--surface-solid) 62%, transparent) 50%,
+    transparent
+  );
+  pointer-events: none;
+  animation: sweep 64s linear infinite;
+  will-change: transform;
+}
+
+/* Subtle whole-viewport parallax: the shell writes the transform directly
+   (see useAmbientMotion) — no :root custom property, no full-page recalc. */
+.parallax-slow,
+.parallax-faint {
+  display: inline-block;
+  will-change: transform;
+}
+
+/* The kill rule: every animation and transition collapses. */
 @media (prefers-reduced-motion: reduce) {
   *,
-  ::before,
-  ::after {
-    animation-duration: 0.01ms !important;
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
     scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .sweep-host::after {
+    display: none;
+  }
+  .parallax-slow,
+  .parallax-faint {
+    transform: none;
   }
 }

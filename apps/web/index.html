@@ -3,8 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#f2faff" />
+    <meta name="theme-color" content="#edf0f1" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <title>HOney</title>
+    <script>
+      // Theme boot — runs before first paint so the chosen surface / ui-font
+      // never flash. Mirrors src/lib/theme.ts (the runtime source of truth).
+      (function () {
+        try {
+          var surfaces = { stone: 1, white: 1, mist: 1, night: 1 };
+          var fonts = { grotesk: 1, neutral: 1, editorial: 1 };
+          var s = localStorage.getItem("honey.theme.surface");
+          var f = localStorage.getItem("honey.theme.uiFont");
+          var root = document.documentElement;
+          root.dataset.surface = surfaces[s] ? s : "stone";
+          root.dataset.uiFont = fonts[f] ? f : "grotesk";
+          var colors = { stone: "#edf0f1", white: "#ffffff", mist: "#e7eeec", night: "#14171a" };
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", colors[root.dataset.surface] || colors.stone);
+        } catch (e) {
+          /* private mode etc. — defaults apply */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

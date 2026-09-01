@@ -1,65 +1,59 @@
 /*
- * Features — screen compositions. Each screen has its own signature; cards are
- * used only for genuine self-contained objects, and privacy/technical language
- * is never the headline (audit §7.4, §5.3).
+ * Features — per-screen compositions in the new editorial grammar: oversized
+ * section heads, hairline-divided rows and stat strips, numbered action
+ * cards, serif reading bodies for Experiences, and the restyled Day canvas.
  */
 
-/* ── Login — "one calm doorway" ─────────────────────────────────────────── */
+/* ── Login — one calm doorway, editorial ────────────────────────────────── */
 .login {
-  min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   align-items: center;
-  padding: var(--space-2xl) var(--space-xl);
-  /* Login has its own quiet background, off the navy/gradient system. */
-  background: linear-gradient(180deg, #ffffff 0%, rgba(237, 247, 255, 0.62) 100%);
+  padding: 32px 24px;
 }
 .login__doorway {
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   margin: 0 auto;
+  animation: settle 0.5s var(--ease) both;
 }
 .login__mark {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-hero);
-  /* Legacy login mark (HOneyLoginMark): ocean@0.96 -> #85DBD4, white@0.7 hairline. */
-  background: linear-gradient(135deg, rgba(var(--ocean), 0.96) 0%, #85dbd4 100%);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  color: #fff;
-  font-family: var(--font-serif);
-  font-size: 24px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--glacier);
+  color: #15181a;
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: 22px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--space-md);
+  margin-bottom: 14px;
 }
 .login__wordmark {
-  font-family: var(--font-serif);
-  font-size: 38px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--text-1);
-  margin: 0 0 var(--space-sm);
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: clamp(44px, 9vw, 56px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-weight: 550;
+  color: var(--ink);
+  margin: 0 0 10px;
 }
 .login__tagline {
-  font-family: var(--font-rounded);
   font-size: 17px;
-  color: var(--text-2);
-  margin: 0 0 var(--space-xl);
+  line-height: 1.45;
+  margin: 0 0 24px;
 }
 .login__fields {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 8px;
 }
-/* Login fields are deliberately opaque white with a black hairline,
-   17px type in 48px controls (legacy loginFieldStyle, verbatim). */
 .login .input {
   font-size: 17px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
   min-height: 48px;
 }
 .login .btn {
@@ -67,78 +61,69 @@
   min-height: 48px;
 }
 .login .field {
-  margin-bottom: var(--space-sm);
+  margin-bottom: 8px;
 }
 .login__footnote {
   display: block;
-  margin-top: var(--space-lg);
+  margin-top: 16px;
 }
 .login__consent {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 12px;
 }
 .placeholder {
-  max-width: 360px;
+  max-width: 380px;
   text-align: center;
-  padding: var(--space-2xl) var(--space-xl);
+  padding: 32px 24px;
 }
 
-/* ── Home — "today at a glance" ─────────────────────────────────────────── */
+/* ── Home — greeting hero, stat strip, wash card, action grid ───────────── */
 .home-greeting {
-  border-radius: var(--radius-hero);
-  /* Legacy header card: accent-wash gradient, accent@0.28 stroke. */
-  border: 1px solid rgba(var(--ocean), 0.28);
-  background: linear-gradient(135deg, var(--accent-wash) 0%, var(--mist) 70%);
-  padding: 15px 16px;
-}
-.home-greeting__hi {
-  font-family: var(--font-rounded);
-  font-size: 28px;
-  line-height: 1.15;
-  font-weight: 700;
-  color: var(--text-1);
-  margin: 0;
+  padding: clamp(14px, 3vw, 30px) 0 6px;
 }
 .home-greeting__sub {
-  margin: var(--space-xs) 0 0;
+  margin: 14px 0 0 6vw;
 }
 
-/* Next lesson — the visual centre of Home. */
+/* Next / current lesson — surface-solid card with the animated progress wash. */
 .nextlesson {
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-hero);
 }
-/* Legacy HomeLessonSummaryCard: when a lesson is running, an ocean@0.67 wash
-   fills left-to-right with elapsed progress. */
 .nextlesson__wash {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
-  background: rgba(var(--ocean), 0.67);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   pointer-events: none;
+  transition: width 1s var(--ease);
+  animation: pulse-soft 5.5s ease-in-out infinite; /* ambient: the wash breathes */
 }
 .nextlesson > :not(.nextlesson__wash) {
   position: relative;
 }
 .nextlesson__state {
   display: inline-block;
-  font-family: var(--font-rounded);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--accent);
-  background: var(--accent-chip);
-  border-radius: var(--radius-pill);
-  padding: 3px var(--space-md);
-  margin-bottom: var(--space-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #15181a;
+  background: var(--glacier);
+  border-radius: 99px;
+  padding: 4px 12px;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
 }
 .nextlesson__subject {
-  font-family: var(--font-rounded);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-1);
+  font-family: var(--display);
+  font-size: clamp(26px, 4vw, 40px);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-weight: 600;
+  margin: 4px 0 2px;
 }
 .home-exp-list {
   list-style: none;
@@ -149,55 +134,48 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-sm) 0;
-}
-.home-exp-row + .home-exp-row {
+  padding: 12px 0;
   border-top: 1px solid var(--line);
 }
+.home-exp-row:first-child {
+  border-top: 0;
+}
 .home-exp-row__body {
-  color: var(--text-2);
+  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: 16px;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.row-link {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: var(--text-2);
-  font-weight: 500;
-  transition: background-color var(--dur) var(--ease);
-}
-.row-link:hover {
-  text-decoration: none;
-  color: var(--accent);
-}
 
-/* ── Timetable — the signature Day view (legacy DayTimelineView, verbatim):
-   09:00-20:00 canvas, 38px sky exam strip, pastel period bands, green break
-   bands with a leaf glyph, "P3 · Free" ghost labels, red now-line. ─────── */
+/* ── Timetable — the Day canvas, restyled: surface-solid bands, hairline
+   grid, accent exam strip, danger now-line, ink lesson blocks. ─────────── */
 .schedule-header {
-  font-family: var(--font-rounded);
-  font-size: 23px;
-  line-height: 1.15;
-  font-weight: 700;
-  color: var(--text-1);
-  margin: 0 0 var(--space-lg);
+  font-family: var(--display);
+  font-size: clamp(28px, 4.4vw, 46px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  margin: 0 0 16px;
 }
 .daynav {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 7px;
   flex-wrap: wrap;
-  margin-bottom: var(--space-lg);
+  margin-bottom: 16px;
 }
 .daynav__spacer {
   flex: 1;
 }
 .daynav .input {
-  flex: 0 1 150px;
+  flex: 0 1 160px;
   min-width: 0;
+  border-radius: 99px;
 }
 
 .timeline {
@@ -216,15 +194,15 @@
   top: 12px;
   right: 0;
   font-size: 11px;
-  font-weight: 500;
-  color: rgba(var(--navy), 0.38);
+  font-weight: 600;
+  color: var(--muted);
 }
 .timeline__hour {
   position: absolute;
   right: 0;
   font-size: 12px;
-  font-weight: 500;
-  color: rgba(var(--navy), 0.46);
+  font-weight: 600;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
@@ -232,11 +210,12 @@
   position: relative;
   flex: 1;
   min-width: 0;
-  background: var(--surface-canvas);
-  border-radius: var(--radius);
+  background: var(--surface-solid);
+  border: 1px solid var(--line);
+  border-radius: 18px;
   overflow: hidden;
 }
-/* 38px sky exam strip on top of the canvas. */
+/* The exam strip: 38px, quiet accent tint. */
 .timeline__examstrip {
   position: absolute;
   top: 0;
@@ -246,18 +225,18 @@
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: var(--gap-row);
-  padding: 0 10px;
-  background: rgba(184, 224, 255, 0.2); /* sky@0.20 */
-  border-bottom: 1px solid rgba(204, 224, 242, 0.75);
+  gap: 8px;
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-bottom: 1px solid var(--line);
   font-size: 12px;
   font-weight: 700;
-  color: var(--text-1);
+  color: var(--ink);
 }
 .timeline__examstrip--empty {
-  background: rgba(184, 224, 255, 0.08); /* sky@0.08 */
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
   font-weight: 500;
-  color: rgba(var(--navy), 0.46);
+  color: var(--muted);
 }
 .timeline__examstrip svg {
   width: 14px;
@@ -265,32 +244,29 @@
   flex: none;
   color: var(--accent);
 }
-/* Pastel period bands (blue alternating; green Lunch/Dinner breaks),
-   each with a 2px navy@0.10 top edge. */
+/* Bands: alternating surface-solid / soft; breaks get the accent's quietest tint. */
 .timeline__band {
   position: absolute;
   left: 0;
   right: 0;
-  border-top: 2px solid rgba(var(--navy), 0.1);
+  border-top: 1px solid var(--line);
 }
 .timeline__band--even {
-  background: var(--band-period-even);
+  background: var(--soft);
 }
 .timeline__band--odd {
-  background: var(--band-period-odd);
+  background: transparent;
 }
 .timeline__band--break {
-  background: var(--band-break);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
 }
-/* Hour gridlines. */
 .timeline__gridline {
   position: absolute;
   left: 0;
   right: 0;
   height: 1px;
-  background: rgba(204, 224, 242, 0.7); /* line@0.70 */
+  background: color-mix(in srgb, var(--line) 55%, transparent);
 }
-/* "P3 · Free" ghost labels on empty periods; leaf labels on breaks. */
 .timeline__ghost {
   position: absolute;
   left: 0;
@@ -299,29 +275,31 @@
   align-items: center;
   gap: 6px;
   padding: 0 12px;
-  font-size: 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   line-height: 1;
   pointer-events: none;
 }
 .timeline__ghost-period {
   font-weight: 700;
-  color: rgba(var(--ocean), 0.82);
+  color: var(--accent);
 }
 .timeline__ghost-free {
   font-weight: 500;
-  color: rgba(var(--navy), 0.42);
+  color: var(--muted);
 }
 .timeline__ghost-break {
   font-weight: 600;
-  color: rgba(var(--navy), 0.5);
+  color: var(--muted);
 }
 .timeline__ghost svg {
   width: 11px;
   height: 11px;
   flex: none;
-  color: var(--leaf-green);
+  color: var(--accent);
 }
-/* The red now-line: 7px dot + 1.5px rule. */
+/* The now-line: danger rule + a gently pulsing dot (ambient life). */
 .timeline__now {
   position: absolute;
   left: 0;
@@ -336,44 +314,45 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--now-line);
+  background: var(--danger);
   flex: none;
+  animation: pulse-soft 2.4s ease-in-out infinite;
 }
 .timeline__now::after {
   content: "";
   flex: 1;
   height: 1.5px;
-  background: var(--now-line);
+  background: var(--danger);
 }
-/* A lesson block sits on its band: 3px ocean bar, subject + room, meta. */
+/* Lesson blocks: ink cards on the canvas. */
 .lesson-block {
   position: absolute;
   left: 10px;
-  right: 6px;
+  right: 8px;
   z-index: 2;
   display: flex;
   align-items: stretch;
-  gap: 7px;
   min-height: 20px;
-  padding: 0 8px 0 6px;
+  padding: 0 10px;
   border: none;
-  border-radius: var(--radius);
-  background: none;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--surface);
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  transition: background-color var(--dur) var(--ease);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 }
 .lesson-block:hover {
-  background: rgba(255, 255, 255, 0.55);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
 }
-.lesson-block::before {
-  content: "";
-  flex: none;
-  width: 3px;
-  margin: 3px 0;
-  border-radius: 2px;
-  background: var(--accent);
+:root[data-surface="night"] .lesson-block {
+  background: var(--surface-solid);
+  color: var(--ink);
+  border: 1px solid var(--line);
 }
 .lesson-block__body {
   flex: 1;
@@ -381,23 +360,22 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 4px 0;
+  padding: 5px 0;
 }
 .lesson-block--compact .lesson-block__body {
   gap: 0;
-  padding: 1px 0;
+  padding: 2px 0;
   line-height: 1.05;
 }
 .lesson-block__row {
   display: flex;
   align-items: baseline;
-  gap: var(--gap-row);
+  gap: 8px;
   min-width: 0;
 }
 .lesson-block__subject {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -407,29 +385,28 @@
 }
 .lesson-block__room {
   margin-left: auto;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--text-2);
+  opacity: 0.75;
   white-space: nowrap;
 }
 .lesson-block--compact .lesson-block__room {
-  font-size: 12px;
+  font-size: 11px;
 }
 .lesson-block__meta {
-  font-size: 12px;
-  color: var(--text-3);
+  font-size: 11px;
+  opacity: 0.66;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
 .lesson-block--compact .lesson-block__meta {
-  font-size: 11px;
+  font-size: 10px;
 }
 .lesson-block__meta strong {
   font-weight: 600;
 }
-/* Quiet centered note when a day has no lessons (the canvas stays). */
 .timeline__empty {
   position: absolute;
   inset: 38px 0 0;
@@ -441,7 +418,7 @@
   gap: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(var(--navy), 0.58);
+  color: var(--muted);
   pointer-events: none;
 }
 .timeline__empty svg {
@@ -455,85 +432,85 @@
   margin: 0;
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: var(--space-xs) var(--space-lg);
+  gap: 6px 16px;
 }
 .kv dt {
   font-size: 13px;
-  color: var(--text-3);
+  color: var(--muted);
   align-self: center;
 }
 .kv dd {
   margin: 0;
-  color: var(--text-1);
+  color: var(--ink);
 }
 
-/* ── History ────────────────────────────────────────────────────────────── */
+/* ── History — hairline rows under month eyebrows ───────────────────────── */
 .filters {
   display: flex;
-  gap: var(--space-sm);
+  gap: 7px;
   flex-wrap: wrap;
-  margin-bottom: var(--space-lg);
+  margin-bottom: 20px;
 }
 .filters .input {
   flex: 1;
   min-width: 160px;
+  border-radius: 99px;
 }
 .month-group {
-  margin-bottom: var(--space-xl);
+  margin-bottom: 26px;
 }
 .month-group__label {
-  font-family: var(--font-rounded);
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 700;
-  color: var(--text-3);
-  margin: 0 0 var(--space-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 .month-group__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--surface-card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
 }
 .history-row {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
-  padding: var(--space-md) var(--space-lg);
-}
-.history-row + .history-row {
+  gap: 16px;
+  min-height: 60px;
+  padding: 10px 0;
   border-top: 1px solid var(--line);
 }
 .history-row__date {
   width: 92px;
   flex-shrink: 0;
-  font-size: 13px;
-  color: var(--text-3);
+  font-size: 12px;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 .history-row__body {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+.history-row__body > span:first-child {
+  font-weight: 600;
+}
 
-/* ── Experiences — "a shared memory, read slowly" ──────────────────────── */
+/* ── Experiences ────────────────────────────────────────────────────────── */
 .page-head {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: var(--space-lg);
+  gap: 16px;
   flex-wrap: wrap;
-}
-.page-head .page-title {
-  margin-bottom: 0;
+  margin: 4px 0 10px;
 }
 .browse-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
 }
 .entity-list {
   list-style: none;
@@ -546,54 +523,66 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-md);
-  padding: var(--space-sm) 0;
-  color: var(--text-1);
-  border-bottom: 1px solid var(--line);
+  gap: 12px;
+  min-height: 48px;
+  padding: 9px 0;
+  color: var(--ink);
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+  transition: color var(--dur-fast) var(--ease);
 }
-.entity-list li:last-child .entity-row {
-  border-bottom: none;
+.entity-list li:first-child .entity-row {
+  border-top: 0;
 }
 .entity-row:hover {
   text-decoration: none;
   color: var(--accent);
 }
+.entity-row .caption {
+  font-weight: 400;
+}
 
-/* Post card — text and context lead. */
+/* Post card — padded card, serif reading body. */
 .exp-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 10px;
+  padding: clamp(22px, 3vw, 34px);
+  border-radius: 18px;
 }
 .exp-card__meta {
   display: flex;
   align-items: baseline;
-  gap: var(--space-md);
+  gap: 12px;
   flex-wrap: wrap;
 }
 .exp-card__provenance {
-  font-family: var(--font-rounded);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
-  color: var(--text-4);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 .exp-card__context {
-  margin-top: calc(-1 * var(--space-xs));
-  color: var(--text-3);
+  margin-top: -4px;
 }
 .exp-card__body {
   margin: 0;
-  color: var(--text-1);
-  font-size: 16px;
-  line-height: 1.5;
+  color: var(--ink);
+  font-family: var(--reading);
+  font-optical-sizing: auto;
+  font-size: 18px;
+  line-height: 1.62;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .exp-card__actions {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 7px;
   flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 .exp-card__spacer {
   flex: 1;
@@ -611,76 +600,83 @@
 .report-options {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  margin: var(--space-md) 0;
+  gap: 8px;
+  margin: 12px 0;
 }
 .report-option {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-sm);
+  gap: 8px;
   cursor: pointer;
-  color: var(--text-2);
+  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
 }
 .report-option input {
   accent-color: var(--accent);
   margin-top: 4px;
 }
 
-/* Composer — "record first, publish deliberately". */
+/* Composer. */
 .compose-target {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-md) 0;
+  gap: 4px;
+  padding: 14px 0;
   border-bottom: 1px solid var(--line);
 }
 .compose-target__label {
-  font-family: var(--font-rounded);
-  font-size: 18px;
-  color: var(--text-1);
+  font-family: var(--display);
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -0.03em;
+  color: var(--ink);
 }
 .compose-textarea {
   resize: vertical;
-  min-height: 140px;
-  line-height: 1.5;
+  min-height: 160px;
+  line-height: 1.55;
+  border-radius: 14px;
 }
 .compose-actions {
   display: flex;
-  gap: var(--space-sm);
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: var(--space-md);
+  margin-top: 12px;
   align-items: center;
 }
 .compose-hint {
   font-style: italic;
+  font-family: var(--reading);
+  font-optical-sizing: auto;
 }
 .compose-reasons {
-  margin: var(--space-sm) 0 var(--space-sm);
-  padding-left: var(--space-lg);
+  margin: 8px 0;
+  padding-left: 16px;
   color: inherit;
 }
 .compose-reasons li {
   margin: 2px 0;
 }
 .nudge {
-  border-color: rgba(var(--ocean), 0.3);
-  background: var(--surface-canvas);
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+  animation: rise-in var(--dur) var(--ease) both;
 }
 
 /* ── Settings ───────────────────────────────────────────────────────────── */
 .settings-section {
-  margin-bottom: var(--space-lg);
+  margin-bottom: 4px;
 }
 .setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-lg);
+  gap: 16px;
   flex-wrap: wrap;
-  padding: var(--space-md) 0;
-}
-.setting-row + .setting-row {
+  padding: 14px 0;
   border-top: 1px solid var(--line);
+}
+.settings-section .setting-row:first-of-type {
+  border-top: 0;
 }
 .setting-row__main {
   flex: 1;
@@ -689,30 +685,68 @@
   flex-direction: column;
   gap: 2px;
 }
+.setting-row__main > span:first-child {
+  font-weight: 600;
+}
 .privacy-list {
-  margin: 0 0 var(--space-md);
-  padding-left: var(--space-xl);
+  margin: 0 0 12px;
+  padding-left: 22px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  color: var(--text-2);
+  gap: 8px;
 }
 .orphan-keys {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-/* ── Mobile pass (checked at 320 / 375 / 430) — the top nav is gone here
-   (bottom tab bar shell); everything fits inside the 18px gutters with no
-   horizontal overflow. ─────────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .page-title {
-    font-size: 24px;
+/* ── Mobile pass (320 / 375 / 430) ──────────────────────────────────────── */
+@media (max-width: 960px) {
+  .action-grid {
+    grid-template-columns: 1fr 1fr;
   }
-  .home-greeting__hi {
-    font-size: 26px;
+  .action-card.primary {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero h1 {
+    font-size: clamp(38px, 13vw, 56px);
+  }
+  .hero h1 .hero__accent,
+  .hero-copy,
+  .home-greeting__sub {
+    margin-left: 18px;
+  }
+  .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .section-head h1,
+  .page-title {
+    font-size: clamp(34px, 11vw, 44px);
+  }
+  .stat {
+    min-height: 96px;
+    padding: 16px 10px;
+  }
+  .stat strong {
+    font-size: clamp(24px, 7.4vw, 30px);
+  }
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+  .action-card.primary {
+    grid-column: auto;
+  }
+  .action-card {
+    min-height: 240px;
+    padding: 22px;
+    grid-template-rows: 20px minmax(64px, auto) minmax(48px, 1fr) 44px;
   }
 
   /* History: search full-width, the two filters share a row. */
@@ -727,14 +761,13 @@
     grid-column: 1 / -1;
   }
   .history-row {
-    gap: var(--space-md);
-    padding: var(--space-md);
+    gap: 12px;
   }
   .history-row__date {
     width: 72px;
   }
 
-  /* Timetable: tighter hours gutter, day picker takes the free row space. */
+  /* Timetable: tighter hours gutter; day picker takes the free row space. */
   .timeline {
     height: 620px;
   }
@@ -757,8 +790,7 @@
     width: 100%;
   }
 
-  /* Nudge / cooldown panels present as bottom sheets (same DOM, repositioned
-     above the tab bar, safe-area padded). */
+  /* Nudge / cooldown panels present as slide-up bottom sheets. */
   .nudge {
     position: fixed;
     left: 0;
@@ -766,26 +798,23 @@
     bottom: 0;
     z-index: 60;
     margin: 0;
-    max-height: 80vh;
     max-height: 80dvh;
     overflow: auto;
-    border-radius: var(--radius-hero) var(--radius-hero) 0 0;
+    border-radius: 20px 20px 0 0;
     border-left: none;
     border-right: none;
     border-bottom: none;
-    background: var(--surface-overlay);
-    padding: var(--space-lg) var(--page-h) calc(var(--space-lg) + env(safe-area-inset-bottom));
+    background: var(--surface-solid);
+    padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+    animation: sheet-up 0.42s var(--ease) both;
   }
 
   /* Experiences: thumb-friendly rows and full-width hub CTA. */
-  .entity-row {
-    min-height: 44px;
-  }
   .page-head .btn {
     width: 100%;
   }
-  .exp-card__actions .react-btn {
-    min-height: 44px;
+  .exp-card {
+    padding: 20px 16px;
   }
 }
 

@@ -2,36 +2,55 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
-import { formatDayBucket, formatTime, isStale, timeAgo } from "../lib/format";
+import { formatDayBucket, formatTime, isStale, timeAgo, todayIsoDate } from "../lib/format";
+import { Reveal, useCountUp, useNowTick } from "../lib/motion";
 import { provenanceLabel, useFromYourClasses } from "./experiences/shared";
 
 export function HomePage() {
   const { me } = useAuth();
   const { data, error, loading } = useApi(() => api.nextLesson(), []);
+  const today = useApi(() => api.timetable(todayIsoDate()), []);
   const fromClasses = useFromYourClasses(30);
+  const now = useNowTick(1000);
+
+  // Stat-strip count-ups (hooks stay above the early return).
+  const lessonsToday = useCountUp(today.data ? today.data.lessons.length : null);
+  const fromClassesCount = useCountUp(
+    fromClasses.experiences ? fromClasses.experiences.length : null,
+  );
+
   if (!me) return null;
 
   const next = data?.nextLesson ?? null;
   const lastSyncedAt = data?.lastSyncedAt ?? null;
-  // Legacy HomeLessonSummaryCard: a running lesson fills the card with an
-  // ocean@0.67 wash, left-to-right, proportional to elapsed time.
+  // Legacy HomeLessonSummaryCard behavior kept: a running lesson fills the
+  // card with an accent wash, left-to-right, proportional to elapsed time.
   const progress =
     next && next.temporalState === "now"
-      ? Math.min(1, Math.max(0, (Date.now() - next.startsAt) / Math.max(1, next.endsAt - next.startsAt)))
+      ? Math.min(1, Math.max(0, (now - next.startsAt) / Math.max(1, next.endsAt - next.startsAt)))
+      : null;
+
+  // Live countdown to the next lesson (ticks with the clock).
+  const minutesToNext =
+    next && next.temporalState !== "now"
+      ? Math.max(0, Math.ceil((next.startsAt - now) / 60_000))
       : null;
 
   return (
     <div className="stack">
-      <header className="home-greeting">
-        <h1 className="home-greeting__hi">Hi, {me.displayName}</h1>
-        <p className="home-greeting__sub text-3">
+      <header className="hero home-greeting">
+        <h1 className="sweep-host">
+          <span className="parallax-faint">Hi,</span>
+          <span className="hero__accent parallax-slow">{me.displayName}</span>
+        </h1>
+        <p className="home-greeting__sub hero-copy">
           {lastSyncedAt && isStale(lastSyncedAt)
             ? `Last synced ${timeAgo(lastSyncedAt)}`
             : "Here's your day."}
         </p>
       </header>
 
-      <section className="card card--hero nextlesson" aria-label="Next lesson">
+      <Reveal as="section" className="card card--hero nextlesson" aria-label="Next lesson">
         {progress !== null && (
           <div
             className="nextlesson__wash"
@@ -49,7 +68,9 @@ export function HomePage() {
         ) : next ? (
           <>
             <span className="nextlesson__state">
-              {next.temporalState === "now" ? "Now" : `in ${next.minutesUntilStart} min`}
+              {next.temporalState === "now"
+                ? "Now"
+                : `in ${minutesToNext ?? next.minutesUntilStart} min`}
             </span>
             <div className="nextlesson__subject">{next.subjectName}</div>
             <p className="muted">
@@ -64,9 +85,71 @@ export function HomePage() {
         ) : (
           <p className="empty">No more lessons today</p>
         )}
-      </section>
+      </Reveal>
 
-      <section className="card" aria-label="Experiences">
+      <Reveal as="section" index={1} className="stat-strip" aria-label="Today in numbers">
+        <div className="stat">
+          <strong>{today.loading ? "…" : (lessonsToday ?? "—")}</strong>
+          <span>Lessons today</span>
+        </div>
+        <div className="stat">
+          <strong>
+            {loading
+              ? "…"
+              : next
+                ? next.temporalState === "now"
+                  ? "Now"
+                  : `${minutesToNext ?? next.minutesUntilStart}′`
+                : "—"}
+          </strong>
+          <span>{next && next.temporalState === "now" ? "Lesson running" : "Until next lesson"}</span>
+        </div>
+        <div className="stat">
+          <strong>{fromClasses.loading ? "…" : (fromClassesCount ?? "—")}</strong>
+          <span>Recent posts from your classes</span>
+        </div>
+      </Reveal>
+
+      {/* Numbered action cards — the hub, the day, the school portal. */}
+      <div className="action-grid">
+        <Reveal as="section" index={2} className="action-card primary glow" aria-label="Experiences">
+          <span className="card-index">01 · Community</span>
+          <span className="card-title">Experiences</span>
+          <p className="card-copy">A shared memory of lessons, teachers, places and food.</p>
+          <span>
+            <Link className="action-cta" to="/experiences/compose">
+              Share an experience
+            </Link>
+          </span>
+        </Reveal>
+        <Reveal as="section" index={3} className="action-card glow" aria-label="Timetable">
+          <span className="card-index">02 · Schedule</span>
+          <span className="card-title">Timetable</span>
+          <p className="card-copy">Your day, drawn to scale on the Day canvas.</p>
+          <span>
+            <Link className="action-cta" to="/timetable">
+              Open timetable
+            </Link>
+          </span>
+        </Reveal>
+        <Reveal as="section" index={4} className="action-card glow" aria-label="School Portal">
+          <span className="card-index">03 · School</span>
+          <span className="card-title">School Portal</span>
+          <p className="card-copy">The official school site, one hop away.</p>
+          <span>
+            <a
+              className="action-cta"
+              href="https://www.huayaopudong.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              School Portal <span aria-hidden="true">&#8599;</span>
+            </a>
+          </span>
+        </Reveal>
+      </div>
+
+      <Reveal as="section" index={5} className="card" aria-label="Experiences">
         <span className="eyebrow">From your classes</span>
         {fromClasses.loading ? (
           <p className="muted">Loading…</p>
@@ -98,17 +181,7 @@ export function HomePage() {
             Browse Experiences
           </Link>
         </div>
-      </section>
-
-      <a
-        className="card row-link"
-        href="https://www.huayaopudong.com"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span>School Portal</span>
-        <span aria-hidden="true">&#8599;</span>
-      </a>
+      </Reveal>
     </div>
   );
 }

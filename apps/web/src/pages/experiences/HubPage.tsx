@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, EntityType } from "../../api/types";
 import { useApi } from "../../lib/useApi";
+import { Reveal } from "../../lib/motion";
 import { ExperienceCard, entityPath, useFromYourClasses, useNames } from "./shared";
 
 const SECTION_META: { type: EntityType; label: string }[] = [
@@ -40,12 +41,10 @@ export function ExperiencesHubPage() {
 
   return (
     <div className="stack">
-      <header className="page-head">
+      <header className="section-head">
         <div>
           <span className="eyebrow">Experiences</span>
-          <h1 className="page-title" style={{ marginBottom: 0 }}>
-            A shared memory, read slowly
-          </h1>
+          <h1 className="page-title">A shared memory, read slowly</h1>
         </div>
         <Link className="btn btn--primary" to="/experiences/compose">
           Share an experience
@@ -57,7 +56,7 @@ export function ExperiencesHubPage() {
       </div>
 
       <input
-        className="input"
+        className="search-box"
         type="search"
         placeholder="Search teachers, places and food by name…"
         aria-label="Search entities by name"
@@ -86,8 +85,8 @@ export function ExperiencesHubPage() {
         <>
           {entities.error && <div className="banner banner--danger">{entities.error}</div>}
           <div className="browse-grid">
-            {SECTION_META.map(({ type, label }) => (
-              <section className="card" key={type} aria-label={label}>
+            {SECTION_META.map(({ type, label }, sectionIndex) => (
+              <Reveal as="section" index={sectionIndex} className="card lift" key={type} aria-label={label}>
                 <h2 className="overline">{label}</h2>
                 {entities.loading ? (
                   <p className="muted">Loading…</p>
@@ -105,13 +104,13 @@ export function ExperiencesHubPage() {
                     {byType[type].length - BROWSE_PREVIEW} more — use search to find the rest.
                   </p>
                 )}
-              </section>
+              </Reveal>
             ))}
           </div>
         </>
       )}
 
-      <section aria-label="From your classes">
+      <Reveal as="section" aria-label="From your classes">
         <h2 className="overline">From your classes</h2>
         <p className="caption" style={{ marginTop: 0 }}>
           Experiences involving your own teachers and courses, newest first — chronological, never
@@ -132,7 +131,7 @@ export function ExperiencesHubPage() {
             ))}
           </div>
         )}
-      </section>
+      </Reveal>
     </div>
   );
 }
