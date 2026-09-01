@@ -7,6 +7,7 @@
 /* ── Login — "one calm doorway" ─────────────────────────────────────────── */
 .login {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   padding: var(--space-2xl) var(--space-xl);
@@ -19,10 +20,12 @@
   margin: 0 auto;
 }
 .login__mark {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--sky) 100%);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-hero);
+  /* Legacy login mark (HOneyLoginMark): ocean@0.96 -> #85DBD4, white@0.7 hairline. */
+  background: linear-gradient(135deg, rgba(var(--ocean), 0.96) 0%, #85dbd4 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   color: #fff;
   font-family: var(--font-serif);
   font-size: 24px;
@@ -30,7 +33,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
 }
 .login__wordmark {
   font-family: var(--font-serif);
@@ -51,10 +54,16 @@
   flex-direction: column;
   gap: var(--space-sm);
 }
-/* Login fields are deliberately opaque white with a black hairline. */
+/* Login fields are deliberately opaque white with a black hairline,
+   17px type in 48px controls (legacy loginFieldStyle, verbatim). */
 .login .input {
+  font-size: 17px;
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.12);
+  min-height: 48px;
+}
+.login .btn {
+  font-size: 17px;
   min-height: 48px;
 }
 .login .field {
@@ -78,13 +87,15 @@
 /* ── Home — "today at a glance" ─────────────────────────────────────────── */
 .home-greeting {
   border-radius: var(--radius-hero);
-  border: 1px solid var(--line);
+  /* Legacy header card: accent-wash gradient, accent@0.28 stroke. */
+  border: 1px solid rgba(var(--ocean), 0.28);
   background: linear-gradient(135deg, var(--accent-wash) 0%, var(--mist) 70%);
-  padding: var(--space-xl);
+  padding: 15px 16px;
 }
 .home-greeting__hi {
   font-family: var(--font-rounded);
-  font-size: 24px;
+  font-size: 28px;
+  line-height: 1.15;
   font-weight: 700;
   color: var(--text-1);
   margin: 0;
@@ -95,7 +106,22 @@
 
 /* Next lesson — the visual centre of Home. */
 .nextlesson {
+  position: relative;
+  overflow: hidden;
   border-radius: var(--radius-hero);
+}
+/* Legacy HomeLessonSummaryCard: when a lesson is running, an ocean@0.67 wash
+   fills left-to-right with elapsed progress. */
+.nextlesson__wash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(var(--ocean), 0.67);
+  pointer-events: none;
+}
+.nextlesson > :not(.nextlesson__wash) {
+  position: relative;
 }
 .nextlesson__state {
   display: inline-block;
@@ -148,7 +174,17 @@
   color: var(--accent);
 }
 
-/* ── Timetable — "the rhythm of a day" (continuous rail, not cards) ─────── */
+/* ── Timetable — the signature Day view (legacy DayTimelineView, verbatim):
+   09:00-20:00 canvas, 38px sky exam strip, pastel period bands, green break
+   bands with a leaf glyph, "P3 · Free" ghost labels, red now-line. ─────── */
+.schedule-header {
+  font-family: var(--font-rounded);
+  font-size: 23px;
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 var(--space-lg);
+}
 .daynav {
   display: flex;
   align-items: center;
@@ -159,62 +195,259 @@
 .daynav__spacer {
   flex: 1;
 }
-.lesson-list {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 var(--space-sm);
-  border-left: 2px solid var(--line);
+.daynav .input {
+  flex: 0 1 150px;
+  min-width: 0;
+}
+
+.timeline {
   display: flex;
-  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  height: 656px;
 }
-.lesson-list > li {
+.timeline__hours {
   position: relative;
+  width: 50px;
+  flex: none;
 }
-.lesson-list > li::before {
-  content: "";
+.timeline__allday {
   position: absolute;
-  left: calc(-1 * var(--space-sm) - 5px);
-  top: 20px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--surface-canvas);
+  top: 12px;
+  right: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(var(--navy), 0.38);
 }
+.timeline__hour {
+  position: absolute;
+  right: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(var(--navy), 0.46);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.timeline__canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-canvas);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+/* 38px sky exam strip on top of the canvas. */
+.timeline__examstrip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-row);
+  padding: 0 10px;
+  background: rgba(184, 224, 255, 0.2); /* sky@0.20 */
+  border-bottom: 1px solid rgba(204, 224, 242, 0.75);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.timeline__examstrip--empty {
+  background: rgba(184, 224, 255, 0.08); /* sky@0.08 */
+  font-weight: 500;
+  color: rgba(var(--navy), 0.46);
+}
+.timeline__examstrip svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--accent);
+}
+/* Pastel period bands (blue alternating; green Lunch/Dinner breaks),
+   each with a 2px navy@0.10 top edge. */
+.timeline__band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px solid rgba(var(--navy), 0.1);
+}
+.timeline__band--even {
+  background: var(--band-period-even);
+}
+.timeline__band--odd {
+  background: var(--band-period-odd);
+}
+.timeline__band--break {
+  background: var(--band-break);
+}
+/* Hour gridlines. */
+.timeline__gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(204, 224, 242, 0.7); /* line@0.70 */
+}
+/* "P3 · Free" ghost labels on empty periods; leaf labels on breaks. */
+.timeline__ghost {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+}
+.timeline__ghost-period {
+  font-weight: 700;
+  color: rgba(var(--ocean), 0.82);
+}
+.timeline__ghost-free {
+  font-weight: 500;
+  color: rgba(var(--navy), 0.42);
+}
+.timeline__ghost-break {
+  font-weight: 600;
+  color: rgba(var(--navy), 0.5);
+}
+.timeline__ghost svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  color: var(--leaf-green);
+}
+/* The red now-line: 7px dot + 1.5px rule. */
+.timeline__now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+.timeline__now::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--now-line);
+  flex: none;
+}
+.timeline__now::after {
+  content: "";
+  flex: 1;
+  height: 1.5px;
+  background: var(--now-line);
+}
+/* A lesson block sits on its band: 3px ocean bar, subject + room, meta. */
 .lesson-block {
-  display: grid;
-  grid-template-columns: 60px 1fr;
-  gap: var(--space-lg);
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  padding: var(--space-md) var(--space-md);
+  position: absolute;
+  left: 10px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+  min-height: 20px;
+  padding: 0 8px 0 6px;
   border: none;
   border-radius: var(--radius);
   background: none;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
   transition: background-color var(--dur) var(--ease);
 }
 .lesson-block:hover {
-  background: var(--surface-nested);
+  background: rgba(255, 255, 255, 0.55);
 }
-.lesson-list > li + li .lesson-block {
-  border-top: 1px solid var(--line);
-}
-.lesson-block__time {
-  font-size: 13px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.35;
+.lesson-block::before {
+  content: "";
+  flex: none;
+  width: 3px;
+  margin: 3px 0;
+  border-radius: 2px;
+  background: var(--accent);
 }
 .lesson-block__body {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  padding: 4px 0;
+}
+.lesson-block--compact .lesson-block__body {
+  gap: 0;
+  padding: 1px 0;
+  line-height: 1.05;
+}
+.lesson-block__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap-row);
+  min-width: 0;
 }
 .lesson-block__subject {
-  font-family: var(--font-rounded);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lesson-block--compact .lesson-block__subject {
+  font-size: 12px;
+}
+.lesson-block__room {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.lesson-block--compact .lesson-block__room {
+  font-size: 12px;
+}
+.lesson-block__meta {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.lesson-block--compact .lesson-block__meta {
+  font-size: 11px;
+}
+.lesson-block__meta strong {
+  font-weight: 600;
+}
+/* Quiet centered note when a day has no lessons (the canvas stays). */
+.timeline__empty {
+  position: absolute;
+  inset: 38px 0 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--navy), 0.58);
+  pointer-events: none;
+}
+.timeline__empty svg {
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
 }
 
 /* Lesson detail key/value. */
@@ -411,6 +644,13 @@
   min-height: 140px;
   line-height: 1.5;
 }
+.compose-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-md);
+  align-items: center;
+}
 .compose-hint {
   font-style: italic;
 }
@@ -464,21 +704,97 @@
   flex-wrap: wrap;
 }
 
+/* ── Mobile pass (checked at 320 / 375 / 430) — the top nav is gone here
+   (bottom tab bar shell); everything fits inside the 18px gutters with no
+   horizontal overflow. ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .topnav__inner {
-    flex-wrap: wrap;
-    padding: var(--space-sm) var(--space-md);
-    gap: var(--space-sm);
-  }
-  .topnav__tabs {
-    order: 3;
-    width: 100%;
-    justify-content: space-between;
-  }
   .page-title {
     font-size: 24px;
   }
+  .home-greeting__hi {
+    font-size: 26px;
+  }
+
+  /* History: search full-width, the two filters share a row. */
+  .filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .filters .input {
+    min-width: 0;
+  }
+  .filters .input[type="search"] {
+    grid-column: 1 / -1;
+  }
+  .history-row {
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
   .history-row__date {
     width: 72px;
+  }
+
+  /* Timetable: tighter hours gutter, day picker takes the free row space. */
+  .timeline {
+    height: 620px;
+  }
+  .timeline__hours {
+    width: 44px;
+  }
+  .daynav .input {
+    flex: 1 1 130px;
+  }
+
+  /* Composer: comfortable writing + full-width actions. */
+  .compose-textarea {
+    min-height: 40vh;
+  }
+  .compose-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .compose-actions .btn {
+    width: 100%;
+  }
+
+  /* Nudge / cooldown panels present as bottom sheets (same DOM, repositioned
+     above the tab bar, safe-area padded). */
+  .nudge {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    margin: 0;
+    max-height: 80vh;
+    max-height: 80dvh;
+    overflow: auto;
+    border-radius: var(--radius-hero) var(--radius-hero) 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    background: var(--surface-overlay);
+    padding: var(--space-lg) var(--page-h) calc(var(--space-lg) + env(safe-area-inset-bottom));
+  }
+
+  /* Experiences: thumb-friendly rows and full-width hub CTA. */
+  .entity-row {
+    min-height: 44px;
+  }
+  .page-head .btn {
+    width: 100%;
+  }
+  .exp-card__actions .react-btn {
+    min-height: 44px;
+  }
+}
+
+/* The narrowest pass (320): keep the canvas usable. */
+@media (max-width: 359px) {
+  .timeline {
+    gap: 6px;
+  }
+  .lesson-block__room {
+    display: none;
   }
 }

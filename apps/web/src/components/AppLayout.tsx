@@ -4,11 +4,7 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { Me } from "../api/types";
 
-const TABS = [
-  { to: "/home", label: "Home" },
-  { to: "/experiences", label: "Experiences" },
-  { to: "/timetable", label: "Timetable" },
-];
+import { DESKTOP_TABS, MOBILE_TABS } from "./navTabs";
 
 /** Route guard + chrome for every authed page. */
 export function RequireAuth() {
@@ -41,7 +37,7 @@ function AppLayout() {
             HOney
           </Link>
           <nav className="topnav__tabs" aria-label="Primary">
-            {TABS.map((tab) => (
+            {DESKTOP_TABS.map((tab) => (
               <NavLink
                 key={tab.to}
                 to={tab.to}
@@ -59,6 +55,22 @@ function AppLayout() {
       <main className="container">
         <Outlet />
       </main>
+      {/* Mobile shell: fixed bottom tab bar, styled like the iOS TabView.
+          CSS hides it >640px and hides the top nav at <=640px. */}
+      <nav className="tabbar" aria-label="Primary">
+        {MOBILE_TABS.map((tab) => (
+          <NavLink
+            key={tab.to}
+            to={tab.to}
+            className={({ isActive }) =>
+              isActive ? "tabbar__item tabbar__item--active" : "tabbar__item"
+            }
+          >
+            {tab.icon}
+            <span>{tab.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </>
   );
 }

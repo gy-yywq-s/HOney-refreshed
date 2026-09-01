@@ -16,9 +16,22 @@ body {
 body {
   font: 400 16px/1.5 var(--font-body);
   color: var(--text-1);
-  /* The gradient is fixed behind everything and never hidden. */
-  background: var(--page-gradient) fixed;
+  /* Solid fallback only — the real gradient is the fixed layer below.
+     (background-attachment: fixed is broken on iOS Safari.) */
+  background: #f2faff;
   min-height: 100vh;
+}
+
+/* The page gradient: a fixed, full-viewport layer behind everything.
+   Never scrolls, never hidden — and works on iOS Safari, unlike
+   background-attachment: fixed. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--page-gradient);
+  pointer-events: none;
 }
 
 a {

@@ -72,4 +72,14 @@
   /* Motion: legacy ships near-motionless — keep shapes, ~0 duration. */
   --dur: 90ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Timetable Day canvas (legacy DayTimelineView / TimelineBand, verbatim). */
+  --now-line: #ff3847; /* the red current-time line */
+  --band-period-even: rgba(199, 232, 255, 0.78); /* #C7E8FF @0.78 */
+  --band-period-odd: rgba(237, 251, 255, 0.96); /* #EDFBFF @0.96 */
+  --band-break: rgba(179, 230, 196, 0.82); /* #B3E6C4 @0.82 — Lunch/Dinner */
+  --leaf-green: rgba(38, 128, 71, 0.82); /* the break leaf glyph */
+
+  /* Mobile shell: bottom tab bar (mirrors the iOS TabView). */
+  --tabbar-height: 58px;
 }

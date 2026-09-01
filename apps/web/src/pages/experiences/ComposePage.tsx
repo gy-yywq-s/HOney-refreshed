@@ -294,7 +294,7 @@ export function ExperiencesComposePage() {
               saveBusy={saveBusy}
             />
           ) : (
-            <div className="card-actions">
+            <div className="card-actions compose-actions">
               <button
                 className="btn btn--primary"
                 disabled={!canAct}
@@ -355,7 +355,7 @@ function NudgePreflight({
           ))}
         </ul>
       )}
-      <div className="card-actions">
+      <div className="card-actions compose-actions">
         <button className="btn btn--primary" disabled={busy} onClick={onPublish}>
           {busy ? "Publishing…" : "Publish as is"}
         </button>
@@ -395,7 +395,7 @@ function CooldownPanel({
         The wording reads as very heated. Nothing was stored, and your draft is safe. You can publish
         the same words after a short cooling-off window — a pause, not a rejection.
       </p>
-      <div className="card-actions">
+      <div className="card-actions compose-actions">
         <button className="btn btn--primary" disabled={!ready} onClick={onRecheck}>
           {ready ? "Publish now" : `Publish in ${formatRemaining(remaining)}`}
         </button>

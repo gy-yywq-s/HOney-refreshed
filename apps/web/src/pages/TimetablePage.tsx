@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import type { Lesson, SyncResponse } from "../api/types";
@@ -73,7 +73,7 @@ export function TimetablePage() {
         </button>
       </div>
 
-      <h1 className="page-title">{formatDayHeading(date)}</h1>
+      <h1 className="schedule-header">{formatDayHeading(date)}</h1>
 
       {syncFeedback?.kind === "error" && (
         <div className="banner banner--danger">{syncFeedback.message}</div>
@@ -107,30 +107,11 @@ export function TimetablePage() {
         <div className="banner banner--danger">{error}</div>
       ) : (
         <>
-          {!data || data.lessons.length === 0 ? (
-            <p className="card empty">No lessons on this day.</p>
-          ) : (
-            <ul className="lesson-list">
-              {data.lessons.map((lesson) => (
-                <li key={lesson.id}>
-                  <button className="lesson-block" onClick={() => setSelected(lesson)}>
-                    <span className="lesson-block__time">
-                      {formatTime(lesson.startsAt)}
-                      <br />
-                      {formatTime(lesson.endsAt)}
-                    </span>
-                    <span className="lesson-block__body">
-                      <span className="lesson-block__subject">{lesson.subjectName}</span>
-                      {lesson.topicName && <span className="muted">{lesson.topicName}</span>}
-                      <span className="caption">
-                        {[lesson.teacherName, lesson.roomName].filter(Boolean).join(" · ")}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <DayTimeline
+            date={date}
+            lessons={data?.lessons ?? []}
+            onSelect={(lesson) => setSelected(lesson)}
+          />
           {data?.lastSyncedAt && (
             <p className="caption" style={{ marginTop: "var(--space-md)" }}>
               Last synced {timeAgo(data.lastSyncedAt)}
@@ -147,6 +128,231 @@ export function TimetablePage() {
         />
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The Day timeline — a faithful port of the legacy DayTimelineView: a
+// 09:00-20:00 canvas with a 38px sky exam strip, pastel period bands
+// (green Lunch/Dinner breaks with a leaf glyph), "P3 · Free" ghost labels,
+// hour gridlines and the red now-line. Lessons are positioned by wall time.
+// ---------------------------------------------------------------------------
+
+const DAY_START = 9 * 60;
+const DAY_END = 20 * 60;
+
+interface TimelineBand {
+  id: string;
+  start: number;
+  end: number;
+  kind: "period" | "break";
+  /** Period number, or the break's label. */
+  period?: number;
+  label?: string;
+}
+
+/** Legacy TimelineBand.standard, verbatim. */
+const BANDS: TimelineBand[] = [
+  { id: "p1", start: 9 * 60, end: 10 * 60 + 30, kind: "period", period: 1 },
+  { id: "p2", start: 10 * 60 + 30, end: 12 * 60, kind: "period", period: 2 },
+  { id: "lunch", start: 12 * 60, end: 13 * 60 + 30, kind: "break", label: "Lunch Break" },
+  { id: "p3", start: 13 * 60 + 30, end: 15 * 60, kind: "period", period: 3 },
+  { id: "p4", start: 15 * 60, end: 16 * 60 + 30, kind: "period", period: 4 },
+  { id: "p5", start: 16 * 60 + 30, end: 18 * 60, kind: "period", period: 5 },
+  { id: "dinner", start: 18 * 60, end: 18 * 60 + 30, kind: "break", label: "Dinner Break" },
+  { id: "p6", start: 18 * 60 + 30, end: 20 * 60, kind: "period", period: 6 },
+];
+
+const PERIODS = BANDS.filter((b) => b.kind === "period");
+const HOUR_MARKS = Array.from({ length: 12 }, (_, i) => (9 + i) * 60);
+
+function minuteOfDay(timestamp: number): number {
+  const d = new Date(timestamp);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function clampMinute(minute: number): number {
+  return Math.min(Math.max(minute, DAY_START), DAY_END);
+}
+
+function dayFraction(minute: number): number {
+  return (clampMinute(minute) - DAY_START) / (DAY_END - DAY_START);
+}
+
+/** y for a minute, inside a canvas whose first 38px are the exam strip. */
+function topFor(minute: number, extraPx = 0): string {
+  return `calc(38px + (100% - 38px) * ${dayFraction(minute).toFixed(4)} + ${extraPx}px)`;
+}
+
+function heightBetween(startMinute: number, endMinute: number): string {
+  const f = Math.max(0, dayFraction(endMinute) - dayFraction(startMinute));
+  return `calc((100% - 38px) * ${f.toFixed(4)})`;
+}
+
+function overlapsSlot(slot: TimelineBand, start: number, end: number): boolean {
+  return start < slot.end && end > slot.start;
+}
+
+function periodLabelFor(start: number, end: number): string | null {
+  const slot = PERIODS.find((s) => overlapsSlot(s, start, end));
+  return slot ? `P${slot.period}` : null;
+}
+
+function DayTimeline({
+  date,
+  lessons,
+  onSelect,
+}: {
+  date: string;
+  lessons: Lesson[];
+  onSelect: (lesson: Lesson) => void;
+}) {
+  const isToday = date === todayIsoDate();
+  const [nowMinute, setNowMinute] = useState(() => minuteOfDay(Date.now()));
+  useEffect(() => {
+    if (!isToday) return;
+    const t = setInterval(() => setNowMinute(minuteOfDay(Date.now())), 30_000);
+    return () => clearInterval(t);
+  }, [isToday]);
+
+  const visible = lessons.filter(
+    (l) => clampMinute(minuteOfDay(l.endsAt)) > clampMinute(minuteOfDay(l.startsAt)),
+  );
+  const freeSlots = PERIODS.filter(
+    (slot) =>
+      !lessons.some((l) => overlapsSlot(slot, minuteOfDay(l.startsAt), minuteOfDay(l.endsAt))),
+  );
+  const showNow = isToday && nowMinute >= DAY_START && nowMinute <= DAY_END;
+
+  return (
+    <div className="timeline">
+      <div className="timeline__hours" aria-hidden="true">
+        <span className="timeline__allday">All-day</span>
+        {HOUR_MARKS.map((minute) => (
+          <span
+            key={minute}
+            className="timeline__hour"
+            style={{ top: topFor(minute, -6) }}
+          >
+            {String(Math.floor(minute / 60)).padStart(2, "0")}:00
+          </span>
+        ))}
+      </div>
+
+      <div className="timeline__canvas">
+        {/* The sky exam strip. The web service has no exam feed yet, so the
+            strip renders its calm empty state, as the legacy view does. */}
+        <div className="timeline__examstrip timeline__examstrip--empty">
+          <ExamGlyph />
+          <span>No exams today</span>
+        </div>
+
+        {BANDS.map((band) => (
+          <div
+            key={band.id}
+            className={
+              band.kind === "break"
+                ? "timeline__band timeline__band--break"
+                : band.period! % 2 === 0
+                  ? "timeline__band timeline__band--even"
+                  : "timeline__band timeline__band--odd"
+            }
+            style={{ top: topFor(band.start), height: heightBetween(band.start, band.end) }}
+          />
+        ))}
+
+        {HOUR_MARKS.map((minute) => (
+          <div key={minute} className="timeline__gridline" style={{ top: topFor(minute) }} />
+        ))}
+
+        {freeSlots.map((slot) => (
+          <div key={slot.id} className="timeline__ghost" style={{ top: topFor(slot.start, 7) }}>
+            <span className="timeline__ghost-period">P{slot.period}</span>
+            <span className="timeline__ghost-free">Free</span>
+          </div>
+        ))}
+
+        {BANDS.filter((b) => b.kind === "break").map((band) => (
+          <div key={band.id} className="timeline__ghost" style={{ top: topFor(band.start, 7) }}>
+            <LeafGlyph />
+            <span className="timeline__ghost-break">{band.label}</span>
+          </div>
+        ))}
+
+        {visible.map((lesson) => {
+          const start = minuteOfDay(lesson.startsAt);
+          const end = minuteOfDay(lesson.endsAt);
+          const compact = end - start < 45;
+          const period = periodLabelFor(start, end);
+          return (
+            <button
+              key={lesson.id}
+              className={compact ? "lesson-block lesson-block--compact" : "lesson-block"}
+              style={{ top: topFor(start), height: heightBetween(start, end) }}
+              onClick={() => onSelect(lesson)}
+            >
+              <span className="lesson-block__body">
+                <span className="lesson-block__row">
+                  <span className="lesson-block__subject">{lesson.subjectName}</span>
+                  {lesson.roomName && (
+                    <span className="lesson-block__room">{lesson.roomName}</span>
+                  )}
+                </span>
+                <span className="lesson-block__meta">
+                  {period && <strong>{period} · </strong>}
+                  {formatTime(lesson.startsAt)}–{formatTime(lesson.endsAt)}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+
+        {visible.length === 0 && (
+          <div className="timeline__empty">
+            <CalendarGlyph />
+            <span>No lessons today</span>
+          </div>
+        )}
+
+        {showNow && <div className="timeline__now" style={{ top: topFor(nowMinute, -4) }} />}
+      </div>
+    </div>
+  );
+}
+
+function ExamGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+      <path d="M4 1.75h6l2.5 2.5v10H4z" strokeLinejoin="round" />
+      <circle cx="7.6" cy="8.4" r="2.1" />
+      <path d="m9.2 10 2 2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LeafGlyph() {
+  return (
+    <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+      <path d="M10.5 1.5C6 1.5 2.6 3.4 2.1 7c-.3 2 .7 3.5 2.4 3.5 3.8 0 6-4.3 6-9zM2.5 10.8c.9-2.8 2.6-5 5.3-6.6-2.1 2-3.6 4.3-4.3 6.9z" />
+    </svg>
+  );
+}
+
+function CalendarGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+      <path d="M3.5 9.5h17" />
+      <path d="M8 2.75V6M16 2.75V6" />
+    </svg>
   );
 }
 

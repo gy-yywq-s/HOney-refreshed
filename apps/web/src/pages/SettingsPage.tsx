@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
@@ -54,6 +54,17 @@ export function SettingsPage() {
             Sign out
           </button>
         </div>
+        {me.isAdmin && (
+          <div className="setting-row">
+            <div className="setting-row__main">
+              <span>Dash</span>
+              <span className="caption">The operational console for admins.</span>
+            </div>
+            <Link className="btn btn--ghost" to="/dash">
+              Open Dash
+            </Link>
+          </div>
+        )}
         <div className="setting-row">
           <div className="setting-row__main">
             <span>Delete account</span>

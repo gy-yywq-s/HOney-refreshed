@@ -13,6 +13,12 @@ export function HomePage() {
 
   const next = data?.nextLesson ?? null;
   const lastSyncedAt = data?.lastSyncedAt ?? null;
+  // Legacy HomeLessonSummaryCard: a running lesson fills the card with an
+  // ocean@0.67 wash, left-to-right, proportional to elapsed time.
+  const progress =
+    next && next.temporalState === "now"
+      ? Math.min(1, Math.max(0, (Date.now() - next.startsAt) / Math.max(1, next.endsAt - next.startsAt)))
+      : null;
 
   return (
     <div className="stack">
@@ -26,7 +32,16 @@ export function HomePage() {
       </header>
 
       <section className="card card--hero nextlesson" aria-label="Next lesson">
-        <span className="eyebrow">Next lesson</span>
+        {progress !== null && (
+          <div
+            className="nextlesson__wash"
+            style={{ width: `${(progress * 100).toFixed(1)}%` }}
+            aria-hidden="true"
+          />
+        )}
+        <span className="eyebrow">
+          {next?.temporalState === "now" ? "Current lesson" : "Next lesson"}
+        </span>
         {loading ? (
           <p className="muted">Loading…</p>
         ) : error ? (
