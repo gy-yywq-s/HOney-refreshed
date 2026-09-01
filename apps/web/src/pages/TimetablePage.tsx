@@ -28,7 +28,9 @@ export function TimetablePage() {
     setSyncBusy(true);
     setSyncFeedback(null);
     try {
-      const result = await api.sync();
+      // Seamless: on portal expiry, silently re-login if this device is
+      // authorized, so a routine 24h expiry never dead-ends at a prompt.
+      const { result } = await api.syncSeamless();
       setSyncFeedback({ kind: "result", result });
       if (result.status === "ok") {
         apiCache.invalidate("timetable");

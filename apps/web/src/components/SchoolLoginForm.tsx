@@ -6,7 +6,7 @@ import type { LoginResponse } from "../api/types";
 interface SchoolLoginFormProps {
   /** Only changes the button label; import consent is a separate, later step. */
   mode: "login" | "reconnect";
-  onSuccess: (result: LoginResponse) => void;
+  onSuccess: (result: LoginResponse, credentials: { username: string; password: string }) => void;
 }
 
 export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
@@ -22,7 +22,8 @@ export function SchoolLoginForm({ mode, onSuccess }: SchoolLoginFormProps) {
     try {
       // Signing in never imports the timetable. Import is a separate, active
       // choice on the next step (audit §3.2) — the request carries no consent.
-      onSuccess(await api.login({ username, password }));
+      const result = await api.login({ username, password });
+      onSuccess(result, { username, password });
     } catch (err) {
       setError(describeApiError(err));
       setBusy(false);

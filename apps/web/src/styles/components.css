@@ -913,3 +913,33 @@ a.btn:hover {
   from { background-position: 200% 0; }
   to { background-position: -200% 0; }
 }
+
+/* Opt-in row for staying connected to the school portal. */
+.stay-connected {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 4px 0 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+  cursor: pointer;
+  text-align: left;
+}
+.stay-connected input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--accent);
+}
+.stay-connected span {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.stay-connected strong {
+  color: var(--ink);
+  font-weight: 600;
+}

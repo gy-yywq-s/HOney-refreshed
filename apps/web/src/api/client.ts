@@ -3,6 +3,7 @@
 // single-flight refresh + retry, after which the session is dropped and
 // `onSessionLost` fires (the app shell redirects to /login).
 
+import { portalCredentials } from "../lib/portalCredentials";
 import type {
   AdminImportResult,
   AdminLlmTestResponse,
@@ -118,6 +119,26 @@ export class ApiClient {
 
   sync(): Promise<SyncResponse> {
     return this.request("POST", "/api/sync");
+  }
+
+  /**
+   * Sync, but keep the connection seamless: if the portal token has expired and
+   * this device holds authorized school credentials, silently re-login (the same
+   * /api/auth/login the manual sign-in uses) and retry the sync ONCE. Mirrors the
+   * iOS silent-recovery invariant — a manual prompt is only needed when the
+   * credentials are actually rejected or the portal raises an interactive
+   * challenge. Returns the sync result plus whether a silent reconnect happened.
+   */
+  async syncSeamless(): Promise<{ result: SyncResponse; reconnected: boolean }> {
+    let result = await this.sync();
+    if (result.status !== "portal_reconnect_required") return { result, reconnected: false };
+    const creds = await portalCredentials.load();
+    if (!creds) return { result, reconnected: false };
+    // Silent re-login: replays the stored credentials transiently; the backend
+    // re-seals a fresh portal token and never persists the password.
+    await this.login({ username: creds.username, password: creds.password });
+    result = await this.sync();
+    return { result, reconnected: true };
   }
 
   timetable(date: string): Promise<TimetableResponse> {

@@ -3,12 +3,13 @@
 // choice (audit §3.2): signing in and copying school data are different decisions,
 // and nothing is preselected.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { SchoolLoginForm } from "../components/SchoolLoginForm";
 import { WordmarkHOney } from "../components/Wordmark";
+import { portalCredentials } from "../lib/portalCredentials";
 
 type Phase = "signin" | "consent";
 
@@ -16,6 +17,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { refreshMe } = useAuth();
   const [phase, setPhase] = useState<Phase>("signin");
+  // Held in memory only, for the consent step's "stay connected" opt-in.
+  const credsRef = useRef<{ username: string; password: string } | null>(null);
 
   // A returning, already-signed-in visitor skips straight in. (During the
   // consent step a session exists too, so only guard the sign-in phase.)
@@ -34,7 +37,8 @@ export function LoginPage() {
             <div className="login__fields">
               <SchoolLoginForm
                 mode="login"
-                onSuccess={(result) => {
+                onSuccess={(result, creds) => {
+                  credsRef.current = creds;
                   // Decide the destination SYNCHRONOUSLY from the login response.
                   // Any await before setPhase re-renders with a live session while
                   // phase is still "signin", and the guard above redirects past
@@ -56,22 +60,33 @@ export function LoginPage() {
             </p>
           </>
         ) : (
-          <ImportConsentStep onDone={() => navigate("/home", { replace: true })} />
+          <ImportConsentStep creds={credsRef.current} onDone={() => navigate("/home", { replace: true })} />
         )}
       </div>
     </main>
   );
 }
 
-function ImportConsentStep({ onDone }: { onDone: () => void }) {
+function ImportConsentStep({
+  creds,
+  onDone,
+}: {
+  creds: { username: string; password: string } | null;
+  onDone: () => void;
+}) {
   const { refreshMe } = useAuth();
   const [busy, setBusy] = useState<"import" | "skip" | null>(null);
+  const [stayConnected, setStayConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function choose(importIt: boolean) {
     setBusy(importIt ? "import" : "skip");
     setError(null);
     try {
+      // Opt-in only: remember the school login on this device so a routine
+      // portal expiry reconnects silently (mirrors iOS). Nothing is stored
+      // unless the box is checked.
+      if (stayConnected && creds) await portalCredentials.authorize(creds);
       if (importIt) {
         await api.setConsent(true);
         // Initial pull, so Home has data on first render.
@@ -93,6 +108,21 @@ function ImportConsentStep({ onDone }: { onDone: () => void }) {
         History work here. Nothing is imported unless you turn it on, and you can switch it off any
         time in Settings.
       </p>
+      {creds && (
+        <label className="stay-connected">
+          <input
+            type="checkbox"
+            checked={stayConnected}
+            onChange={(e) => setStayConnected(e.target.checked)}
+          />
+          <span>
+            <strong>Stay connected on this device.</strong> Keeps you signed in to the school
+            portal so HOney can re-sync on its own when the portal times out — no re-typing. Your
+            login is encrypted and kept only on this device (a browser is less protected than a
+            phone's secure storage). Turn it off any time in Settings.
+          </span>
+        </label>
+      )}
       {error && <div role="alert" className="banner banner--danger">{error}</div>}
       <div className="login__fields">
         <button

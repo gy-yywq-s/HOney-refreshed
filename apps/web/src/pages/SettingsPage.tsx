@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
 import { ThemeControls } from "../components/ThemeControls";
 import { ReconnectDialog } from "../components/ReconnectDialog";
+import { portalCredentials } from "../lib/portalCredentials";
 import { timeAgo } from "../lib/format";
 import { ownershipKeys } from "../lib/ownershipKeys";
 
@@ -20,6 +21,7 @@ export function SettingsPage() {
   );
   const [confirm, setConfirm] = useState<PendingConfirm>(null);
   const [showReconnect, setShowReconnect] = useState(false);
+  const [stayConnected, setStayConnected] = useState(portalCredentials.isAuthorized());
 
   if (!me) return null;
 
@@ -110,6 +112,33 @@ export function SettingsPage() {
                 disabled={busyKey === "disconnect"}
               >
                 Disconnect
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="setting-row">
+          <div className="setting-row__main">
+            <span>Stay connected on this device</span>
+            <span className="caption">
+              {stayConnected
+                ? "On — routine portal time-outs reconnect on their own. Your login is encrypted and kept only on this device."
+                : "Off — you'll re-enter your school password when the portal session ends."}
+            </span>
+          </div>
+          <div className="card-actions" style={{ marginTop: 0 }}>
+            {stayConnected ? (
+              <button
+                className="btn btn--ghost"
+                onClick={() => {
+                  portalCredentials.clear();
+                  setStayConnected(false);
+                }}
+              >
+                Turn off
+              </button>
+            ) : (
+              <button className="btn btn--ghost" onClick={() => setShowReconnect(true)}>
+                Turn on
               </button>
             )}
           </div>
@@ -255,7 +284,10 @@ export function SettingsPage() {
       {showReconnect && (
         <ReconnectDialog
           onClose={() => setShowReconnect(false)}
-          onReconnected={() => void refreshMe()}
+          onReconnected={() => {
+            setStayConnected(portalCredentials.isAuthorized());
+            void refreshMe();
+          }}
         />
       )}
     </div>
