@@ -29,7 +29,6 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
         `SELECT
            (SELECT COUNT(*) FROM honey_users) AS users,
            (SELECT COUNT(*) FROM experiences WHERE status = 'published') AS published,
-           (SELECT COUNT(*) FROM experiences WHERE status = 'pending') AS pending,
            (SELECT COUNT(*) FROM reports WHERE outcome = 'pending') AS openReports,
            (SELECT COUNT(*) FROM entity_registry WHERE active = 1) AS entities`,
       )

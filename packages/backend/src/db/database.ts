@@ -173,6 +173,30 @@ const MIGRATIONS: string[] = [
   // 005 — admin is bound to the honeyId at provisioning time (Gary's rule): a
   // stored flag, not a per-request re-derivation from the school id.
   `ALTER TABLE honey_users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0;`,
+  // 006 — two-call publication flow (audit §3.7/§3.8). Eligibility tokens are
+  // single-use, scope-bound and DELIBERATELY carry no user column: the server
+  // keeps only the token hash + the unlinkable HMAC dedup mark, so the later
+  // unauthenticated publish request joins to no account. The pending-row
+  // pipeline is gone — experience rows now exist only once actually published —
+  // and reports are category-only (the free-text note channel is removed).
+  `
+  CREATE TABLE experience_eligibility (
+    token_hash TEXT PRIMARY KEY,          -- sha256 of the client-held token
+    mark_hash TEXT NOT NULL,              -- HMAC(server, honeyId ‖ scope) — joins to nothing
+    entity_key TEXT NOT NULL,             -- "<type>:<id>"; lessons use the opaque lesson token
+    ctx_teacher_id TEXT,
+    ctx_course_id TEXT,
+    ctx_room_id TEXT,
+    provenance TEXT NOT NULL,
+    issued_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used_at INTEGER
+  ) STRICT;
+
+  DELETE FROM experiences WHERE status NOT IN ('published', 'blocked', 'revoked');
+  ALTER TABLE experiences DROP COLUMN cooldown_until;
+  ALTER TABLE reports DROP COLUMN note;
+  `,
 ];
 
 export function openDatabase(path: string): DatabaseSyncType {

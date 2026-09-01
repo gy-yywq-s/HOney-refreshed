@@ -1,5 +1,5 @@
 {
-  "policyVersion": 3,
+  "policyVersion": 4,
   "note": "Versioned human-authored regression + adversarial corpus (App A §24/§26). Each case fixes an expected outcome for the whole pipeline. `lexical` cases must be caught by the deterministic layer alone (no LLM). `features` cases assert the policy engine given a feature vector. `live` cases are checked against the real LLM when OPENROUTER_API_KEY is set. The §26.2 launch gates are asserted over this set.",
   "lexical": [
     { "id": "slur-direct", "text": "he is a retard and everyone should avoid him", "expect": "blocked_serious", "reason": "slur" },

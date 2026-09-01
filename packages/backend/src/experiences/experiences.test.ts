@@ -10,9 +10,10 @@ import { normalizeText } from "./normalize.js";
 import { decide } from "./policy.js";
 import type { LlmFeatures } from "./llm.js";
 
-// M3 acceptance suite — maps onto App A §26.2 launch gates: serious content
-// never publishes, fail-closed on outage/uncertainty, pass binding, no author
-// fields, kill switches, one-per-lesson marks, raw-first browsing.
+// Acceptance suite — maps onto App A §26.2 launch gates over the TWO-CALL flow
+// (audit §3.7/§3.8): check persists nothing, publication only on explicit
+// publish with single-use eligibility token + content-bound pass, no author
+// fields anywhere, kill switches, one-per-lesson marks, raw-first browsing.
 
 const CLEAN: LlmFeatures = {
   serious_allegation: false,
@@ -80,10 +81,6 @@ let tmp: string;
 let auth: { authorization: string };
 let honeyId: string;
 
-async function settle(times = 8) {
-  for (let i = 0; i < times; i++) await new Promise((r) => setImmediate(r));
-}
-
 beforeEach(async () => {
   portal = makeMockPortal();
   await portal.app.listen({ port: 0, host: "127.0.0.1" });
@@ -118,63 +115,113 @@ async function myLessonId(): Promise<string> {
   return (history.json() as { lessons: { id: string }[] }).lessons[0]!.id;
 }
 
-async function submit(payload: Record<string, unknown>) {
-  const res = await app.inject({ method: "POST", url: "/api/experiences", headers: auth, payload });
+type Target = { lessonId?: string; entityKey?: string };
+
+async function eligibility(target: Target) {
+  const res = await app.inject({ method: "POST", url: "/api/experiences/eligibility", headers: auth, payload: target });
   return { status: res.statusCode, body: res.json() as Record<string, unknown> };
 }
 
-describe("publication pipeline", () => {
-  it("clean lesson review publishes async, raw text verbatim, no author anywhere", async () => {
+async function check(payload: Record<string, unknown>) {
+  const res = await app.inject({ method: "POST", url: "/api/experiences/check", headers: auth, payload });
+  return { status: res.statusCode, body: res.json() as Record<string, unknown> };
+}
+
+/** Publish is deliberately called WITHOUT any session header. */
+async function publish(payload: Record<string, unknown>) {
+  const res = await app.inject({ method: "POST", url: "/api/experiences/publish", payload });
+  return { status: res.statusCode, body: res.json() as Record<string, unknown> };
+}
+
+/** Full happy path: eligibility → check → explicit publish. */
+async function fullPublish(target: Target, text: string, rating?: number) {
+  const elig = await eligibility(target);
+  expect(elig.status).toBe(200);
+  const payload: Record<string, unknown> = { ...target, body: text };
+  if (rating !== undefined) payload.rating = rating;
+  const chk = await check(payload);
+  expect(chk.status).toBe(200);
+  const pub = await publish({
+    eligibilityToken: elig.body.eligibilityToken,
+    pass: chk.body.pass,
+    body: text,
+    ...(rating !== undefined ? { rating } : {}),
+  });
+  return { elig, chk, pub };
+}
+
+function storedCount(): number {
+  return (app.ctx.db.prepare("SELECT COUNT(*) AS n FROM experiences").get() as unknown as { n: number }).n;
+}
+
+describe("two-call publication flow", () => {
+  it("clean lesson review: check → publish lane + pass; explicit publish stores it; no author anywhere", async () => {
     const lessonId = await myLessonId();
     const text = "Honestly the pacing was way too fast — I was lost all lesson.";
-    const r = await submit({ lessonId, body: text });
-    expect(r.status).toBe(200);
-    expect(r.body.status).toBe("pending"); // async: responds before moderation
-    await settle();
+    const { chk, pub } = await fullPublish({ lessonId }, text);
+    expect(chk.body.lane).toBe("publish");
+    expect(typeof chk.body.pass).toBe("string");
+    expect(pub.status).toBe(200);
+    expect(typeof pub.body.ownershipKey).toBe("string");
 
     // Lesson posts are NOT queryable by raw lesson id (C1); browse the feed.
     const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
     const experiences = (feed.json() as { experiences: Record<string, unknown>[] }).experiences;
     expect(experiences).toHaveLength(1);
     expect(experiences[0]!.body).toBe(text); // raw-first: byte-for-byte
-    // The public record exposes no raw lesson id and no exact timestamp (C1/S5).
+    // The public record exposes no raw lesson id, no exact timestamp (C1/S5)
+    // and no internal status/policy fields (audit §4.1).
     expect(experiences[0]!.lesson_id).toBeUndefined();
     expect(experiences[0]!.published_at).toBeUndefined();
+    expect(experiences[0]!.status).toBeUndefined();
+    expect(experiences[0]!.status_detail).toBeUndefined();
+    expect(experiences[0]!.policy_version).toBeUndefined();
     expect(typeof experiences[0]!.publishedDay).toBe("number");
     expect(experiences[0]!.provenance).toBe("verified_lesson");
     // No author-ish field in the response…
     const keys = Object.keys(experiences[0]!);
     expect(keys.some((k) => /honey|author|user|student/i.test(k))).toBe(false);
-    // …and no author column in storage (launch gate: verified absence).
-    const cols = app.ctx.db.prepare("PRAGMA table_info(experiences)").all() as unknown as { name: string }[];
-    expect(cols.some((c) => /honey|author|user|student/i.test(c.name))).toBe(false);
+    // …and no author column in storage (launch gate: verified absence),
+    // neither on posts nor on the eligibility table (audit §3.7).
+    for (const table of ["experiences", "experience_eligibility"]) {
+      const cols = app.ctx.db.prepare(`PRAGMA table_info(${table})`).all() as unknown as { name: string }[];
+      expect(cols.length).toBeGreaterThan(0);
+      expect(cols.some((c) => /honey|author|user|student/i.test(c.name))).toBe(false);
+    }
   });
 
-  it("serious content never publishes and its text is not persisted", async () => {
-    app.ctx.experiences.llmRunner = async () => ({
-      ok: true,
-      features: { ...CLEAN, serious_allegation: true },
-    });
+  it("check NEVER persists the draft — publish, blocked and failed lanes alike", async () => {
     const lessonId = await myLessonId();
-    const r = await submit({ lessonId, body: "Mr X assaulted someone last week, spread the word." });
-    const key = r.body.ownershipKey as string;
-    await settle();
 
-    const mine = await app.inject({
-      method: "POST",
-      url: "/api/experiences/mine",
-      headers: auth,
-      payload: { keys: [key] },
-    });
-    const rows = (mine.json() as { experiences: { status: string; body: string | null }[] }).experiences;
-    expect(rows[0]!.status).toBe("blocked");
-    expect(rows[0]!.body).toBeNull(); // rejected text not persisted
-    const stored = app.ctx.db.prepare("SELECT body FROM experiences").all() as unknown as { body: string | null }[];
-    expect(stored.every((s) => s.body === null || !s.body.includes("assaulted"))).toBe(true);
-    // Mark released → the user can write a compliant review instead.
+    // Clean draft: publishable lane, still nothing stored.
+    const clean = await check({ lessonId, body: "A clean, ordinary observation." });
+    expect(clean.body.lane).toBe("publish");
+    expect(storedCount()).toBe(0);
+
+    // Serious lane.
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN, serious_allegation: true } });
+    const secret = "Mr X assaulted someone last week, spread the word.";
+    const blocked = await check({ lessonId, body: secret });
+    expect(blocked.body.lane).toBe("out_of_scope");
+    expect(blocked.body.pass).toBeUndefined();
+    expect(storedCount()).toBe(0);
+
+    // Failed-closed lane (LLM outage).
+    app.ctx.experiences.llmRunner = async () => ({ ok: false });
+    const failed = await check({ lessonId, body: secret });
+    expect(failed.body.lane).toBe("failed_closed");
+    expect(failed.body.pass).toBeUndefined();
+    expect(storedCount()).toBe(0);
+
+    // The rejected text exists NOWHERE in the database file's tables.
+    for (const table of ["experiences", "experience_eligibility", "reports", "settings"]) {
+      const rows = app.ctx.db.prepare(`SELECT * FROM ${table}`).all() as Record<string, unknown>[];
+      expect(JSON.stringify(rows)).not.toContain("assaulted");
+    }
+    // The user can immediately try a compliant draft — no mark was burned.
     app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN } });
-    const retry = await submit({ lessonId, body: "The lesson felt rushed." });
-    expect(retry.status).toBe(200);
+    const retry = await fullPublish({ lessonId }, "The lesson felt rushed.");
+    expect(retry.pub.status).toBe(200);
   });
 
   it("lexical threat blocks WITHOUT calling the LLM", async () => {
@@ -184,73 +231,132 @@ describe("publication pipeline", () => {
       return { ok: true, features: { ...CLEAN } };
     };
     const lessonId = await myLessonId();
-    const r = await submit({ lessonId, body: "I will kill you Mr Zhang" });
-    await settle();
-    const mine = await app.inject({
-      method: "POST", url: "/api/experiences/mine", headers: auth,
-      payload: { keys: [r.body.ownershipKey] },
-    });
-    expect((mine.json() as { experiences: { status: string }[] }).experiences[0]!.status).toBe("blocked");
+    const r = await check({ lessonId, body: "I will kill you Mr Zhang" });
+    expect(r.body.lane).toBe("blocked_serious");
     expect(llmCalls).toBe(0);
+    expect(storedCount()).toBe(0);
   });
 
-  it("LLM outage fails closed (never publish-first)", async () => {
-    app.ctx.experiences.llmRunner = async () => ({ ok: false });
+  it("publish requires BOTH artifacts; replay of either fails", async () => {
     const lessonId = await myLessonId();
-    const r = await submit({ lessonId, body: "Perfectly ordinary note about the lesson." });
-    await settle();
-    const mine = await app.inject({
-      method: "POST", url: "/api/experiences/mine", headers: auth,
-      payload: { keys: [r.body.ownershipKey] },
+    const text = "Perfectly reasonable lesson note.";
+    // Two eligibility tokens issued up front (mark is only claimed at publish).
+    const elig1 = await eligibility({ lessonId });
+    const elig2 = await eligibility({ lessonId });
+    const chk = await check({ lessonId, body: text });
+    expect(chk.body.lane).toBe("publish");
+
+    // Tampered body → content mismatch.
+    const tampered = await publish({
+      eligibilityToken: elig1.body.eligibilityToken, pass: chk.body.pass, body: text + " EDITED",
     });
-    expect((mine.json() as { experiences: { status: string }[] }).experiences[0]!.status).toBe("failed_closed");
+    expect(tampered.status).toBe(422);
+    expect(tampered.body.error).toBe("pass_content_mismatch");
+
+    // Garbage artifacts.
+    expect((await publish({ eligibilityToken: "nope", pass: chk.body.pass, body: text })).body.error).toBe("eligibility_invalid");
+    expect((await publish({ eligibilityToken: elig1.body.eligibilityToken, pass: "nope", body: text })).body.error).toBe("pass_invalid");
+
+    // The real publish.
+    const ok = await publish({ eligibilityToken: elig1.body.eligibilityToken, pass: chk.body.pass, body: text });
+    expect(ok.status).toBe(200);
+
+    // Replay the eligibility token (with the same pass) → single-use.
+    const replayElig = await publish({ eligibilityToken: elig1.body.eligibilityToken, pass: chk.body.pass, body: text });
+    expect(replayElig.status).toBe(422);
+    expect(replayElig.body.error).toBe("eligibility_used");
+
+    // Replay the pass with the OTHER (unused) eligibility token → nonce burned.
+    const replayPass = await publish({ eligibilityToken: elig2.body.eligibilityToken, pass: chk.body.pass, body: text });
+    expect(replayPass.status).toBe(422);
+    expect(replayPass.body.error).toBe("pass_invalid");
+
+    expect(storedCount()).toBe(1);
+  });
+
+  it("nudge lane: nothing publishes until the user's explicit choice", async () => {
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN, low_information: true } });
+    const lessonId = await myLessonId();
+    const elig = await eligibility({ lessonId });
+    const chk = await check({ lessonId, body: "ok" });
+    expect(chk.body.lane).toBe("nudge");
+    expect(typeof chk.body.pass).toBe("string"); // publish-as-is is the user's right
+
+    // The server did NOT auto-publish.
+    expect(storedCount()).toBe(0);
+    const feed0 = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
+    expect((feed0.json() as { experiences: unknown[] }).experiences).toHaveLength(0);
+
+    // Explicit user choice: publish as-is.
+    const pub = await publish({ eligibilityToken: elig.body.eligibilityToken, pass: chk.body.pass, body: "ok" });
+    expect(pub.status).toBe(200);
     const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
-    expect((feed.json() as { experiences: unknown[] }).experiences).toHaveLength(0);
+    expect((feed.json() as { experiences: unknown[] }).experiences).toHaveLength(1);
   });
 
-  it("high-arousal → cooldown; reconfirm gated until window passes; then publishes", async () => {
-    app.ctx.experiences.llmRunner = async () => ({
-      ok: true,
-      features: { ...CLEAN, high_arousal: true },
-    });
+  it("cooldown lane: ticket-gated re-check; window must elapse; then publishes under current policy", async () => {
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN, high_arousal: true } });
     const lessonId = await myLessonId();
-    const r = await submit({ lessonId, body: "ABSOLUTELY FURIOUS about how this lesson went!!!" });
-    const key = r.body.ownershipKey as string;
-    await settle();
+    const text = "ABSOLUTELY FURIOUS about how this lesson went!!!";
+    const first = await check({ lessonId, body: text });
+    expect(first.body.lane).toBe("cooldown");
+    expect(first.body.pass).toBeUndefined(); // no publishing artifact yet
+    const cooldown = first.body.cooldown as { ticket: string; retryAt: number };
+    expect(cooldown.retryAt).toBeGreaterThan(Date.now() + 23 * 3600 * 1000);
+    expect(storedCount()).toBe(0); // draft stays client-side
 
-    const early = await app.inject({
-      method: "POST", url: "/api/experiences/reconfirm", headers: auth,
-      payload: { ownershipKey: key },
-    });
-    expect(early.statusCode).toBe(422);
-    expect((early.json() as { error: string }).error).toBe("cooldown_active");
+    // Re-check before the window → still cooldown, same retryAt.
+    const early = await check({ lessonId, body: text, cooldownTicket: cooldown.ticket });
+    expect(early.body.lane).toBe("cooldown");
+    expect((early.body.cooldown as { retryAt: number }).retryAt).toBe(cooldown.retryAt);
 
-    // Window elapses (direct clock nudge in storage).
-    app.ctx.db.prepare("UPDATE experiences SET cooldown_until = ? WHERE ownership_hash IS NOT NULL").run(Date.now() - 1000);
-    const late = await app.inject({
-      method: "POST", url: "/api/experiences/reconfirm", headers: auth,
-      payload: { ownershipKey: key },
-    });
-    expect(late.statusCode).toBe(200);
+    // A forged/mismatched ticket is rejected.
+    const forged = await check({ lessonId, body: text + "!", cooldownTicket: cooldown.ticket });
+    expect(forged.status).toBe(422);
+    expect(forged.body.error).toBe("cooldown_ticket_invalid");
+
+    // Window elapses (injected clock): a repeat high-arousal verdict no longer
+    // re-cools — reconfirm publishes ordinary opinion (§13.3) via a fresh pass.
+    app.ctx.experiences.now = () => Date.now() + 25 * 3600 * 1000;
+    const late = await check({ lessonId, body: text, cooldownTicket: cooldown.ticket });
+    expect(late.body.lane).toBe("publish");
+    const elig = await eligibility({ lessonId });
+    const pub = await publish({ eligibilityToken: elig.body.eligibilityToken, pass: late.body.pass, body: text });
+    expect(pub.status).toBe(200);
     const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
     expect((feed.json() as { experiences: unknown[] }).experiences).toHaveLength(1);
   });
 
   it("one review per lesson; revoke frees the slot", async () => {
     const lessonId = await myLessonId();
-    const first = await submit({ lessonId, body: "First take." });
-    await settle();
-    const dup = await submit({ lessonId, body: "Second take." });
-    expect(dup.status).toBe(422);
-    expect(dup.body.error).toBe("already_reviewed");
+    const first = await fullPublish({ lessonId }, "First take.");
+    expect(first.pub.status).toBe(200);
+
+    // Both eligibility and check now refuse the same lesson.
+    expect((await eligibility({ lessonId })).body.error).toBe("already_reviewed");
+    expect((await check({ lessonId, body: "Second take." })).body.error).toBe("already_reviewed");
 
     const revoke = await app.inject({
       method: "POST", url: "/api/experiences/revoke", headers: auth,
-      payload: { ownershipKey: first.body.ownershipKey },
+      payload: { ownershipKey: first.pub.body.ownershipKey },
     });
     expect(revoke.statusCode).toBe(200);
-    const again = await submit({ lessonId, body: "Recon­sidered take." });
-    expect(again.status).toBe(200);
+    const again = await fullPublish({ lessonId }, "Recon­sidered take.");
+    expect(again.pub.status).toBe(200);
+  });
+
+  it("mine: client-held keys see own published (and later hidden) posts", async () => {
+    const lessonId = await myLessonId();
+    const { pub } = await fullPublish({ lessonId }, "A fine observation about the class.");
+    const mine = await app.inject({
+      method: "POST", url: "/api/experiences/mine", headers: auth,
+      payload: { keys: [pub.body.ownershipKey] },
+    });
+    const rows = (mine.json() as { experiences: Record<string, unknown>[] }).experiences;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.status).toBe("published");
+    expect(rows[0]!.ownership_hash).toBeUndefined();
+    expect(rows[0]!.content_hash).toBeUndefined();
   });
 });
 
@@ -258,12 +364,11 @@ describe("standalone entities & eligibility", () => {
   it("verified mode: teacher review allowed with exposure; dish needs admin import; rating rules hold", async () => {
     const entities = await app.inject({ method: "GET", url: "/api/entities?type=teacher", headers: auth });
     const teacher = (entities.json() as { entities: { entity_key: string }[] }).entities[0]!;
-    const tr = await submit({ entityKey: teacher.entity_key, body: "Very patient across a whole term." });
-    expect(tr.status).toBe(200);
-    await settle();
+    const tr = await fullPublish({ entityKey: teacher.entity_key }, "Very patient across a whole term.");
+    expect(tr.pub.status).toBe(200);
 
     // Rating on a teacher is refused outright.
-    const rated = await submit({ entityKey: teacher.entity_key, body: "5 stars", rating: 5 });
+    const rated = await check({ entityKey: teacher.entity_key, body: "5 stars", rating: 5 });
     expect(rated.body.error).toBe("rating_not_allowed");
 
     // Dish: admin imports it; rating 1–5 allowed.
@@ -273,8 +378,8 @@ describe("standalone entities & eligibility", () => {
     });
     const dishes = await app.inject({ method: "GET", url: "/api/entities?type=dish", headers: auth });
     const dish = (dishes.json() as { entities: { entity_key: string }[] }).entities[0]!;
-    const dr = await submit({ entityKey: dish.entity_key, body: "Solid, a bit oily.", rating: 4 });
-    expect(dr.status).toBe(200);
+    const dr = await fullPublish({ entityKey: dish.entity_key }, "Solid, a bit oily.", 4);
+    expect(dr.pub.status).toBe(200);
   });
 
   it("closed mode blocks everyone; invite mode admits only invited students", async () => {
@@ -285,19 +390,20 @@ describe("standalone entities & eligibility", () => {
       method: "POST", url: "/api/admin/standalone-mode", headers: auth,
       payload: { scope: "type.teacher", mode: "closed" },
     });
-    expect((await submit({ entityKey: teacher.entity_key, body: "x" })).body.error).toBe("standalone_closed");
+    expect((await eligibility({ entityKey: teacher.entity_key })).body.error).toBe("standalone_closed");
 
     await app.inject({
       method: "POST", url: "/api/admin/standalone-mode", headers: auth,
       payload: { scope: "type.teacher", mode: "invite" },
     });
-    expect((await submit({ entityKey: teacher.entity_key, body: "x" })).body.error).toBe("not_invited");
+    expect((await eligibility({ entityKey: teacher.entity_key })).body.error).toBe("not_invited");
 
     await app.inject({
       method: "POST", url: "/api/admin/invite", headers: auth,
       payload: { entityKey: teacher.entity_key, studentId: "88" },
     });
-    expect((await submit({ entityKey: teacher.entity_key, body: "Good teacher, invited take." })).status).toBe(200);
+    const invited = await fullPublish({ entityKey: teacher.entity_key }, "Good teacher, invited take.");
+    expect(invited.pub.status).toBe(200);
   });
 
   it("admin import unions with organic (same name merges)", async () => {
@@ -311,17 +417,89 @@ describe("standalone entities & eligibility", () => {
   });
 });
 
-describe("reactions, kill switches, admin gate", () => {
+describe("from-my-classes (domain query, audit §4.2)", () => {
+  it("returns only exposure-relevant published posts, newest first, with before-pagination", async () => {
+    const lessonId = await myLessonId();
+    await fullPublish({ lessonId }, "Lesson note from my own class.");
+
+    // A dish post is published but is NOT exposure-relevant.
+    await app.inject({
+      method: "POST", url: "/api/admin/entities/import", headers: auth,
+      payload: { items: [{ type: "dish", name: "Fried rice" }] },
+    });
+    const dishes = await app.inject({ method: "GET", url: "/api/entities?type=dish", headers: auth });
+    const dish = (dishes.json() as { entities: { entity_key: string }[] }).entities[0]!;
+    await fullPublish({ entityKey: dish.entity_key }, "Decent portion size.");
+
+    const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
+    expect((feed.json() as { experiences: unknown[] }).experiences).toHaveLength(2);
+
+    const mine = await app.inject({ method: "GET", url: "/api/experiences/from-my-classes", headers: auth });
+    const rows = (mine.json() as { experiences: { body: string }[] }).experiences;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.body).toBe("Lesson note from my own class.");
+
+    // before= pagination: nothing published before the epoch+1ms.
+    const paged = await app.inject({ method: "GET", url: "/api/experiences/from-my-classes?before=1", headers: auth });
+    expect((paged.json() as { experiences: unknown[] }).experiences).toHaveLength(0);
+  });
+});
+
+describe("reports are category-only (audit §3.9)", () => {
+  async function publishedId(): Promise<string> {
+    const lessonId = await myLessonId();
+    await fullPublish({ lessonId }, "Reportable but ordinary comment.");
+    const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
+    return (feed.json() as { experiences: { id: string }[] }).experiences[0]!.id;
+  }
+
+  it("rejects free-text notes and unknown categories; storage has no note column", async () => {
+    const id = await publishedId();
+    const withNote = await app.inject({
+      method: "POST", url: `/api/experiences/${id}/report`, headers: auth,
+      payload: { category: "slur", note: "he also said..." },
+    });
+    expect(withNote.statusCode).toBe(400);
+    expect((withNote.json() as { error: string }).error).toBe("free_text_not_accepted");
+
+    const unknown = await app.inject({
+      method: "POST", url: `/api/experiences/${id}/report`, headers: auth,
+      payload: { category: "i_disagree" },
+    });
+    expect(unknown.statusCode).toBe(400);
+    expect((unknown.json() as { error: string }).error).toBe("bad_category");
+
+    const cols = app.ctx.db.prepare("PRAGMA table_info(reports)").all() as unknown as { name: string }[];
+    expect(cols.some((c) => c.name === "note")).toBe(false);
+  });
+
+  it("valid category triggers automatic re-evaluation under current policy", async () => {
+    const id = await publishedId();
+    // Policy has hardened since publication: the same text now blocks.
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN, targets_student: true } });
+    const rep = await app.inject({
+      method: "POST", url: `/api/experiences/${id}/report`, headers: auth,
+      payload: { category: "targets_student" },
+    });
+    expect(rep.statusCode).toBe(200);
+    const row = app.ctx.db.prepare("SELECT status, body FROM experiences WHERE id = ?").get(id) as unknown as {
+      status: string; body: string | null;
+    };
+    expect(row.status).toBe("blocked");
+    expect(row.body).toBeNull(); // hidden content is purged, not archived
+  });
+});
+
+describe("reactions, kill switches, abuse, admin gate", () => {
   it("reaction dedup + change + small-cohort hiding", async () => {
     const lessonId = await myLessonId();
-    const r = await submit({ lessonId, body: "Useful lesson overall." });
-    await settle();
+    await fullPublish({ lessonId }, "Useful lesson overall.");
     const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
     const expId = (feed.json() as { experiences: { id: string }[] }).experiences[0]!.id;
 
     await app.inject({ method: "POST", url: `/api/experiences/${expId}/react`, headers: auth, payload: { value: 1 } });
     await app.inject({ method: "POST", url: `/api/experiences/${expId}/react`, headers: auth, payload: { value: -1 } });
-    let counts = app.ctx.db.prepare("SELECT COUNT(*) AS n FROM reactions").get() as unknown as { n: number };
+    const counts = app.ctx.db.prepare("SELECT COUNT(*) AS n FROM reactions").get() as unknown as { n: number };
     expect(counts.n).toBe(1); // one active reaction per user, value changed
 
     // Hide counts below threshold.
@@ -330,22 +508,28 @@ describe("reactions, kill switches, admin gate", () => {
     });
     const hidden = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
     expect((hidden.json() as { experiences: { reactions: unknown }[] }).experiences[0]!.reactions).toBeNull();
-    expect(r.status).toBe(200);
   });
 
-  it("kill switches: publications off; feed hidden", async () => {
+  it("kill switches: publications off blocks check AND publish; feed hidden", async () => {
+    const lessonId = await myLessonId();
+    // Obtain valid artifacts first, then flip the switch: publish must refuse.
+    const elig = await eligibility({ lessonId });
+    const chk = await check({ lessonId, body: "Fine lesson." });
     await app.inject({
       method: "POST", url: "/api/admin/kill-switch", headers: auth,
       payload: { name: "DISABLE_NEW_PUBLICATIONS", on: true },
     });
-    const lessonId = await myLessonId();
-    expect((await submit({ lessonId, body: "x" })).body.error).toBe("publications_disabled");
+    expect((await check({ lessonId, body: "x" })).body.error).toBe("publications_disabled");
+    expect((await eligibility({ lessonId })).body.error).toBe("publications_disabled");
+    const pub = await publish({ eligibilityToken: elig.body.eligibilityToken, pass: chk.body.pass, body: "Fine lesson." });
+    expect(pub.body.error).toBe("publications_disabled");
+
     await app.inject({
       method: "POST", url: "/api/admin/kill-switch", headers: auth,
       payload: { name: "DISABLE_NEW_PUBLICATIONS", on: false },
     });
-    await submit({ lessonId, body: "Fine lesson." });
-    await settle();
+    const pub2 = await publish({ eligibilityToken: elig.body.eligibilityToken, pass: chk.body.pass, body: "Fine lesson." });
+    expect(pub2.status).toBe(200);
 
     await app.inject({
       method: "POST", url: "/api/admin/kill-switch", headers: auth,
@@ -353,23 +537,23 @@ describe("reactions, kill switches, admin gate", () => {
     });
     const feed = await app.inject({ method: "GET", url: "/api/experiences", headers: auth });
     expect((feed.json() as { experiences: unknown[] }).experiences).toHaveLength(0);
+    const mineFeed = await app.inject({ method: "GET", url: "/api/experiences/from-my-classes", headers: auth });
+    expect((mineFeed.json() as { experiences: unknown[] }).experiences).toHaveLength(0);
   });
 
-  it("repeated prohibited attempts suspend the account (§21), no text/link stored", async () => {
-    app.ctx.experiences.llmRunner = async () => ({ ...({ ok: true } as const), features: { ...CLEAN, slur_or_dehumanizing: true } });
+  it("repeated prohibited attempts at CHECK time suspend the account (§21), no text/link stored", async () => {
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN, slur_or_dehumanizing: true } });
     const lessonId = await myLessonId();
-    // Three high-confidence prohibited attempts (each blocked + text purged).
+    // Three high-confidence prohibited attempts — all at check, nothing stored.
     for (let i = 0; i < 3; i++) {
-      const r = await submit({ lessonId, body: `prohibited attempt ${i}` });
-      // First is accepted for processing then blocked; dedup mark is released so
-      // the same lesson can be retried (that is what lets abuse accumulate).
-      await settle();
-      expect([200, 422]).toContain(r.status);
+      const r = await check({ lessonId, body: `prohibited attempt ${i}` });
+      expect(r.body.lane).toBe("blocked_serious");
     }
+    expect(storedCount()).toBe(0);
     // Now the account is suspended from NEW publications.
     app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN } });
-    const blocked = await submit({ lessonId, body: "a perfectly fine note now" });
-    expect(blocked.body.error).toBe("temporarily_suspended");
+    expect((await check({ lessonId, body: "a perfectly fine note now" })).body.error).toBe("temporarily_suspended");
+    expect((await eligibility({ lessonId })).body.error).toBe("temporarily_suspended");
     // The abuse counter holds counts only — no body, no post id.
     const cols = app.ctx.db.prepare("PRAGMA table_info(abuse_counters)").all() as unknown as { name: string }[];
     expect(cols.map((c) => c.name).sort()).toEqual(["blocked_attempts", "honey_id", "last_blocked_at", "suspended_until"]);

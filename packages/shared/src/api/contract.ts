@@ -102,6 +102,19 @@ export interface SyncResponse {
 // ---------------------------------------------------------------------------
 // Experiences (anonymous community — App A). Field names mirror the wire
 // exactly (snake_case where the backend sends snake_case).
+//
+// V1 Experiences objects (Gary, 2026-08-31): lesson / teacher / classroom /
+// canteen dish ONLY. "Course" is NOT a browsable Experiences entity in V1 —
+// course ids appear only as lesson CONTEXT for filter-time association.
+//
+// Publication is a two-call flow (no server-side pending state, ever):
+//   1. POST /api/experiences/eligibility (authenticated) → single-use token
+//   2. POST /api/experiences/check       (authenticated) → moderation lane
+//      (+ short-lived content-bound pass when the lane permits publication);
+//      the draft body is NEVER persisted by check.
+//   3. POST /api/experiences/publish     (NO session auth) → verifies the
+//      eligibility token + pass and stores the post. The publish request
+//      carries no account identity; published posts store no author ID.
 // ---------------------------------------------------------------------------
 
 export type EntityType = "teacher" | "room" | "dish";
@@ -122,10 +135,12 @@ export interface ReactionCounts {
   dislikes: number;
 }
 
+export type ExperienceProvenance = "verified_lesson" | "verified_retrospective" | "verified_member";
+
 /**
- * A published post as the public feed exposes it: no author, no raw lesson id,
- * and only a coarse day bucket (days since epoch) — exact timestamps never
- * exist publicly.
+ * A published post as the PUBLIC feed exposes it: no author, no raw lesson id,
+ * no internal status/policy fields, and only a coarse day bucket (days since
+ * epoch) — exact timestamps never exist publicly.
  */
 export interface PublicExperience {
   id: string;
@@ -135,10 +150,7 @@ export interface PublicExperience {
   ctx_room_id: string | null;
   body: string | null;
   rating: number | null;
-  provenance: string;
-  status: string;
-  status_detail: string | null;
-  policy_version: number;
+  provenance: ExperienceProvenance;
   publishedDay: number | null;
   /** null means counts are hidden (below the small-cohort threshold). */
   reactions: ReactionCounts | null;
@@ -147,10 +159,13 @@ export interface PublicExperience {
 export interface ExperiencesFeedParams {
   entityKey?: string;
   teacherId?: string;
+  /** Context filter only (filter-time association) — course is not an entity. */
   courseId?: string;
   roomId?: string;
   q?: string;
   sort?: "newest" | "oldest";
+  /** Epoch ms; return posts published strictly before this instant. */
+  before?: number;
   limit?: number;
 }
 
@@ -158,46 +173,114 @@ export interface ExperiencesFeedResponse {
   experiences: PublicExperience[];
 }
 
-export interface SubmitExperienceInput {
+/** GET /api/experiences/from-my-classes?before=&limit= (authenticated). */
+export interface FromMyClassesParams {
+  before?: number;
+  limit?: number;
+}
+
+// ---- step 1: eligibility (authenticated; single-use, scope-bound) ----
+
+export interface ExperienceEligibilityInput {
   /** Exactly one of lessonId / entityKey. */
   lessonId?: string;
   entityKey?: string;
-  body: string;
-  rating?: number;
 }
 
-export interface SubmitExperienceResponse {
+export interface ExperienceEligibilityResponse {
   ok: true;
-  experienceId: string;
-  /** Client-held; the server keeps only a hash. Shown once — store it. */
-  ownershipKey: string;
-  status: "pending";
+  /** Single-use, client-held. The server stores only its sha256. */
+  eligibilityToken: string;
+  expiresAt: number;
 }
 
-/** 422 error codes the submit endpoint can return. */
-export type SubmitExperienceError =
+export type ExperienceEligibilityError =
   | "publications_disabled"
-  | "body_invalid"
-  | "rating_invalid"
+  | "temporarily_suspended"
+  | "target_required"
   | "lesson_not_yours"
   | "entity_unknown"
   | "entity_frozen"
   | "standalone_closed"
   | "not_invited"
   | "no_verified_exposure"
-  | "rating_not_allowed"
   | "already_reviewed";
 
-export type MyExperienceStatus =
-  | "pending"
-  | "published"
-  | "cooldown"
-  | "rephrase_required"
-  | "blocked"
-  | "failed_closed"
-  | "revoked";
+// ---- step 2: moderation preflight (authenticated; NEVER persists the body) ----
 
-/** Own-submission row (looked up by client-held keys; includes non-public fields). */
+export interface CheckExperienceInput {
+  /** Exactly one of lessonId / entityKey (same target the eligibility is for). */
+  lessonId?: string;
+  entityKey?: string;
+  body: string;
+  rating?: number;
+  /** Present only when re-checking after a cooldown lane result. */
+  cooldownTicket?: string;
+}
+
+export type CheckLane =
+  | "publish"
+  | "nudge"
+  | "cooldown"
+  | "edit_required"
+  | "blocked_serious"
+  | "out_of_scope"
+  | "failed_closed";
+
+export interface CheckExperienceResponse {
+  lane: CheckLane;
+  reasons: string[];
+  policyVersion: number;
+  /**
+   * Opaque short-lived content-bound publication pass. Present for lanes
+   * `publish` and `nudge` — a nudge STILL requires the user's explicit choice
+   * (add context / publish as-is / keep private); the server never publishes.
+   */
+  pass?: string;
+  /** Present for lane `cooldown`: re-check with this ticket after retryAt. */
+  cooldown?: { ticket: string; retryAt: number };
+}
+
+export type CheckExperienceError =
+  | ExperienceEligibilityError
+  | "body_invalid"
+  | "rating_invalid"
+  | "rating_not_allowed"
+  | "cooldown_ticket_invalid";
+
+// ---- step 3: publish (NO session auth — token + pass only) ----
+
+export interface PublishExperienceInput {
+  eligibilityToken: string;
+  pass: string;
+  body: string;
+  rating?: number;
+}
+
+export interface PublishExperienceResponse {
+  ok: true;
+  experienceId: string;
+  /** Client-held; the server keeps only a hash. Shown once — store it. */
+  ownershipKey: string;
+}
+
+export type PublishExperienceError =
+  | "publications_disabled"
+  | "pass_invalid"
+  | "pass_content_mismatch"
+  | "pass_scope_mismatch"
+  | "eligibility_invalid"
+  | "eligibility_expired"
+  | "eligibility_used"
+  | "already_reviewed"
+  | "entity_frozen"
+  | "rating_not_allowed";
+
+// ---- own-submission lifecycle (looked up by client-held ownership keys) ----
+
+export type MyExperienceStatus = "published" | "blocked" | "revoked";
+
+/** Own-submission row. Only ever exists for posts that were actually published. */
 export interface MyExperience {
   id: string;
   entity_key: string;
@@ -208,10 +291,9 @@ export interface MyExperience {
   ctx_room_id: string | null;
   body: string | null;
   rating: number | null;
-  provenance: string;
+  provenance: ExperienceProvenance;
   status: MyExperienceStatus;
   status_detail: string | null;
-  cooldown_until: number | null;
   policy_version: number;
   created_at: number;
   published_at: number | null;
@@ -221,10 +303,7 @@ export interface MyExperiencesResponse {
   experiences: MyExperience[];
 }
 
-export interface ReconfirmResponse {
-  ok: boolean;
-  status?: string;
-}
+// ---- reports (category-only; free text is never accepted) ----
 
 export type ReportCategory =
   | "serious_allegation"
@@ -233,6 +312,10 @@ export type ReportCategory =
   | "targets_student"
   | "not_experience"
   | "other_rule";
+
+export interface ReportExperienceInput {
+  category: ReportCategory;
+}
 
 // ---------------------------------------------------------------------------
 // Admin dash (isAdmin only)
@@ -250,7 +333,6 @@ export interface AdminOverview {
   counts: {
     users: number;
     published: number;
-    pending: number;
     openReports: number;
     entities: number;
   };
@@ -275,8 +357,7 @@ export interface AdminLlmTestResponse {
 export interface AdminReport {
   id: string;
   experience_id: string;
-  category: string;
-  note: string | null;
+  category: ReportCategory;
   outcome: "pending" | "reevaluated_kept" | "reevaluated_hidden" | null;
   created_at: number;
 }

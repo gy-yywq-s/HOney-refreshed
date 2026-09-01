@@ -1,9 +1,20 @@
 import type { FastifyInstance } from "fastify";
 import type { AppContext } from "../context.js";
+import type { ReportCategory } from "@honey/shared/api";
 
-// Experiences surface (App A). Feeds are raw-first with allowed sorts only;
-// submission is async — the response returns immediately with the client-held
-// ownership key, and the post appears once the signed pass is issued.
+// Experiences surface (App A). Two-call publication flow (audit §3.7/§3.8):
+//   eligibility (auth) → check (auth, synchronous moderation, persists nothing)
+//   → publish (NO session auth: eligibility token + content-bound pass only).
+// Feeds are raw-first with allowed sorts only.
+
+const REPORT_CATEGORIES: ReportCategory[] = [
+  "serious_allegation",
+  "doxxing",
+  "slur",
+  "targets_student",
+  "not_experience",
+  "other_rule",
+];
 
 export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext): void {
   app.get<{
@@ -25,6 +36,19 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     return { experiences: ctx.experiences.feed(opts) };
   });
 
+  /** Domain query (audit §4.2): published posts relevant to MY verified exposure. */
+  app.get<{ Querystring: { before?: string; limit?: string } }>(
+    "/api/experiences/from-my-classes",
+    { preHandler: ctx.requireAuth },
+    async (req) => {
+      const user = ctx.userOf(req);
+      const opts: { before?: number; limit?: number } = {};
+      if (req.query.before) opts.before = Number(req.query.before);
+      if (req.query.limit) opts.limit = Number(req.query.limit);
+      return { experiences: ctx.experiences.fromMyClasses(user.honey_id, opts) };
+    },
+  );
+
   app.get<{ Querystring: { type?: string; q?: string } }>(
     "/api/entities",
     { preHandler: ctx.requireAuth },
@@ -34,26 +58,69 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     },
   );
 
-  app.post<{ Body: { lessonId?: string; entityKey?: string; body?: string; rating?: number } }>(
-    "/api/experiences",
+  /** Step 1 — single-use, scope-bound eligibility token (stored unlinkably). */
+  app.post<{ Body: { lessonId?: string; entityKey?: string } }>(
+    "/api/experiences/eligibility",
     { preHandler: ctx.requireAuth },
     async (req, reply) => {
       const user = ctx.userOf(req);
-      const { lessonId, entityKey, body, rating } = req.body ?? {};
-      const input: Parameters<typeof ctx.experiences.submit>[0] = {
+      const { lessonId, entityKey } = req.body ?? {};
+      const input: Parameters<typeof ctx.experiences.issueEligibility>[0] = { honeyId: user.honey_id };
+      if (lessonId) input.lessonId = lessonId;
+      if (entityKey) input.entityKey = entityKey;
+      const result = ctx.experiences.issueEligibility(input);
+      if (!result.ok) return reply.code(422).send({ error: result.error });
+      return reply.send(result);
+    },
+  );
+
+  /** Step 2 — synchronous moderation preflight. The draft is NEVER persisted. */
+  app.post<{ Body: { lessonId?: string; entityKey?: string; body?: string; rating?: number; cooldownTicket?: string } }>(
+    "/api/experiences/check",
+    { preHandler: ctx.requireAuth },
+    async (req, reply) => {
+      const user = ctx.userOf(req);
+      const { lessonId, entityKey, body, rating, cooldownTicket } = req.body ?? {};
+      const input: Parameters<typeof ctx.experiences.check>[0] = {
         honeyId: user.honey_id,
         body: body ?? "",
       };
       if (lessonId) input.lessonId = lessonId;
       if (entityKey) input.entityKey = entityKey;
       if (rating !== undefined) input.rating = rating;
-      const result = await ctx.experiences.submit(input);
+      if (cooldownTicket !== undefined) input.cooldownTicket = cooldownTicket;
+      const result = await ctx.experiences.check(input);
+      if (!result.ok) return reply.code(422).send({ error: result.error });
+      const { ok: _ok, ...response } = result;
+      return reply.send(response);
+    },
+  );
+
+  /**
+   * Step 3 — publish. Deliberately NO session auth: the request authenticates
+   * purely by eligibility token + content-bound pass, so it carries no account
+   * identity. Publication happens ONLY here, on explicit client action.
+   */
+  app.post<{ Body: { eligibilityToken?: string; pass?: string; body?: string; rating?: number } }>(
+    "/api/experiences/publish",
+    async (req, reply) => {
+      const { eligibilityToken, pass, body, rating } = req.body ?? {};
+      if (!eligibilityToken || !pass) {
+        return reply.code(400).send({ error: "eligibilityToken and pass required" });
+      }
+      const input: Parameters<typeof ctx.experiences.publish>[0] = {
+        eligibilityToken,
+        pass,
+        body: body ?? "",
+      };
+      if (rating !== undefined) input.rating = rating;
+      const result = ctx.experiences.publish(input);
       if (!result.ok) return reply.code(422).send({ error: result.error });
       return reply.send(result);
     },
   );
 
-  /** Client-held-keys lookup: the caller's own submission history (any status). */
+  /** Client-held-keys lookup: the caller's own published-post history. */
   app.post<{ Body: { keys?: string[] } }>(
     "/api/experiences/mine",
     { preHandler: ctx.requireAuth },
@@ -65,19 +132,6 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
       return {
         experiences: rows.map(({ ownership_hash: _o, content_hash: _c, ...rest }) => rest),
       };
-    },
-  );
-
-  app.post<{ Body: { ownershipKey?: string } }>(
-    "/api/experiences/reconfirm",
-    { preHandler: ctx.requireAuth },
-    async (req, reply) => {
-      const user = ctx.userOf(req);
-      const key = req.body?.ownershipKey;
-      if (!key) return reply.code(400).send({ error: "ownershipKey required" });
-      const result = await ctx.experiences.reconfirm(user.honey_id, key);
-      if (!result.ok) return reply.code(422).send({ error: result.error });
-      return reply.send(result);
     },
   );
 
@@ -109,13 +163,17 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     },
   );
 
-  app.post<{ Params: { id: string }; Body: { category?: string; note?: string } }>(
+  /** Reports are category-only (audit §3.9): free text is rejected outright. */
+  app.post<{ Params: { id: string }; Body: { category?: string; note?: unknown } }>(
     "/api/experiences/:id/report",
     { preHandler: ctx.requireAuth },
     async (req, reply) => {
       const { category, note } = req.body ?? {};
-      if (!category) return reply.code(400).send({ error: "category required" });
-      const result = await ctx.experiences.report(req.params.id, category, note);
+      if (note !== undefined) return reply.code(400).send({ error: "free_text_not_accepted" });
+      if (!category || !REPORT_CATEGORIES.includes(category as ReportCategory)) {
+        return reply.code(400).send({ error: "bad_category" });
+      }
+      const result = await ctx.experiences.report(req.params.id, category as ReportCategory);
       if (!result.ok) return reply.code(422).send({ error: result.error });
       return reply.send(result);
     },

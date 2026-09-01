@@ -37,17 +37,20 @@ enabled; live portal facts (TTL, door-open envelope) need a **school test accoun
 **PASS (24):** 1–4, 8–19, 21, 22, 24, 25, 26 + private-note (5), culture surfaces (6), nudge (7),
 privacy page (23) now landed. Entity models, teacher-prominent no-scalar, dish-only scalar,
 provenance, private notes (web device-encrypted store), culture statements in composer, **nudge
-lane live** (`publish_nudge`, policy v3), cooldown+reconfirm re-runs current policy, serious
+lane live** (preflight `nudge` lane, policy v4 — the user explicitly chooses; the server never
+auto-publishes), cooldown ticket re-check re-runs current policy, serious
 blocked + text-not-persisted, uncertain→rephrase / evasion caught, raw-first browsing, no
 aggregate, reactions gated + non-ranking + small-cohort hiding, reports-not-votes, no human queue,
 LLM has no tools/key, deterministic decision, server-only key, run-once + signed pass, no author
 column, no author-lookup admin, app/web parity, kill switches + auto re-eval, corpus launch gates.
 
 **Documented as V1 substitute (not a literal match):**
-- **§27.20** eligibility uses server-side unlinkable HMAC marks (join to nothing) rather than a
-  client-held blinded credential — privacy property met; the cryptographic issuer-unlinkability
-  (Privacy Pass) is future work. Recorded in `docs/architecture/moderation-pipeline.md` and
-  `m3-experiences.md`.
+- **§27.20** eligibility is a single-use token (stored only as a hash + an unlinkable HMAC scope
+  mark, no user column) and `POST /api/experiences/publish` requires no session — the publish
+  request carries no account identity and published posts store no author ID. This is a
+  pragmatic split, NOT a blinded credential: cryptographic issuer-unlinkability (Privacy Pass)
+  remains future work and no UI copy may claim it. Recorded in
+  `docs/architecture/moderation-pipeline.md` and `m3-experiences.md`.
 - **§27.27** UGC-requirements review documented (`docs/ugc-appstore-review.md`).
 
 ## Appendix A §26.2 — launch gates (10)

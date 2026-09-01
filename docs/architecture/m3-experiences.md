@@ -12,44 +12,52 @@ architecture*, moderated *without humans in the loop*, and fast enough to feel i
   admin imports (deduped by name). Eligibility per admin-configurable mode:
   `verified` (default; needs exposure) · `open` · `invite` (admin invites by studentId) · `closed`.
 - **Ratings:** a 1–5 scalar exists for **dishes only**. Never for humans, lessons, or rooms —
-  refused at submit *and* re-checked by the policy engine.
+  refused at check *and* re-checked by the policy engine.
 
 ## Anonymity model
 
 ```mermaid
 flowchart LR
-  U[Student] -- authenticated submit --> S[Submission]
-  S -- "ownership key (client-held)" --> U
-  S --> M[Moderation issuer]
-  M -- "signed pass\n(content-hash bound)" --> P[Publication]
+  U[Student] -- authenticated --> E[Eligibility issuer\nsingle-use token, stored as hash\nNO user column]
+  U -- authenticated draft --> M[Moderation check\npersists NOTHING]
+  M -- "signed pass\n(content-hash bound)" --> U
+  U -- "token + pass, NO session" --> P[Publish endpoint]
+  P -- "ownership key (client-held)" --> U
   P --> DB[(experiences table\nNO author column)]
 ```
 
 - The `experiences` table has **no author column** — verified by a test against `PRAGMA table_info`.
-- Ownership is provable only via a **client-held key** (returned once at submit; users are warned
-  it is device-only — lose it, lose control of that post). History/revoke/reconfirm all work by
-  presenting keys, not identity.
+- Ownership is provable only via a **client-held key** (returned once at publish; users are warned
+  it is device-only — lose it, lose control of that post). History/revoke work by presenting
+  keys, not identity.
 - One-review-per-scope is enforced with **HMAC marks** (`HMAC(serverKey, honeyId‖scope)`) that
   join to nothing. Reactions dedup the same way. Revoking recomputes the mark transiently and
   frees the slot; nothing persisted links user→post.
-- Rejected / failed-closed / revoked text is **NULLed** — rejected content is never persisted.
+- Rejected / failed-closed text is **never stored at all** (the check step persists nothing);
+  revoked text is NULLed. The publish request carries no account identity — published posts are
+  stored without an author ID.
 
-## Moderation pipeline (once per content, then a signed pass)
+## Moderation pipeline (synchronous check, then explicit publish)
 
 ```
-normalize (NFKC, zero-width strip, confusable de-leet, squeeze)
+POST /api/experiences/check  (authenticated; the draft is NEVER persisted)
+  normalize (NFKC, zero-width strip, confusable de-leet, squeeze)
   → deterministic lexicon  (slurs/threats/doxxing/minor-sexual — hard block, no LLM call)
-  → LLM feature extractor  (OpenRouter; strict 7-boolean JSON schema; temp 0; text is data)
-  → deterministic policy engine  (THE decision-maker; policy v1)
-  → HMAC pass bound to contentHash + entityKey + contextHash + policyVersion + nonce + expiry
-  → publication verifies pass + single-use nonce — never re-runs the LLM
+  → LLM feature extractor  (OpenRouter; strict 10-boolean JSON schema; temp 0; text is data)
+  → deterministic policy engine  (THE decision-maker)
+  → lane + HMAC pass bound to contentHash + entityKey + contextHash + policyVersion + nonce + expiry
+
+POST /api/experiences/publish  (NO session auth; explicit client action only)
+  verifies single-use eligibility token + pass (+ nonce) — never re-runs the LLM
 ```
 
-Action lanes: `publish` · `publish_nudge` · `cooldown_24h` (high-arousal; user reconfirms after
-the window) · `rephrase_required` (injection/correctable) · `blocked_serious` ·
-`blocked_out_of_scope` · `failed_closed` (LLM outage/uncertain — nothing publishes).
+Client-facing lanes: `publish` · `nudge` (publishable — the user chooses add-context /
+publish-as-is / keep-private; the server never auto-publishes) · `cooldown` (high-arousal;
+signed ticket, re-check after 24 h under the then-current policy) · `edit_required`
+(injection/correctable) · `blocked_serious` · `out_of_scope` · `failed_closed` (LLM
+outage — nothing publishes).
 
-**Latency:** submission responds immediately (async pipeline). Lexical blocks skip the LLM.
+**Latency:** check is one short synchronous wait (~2–4 s). Lexical blocks skip the LLM.
 Live-benchmarked default model `mistral-small-3.2-24b` (~2–4 s, 100 % schema-valid across the
 bench + smoke), fallback `deepseek-v4-flash`, with 429/5xx retry + model fallback. Config
 (key/model) lives in the admin dash, sealed at rest; test key path verified end-to-end.
@@ -60,12 +68,15 @@ Kill switches (`DISABLE_NEW_PUBLICATIONS`, `DISABLE_REACTIONS`, `HIDE_PUBLIC_EXP
 `PRIVATE_NOTES_ONLY_MODE`, per-entity freeze) · standalone-mode config · entity import (union) ·
 invites · reaction-count hiding threshold · LLM key/model + live probe · report log. Reports are
 **rule-based categories** that trigger automatic re-evaluation — there is no human review queue
-and **no author-lookup anywhere** in admin.
+and **no author-lookup anywhere** in admin. Reports are **category-only** — no free-text
+channel exists.
 
-## Tests (31, all green)
+## Tests (all green)
 
-Policy lanes · lexical evasion (spacing/l33t/Cyrillic) · async publish with raw-first verbatim
-body · serious-content block with text-not-persisted proof · lexical block short-circuits the LLM ·
-outage fail-closed · cooldown + reconfirm · one-per-lesson + revoke-frees-slot · standalone
-eligibility (verified/closed/invite) · admin import union · reaction dedup + hiding · kill
-switches · admin 403 · no-author column/response checks.
+Policy lanes · lexical evasion (spacing/l33t/Cyrillic) · two-call publish with raw-first
+verbatim body · check-persists-nothing proof (publish/blocked/failed lanes) · single-use
+eligibility + pass replay refusals · nudge requires explicit publish · lexical block
+short-circuits the LLM · outage fail-closed · cooldown ticket + re-check · one-per-lesson +
+revoke-frees-slot · standalone eligibility (verified/closed/invite) · admin import union ·
+from-my-classes exposure filter · category-only reports · reaction dedup + hiding · kill
+switches · admin 403 · no-author column/response checks (posts AND eligibility table).

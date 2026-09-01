@@ -44,6 +44,6 @@ source of truth for both the SwiftUI port and the Web mirror. Legacy source live
 Quiet, second-person, lowercase-friendly, occasionally bilingual and self-deprecating; server-provided greetings with `"Hi, {name}"` fallback. Never exclamatory, gamified, or emoji.
 
 ## Portability
-- Port verbatim: `AppTheme.swift`, `AppComponents.swift`, `LoginScreen`+`HoneyLoginMark`, the view-modifier block, and all pure presentational cards/timeline views (they take plain `let` inputs).
+- Port verbatim: `AppTheme.swift`, `AppComponents.swift`, `LoginScreen` + the legacy login wordmark view (rename the ported symbol to `HOneyLoginMark`), the view-modifier block, and all pure presentational cards/timeline views (they take plain `let` inputs).
 - Rewrite data layer only (keep visuals): screens bound to `PortalStore`/`CloudServicing`/`MusicPlayerStore` — swap to the new HOney service layer.
 - Not web-portable (UIKit): SafariView, QuickLook preview, Keychain, security-scoped bookmarks — Web uses its own equivalents.
