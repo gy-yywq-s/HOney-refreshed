@@ -63,6 +63,7 @@ enum ComposerStatus: Sendable, Equatable {
     /// `retryAt` is epoch milliseconds.
     case cooldown(retryAt: Int, reasons: [String])
     case published(ownershipKey: String, experienceId: String)
+    case publishedKeyRecovery(ownershipKey: String, experienceId: String, journalSaved: Bool)
 }
 
 @MainActor
@@ -84,11 +85,14 @@ final class ComposeExperienceViewModel {
     private(set) var savedNote: PrivateNote?
     private(set) var keepPrivateError: String?
     private(set) var isSavingNote = false
+    private(set) var keyRecoveryError: String?
+    private(set) var isSavingRecoveryKey = false
 
     private let api: any ExperiencePublishing
     private let drafts: ComposerDraftStore
     private let notes: PrivateNoteStore
     private let ownershipKeys: any OwnershipKeyStoring
+    private let recoveryStore: PublishedKeyRecoveryStore
 
     /// When seeded from an existing private note, "Keep private" updates it.
     private let seedNote: PrivateNote?
@@ -114,7 +118,8 @@ final class ComposeExperienceViewModel {
         api: any ExperiencePublishing,
         drafts: ComposerDraftStore,
         notes: PrivateNoteStore,
-        ownershipKeys: any OwnershipKeyStoring
+        ownershipKeys: any OwnershipKeyStoring,
+        recoveryStore: PublishedKeyRecoveryStore
     ) {
         self.target = target
         self.seedNote = seedNote
@@ -123,6 +128,7 @@ final class ComposeExperienceViewModel {
         self.drafts = drafts
         self.notes = notes
         self.ownershipKeys = ownershipKeys
+        self.recoveryStore = recoveryStore
     }
 
     convenience init(services: AppServices, target: ComposerTarget?, seedNote: PrivateNote? = nil) {
@@ -132,7 +138,8 @@ final class ComposeExperienceViewModel {
             api: services.honeyAPI,
             drafts: services.composerDraftStore,
             notes: services.privateNoteStore,
-            ownershipKeys: services.ownershipKeyStore
+            ownershipKeys: services.ownershipKeyStore,
+            recoveryStore: services.publishedKeyRecoveryStore
         )
     }
 
@@ -145,6 +152,18 @@ final class ComposeExperienceViewModel {
     func hydrate() async {
         defer { hydrated = true }
         guard !hydrated else { return }
+        if let recovery = try? await recoveryStore.record(forTarget: target?.targetKey ?? ""),
+           recovery.targetKey == target?.targetKey {
+            body = recovery.body
+            rating = recovery.rating
+            status = .publishedKeyRecovery(
+                ownershipKey: recovery.ownershipKey,
+                experienceId: recovery.experienceId,
+                journalSaved: true
+            )
+            keyRecoveryError = "This published post still needs its post-control key saved on this iPhone."
+            return
+        }
         if let seedNote {
             body = seedNote.body
             rating = seedNote.rating
@@ -222,6 +241,28 @@ final class ComposeExperienceViewModel {
         }
     }
 
+    func retryOwnershipKeyStorage() async {
+        guard !isSavingRecoveryKey,
+              case .publishedKeyRecovery(let ownershipKey, let experienceId, _) = status else { return }
+        isSavingRecoveryKey = true
+        defer { isSavingRecoveryKey = false }
+        keyRecoveryError = nil
+        do {
+            try await ownershipKeys.add(experienceId: experienceId, ownershipKey: ownershipKey)
+            guard try await ownershipKeys.ownershipKey(for: experienceId) == ownershipKey else {
+                throw OwnershipKeyStoreError.verificationFailed
+            }
+            if let key = target?.targetKey, !key.isEmpty {
+                await pendingAutosave?.value
+                try await drafts.clear(key)
+            }
+            try await recoveryStore.clear(experienceId: experienceId)
+            status = .published(ownershipKey: ownershipKey, experienceId: experienceId)
+        } catch {
+            keyRecoveryError = "The post is public, but its post-control key still could not be saved. Copy the key below and try saving again."
+        }
+    }
+
     // MARK: - eligibility → check → (publish | nudge | cooldown | keep-draft)
 
     private func runCheck(ticket: String?) async {
@@ -289,12 +330,38 @@ final class ComposeExperienceViewModel {
             body: body.trimmingCharacters(in: .whitespacesAndNewlines),
             rating: target?.isDish == true ? rating : nil
         ))
-        await ownershipKeys.add(experienceId: result.experienceId, ownershipKey: result.ownershipKey)
-        if let key = target?.targetKey, !key.isEmpty {
-            await pendingAutosave?.value
-            await drafts.clear(key)
+        let recoveryRecord = PublishedKeyRecoveryRecord(
+            experienceId: result.experienceId,
+            ownershipKey: result.ownershipKey,
+            targetKey: target?.targetKey ?? "",
+            body: body,
+            rating: rating,
+            createdAt: .now
+        )
+        let journalSaved = (try? await recoveryStore.save(recoveryRecord)) != nil
+        do {
+            try await ownershipKeys.add(experienceId: result.experienceId, ownershipKey: result.ownershipKey)
+            guard try await ownershipKeys.ownershipKey(for: result.experienceId) == result.ownershipKey else {
+                throw OwnershipKeyStoreError.verificationFailed
+            }
+            if let key = target?.targetKey, !key.isEmpty {
+                await pendingAutosave?.value
+                try await drafts.clear(key)
+            }
+            try? await recoveryStore.clear(experienceId: result.experienceId)
+            status = .published(ownershipKey: result.ownershipKey, experienceId: result.experienceId)
+        } catch {
+            // Publication already succeeded. Keep the durable draft and expose
+            // the returned key until storage is verified; never republish.
+            status = .publishedKeyRecovery(
+                ownershipKey: result.ownershipKey,
+                experienceId: result.experienceId,
+                journalSaved: journalSaved
+            )
+            keyRecoveryError = journalSaved
+                ? "The post is public. Its recovery key is protected locally, but it still needs to be saved to the post-control key store."
+                : "The post is public, but neither key storage nor the protected recovery journal succeeded. Copy the key now."
         }
-        status = .published(ownershipKey: result.ownershipKey, experienceId: result.experienceId)
     }
 
     /// A publish/nudge response missing its pass — treat as fail-closed.

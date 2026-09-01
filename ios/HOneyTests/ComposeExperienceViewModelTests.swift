@@ -31,11 +31,18 @@ final class ComposeExperienceViewModelTests: XCTestCase {
     )
 
     private func makeVM(
-        target: ComposerTarget?, seedNote: PrivateNote? = nil, api: StubExperienceAPI
+        target: ComposerTarget?,
+        seedNote: PrivateNote? = nil,
+        api: StubExperienceAPI,
+        ownershipKeys: (any OwnershipKeyStoring)? = nil
     ) -> ComposeExperienceViewModel {
         ComposeExperienceViewModel(
             target: target, seedNote: seedNote,
-            api: api, drafts: drafts, notes: notes, ownershipKeys: keys
+            api: api,
+            drafts: drafts,
+            notes: notes,
+            ownershipKeys: ownershipKeys ?? keys,
+            recoveryStore: PublishedKeyRecoveryStore(directory: tempDir)
         )
     }
 
@@ -66,7 +73,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
 
     // MARK: Lane → status/notice mapping
 
-    func testPublishLanePublishesStoresKeyAndClearsDraft() async {
+    func testPublishLanePublishesStoresKeyAndClearsDraft() async throws {
         let api = StubExperienceAPI(check: [.success(StubExperienceAPI.lane(.publish, pass: "pass-1"))])
         let vm = makeVM(target: lessonTarget, api: api)
         await vm.hydrate()
@@ -75,7 +82,7 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         await vm.publish()
 
         XCTAssertEqual(vm.status, .published(ownershipKey: "own-1", experienceId: "exp-1"))
-        let storedKey = await keys.ownershipKey(for: "exp-1")
+        let storedKey = try await keys.ownershipKey(for: "exp-1")
         XCTAssertEqual(storedKey, "own-1")
         let draft = await drafts.get("lesson:l1")
         XCTAssertNil(draft, "successful publish clears the slot")
@@ -83,6 +90,75 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(publishRequests.first?.body, "publishable words", "body is trimmed on the wire")
         XCTAssertEqual(publishRequests.first?.eligibilityToken, "elig-1")
         XCTAssertEqual(publishRequests.first?.pass, "pass-1")
+    }
+
+    func testPublishedPostEntersRecoveryWhenKeyPersistenceFails() async {
+        let api = StubExperienceAPI(check: [.success(StubExperienceAPI.lane(.publish, pass: "pass-1"))])
+        let vm = makeVM(
+            target: lessonTarget,
+            api: api,
+            ownershipKeys: FailingOwnershipKeyStore()
+        )
+        await vm.hydrate()
+        vm.body = "words that were published"
+
+        await vm.publish()
+
+        XCTAssertEqual(
+            vm.status,
+            .publishedKeyRecovery(ownershipKey: "own-1", experienceId: "exp-1", journalSaved: true)
+        )
+        let savedDraft = await drafts.get("lesson:l1")
+        let firstPublishCount = await api.publishRequests.count
+        XCTAssertNotNil(savedDraft, "draft stays until the key is verified")
+        XCTAssertEqual(firstPublishCount, 1)
+
+        await vm.retryOwnershipKeyStorage()
+        XCTAssertEqual(
+            vm.status,
+            .publishedKeyRecovery(ownershipKey: "own-1", experienceId: "exp-1", journalSaved: true)
+        )
+        let retryPublishCount = await api.publishRequests.count
+        XCTAssertEqual(retryPublishCount, 1, "retry never republishes")
+    }
+
+    func testRecoveryRetryStoresKeyClearsDraftAndNeverRepublishes() async throws {
+        let api = StubExperienceAPI(check: [.success(StubExperienceAPI.lane(.publish, pass: "pass-1"))])
+        let keys = FailOnceOwnershipKeyStore()
+        let vm = makeVM(target: lessonTarget, api: api, ownershipKeys: keys)
+        await vm.hydrate()
+        vm.body = "recoverable words"
+
+        await vm.publish()
+        await vm.retryOwnershipKeyStorage()
+
+        let storedKey = try await keys.ownershipKey(for: "exp-1")
+        let remainingDraft = await drafts.get("lesson:l1")
+        XCTAssertEqual(vm.status, .published(ownershipKey: "own-1", experienceId: "exp-1"))
+        XCTAssertEqual(storedKey, "own-1")
+        XCTAssertNil(remainingDraft)
+        let publishCount = await api.publishRequests.count
+        XCTAssertEqual(publishCount, 1)
+    }
+
+    func testRecoveryJournalKeepsMultiplePostsAndClearsOnlyVerifiedRecord() async throws {
+        let store = PublishedKeyRecoveryStore(directory: tempDir)
+        let first = PublishedKeyRecoveryRecord(
+            experienceId: "exp-a", ownershipKey: "key-a", targetKey: "lesson:a",
+            body: "a", rating: nil, createdAt: Date(timeIntervalSince1970: 1)
+        )
+        let second = PublishedKeyRecoveryRecord(
+            experienceId: "exp-b", ownershipKey: "key-b", targetKey: "lesson:b",
+            body: "b", rating: nil, createdAt: Date(timeIntervalSince1970: 2)
+        )
+        try await store.save(first)
+        try await store.save(second)
+
+        try await store.clear(experienceId: first.experienceId)
+        let records = try await store.all()
+
+        XCTAssertNil(records[first.experienceId])
+        XCTAssertEqual(records[second.experienceId], second)
     }
 
     func testNudgeLaneHoldsPassAndAsksTheUser() async {
@@ -290,4 +366,34 @@ final class ComposeExperienceViewModelTests: XCTestCase {
         XCTAssertEqual(saved.first?.id, original.id)
         XCTAssertEqual(saved.first?.body, "v2")
     }
+}
+
+private actor FailingOwnershipKeyStore: OwnershipKeyStoring {
+    enum Failure: Error { case unavailable }
+
+    func map() throws -> [String: String] { throw Failure.unavailable }
+    func keys() throws -> [String] { throw Failure.unavailable }
+    func ownershipKey(for experienceId: String) throws -> String? { throw Failure.unavailable }
+    func add(experienceId: String, ownershipKey: String) throws { throw Failure.unavailable }
+    func remove(experienceId: String) throws { throw Failure.unavailable }
+    func clear() throws { throw Failure.unavailable }
+}
+
+private actor FailOnceOwnershipKeyStore: OwnershipKeyStoring {
+    enum Failure: Error { case firstWrite }
+    private var storage: [String: String] = [:]
+    private var shouldFail = true
+
+    func map() throws -> [String: String] { storage }
+    func keys() throws -> [String] { Array(storage.values) }
+    func ownershipKey(for experienceId: String) throws -> String? { storage[experienceId] }
+    func add(experienceId: String, ownershipKey: String) throws {
+        if shouldFail {
+            shouldFail = false
+            throw Failure.firstWrite
+        }
+        storage[experienceId] = ownershipKey
+    }
+    func remove(experienceId: String) throws { storage.removeValue(forKey: experienceId) }
+    func clear() throws { storage = [:] }
 }

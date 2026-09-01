@@ -61,7 +61,7 @@ actor HOneyAPI {
 
     func logout() async {
         _ = try? await sendNoContent("POST", "/api/auth/logout", authed: true)
-        await store.clear()
+        try? await store.clear()
     }
 
     func me() async throws -> MeResponse {
@@ -287,7 +287,7 @@ actor HOneyAPI {
             request.httpBody = try HOneyCoding.encoder.encode(Body(refreshToken: current.refreshToken))
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse, 200..<300 ~= http.statusCode else {
-                await store.clear()
+                try? await store.clear()
                 throw HOneyAPIError.notAuthenticated
             }
             let refreshed = try HOneyCoding.decoder.decode(HOneySession.self, from: data)

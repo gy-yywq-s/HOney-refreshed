@@ -69,12 +69,12 @@ actor InMemoryOwnershipKeyStore: OwnershipKeyStoring {
         self.storage = initial
     }
 
-    func map() -> [String: String] { storage }
-    func keys() -> [String] { Array(storage.values) }
-    func ownershipKey(for experienceId: String) -> String? { storage[experienceId] }
-    func add(experienceId: String, ownershipKey: String) { storage[experienceId] = ownershipKey }
-    func remove(experienceId: String) { storage.removeValue(forKey: experienceId) }
-    func clear() { storage = [:] }
+    func map() throws -> [String: String] { storage }
+    func keys() throws -> [String] { Array(storage.values) }
+    func ownershipKey(for experienceId: String) throws -> String? { storage[experienceId] }
+    func add(experienceId: String, ownershipKey: String) throws { storage[experienceId] = ownershipKey }
+    func remove(experienceId: String) throws { storage.removeValue(forKey: experienceId) }
+    func clear() throws { storage = [:] }
 }
 
 /// Scripted stub for the composer's publication flow. Each `…Results` queue is
@@ -194,7 +194,8 @@ extension AppServices {
             portalCoordinator: PortalSessionCoordinator(api: MockPortalAuthAPI(), vault: vault),
             ownershipKeyStore: ownershipKeyStore,
             composerDraftStore: ComposerDraftStore(directory: tempDir),
-            privateNoteStore: PrivateNoteStore(directory: tempDir)
+            privateNoteStore: PrivateNoteStore(directory: tempDir),
+            publishedKeyRecoveryStore: PublishedKeyRecoveryStore(directory: tempDir)
         )
     }
 }

@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
@@ -14,6 +15,8 @@ struct SettingsView: View {
     @State private var isSavingConsent = false
     @State private var confirmDelete = false
     @State private var settingsError: String?
+    @AppStorage(SurfacePalette.storageKey) private var persistedSurfacePalette = SurfacePalette.paper.rawValue
+    @State private var pendingSurfacePalette = SurfacePalette.current
 
     var body: some View {
         NavigationStack {
@@ -26,6 +29,7 @@ struct SettingsView: View {
                     .listRowInsets(EdgeInsets())
                 }
 
+                appearanceSection
                 accountSection
                 schoolSection
                 privacySection
@@ -36,9 +40,20 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Done") {
+                        persistedSurfacePalette = pendingSurfacePalette.rawValue
+                        dismiss()
+                    }
+                }
             }
-            .onAppear { consentTimetable = model.profile?.consent.timetable ?? false }
+            .onAppear {
+                consentTimetable = model.profile?.consent.timetable ?? false
+                if SurfacePalette(rawValue: persistedSurfacePalette) == nil {
+                    persistedSurfacePalette = SurfacePalette.paper.rawValue
+                }
+                pendingSurfacePalette = SurfacePalette(rawValue: persistedSurfacePalette) ?? .paper
+            }
             .task {
                 if await model.refreshProfile() {
                     consentTimetable = model.profile?.consent.timetable ?? false
@@ -60,6 +75,45 @@ struct SettingsView: View {
                 Text("Deleting removes your HOney account and imported server data. Anonymous posts remain published. Keep the post-control keys on this iPhone if you may need to revoke them later, or erase those keys together with private notes and drafts.")
             }
         }
+    }
+
+    private var appearanceSection: some View {
+        Section {
+            Picker("Surface", selection: $pendingSurfacePalette) {
+                ForEach(SurfacePalette.allCases) { palette in
+                    Text(palette.title).tag(palette)
+                }
+            }
+
+            HStack(spacing: 8) {
+                Circle().fill(previewColor(pendingSurfacePalette.spec.canvas)).overlay(Circle().stroke(previewColor(pendingSurfacePalette.spec.line))).frame(width: 24, height: 24).accessibilityHidden(true)
+                Circle().fill(previewColor(pendingSurfacePalette.spec.surface)).overlay(Circle().stroke(previewColor(pendingSurfacePalette.spec.line))).frame(width: 24, height: 24).accessibilityHidden(true)
+                Circle().fill(previewColor(pendingSurfacePalette.spec.accent)).frame(width: 24, height: 24).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(pendingSurfacePalette.title)
+                        .font(AppTheme.Typography.subheadlineSemibold)
+                    Text("Surface and accent are tuned together for light and dark mode.")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.inkSecondary)
+                }
+                .padding(.leading, 4)
+            }
+            .padding(.vertical, 4)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(pendingSurfacePalette.title + " surface preview. Applies when Done is selected, in light and dark mode.")
+        } header: {
+            Text("Appearance")
+        } footer: {
+            Text("The blue-teal accent stays in the same family, with contrast and tone adjusted for each surface.")
+        }
+        .listRowBackground(Palette.surface)
+    }
+
+    private func previewColor(_ value: AdaptiveRGB) -> Color {
+        Color(uiColor: UIColor { traits in
+            let rgb = traits.userInterfaceStyle == .dark ? value.dark : value.light
+            return UIColor(red: rgb.0, green: rgb.1, blue: rgb.2, alpha: 1)
+        })
     }
 
     private var accountSection: some View {
@@ -191,9 +245,10 @@ struct SettingsView: View {
 
     private func deleteAccount(eraseLocalData: Bool) {
         Task {
-            if await model.deleteAccount(eraseLocalData: eraseLocalData) {
+            switch await model.deleteAccount(eraseLocalData: eraseLocalData) {
+            case .complete, .localCleanupIncomplete:
                 dismiss()
-            } else {
+            case .serverFailed:
                 settingsError = "The HOney account was not deleted. No local data was erased."
             }
         }

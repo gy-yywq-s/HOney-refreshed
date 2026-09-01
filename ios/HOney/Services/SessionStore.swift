@@ -26,8 +26,8 @@ actor SessionStore {
         try? keychain.setCodable(session, for: account)
     }
 
-    func clear() {
+    func clear() throws {
         cached = nil
-        try? keychain.remove(account)
+        try keychain.remove(account)
     }
 }

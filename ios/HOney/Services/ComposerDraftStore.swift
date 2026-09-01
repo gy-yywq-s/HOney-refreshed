@@ -53,14 +53,15 @@ actor ComposerDraftStore {
     }
 
     /// Clear the slot, but only if it still holds this target's draft.
-    func clear(_ targetKey: String) {
+    func clear(_ targetKey: String) throws {
         guard get(targetKey) != nil else { return }
-        try? FileManager.default.removeItem(at: fileURL)
+        try FileManager.default.removeItem(at: fileURL)
     }
 
     /// Erase the slot unconditionally (account deletion with "erase everything").
-    func clearAll() {
-        try? FileManager.default.removeItem(at: fileURL)
+    func clearAll() throws {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        try FileManager.default.removeItem(at: fileURL)
     }
 
     private func read() -> ComposerDraft? {

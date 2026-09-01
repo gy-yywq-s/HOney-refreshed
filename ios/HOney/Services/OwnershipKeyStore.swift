@@ -10,19 +10,23 @@
 
 import Foundation
 
+enum OwnershipKeyStoreError: Error {
+    case verificationFailed
+}
+
 /// Abstraction over the device ownership-key store so app-level logic (and its
 /// tests) never depends on the Keychain directly. Keys survive ordinary
 /// sign-out (audit §3.6); only account deletion with the explicit
 /// "erase everything" choice clears them.
 protocol OwnershipKeyStoring: Sendable {
     /// experienceId → ownershipKey
-    func map() async -> [String: String]
+    func map() async throws -> [String: String]
     /// All ownership keys, e.g. to fetch `/api/experiences/mine`.
-    func keys() async -> [String]
-    func ownershipKey(for experienceId: String) async -> String?
-    func add(experienceId: String, ownershipKey: String) async
-    func remove(experienceId: String) async
-    func clear() async
+    func keys() async throws -> [String]
+    func ownershipKey(for experienceId: String) async throws -> String?
+    func add(experienceId: String, ownershipKey: String) async throws
+    func remove(experienceId: String) async throws
+    func clear() async throws
 }
 
 actor OwnershipKeyStore: OwnershipKeyStoring {
@@ -34,32 +38,35 @@ actor OwnershipKeyStore: OwnershipKeyStoring {
     }
 
     /// experienceId → ownershipKey
-    func map() -> [String: String] {
-        (try? keychain.codable([String: String].self, for: account)) ?? [:]
+    func map() throws -> [String: String] {
+        try keychain.codable([String: String].self, for: account) ?? [:]
     }
 
     /// All ownership keys, e.g. to fetch `/api/experiences/mine`.
-    func keys() -> [String] {
-        Array(map().values)
+    func keys() throws -> [String] {
+        Array(try map().values)
     }
 
-    func ownershipKey(for experienceId: String) -> String? {
-        map()[experienceId]
+    func ownershipKey(for experienceId: String) throws -> String? {
+        try map()[experienceId]
     }
 
-    func add(experienceId: String, ownershipKey: String) {
-        var all = map()
+    func add(experienceId: String, ownershipKey: String) throws {
+        var all = try map()
         all[experienceId] = ownershipKey
-        try? keychain.setCodable(all, for: account)
+        try keychain.setCodable(all, for: account)
+        guard try map()[experienceId] == ownershipKey else {
+            throw OwnershipKeyStoreError.verificationFailed
+        }
     }
 
-    func remove(experienceId: String) {
-        var all = map()
+    func remove(experienceId: String) throws {
+        var all = try map()
         all.removeValue(forKey: experienceId)
-        try? keychain.setCodable(all, for: account)
+        try keychain.setCodable(all, for: account)
     }
 
-    func clear() {
-        try? keychain.remove(account)
+    func clear() throws {
+        try keychain.remove(account)
     }
 }

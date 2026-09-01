@@ -21,6 +21,7 @@
 		1BD8425A45D1EEEF1D5E5AA4 /* ImportConsentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6369C61575103B060D8304 /* ImportConsentView.swift */; };
 		212D96AADD3BC12FEF15E4A2 /* ExperienceRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908D7D9CBE46149B3BC73192 /* ExperienceRow.swift */; };
 		22DF92A89A2B5C5533662BF9 /* ReportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126DEF0CCF30ADCDDA1E3B88 /* ReportSheet.swift */; };
+		24559BC187CB1387F8D865BC /* SurfacePaletteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A9595C4824B6EB8A183F80 /* SurfacePaletteTests.swift */; };
 		27EB99FA047928C509C22DA0 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE078AA4F847DF609D0F9022 /* HomeViewModel.swift */; };
 		298F44ADD2A4D8D5686EA716 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75AA5731978C35F35FF1DAFB /* LoginView.swift */; };
 		2BA5A6AF111594E7321F7260 /* PortalAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B940A27FCE6CB8F0F852FEC7 /* PortalAPI.swift */; };
@@ -34,6 +35,7 @@
 		3FD1910C824F9435BEA5FC35 /* PortalWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4AA02D9639646A85BAB4377 /* PortalWebView.swift */; };
 		4C06CC78D6E1DDC947655467 /* AppModelLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F076C03E36A14BAAF8E99E91 /* AppModelLifecycleTests.swift */; };
 		4D82A416EFF3D23126A231BD /* HOneyAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F9EAFAED8917921D27F81A /* HOneyAPI.swift */; };
+		4FD86543BDBE8796F63208FD /* PublishedKeyRecoveryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8DB02C785191A398920DA25 /* PublishedKeyRecoveryStore.swift */; };
 		51FBEDDE9E38A5A80EB2A9BC /* SixChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07D369A95CEEE2209B2B53CF /* SixChecks.swift */; };
 		52DC8A5CD6A08D6705D76CCE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C93BD16337820929B8960F52 /* Assets.xcassets */; };
 		545386FF16AE32D3E592C35E /* Coding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FAACDFE0B2C0F0FE96276A3 /* Coding.swift */; };
@@ -85,6 +87,7 @@
 		0A0612D0FC289F8132E25E6E /* MySubmissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MySubmissionsView.swift; sourceTree = "<group>"; };
 		0E6369C61575103B060D8304 /* ImportConsentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportConsentView.swift; sourceTree = "<group>"; };
 		0EF83AD65015BCE646B84B7A /* TestDoubles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDoubles.swift; sourceTree = "<group>"; };
+		10A9595C4824B6EB8A183F80 /* SurfacePaletteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfacePaletteTests.swift; sourceTree = "<group>"; };
 		126DEF0CCF30ADCDDA1E3B88 /* ReportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportSheet.swift; sourceTree = "<group>"; };
 		143FDDA29AA21DF5838AAFA0 /* ComposerDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerDraftStore.swift; sourceTree = "<group>"; };
 		15E08E72E38A6C69DC3C9E3F /* TimetableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableView.swift; sourceTree = "<group>"; };
@@ -128,6 +131,7 @@
 		B94282F1B46193E4B5FD3707 /* ComposeExperienceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeExperienceViewModel.swift; sourceTree = "<group>"; };
 		C2D60DEB4E5CCD5BC12EA801 /* InteractiveExperienceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveExperienceRow.swift; sourceTree = "<group>"; };
 		C5DD00820629A17B873526DD /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		C8DB02C785191A398920DA25 /* PublishedKeyRecoveryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublishedKeyRecoveryStore.swift; sourceTree = "<group>"; };
 		C93BD16337820929B8960F52 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CEA49B4DBF5CCDFAB661B9DC /* ExperienceContractDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceContractDecodingTests.swift; sourceTree = "<group>"; };
 		D964CE0759FB50BC42D442BC /* TimetableRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableRepository.swift; sourceTree = "<group>"; };
@@ -192,6 +196,7 @@
 				0212B1D36005B7C963CAD5F2 /* PortalSessionCoordinator.swift */,
 				5449CF3E1EB60FC0129B5E36 /* PortalWebSessionBridge.swift */,
 				6CCF891D240B4DFBFE195C03 /* PrivateNoteStore.swift */,
+				C8DB02C785191A398920DA25 /* PublishedKeyRecoveryStore.swift */,
 				33FB65E14953017E37EA7445 /* SessionStore.swift */,
 				D964CE0759FB50BC42D442BC /* TimetableRepository.swift */,
 			);
@@ -315,6 +320,7 @@
 				1DDDEFBAFE3FD930524786BA /* PortalDecodingTests.swift */,
 				EBA3E49D4215C4090BF9464E /* PortalSessionCoordinatorTests.swift */,
 				52015FA7328CAA4C89F4B846 /* PrivateNoteStoreTests.swift */,
+				10A9595C4824B6EB8A183F80 /* SurfacePaletteTests.swift */,
 				0EF83AD65015BCE646B84B7A /* TestDoubles.swift */,
 				4450088845014DB264695889 /* TimetableViewModelTests.swift */,
 			);
@@ -448,6 +454,7 @@
 				36CD1C639828574E164C3CDD /* PortalDecodingTests.swift in Sources */,
 				35B17A088EFA8E1401C4D10C /* PortalSessionCoordinatorTests.swift in Sources */,
 				E67EC31BEDDDF4A609E810AD /* PrivateNoteStoreTests.swift in Sources */,
+				24559BC187CB1387F8D865BC /* SurfacePaletteTests.swift in Sources */,
 				709F7068EEED3F108C47FF9B /* TestDoubles.swift in Sources */,
 				3F5369E09520AA83DACF3640 /* TimetableViewModelTests.swift in Sources */,
 			);
@@ -496,6 +503,7 @@
 				EA3830E7F32C9F517ABB074D /* PortalWebSessionBridge.swift in Sources */,
 				3FD1910C824F9435BEA5FC35 /* PortalWebView.swift in Sources */,
 				B9BEAFE1E580BF8811D113DC /* PrivateNoteStore.swift in Sources */,
+				4FD86543BDBE8796F63208FD /* PublishedKeyRecoveryStore.swift in Sources */,
 				22DF92A89A2B5C5533662BF9 /* ReportSheet.swift in Sources */,
 				08B768B9E05C4E181CAC9110 /* RootView.swift in Sources */,
 				3665817862EFEE80DF37DBA4 /* SessionStore.swift in Sources */,

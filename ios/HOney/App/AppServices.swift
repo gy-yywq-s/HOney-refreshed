@@ -16,6 +16,7 @@ struct AppServices: Sendable {
     let ownershipKeyStore: any OwnershipKeyStoring
     let composerDraftStore: ComposerDraftStore
     let privateNoteStore: PrivateNoteStore
+    let publishedKeyRecoveryStore: PublishedKeyRecoveryStore
 
     static func live(config: AppConfig = .default) -> AppServices {
         let sessionStore = SessionStore()
@@ -34,7 +35,8 @@ struct AppServices: Sendable {
             portalCoordinator: coordinator,
             ownershipKeyStore: OwnershipKeyStore(),
             composerDraftStore: ComposerDraftStore(),
-            privateNoteStore: PrivateNoteStore()
+            privateNoteStore: PrivateNoteStore(),
+            publishedKeyRecoveryStore: PublishedKeyRecoveryStore()
         )
     }
 }

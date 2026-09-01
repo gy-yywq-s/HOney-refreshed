@@ -75,13 +75,14 @@ actor PrivateNoteStore {
         return note
     }
 
-    func remove(id: String) {
-        try? write(read().filter { $0.id != id })
+    func remove(id: String) throws {
+        try write(read().filter { $0.id != id })
     }
 
     /// Erase every note (account deletion with "erase everything" only).
-    func clearAll() {
-        try? FileManager.default.removeItem(at: fileURL)
+    func clearAll() throws {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        try FileManager.default.removeItem(at: fileURL)
     }
 
     private func read() -> [PrivateNote] {

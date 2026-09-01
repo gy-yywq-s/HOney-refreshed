@@ -11,6 +11,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 enum ComposeContext {
     case lesson(Lesson)
@@ -65,6 +66,7 @@ struct ComposeExperienceView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel: ComposeExperienceViewModel?
+    @State private var copiedRecoveryKey = false
 
     private static let rowBackground = Palette.surface
 
@@ -82,8 +84,10 @@ struct ComposeExperienceView: View {
             .navigationTitle("Share")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                if !isRecoveringKey {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel") { dismiss() }
+                    }
                 }
             }
             .task {
@@ -97,11 +101,19 @@ struct ComposeExperienceView: View {
                 }
             }
         }
+        .interactiveDismissDisabled(isRecoveringKey)
     }
 
     @ViewBuilder
     private func content(_ viewModel: ComposeExperienceViewModel) -> some View {
-        if case .published = viewModel.status {
+        if case .publishedKeyRecovery(let ownershipKey, let experienceId, let journalSaved) = viewModel.status {
+            keyRecovery(
+                ownershipKey: ownershipKey,
+                experienceId: experienceId,
+                journalSaved: journalSaved,
+                viewModel: viewModel
+            )
+        } else if case .published = viewModel.status {
             publishedConfirmation
         } else if viewModel.savedNote != nil {
             keptPrivateConfirmation
@@ -113,7 +125,79 @@ struct ComposeExperienceView: View {
         }
     }
 
+    private var isRecoveringKey: Bool {
+        guard let viewModel else { return false }
+        if case .publishedKeyRecovery = viewModel.status { return true }
+        return false
+    }
+
     // MARK: - Terminal states
+
+    private func keyRecovery(
+        ownershipKey: String,
+        experienceId: String,
+        journalSaved: Bool,
+        viewModel: ComposeExperienceViewModel
+    ) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                AppBanner(
+                    text: viewModel.keyRecoveryError ?? "The post is public, but this iPhone could not save its post-control key.",
+                    style: .error
+                )
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Protect control of this post")
+                        .font(AppTheme.Typography.cardTitle)
+                        .foregroundStyle(Palette.ink)
+                    Text("Do not publish again. Copy this recovery key now, then retry saving it to this iPhone.")
+                        .font(AppTheme.Typography.subheadline)
+                        .foregroundStyle(Palette.inkSecondary)
+                    Text(ownershipKey)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(Palette.ink)
+                        .textSelection(.enabled)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Palette.surfaceMuted, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
+                        .accessibilityLabel("Post-control recovery key")
+                    Text("Post ID: " + experienceId)
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.inkSecondary)
+                }
+
+                Button(copiedRecoveryKey ? "Recovery key copied" : "Copy recovery key") {
+                    UIPasteboard.general.setItems(
+                        [["public.utf8-plain-text": ownershipKey]],
+                        options: [
+                            .localOnly: true,
+                            .expirationDate: Date().addingTimeInterval(5 * 60)
+                        ]
+                    )
+                    copiedRecoveryKey = true
+                }
+                .buttonStyle(SecondaryActionButtonStyle())
+
+                Button(viewModel.isSavingRecoveryKey ? "Saving…" : "Retry saving to this iPhone") {
+                    Task { await viewModel.retryOwnershipKeyStorage() }
+                }
+                .buttonStyle(PrimaryActionButtonStyle())
+                .disabled(viewModel.isSavingRecoveryKey)
+
+                if copiedRecoveryKey {
+                    Button(journalSaved ? "I copied the recovery key — Close" : "I copied the key — Close anyway") { dismiss() }
+                        .buttonStyle(SecondaryActionButtonStyle())
+                    Text(journalSaved
+                         ? "Closing keeps the protected recovery record and draft on this iPhone. Reopen the same lesson to retry later."
+                         : "No protected recovery record was saved. The local-only clipboard expires in five minutes; save the copied key somewhere secure before closing.")
+                        .font(AppTheme.Typography.caption)
+                        .foregroundStyle(Palette.inkSecondary)
+                }
+            }
+            .padding(AppTheme.Spacing.pageHorizontal)
+        }
+        .background(Palette.background.ignoresSafeArea())
+    }
 
     private var publishedConfirmation: some View {
         ScrollView {

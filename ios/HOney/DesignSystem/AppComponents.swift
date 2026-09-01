@@ -193,7 +193,7 @@ struct SecondaryActionButtonStyle: ButtonStyle {
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                    .stroke(Palette.line, lineWidth: 1)
+                    .stroke(Palette.controlBorder, lineWidth: 1)
             )
             .opacity(configuration.isPressed ? 0.72 : 1)
             .contentShape(RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
@@ -257,7 +257,7 @@ extension View {
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                    .stroke(Palette.line, lineWidth: 1)
+                    .stroke(Palette.controlBorder, lineWidth: 1)
             )
     }
 
@@ -269,7 +269,7 @@ extension View {
             .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
             .overlay(
                 RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                    .stroke(Palette.line, lineWidth: 1)
+                    .stroke(Palette.controlBorder, lineWidth: 1)
             )
     }
 

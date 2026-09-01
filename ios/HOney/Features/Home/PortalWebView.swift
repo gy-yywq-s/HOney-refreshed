@@ -41,6 +41,7 @@ final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegat
     private var bridge: PortalWebSessionBridge?
     private var timeoutTask: Task<Void, Never>?
     private var recoveryTask: Task<Void, Never>?
+    private var accountResetTask: Task<Void, Never>?
     private var progressObservation: NSKeyValueObservation?
     private var activeNavigation: WKNavigation?
     private var lastSuccessfullyFinishedURL: URL?
@@ -79,8 +80,10 @@ final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegat
         self.bridge = bridge
     }
 
-    func open(fallback: URL) {
+    func open(fallback: URL) async {
         fallbackURL = fallback
+        await accountResetTask?.value
+        guard !Task.isCancelled else { return }
         if let finished = lastSuccessfullyFinishedURL,
            webView.url == finished,
            !webView.isLoading {
@@ -101,6 +104,26 @@ final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegat
     func cancelActiveWork() {
         invalidateAttempt(result: "cancel", stopWebView: true)
         if phase.isWorking { phase = .idle }
+    }
+
+    func resetForAccountChange() {
+        invalidateAttempt(result: "account-reset", stopWebView: true)
+        lastSuccessfullyFinishedURL = nil
+        fallbackURL = nil
+        UserDefaults.standard.removeObject(forKey: lastURLKey)
+        phase = .idle
+        let dataStore = webView.configuration.websiteDataStore
+        accountResetTask = Task { [weak self] in
+            await withCheckedContinuation { continuation in
+                dataStore.removeData(
+                    ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
+                    modifiedSince: .distantPast
+                ) {
+                    continuation.resume()
+                }
+            }
+            await MainActor.run { self?.accountResetTask = nil }
+        }
     }
 
     private func beginAttempt() -> Int {
@@ -329,9 +352,9 @@ struct PortalWebScreen: View {
                         .disabled(controller.phase.isWorking)
                 }
             }
-            .onAppear {
+            .task {
                 controller.configure(coordinator: coordinator)
-                controller.open(fallback: portalURL)
+                await controller.open(fallback: portalURL)
             }
             .onDisappear { controller.cancelActiveWork() }
             .onChange(of: controller.phase) { _, phase in

@@ -33,7 +33,7 @@ final class AppModelLifecycleTests: XCTestCase {
             refreshToken: "refresh",
             refreshExpiresAt: Date().addingTimeInterval(86_400)
         ))
-        await keys.add(experienceId: "exp-1", ownershipKey: "own-1")
+        try await keys.add(experienceId: "exp-1", ownershipKey: "own-1")
         _ = try await services.privateNoteStore.save(
             id: nil, body: "note", rating: nil,
             target: PrivateNoteTarget(label: "Ms Lin", entityKey: "teacher:t1")
@@ -49,7 +49,7 @@ final class AppModelLifecycleTests: XCTestCase {
         await model.signOut()
 
         XCTAssertEqual(model.phase, .signedOut)
-        let remainingKeys = await keys.keys()
+        let remainingKeys = try await keys.keys()
         XCTAssertEqual(remainingKeys, ["own-1"], "sign-out never deletes post keys")
         let notes = await services.privateNoteStore.list()
         XCTAssertEqual(notes.count, 1, "sign-out never deletes private notes")
@@ -62,10 +62,11 @@ final class AppModelLifecycleTests: XCTestCase {
     func testDeleteAccountKeepingKeysLeavesLocalDataIntact() async throws {
         try await seedLocalData()
 
-        await model.deleteAccount(eraseLocalData: false)
+        let result = await model.deleteAccount(eraseLocalData: false)
 
+        XCTAssertEqual(result, .complete)
         XCTAssertEqual(model.phase, .signedOut)
-        let remainingKeys = await keys.keys()
+        let remainingKeys = try await keys.keys()
         XCTAssertEqual(remainingKeys, ["own-1"], "'keep post keys' preserves control over past posts")
         let notes = await services.privateNoteStore.list()
         XCTAssertEqual(notes.count, 1)
@@ -74,10 +75,11 @@ final class AppModelLifecycleTests: XCTestCase {
     func testDeleteAccountEraseEverythingClearsKeysNotesAndDrafts() async throws {
         try await seedLocalData()
 
-        await model.deleteAccount(eraseLocalData: true)
+        let result = await model.deleteAccount(eraseLocalData: true)
 
+        XCTAssertEqual(result, .complete)
         XCTAssertEqual(model.phase, .signedOut)
-        let remainingKeys = await keys.keys()
+        let remainingKeys = try await keys.keys()
         XCTAssertTrue(remainingKeys.isEmpty, "'erase everything' clears ownership keys")
         let notes = await services.privateNoteStore.list()
         XCTAssertTrue(notes.isEmpty, "'erase everything' clears private notes")
@@ -90,15 +92,33 @@ final class AppModelLifecycleTests: XCTestCase {
         StubURLProtocol.responses["/api/account"] = (500, Data("server error".utf8))
 
         let deleted = await model.deleteAccount(eraseLocalData: true)
-        let remainingKeys = await keys.keys()
+        let remainingKeys = try await keys.keys()
         let remainingNotes = await services.privateNoteStore.list()
         let remainingDraft = await services.composerDraftStore.get("lesson:l1")
 
-        XCTAssertFalse(deleted)
+        XCTAssertEqual(deleted, .serverFailed)
         XCTAssertEqual(model.phase, .loading, "failed deletion must not pretend the user is signed out")
         XCTAssertEqual(remainingKeys, ["own-1"])
         XCTAssertEqual(remainingNotes.count, 1)
         XCTAssertNotNil(remainingDraft)
+    }
+
+    func testServerDeletionSuccessWithLocalKeyFailureSignsOutAndReportsPartialCleanup() async {
+        let failingKeys = FailingClearOwnershipKeyStore()
+        let partialServices = AppServices.stub(tempDir: tempDir, ownershipKeyStore: failingKeys)
+        await partialServices.sessionStore.save(HOneySession(
+            accessToken: "access",
+            accessExpiresAt: Date().addingTimeInterval(3_600),
+            refreshToken: "refresh",
+            refreshExpiresAt: Date().addingTimeInterval(86_400)
+        ))
+        let partialModel = AppModel(services: partialServices)
+
+        let result = await partialModel.deleteAccount(eraseLocalData: true)
+
+        XCTAssertEqual(result, .localCleanupIncomplete(["post-control keys"]))
+        XCTAssertEqual(partialModel.phase, .signedOut)
+        XCTAssertTrue(partialModel.loginError?.contains("post-control keys") == true)
     }
 
     // MARK: Two-step consent (audit §3.2)
@@ -157,4 +177,15 @@ final class AppModelLifecycleTests: XCTestCase {
         }
         XCTAssertFalse(profile.consent.timetable, "'Not now' grants nothing")
     }
+}
+
+private actor FailingClearOwnershipKeyStore: OwnershipKeyStoring {
+    enum Failure: Error { case unavailable }
+
+    func map() throws -> [String: String] { [:] }
+    func keys() throws -> [String] { [] }
+    func ownershipKey(for experienceId: String) throws -> String? { nil }
+    func add(experienceId: String, ownershipKey: String) throws {}
+    func remove(experienceId: String) throws {}
+    func clear() throws { throw Failure.unavailable }
 }

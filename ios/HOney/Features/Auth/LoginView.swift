@@ -132,7 +132,7 @@ struct LoginView: View {
                 .background(Palette.surface, in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium))
                 .overlay {
                     RoundedRectangle(cornerRadius: AppTheme.Radius.medium)
-                        .stroke(focused ? Palette.accent : Palette.line, lineWidth: focused ? 2 : 1)
+                        .stroke(focused ? Palette.accent : Palette.controlBorder, lineWidth: focused ? 2 : 1)
                 }
         }
     }

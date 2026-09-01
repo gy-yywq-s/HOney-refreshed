@@ -84,8 +84,12 @@ struct MySubmissionsView: View {
                     AppLoadingState(title: "Loading your posts and private notes")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let loadError, notes.isEmpty {
-                    AppBanner(text: loadError, style: .error)
-                        .padding(AppTheme.Spacing.pageHorizontal)
+                    VStack(spacing: 12) {
+                        AppBanner(text: loadError, style: .error)
+                        Button("Try again") { Task { await load() } }
+                            .buttonStyle(PrimaryActionButtonStyle())
+                    }
+                    .padding(AppTheme.Spacing.pageHorizontal)
                 } else if experiences.isEmpty && notes.isEmpty {
                     emptyState
                 } else {
@@ -156,6 +160,8 @@ struct MySubmissionsView: View {
                 }
                 if let loadError {
                     AppBanner(text: loadError, style: .error)
+                    Button("Try loading published posts again") { Task { await load() } }
+                        .buttonStyle(SecondaryActionButtonStyle())
                 }
                 ForEach(items) { item in
                     switch item {
@@ -283,7 +289,15 @@ struct MySubmissionsView: View {
         loadError = nil
         defer { isLoading = false }
         notes = await model.services.privateNoteStore.list()
-        let map = await model.services.ownershipKeyStore.map()
+        let map: [String: String]
+        do {
+            map = try await model.services.ownershipKeyStore.map()
+        } catch {
+            experiences = []
+            keyByExperienceId = [:]
+            loadError = "HOney could not read post-control keys. Published posts are hidden until the keys are available."
+            return
+        }
         keyByExperienceId = map
         await loadNames()
         guard !map.isEmpty else {
@@ -340,8 +354,13 @@ struct MySubmissionsView: View {
     }
 
     private func deleteNote(_ note: PrivateNote) async {
-        await model.services.privateNoteStore.remove(id: note.id)
-        deletingNote = nil
-        await load()
+        do {
+            try await model.services.privateNoteStore.remove(id: note.id)
+            deletingNote = nil
+            await load()
+        } catch {
+            deletingNote = nil
+            feedback = (.error, "Private note was not deleted. Try again.")
+        }
     }
 }

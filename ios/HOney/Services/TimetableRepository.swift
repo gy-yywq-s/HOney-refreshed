@@ -68,7 +68,11 @@ actor TimetableRepository {
         }
 
         if let existing = inFlight[date] {
-            return try await existing.task.value
+            let response = try await existing.task.value
+            guard scopeGeneration == existing.scopeGeneration else {
+                throw CancellationError()
+            }
+            return response
         }
 
         let provider = self.provider

@@ -15,6 +15,12 @@ enum AuthPhase: Equatable {
     case signedIn(HOneyProfile)
 }
 
+enum AccountDeletionResult: Equatable {
+    case complete
+    case serverFailed
+    case localCleanupIncomplete([String])
+}
+
 @MainActor
 @Observable
 final class AppModel {
@@ -188,20 +194,32 @@ final class AppModel {
     /// explicit choice: keep the device-local keys (still able to revoke posts
     /// later) or erase everything (keys, private notes and drafts).
     @discardableResult
-    func deleteAccount(eraseLocalData: Bool) async -> Bool {
+    func deleteAccount(eraseLocalData: Bool) async -> AccountDeletionResult {
         do {
             try await services.honeyAPI.deleteAccount()
-            await services.timetableRepository.invalidateAll()
-            await services.sessionStore.clear()
-            if eraseLocalData {
-                await services.ownershipKeyStore.clear()
-                await services.privateNoteStore.clearAll()
-                await services.composerDraftStore.clearAll()
-            }
-            phase = .signedOut
-            return true
         } catch {
-            return false
+            return .serverFailed
         }
+
+        await services.timetableRepository.invalidateAll()
+        var remaining: [String] = []
+        do { try await services.sessionStore.clear() }
+        catch { remaining.append("HOney session") }
+        if eraseLocalData {
+            do { try await services.ownershipKeyStore.clear() }
+            catch { remaining.append("post-control keys") }
+            do { try await services.privateNoteStore.clearAll() }
+            catch { remaining.append("private notes") }
+            do { try await services.composerDraftStore.clearAll() }
+            catch { remaining.append("drafts") }
+            do { try await services.publishedKeyRecoveryStore.clearAll() }
+            catch { remaining.append("published-key recovery record") }
+        }
+        phase = .signedOut
+        if remaining.isEmpty { return .complete }
+
+        loginError = "Your HOney account was deleted, but this iPhone could not erase: "
+            + remaining.joined(separator: ", ") + "."
+        return .localCleanupIncomplete(remaining)
     }
 }

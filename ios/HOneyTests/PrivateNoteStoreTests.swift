@@ -66,7 +66,7 @@ final class PrivateNoteStoreTests: XCTestCase {
         let found = await store.note(id: a.id)
         XCTAssertEqual(found?.body, "a")
 
-        await store.remove(id: a.id)
+        try await store.remove(id: a.id)
         let all = await store.list()
         XCTAssertEqual(all, [b])
     }
@@ -82,7 +82,7 @@ final class PrivateNoteStoreTests: XCTestCase {
     func testClearAllRemovesEverything() async throws {
         let store = PrivateNoteStore(directory: tempDir)
         _ = try await store.save(id: nil, body: "a", rating: nil, target: target)
-        await store.clearAll()
+        try await store.clearAll()
         let all = await store.list()
         XCTAssertTrue(all.isEmpty)
     }

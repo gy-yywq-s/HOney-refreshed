@@ -48,15 +48,15 @@ final class ComposerDraftStoreTests: XCTestCase {
         XCTAssertNil(other, "a different target's draft never surfaces")
     }
 
-    func testClearOnlyClearsMatchingTarget() async {
+    func testClearOnlyClearsMatchingTarget() async throws {
         let store = ComposerDraftStore(directory: tempDir)
         await store.save(targetKey: "lesson:l1", body: "words", rating: nil)
 
-        await store.clear("lesson:l2")
+        try await store.clear("lesson:l2")
         let stillThere = await store.get("lesson:l1")
         XCTAssertEqual(stillThere?.body, "words", "clearing another target is a no-op")
 
-        await store.clear("lesson:l1")
+        try await store.clear("lesson:l1")
         let gone = await store.get("lesson:l1")
         XCTAssertNil(gone)
     }
@@ -69,10 +69,10 @@ final class ComposerDraftStoreTests: XCTestCase {
         XCTAssertEqual(draft?.body, "durable words", "the draft survives relaunch")
     }
 
-    func testClearAllEmptiesTheSlot() async {
+    func testClearAllEmptiesTheSlot() async throws {
         let store = ComposerDraftStore(directory: tempDir)
         await store.save(targetKey: "lesson:l1", body: "words", rating: nil)
-        await store.clearAll()
+        try await store.clearAll()
         let draft = await store.get("lesson:l1")
         XCTAssertNil(draft)
     }
