@@ -32,19 +32,19 @@ sequenceDiagram
     U->>C: POST /api/experiences/check {lesson|entity, body, rating?}
     C->>C: normalize · deterministic lexicon scan
     alt lexical hard-block (slur / threat / doxxing / minor-sexual)
-        C-->>U: lane blocked_serious (LLM never called; nothing stored)
+        C-->>U: lane blocked_serious (LLM never called — nothing stored)
     else clean lexically
         C->>LLM: strict-schema extraction (10 booleans, temp 0, ≤300 tok)
         LLM-->>C: features | malformed | outage
         C->>C: deterministic policy engine decide()
         C-->>U: lane publish|nudge (+ content-bound pass) · cooldown (+ ticket)<br/>· edit_required · blocked_serious · out_of_scope · failed_closed
     end
-    Note over U: the draft only ever lives on the client;<br/>nudge = a real choice (add context / publish as-is / keep private)
+    Note over U: the draft only ever lives on the client —<br/>nudge = a real choice (add context / publish as-is / keep private)
 
     U->>P: POST /api/experiences/publish {eligibilityToken, pass, body, rating?}
     P->>P: verify pass sig+expiry+nonce+content hash · token single-use · scope match
     P->>DB: INSERT status='published' (+ ownership-key hash, coarse day bucket public)
-    P-->>U: ownershipKey (client-held; server keeps only its hash)
+    P-->>U: ownershipKey (client-held — server keeps only its hash)
 ```
 
 Key properties:
