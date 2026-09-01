@@ -162,7 +162,6 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           {provenance}
           {exp.publishedDay !== null && <> · {formatDayBucket(exp.publishedDay)}</>}
         </span>
-        <span className="post__spacer" />
         <button
           type="button"
           className={myValue === 1 ? "react-btn react-btn--on" : "react-btn"}
