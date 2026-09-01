@@ -11,6 +11,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, Lesson } from "../../api/types";
 import { useApi } from "../../lib/useApi";
+import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime, formatRemaining } from "../../lib/format";
 import { privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote } from "../../lib/ownershipKeys";
@@ -191,12 +192,22 @@ export function ExperiencesComposePage() {
     !!effectiveEntityKey &&
     !!entities.data &&
     !entities.data.entities.some((e) => e.entity_key === effectiveEntityKey);
+  // Registry still loading for an entity target: no editor yet (r4) — the
+  // unlisted decision cannot be made before the data is here.
+  if (effectiveEntityKey && !entities.data && !entities.error) {
+    return (
+      <div className="stack">
+        <h1 className="page-title">Share an experience</h1>
+        <Skeleton lines={4} />
+      </div>
+    );
+  }
   if (unlisted) {
     return (
       <div className="stack">
         <h1 className="page-title">Share an experience</h1>
         <section className="card">
-          <p className="text-3">This entry is no longer listed, so nothing can be shared about it.</p>
+          <p className="text-3">Nothing is listed at this address, so nothing can be shared about it.</p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/explore">
               Find someone or something

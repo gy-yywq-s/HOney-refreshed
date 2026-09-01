@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, EntityType } from "../../api/types";
 import { useApi } from "../../lib/useApi";
+import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
 import { entityPath } from "./shared";
 
@@ -27,6 +28,7 @@ export function ExperiencesExplorePage() {
   const [q, setQ] = useState("");
   const entities = useApi(() => api.entities(), [], "entities");
   const directory = useApi(() => api.directory(), [], "directory");
+  const landing = useRetryFocus<HTMLDivElement>(entities.loading);
 
   const byType = useMemo(() => {
     const groups: Record<EntityType, EntityRef[]> = { teacher: [], course: [], room: [], dish: [] };
@@ -70,7 +72,7 @@ export function ExperiencesExplorePage() {
         className="search-box"
         type="search"
         placeholder="Filter by name…"
-        aria-label="Filter entities by name"
+        aria-label="Filter by name"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
@@ -78,11 +80,12 @@ export function ExperiencesExplorePage() {
       {entities.error && (
         <div role="alert" className="banner banner--danger">
           <span>{entities.error}</span>
-          <button className="btn btn--ghost btn--small" onClick={() => entities.reload()}>
+          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); entities.reload(); }}>
             Try again
           </button>
         </div>
       )}
+      <div ref={landing.ref} tabIndex={-1} className="focus-landing">
       {entities.loading ? (
         <Skeleton lines={6} />
       ) : (
@@ -96,6 +99,7 @@ export function ExperiencesExplorePage() {
           />
         ))
       )}
+      </div>
     </div>
   );
 }
@@ -163,7 +167,7 @@ function ExploreRow({ entity, mine }: { entity: EntityRef; mine: boolean }) {
         <span>{entity.name}</span>
         {mine && (
           <span className="caption">
-            <span className="visually-hidden">, </span>from your classes
+            <span className="sr-only">, </span>from your classes
           </span>
         )}
       </Link>

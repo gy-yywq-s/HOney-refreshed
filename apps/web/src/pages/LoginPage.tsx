@@ -50,10 +50,9 @@ export function LoginPage() {
                   onChange={(e) => setStayConnected(e.target.checked)}
                 />
                 <span>
-                  <strong>Stay connected on this device.</strong> Keeps you signed in to the
-                  school portal so HOney can re-sync on its own when the portal times out. Your
-                  login is encrypted and kept only on this device (a browser is less protected
-                  than a phone’s secure storage). Turn it off any time in Settings.
+                  <strong>Stay connected on this device.</strong> Portal time-outs reconnect on
+                  their own. Your login is encrypted and kept only here (a browser is less
+                  protected than a phone’s secure storage). Turn it off in Settings.
                 </span>
               </label>
             }

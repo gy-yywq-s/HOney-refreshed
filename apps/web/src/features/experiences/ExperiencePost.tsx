@@ -115,13 +115,24 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
       }
     };
     const onPointer = (e: PointerEvent) => {
-      if (!overflowRef.current?.contains(e.target as Node)) setMenuOpen(false);
+      if (!overflowRef.current?.contains(e.target as Node)) {
+        setMenuOpen(false);
+        moreBtnRef.current?.focus();
+      }
     };
+    // Tab-out (focus leaving the overflow group) closes the menu too.
+    const onFocusOut = (e: FocusEvent) => {
+      const next = e.relatedTarget as Node | null;
+      if (next && !overflowRef.current?.contains(next)) setMenuOpen(false);
+    };
+    const group = overflowRef.current;
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onPointer);
+    group?.addEventListener("focusout", onFocusOut);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPointer);
+      group?.removeEventListener("focusout", onFocusOut);
     };
   }, [menuOpen]);
 
@@ -149,7 +160,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
       if (err instanceof ApiError && err.code === "reactions_disabled") {
         setNote("Reactions are paused right now.");
       } else if (err instanceof ApiError && err.code === "not_eligible") {
-        setNote("Reactions are open to students with the same verified exposure.");
+        setNote("Reactions are open to students who have had the same class or place.");
       } else {
         setNote("Could not save that reaction. Please try again.");
       }

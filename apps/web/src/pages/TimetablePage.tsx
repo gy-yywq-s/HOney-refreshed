@@ -7,6 +7,7 @@ import type { Lesson, SyncResponse } from "../api/types";
 import { Modal } from "../components/Modal";
 import { ReconnectDialog } from "../components/ReconnectDialog";
 import { apiCache, useApi } from "../lib/useApi";
+import { useRetryFocus } from "../lib/useRetryFocus";
 import { portalCredentials } from "../lib/portalCredentials";
 import {
   formatDayHeading,
@@ -33,6 +34,8 @@ export function TimetablePage() {
   const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
   const [showReconnect, setShowReconnect] = useState(false);
   const pickerRef = useRef<HTMLInputElement>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const landing = useRetryFocus<HTMLDivElement>(loading);
 
   async function runSync() {
     setSyncBusy(true);
@@ -78,20 +81,33 @@ export function TimetablePage() {
               if (!el) return;
               // One visible affordance, one Tab stop: the native picker opens
               // from the button; the input itself stays out of the tab order.
-              if (typeof el.showPicker === "function") el.showPicker();
-              else el.click();
+              if (typeof el.showPicker === "function") {
+                try {
+                  el.showPicker();
+                  return;
+                } catch {
+                  /* fall through to the visible input */
+                }
+              }
+              setPickerVisible(true);
+              requestAnimationFrame(() => el.focus());
             }}
           >
             {formatStepperDate(date)}
           </button>
           <input
             ref={pickerRef}
-            className="daynav__picker"
+            className={pickerVisible ? "daynav__picker daynav__picker--visible" : "daynav__picker"}
             type="date"
-            tabIndex={-1}
-            aria-hidden="true"
+            tabIndex={pickerVisible ? 0 : -1}
+            aria-hidden={pickerVisible ? undefined : "true"}
+            aria-label="Pick a date"
             value={date}
-            onChange={(e) => e.target.value && setDate(e.target.value)}
+            onBlur={() => setPickerVisible(false)}
+            onChange={(e) => {
+              if (e.target.value) setDate(e.target.value);
+              setPickerVisible(false);
+            }}
           />
           <button
             className="daynav__arrow"
@@ -119,6 +135,11 @@ export function TimetablePage() {
         </button>
       </div>
 
+      {portalCredentials.isAuthorized() && (
+        <p className="caption daynav__note">
+          Sync now signs in again with your saved school login if the portal session expired.
+        </p>
+      )}
       <h1 className="schedule-header">{formatDayHeading(date)}</h1>
 
       {syncFeedback?.kind === "error" && (
@@ -144,24 +165,23 @@ export function TimetablePage() {
       ) : error ? (
         <div role="alert" className="banner banner--danger">
           <span>{error}</span>
-          <button className="btn btn--ghost btn--small" onClick={() => reload()}>
+          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); reload(); }}>
             Try again
           </button>
         </div>
       ) : (
         <>
-          <DayTimeline
-            date={date}
-            lessons={data?.lessons ?? []}
-            onSelect={(lesson) => setSelected(lesson)}
-          />
-          {data?.lastSyncedAt && (
-            <p className="caption" style={{ marginTop: "var(--space-md)" }}>
-              Last synced {timeAgo(data.lastSyncedAt)}
-              {portalCredentials.isAuthorized() &&
-                " · Sync signs in again with your saved school login if the portal session expired."}
-            </p>
-          )}
+          <div ref={landing.ref} tabIndex={-1} className="focus-landing">
+            <DayTimeline
+              date={date}
+              lessons={data?.lessons ?? []}
+              onSelect={(lesson) => setSelected(lesson)}
+            />
+          </div>
+          <p className="caption timetable-foot">
+            P1–P6 are the school’s six lesson periods.
+            {data?.lastSyncedAt ? ` Last synced ${timeAgo(data.lastSyncedAt)}.` : ""}
+          </p>
         </>
       )}
 
@@ -352,7 +372,7 @@ function DayTimeline({
         })}
 
         {visible.length === 0 && (
-          <div className="timeline__empty">
+          <div className="timeline__empty" role="status">
             <CalendarGlyph />
             <span>No lessons today</span>
           </div>

@@ -33,6 +33,20 @@ function AppLayout() {
   useEffect(() => {
     const el = document.querySelector<HTMLElement>("[data-scroll-owner]");
     el?.scrollTo({ top: 0, behavior: "instant" });
+    const p = location.pathname;
+    const name =
+      p === "/home" ? "Home"
+      : p === "/timetable" ? "Timetable"
+      : p === "/history" ? "History"
+      : p === "/settings" ? "Settings"
+      : p === "/dash" ? "Dash"
+      : p.startsWith("/experiences/compose") ? "Share an experience"
+      : p.startsWith("/experiences/explore") ? "Find someone or something"
+      : p.startsWith("/experiences/mine") ? "Your notes & posts"
+      : p.startsWith("/experiences/why") ? "Why this space exists"
+      : p.startsWith("/experiences") ? "Experiences"
+      : null;
+    document.title = name ? `${name} · HOney` : "HOney";
   }, [location.pathname]);
 
   if (!me) {

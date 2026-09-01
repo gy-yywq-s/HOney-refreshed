@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
+import { useRetryFocus } from "../lib/useRetryFocus";
 import { formatDayBucket, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
@@ -15,6 +16,7 @@ import { useFromYourClasses } from "./experiences/shared";
 export function HomePage() {
   const { me } = useAuth();
   const { data, error, loading, reload } = useApi(() => api.nextLesson(), [], "next-lesson");
+  const landing = useRetryFocus<HTMLElement>(loading);
   const fromClasses = useFromYourClasses(10);
   const now = useNowTick(1000);
 
@@ -61,7 +63,7 @@ export function HomePage() {
         </p>
       </header>
 
-      <section className="card card--hero nextlesson" aria-label="Now and next">
+      <section className="card card--hero nextlesson focus-landing" aria-label="Now and next" ref={landing.ref} tabIndex={-1}>
         {progress !== null && (
           <div
             className="nextlesson__wash"
@@ -75,7 +77,7 @@ export function HomePage() {
         ) : error ? (
           <div role="alert" className="banner banner--danger">
           <span>{error}</span>
-          <button className="btn btn--ghost btn--small" onClick={() => reload()}>
+          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); reload(); }}>
             Try again
           </button>
         </div>

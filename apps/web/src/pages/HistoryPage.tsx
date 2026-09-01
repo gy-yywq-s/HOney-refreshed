@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Lesson } from "../api/types";
 import { useApi } from "../lib/useApi";
+import { useRetryFocus } from "../lib/useRetryFocus";
 import { formatShortDate, formatTime, monthLabel } from "../lib/format";
 import { staggerStyle , Skeleton } from "../lib/motion";
 
@@ -53,6 +54,7 @@ export function HistoryPage() {
     [debouncedQ, teacherId, courseId],
     `history:${JSON.stringify([debouncedQ, teacherId, courseId])}`,
   );
+  const landing = useRetryFocus<HTMLDivElement>(history.loading);
 
   const groups = useMemo(() => groupByMonth(history.data?.lessons ?? []), [history.data]);
 
@@ -102,12 +104,13 @@ export function HistoryPage() {
         </select>
       </div>
 
+      <div ref={landing.ref} tabIndex={-1} className="focus-landing">
       {history.loading ? (
         <Skeleton lines={4} />
       ) : history.error ? (
         <div role="alert" className="banner banner--danger">
           <span>{history.error}</span>
-          <button className="btn btn--ghost btn--small" onClick={() => history.reload()}>
+          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); history.reload(); }}>
             Try again
           </button>
         </div>
@@ -145,6 +148,7 @@ export function HistoryPage() {
           </section>
         ))
       )}
+      </div>
     </div>
   );
 }

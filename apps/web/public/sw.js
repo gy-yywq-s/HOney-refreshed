@@ -18,23 +18,40 @@ self.addEventListener("install", (event) => {
   );
 });
 
-async function evictStaleAssets() {
-  // Self-evicting: a deploy that changes only hashes still drops the old
-  // /assets/* entries — whatever the fresh index does not reference goes.
+async function liveAssetSet(html) {
+  // Index refs, then every css url() and js import path those files carry —
+  // fonts and lazy chunks are live too (r4: the index regex alone evicted them).
+  const abs = (p) => new URL(p, self.location.origin).href;
+  const seed = (html.match(/\/assets\/[^"' )]+/g) ?? []).map(abs);
+  const live = new Set(seed);
+  for (const href of seed) {
+    if (!/\.(js|css)$/.test(href)) continue;
+    try {
+      const txt = await (await fetch(href, { cache: "no-store" })).text();
+      for (const m of txt.match(/(?:\.\/|\/)?assets\/[A-Za-z0-9_.-]+\.(?:js|css|woff2)/g) ?? []) live.add(abs("/" + m.replace(/^\.?\//, "")));
+    } catch { /* keep the seed */ }
+  }
+  return live;
+}
+async function evictStaleAssets(html) {
   try {
-    const res = await fetch("/", { cache: "no-store" });
-    if (!res.ok) return;
-    const html = await res.text();
-    const live = new Set((html.match(/\/assets\/[^"' )]+/g) ?? []).map((p) => new URL(p, self.location.origin).href));
+    if (!html) {
+      const res = await fetch("/", { cache: "no-store" });
+      if (!res.ok) return;
+      html = await res.text();
+    }
+    const live = await liveAssetSet(html);
     const cache = await caches.open(CACHE);
     for (const req of await cache.keys()) {
       const u = new URL(req.url);
       if (u.pathname.startsWith("/assets/") && !live.has(req.url)) await cache.delete(req);
     }
+    lastIndexSig = [...live].sort().join("|");
   } catch {
     /* offline at activate — nothing to evict against */
   }
 }
+let lastIndexSig = "";
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -74,9 +91,16 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(event.request)
       .then((res) => {
-        if (res.ok) {
+        if (res.ok && event.request.mode === "navigate") {
+          // One shell only ('/'): every route serves the same document, so
+          // caching each path just accumulates copies.
           const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          caches.open(CACHE).then((cache) => cache.put("/", copy));
+          // A deploy that changed only hashes: evict when the index changes.
+          res.clone().text().then((html) => {
+            const seed = (html.match(/\/assets\/[^"' )]+/g) ?? []).sort().join("|");
+            if (seed && !lastIndexSig.includes(seed.split("|")[0])) evictStaleAssets(html);
+          }).catch(() => {});
         }
         return res;
       })

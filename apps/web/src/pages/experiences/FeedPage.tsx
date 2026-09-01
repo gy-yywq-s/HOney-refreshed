@@ -5,7 +5,8 @@
 // invitation, and the persistent student-to-student identity line.
 // Scroll model: FRAMED_SCROLL (web-lab.md).
 
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Link } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
 import { useFeedController } from "../../features/experiences/useFeedController";
@@ -28,7 +29,7 @@ export function ExperiencesFeedPage() {
   }
 
   const sentinel = useLoadMoreSentinel(feed.loadMore);
-  const streamRef = useRef<HTMLDivElement>(null);
+  const landing = useRetryFocus<HTMLDivElement>(feed.loading);
   // The empty and error states carry their own action — one per screen.
   const showHeaderShare = feed.loading || (feed.error === null && feed.items.length > 0);
 
@@ -75,6 +76,8 @@ export function ExperiencesFeedPage() {
         >
           <button
             role="tab"
+            id="tab-my-classes"
+            aria-controls="feed-panel"
             data-scope="my_classes"
             aria-selected={scope === "my_classes"}
             className={scope === "my_classes" ? "scope-switch__btn scope-switch__btn--on" : "scope-switch__btn"}
@@ -84,6 +87,8 @@ export function ExperiencesFeedPage() {
           </button>
           <button
             role="tab"
+            id="tab-school"
+            aria-controls="feed-panel"
             data-scope="school"
             aria-selected={scope === "school"}
             className={scope === "school" ? "scope-switch__btn scope-switch__btn--on" : "scope-switch__btn"}
@@ -100,7 +105,15 @@ export function ExperiencesFeedPage() {
         </button>
       )}
 
-      <div className="feed-stream" aria-live="polite" ref={streamRef} tabIndex={-1}>
+      <div
+        className="feed-stream focus-landing"
+        aria-live="polite"
+        ref={landing.ref}
+        tabIndex={-1}
+        role="tabpanel"
+        id="feed-panel"
+        aria-labelledby={scope === "my_classes" ? "tab-my-classes" : "tab-school"}
+      >
         {feed.loading ? (
           <Skeleton lines={6} />
         ) : feed.error ? (
@@ -108,7 +121,10 @@ export function ExperiencesFeedPage() {
             <span>{feed.error}</span>
             <button
               className="btn btn--ghost btn--small"
-              onClick={() => void feed.refresh().then(() => streamRef.current?.focus())}
+              onClick={() => {
+                landing.arm();
+                void feed.refresh();
+              }}
             >
               Try again
             </button>

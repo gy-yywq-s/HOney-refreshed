@@ -10,9 +10,9 @@ export interface SessionTokens {
 }
 
 /**
- * Login carries ONLY identity. Signing in and copying school data are two
- * different decisions (review v3 §12.15A): no login payload can grant import
- * consent — `POST /api/consent` is the single consent mutation path.
+ * Login carries ONLY identity. Import is part of the account (2026-09-01):
+ * the first sync runs on creation; `POST /api/consent` remains only for
+ * wire compatibility with older iOS builds and no longer gates anything.
  */
 export interface LoginInput {
   username: string;

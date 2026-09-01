@@ -13,6 +13,7 @@ import { ownershipKeys, privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote, StoredOwnershipKey } from "../../lib/ownershipKeys";
 import { Skeleton } from "../../lib/motion";
 import { apiCache, useApi } from "../../lib/useApi";
+import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Stars, provenanceLabel, useNames } from "./shared";
 
 interface StatusMeta {
@@ -55,6 +56,7 @@ export function ExperiencesMinePage() {
         : Promise.resolve({ experiences: [] as MyExperience[] }),
     [keyList.join(",")],
   );
+  const landing = useRetryFocus<HTMLDivElement>(mine.loading);
 
   const loadNotes = useCallback(() => {
     void privateNotes.list().then(setNotes);
@@ -125,7 +127,7 @@ export function ExperiencesMinePage() {
 
 
   return (
-    <div className="stack">
+    <div className="stack focus-landing" ref={landing.ref} tabIndex={-1}>
       <header className="page-head">
         {/* "My submissions/contributions" is administrative language (review v3
             §10.5) — this page is the user's own notes & posts. */}
@@ -165,7 +167,7 @@ export function ExperiencesMinePage() {
       ) : mine.error ? (
         <div role="alert" className="banner banner--danger">
           <span>{mine.error}</span>
-          <button className="btn btn--ghost btn--small" onClick={() => mine.reload()}>
+          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); mine.reload(); }}>
             Try again
           </button>
         </div>

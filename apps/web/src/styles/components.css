@@ -217,17 +217,7 @@ a.btn:hover {
   background: var(--soft);
   color: var(--accent);
 }
-.chip--ok {
-  color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 10%, transparent);
-}
-.chip--danger {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
-}
-.chip--muted {
-  color: var(--muted);
-}
+
 .chip--private {
   color: var(--muted);
   background: transparent;
@@ -276,46 +266,6 @@ a.btn:hover {
 }
 
 /* Sort toggle — segmented pill with a sliding thumb. */
-.sort-toggle {
-  position: relative;
-  display: inline-grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  border: 1px solid var(--line);
-  border-radius: 99px;
-  overflow: hidden;
-  align-self: flex-start;
-  isolation: isolate;
-}
-.sort-toggle::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: calc(100% / var(--n, 2));
-  border-radius: 99px;
-  background: var(--ink);
-  transform: translateX(calc(var(--active, 0) * 100%));
-  transition: transform var(--dur) var(--ease);
-}
-.sort-toggle__btn {
-  position: relative;
-  z-index: 1;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  color: var(--muted);
-  background: none;
-  border: none;
-  padding: 0 var(--sp-5);
-  cursor: pointer;
-  min-height: 40px;
-  transition: color var(--dur-fast) var(--ease);
-}
-.sort-toggle__btn--on {
-  color: var(--surface);
-}
 
 /* Stars (dishes only). */
 .stars {
@@ -535,6 +485,7 @@ a.btn:hover {
 }
 
 .settings-trigger {
+  padding: 0;
   width: 46px;
   height: 46px;
   flex: none;
@@ -573,7 +524,7 @@ a.btn:hover {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   margin-left: var(--rail);
-  padding: 34px clamp(22px, 5vw, 76px) 110px;
+  padding: var(--sp-7) clamp(22px, 5vw, 76px) 110px; /* 110px: desktop rail-foot clearance (documented exception) */
 }
 .view {
   width: min(100%, 1080px);
@@ -852,41 +803,8 @@ a.btn:hover {
 .swatch--night {
   background: #14171a;
 }
-.segmented {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-.segmented button {
-  min-height: 44px;
-  border: 0;
-  border-right: 1px solid var(--line);
-  background: transparent;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-.segmented button:last-child {
-  border-right: 0;
-}
 
 /* Row links (Home portal card etc.). */
-.row-link {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
-  font-weight: 600;
-  transition: color var(--dur-fast) var(--ease);
-}
-.row-link:hover {
-  text-decoration: none;
-  color: var(--accent);
-}
 
 /* ── Narrow adjustments ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {
@@ -957,9 +875,9 @@ a.btn:hover {
   text-align: left;
 }
 .stay-connected input {
-  margin-top: var(--sp-1);
-  width: 18px;
-  height: 18px;
+  margin-top: 0;
+  width: 22px;
+  height: 22px;
   flex: none;
   accent-color: var(--accent);
 }

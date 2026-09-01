@@ -154,9 +154,7 @@ a.btn:active {
 }
 
 /* Muted-ink utilities kept from the old grammar (many screens use them). */
-.text-2 {
-  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
-}
+
 .text-3,
 .caption,
 .muted {
@@ -201,12 +199,7 @@ p.text-4 {
 }
 
 /* Hairline-divided stat strip (Home, Mine). */
-.stat-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
+
 .stat {
   min-height: 108px;
   padding: var(--sp-5) var(--sp-5);
@@ -232,79 +225,13 @@ p.text-4 {
 }
 
 /* Numbered action-card grid (Home). */
-.action-grid {
-  margin: var(--sp-2) 0;
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
-  gap: var(--sp-4);
-  align-items: stretch;
-}
-.action-card {
-  min-height: 280px;
-  padding: var(--sp-6);
-  display: grid;
-  grid-template-rows: 22px minmax(80px, auto) minmax(56px, 1fr) 46px;
-  gap: var(--sp-3);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--card);
-  color: inherit;
-  text-align: left;
-  text-decoration: none;
-}
-.action-card:hover {
-  text-decoration: none;
-}
-.action-card.primary {
-  background: var(--ink);
-  color: var(--surface);
-}
-.card-index {
-  color: var(--muted);
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
+
 .primary .card-index,
 .primary .card-copy {
   color: color-mix(in srgb, var(--surface) 72%, transparent);
 }
-.card-title {
-  align-self: end;
-  font-family: var(--display);
-  font-size: clamp(30px, 3.4vw, 48px);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
-  font-weight: 600;
-}
-.card-copy {
-  margin: 0;
-  align-self: start;
-  color: var(--muted);
-  line-height: 1.5;
-}
-.action-cta {
-  justify-self: start;
-  align-self: end;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  min-height: 44px;
-  padding: 0 var(--sp-5);
-  border: 1px solid currentColor;
-  border-radius: 99px;
-  background: transparent;
-  color: inherit;
-  font-weight: 600;
-}
 
 /* Hairline list rows (History, entities, Mine, Settings rows). */
-.hairline-list {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
 
 /* ── Motion kit — shared keyframes & scroll-reveal states ───────────────── */
 

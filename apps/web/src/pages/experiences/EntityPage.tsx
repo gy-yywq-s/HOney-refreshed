@@ -4,7 +4,7 @@
 // scores, no summaries, no ranking. Course is first-class (§9.10) — course
 // retrospectives compose directly. Scroll model: FRAMED_SCROLL.
 
-import { useRef } from "react";
+import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Link, useParams } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
 import { useFeedController, type FeedFilters } from "../../features/experiences/useFeedController";
@@ -44,11 +44,20 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
   const feed = useFeedController("school", filters);
   const sentinel = useLoadMoreSentinel(feed.loadMore);
 
-  const streamRef = useRef<HTMLDivElement>(null);
+  const landing = useRetryFocus<HTMLDivElement>(feed.loading);
   // Delisted entries (deduped rooms, placeholders) stay reachable by URL
   // but must not offer a composer that the server will refuse (r2). A
   // deduped duplicate points at the surviving entry of the same name (r3).
+  // An id known to NEITHER the registry nor the directory never existed:
+  // that is "nothing at this address", not "no longer listed" (r4).
   const listed = !entities || entities.some((e) => e.entity_key === entityKey);
+  const knownName =
+    (kind === "teacher" && names.teacher.get(id)) ||
+    (kind === "room" && names.room.get(id)) ||
+    (kind === "course" && names.course.get(id)) ||
+    names.entity.get(entityKey) ||
+    null;
+  const neverListed = !!entities && !listed && !knownName;
 
   const name =
     (kind === "teacher" && (names.teacher.get(id) ?? names.entity.get(entityKey))) ||
@@ -57,8 +66,19 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
     (kind === "dish" && names.entity.get(entityKey)) ||
     KIND_TITLE[kind];
 
+  if (neverListed) {
+    return (
+      <div className="stack">
+        <h1 className="page-title">Nothing is listed at this address.</h1>
+        <p className="muted">
+          <Link to="/experiences/explore">Find someone or something</Link>
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="stack">
+    <div className="stack focus-landing" ref={landing.ref} tabIndex={-1}>
       <header className="page-head">
         <div>
           <div className="overline">{KIND_TITLE[kind]}</div>
@@ -85,8 +105,11 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
             return survivor ? (
               <>
                 {" "}
-                <Link to={`/experiences/${kind}/${encodeURIComponent(survivor.entity_key.split(":")[1] ?? "")}`}>
-                  See {survivor.name}
+                <Link
+                  className="entity-survivor"
+                  to={`/experiences/${kind}/${encodeURIComponent(survivor.entity_key.split(":")[1] ?? "")}`}
+                >
+                  Open the current entry for {survivor.name}
                 </Link>
               </>
             ) : null;
@@ -105,7 +128,10 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
           <span>{feed.error}</span>
           <button
             className="btn btn--ghost btn--small"
-            onClick={() => void feed.refresh().then(() => streamRef.current?.focus())}
+            onClick={() => {
+              landing.arm();
+              void feed.refresh();
+            }}
           >
             Try again
           </button>
@@ -115,7 +141,7 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
           {listed ? "No experiences here yet — yours could be the first." : "No experiences here."}
         </p>
       ) : (
-        <div className="feed-stream" ref={streamRef} tabIndex={-1}>
+        <div className="feed-stream">
           {feed.items.map((exp) => (
             <ExperiencePost key={exp.id} exp={exp} />
           ))}

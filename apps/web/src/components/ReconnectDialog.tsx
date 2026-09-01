@@ -6,33 +6,55 @@ import { portalCredentials } from "../lib/portalCredentials";
 interface ReconnectDialogProps {
   onClose: () => void;
   onReconnected?: () => void;
+  /** reconnect: the portal session ended (or needs refreshing); save: the
+   *  student wants HOney to keep their school login on this device. */
+  purpose?: "reconnect" | "save";
+  /** For reconnect: whether the stored portal session is actually expired. */
+  sessionExpired?: boolean;
 }
 
 /**
- * Fallback when a silent reconnect isn't possible — the credentials were
- * rejected, or this device never opted into staying connected. Re-runs the
- * school login and offers to keep it for next time.
+ * One dialog, two named purposes (design-is r4): the title, body and submit
+ * say what THIS opening does; the stay-connected choice sits inside the
+ * form before the submit, with the same caveat the login shows.
  */
-export function ReconnectDialog({ onClose, onReconnected }: ReconnectDialogProps) {
-  const [stayConnected, setStayConnected] = useState(portalCredentials.isAuthorized());
+export function ReconnectDialog({
+  onClose,
+  onReconnected,
+  purpose = "reconnect",
+  sessionExpired = true,
+}: ReconnectDialogProps) {
+  const [stayConnected, setStayConnected] = useState(
+    purpose === "save" ? true : portalCredentials.isAuthorized(),
+  );
+  const title = purpose === "save" ? "Save school login" : "Reconnect school account";
+  const body =
+    purpose === "save"
+      ? "Enter your school login once; it stays encrypted on this device (a browser is less protected than a phone’s secure storage) so routine portal time-outs reconnect on their own."
+      : sessionExpired
+        ? "The portal session ended. Sign in again to restore it — your HOney data stays as it is."
+        : "Sign in again to refresh the school connection — your HOney data stays as it is.";
   return (
-    <Modal title="Reconnect school account" onClose={onClose}>
-      <p className="muted">
-        The portal session ended. Sign in again to restore it — your HOney data stays as it is.
-      </p>
-      <label className="stay-connected">
-        <input
-          type="checkbox"
-          checked={stayConnected}
-          onChange={(e) => setStayConnected(e.target.checked)}
-        />
-        <span>
-          Stay connected on this device, so routine time-outs reconnect on their own. Your login is
-          encrypted and kept only here.
-        </span>
-      </label>
+    <Modal title={title} onClose={onClose}>
+      <p className="muted">{body}</p>
       <SchoolLoginForm
         mode="reconnect"
+        beforeSubmit={
+          purpose === "reconnect" ? (
+            <label className="stay-connected">
+              <input
+                type="checkbox"
+                checked={stayConnected}
+                onChange={(e) => setStayConnected(e.target.checked)}
+              />
+              <span>
+                Stay connected on this device, so routine time-outs reconnect on their own. Your
+                login is encrypted and kept only here (a browser is less protected than a phone’s
+                secure storage).
+              </span>
+            </label>
+          ) : null
+        }
         onSuccess={(_result, creds) => {
           if (stayConnected) void portalCredentials.authorize(creds);
           else portalCredentials.clear();

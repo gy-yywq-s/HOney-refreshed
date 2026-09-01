@@ -32,7 +32,7 @@ export function SettingsPage() {
     null,
   );
   const [confirm, setConfirm] = useState<PendingConfirm>(null);
-  const [showReconnect, setShowReconnect] = useState(false);
+  const [showReconnect, setShowReconnect] = useState<null | "reconnect" | "save">(null);
   const [stayConnected, setStayConnected] = useState(portalCredentials.isAuthorized());
 
   if (!me) return null;
@@ -137,7 +137,7 @@ export function SettingsPage() {
                         text: `Synced ${result.lessons} lessons from the school portal.`,
                       });
                     } else if (result.status === "portal_reconnect_required") {
-                      setShowReconnect(true);
+                      setShowReconnect("reconnect");
                     } else {
                       setFeedback({ tone: "danger", text: "Could not sync right now." });
                     }
@@ -147,7 +147,7 @@ export function SettingsPage() {
                 {busyKey === "sync" ? "Syncing…" : "Sync now"}
               </button>
             )}
-            <button className="btn btn--ghost" onClick={() => setShowReconnect(true)}>
+            <button className="btn btn--ghost" onClick={() => setShowReconnect("reconnect")}>
               Reconnect
             </button>
             {connection.connected && (
@@ -182,7 +182,7 @@ export function SettingsPage() {
                 Turn off
               </button>
             ) : (
-              <button className="btn btn--ghost" onClick={() => setShowReconnect(true)}>
+              <button className="btn btn--ghost" onClick={() => setShowReconnect("save")}>
                 Save school login…
               </button>
             )}
@@ -196,8 +196,9 @@ export function SettingsPage() {
           <div className="setting-row__main">
             <span>Timetable import</span>
             <span className="caption">
-              On for every HOney account since 1 September 2026 — your timetable and history come
-              from the school portal when you sign in. Delete them below at any time.
+              On for every HOney account since 1 September 2026 — your timetable and history are
+              imported from the school portal when your account is created, and again whenever
+              you press Sync now or pull to refresh. Delete them below at any time.
             </span>
           </div>
         </div>
@@ -282,7 +283,7 @@ export function SettingsPage() {
       {confirm === "delete-data" && (
         <ConfirmDialog
           title="Delete imported data?"
-          body="All imported timetable and history data will be removed from HOney. You can import again later."
+          body="All imported timetable and history data will be removed from HOney. You can import again with Sync now."
           confirmLabel="Delete imported data"
           danger
           busy={busyKey === "delete-data"}
@@ -318,7 +319,9 @@ export function SettingsPage() {
       )}
       {showReconnect && (
         <ReconnectDialog
-          onClose={() => setShowReconnect(false)}
+          purpose={showReconnect}
+          sessionExpired={!connection.portalTokenValid}
+          onClose={() => setShowReconnect(null)}
           onReconnected={() => {
             setStayConnected(portalCredentials.isAuthorized());
             void refreshMe();
