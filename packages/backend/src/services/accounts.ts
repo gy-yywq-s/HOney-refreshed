@@ -62,9 +62,11 @@ export class AccountService {
           "INSERT INTO honey_users (honey_id, school_account_key, display_name, student_type, created_at, is_admin) VALUES (?, ?, ?, ?, ?, ?)",
         )
         .run(honeyId, key, identity.name, identity.type, this.now(), admin);
+      // Import is part of the account (migration 009 rationale): granted at
+      // creation, never a separate question.
       this.db
-        .prepare("INSERT INTO import_consents (honey_id, timetable) VALUES (?, 0)")
-        .run(honeyId);
+        .prepare("INSERT INTO import_consents (honey_id, timetable, granted_at) VALUES (?, 1, ?)")
+        .run(honeyId, this.now());
       user = this.db
         .prepare("SELECT * FROM honey_users WHERE honey_id = ?")
         .get(honeyId) as unknown as HOneyUserRow;

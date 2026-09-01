@@ -115,14 +115,6 @@ export function TimetablePage() {
           Synced {syncFeedback.result.lessons} lessons from the school portal.
         </div>
       )}
-      {syncFeedback?.kind === "result" && syncFeedback.result.status === "no_consent" && (
-        <div role="status" className="banner banner--warning">
-          <span>Timetable import is switched off, so there is nothing to sync.</span>
-          <Link className="btn btn--ghost btn--small" to="/settings">
-            Open Settings
-          </Link>
-        </div>
-      )}
       {syncFeedback?.kind === "result" &&
         syncFeedback.result.status === "portal_reconnect_required" && (
           <div role="status" className="banner banner--warning">

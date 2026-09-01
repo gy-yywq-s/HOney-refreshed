@@ -46,17 +46,10 @@ async function login(consent = true) {
     consent: { timetable: boolean };
     session: { accessToken: string; refreshToken: string };
   };
-  // Consent is a SEPARATE explicit action — /api/consent is the only path.
-  if (consent && !body.consent.timetable) {
-    const c = await app.inject({
-      method: "POST",
-      url: "/api/consent",
-      headers: { authorization: `Bearer ${body.session.accessToken}` },
-      payload: { timetable: true },
-    });
-    expect(c.statusCode).toBe(200);
-    body.consent.timetable = true;
-  }
+  // Import is part of the account (migration 009): consent reads true from
+  // creation and never gates /api/sync. `consent` param kept for callers.
+  void consent;
+  expect(body.consent.timetable).toBe(true);
   return body;
 }
 
@@ -139,25 +132,21 @@ describe("auth: school login is signup", () => {
 });
 
 describe("consent & import", () => {
-  it("NO login payload can grant import consent (review v3 \u00a712.15A)", async () => {
-    // The legacy combined path is gone: consent-looking fields in the login
-    // body are ignored, /api/consent is the only consent mutation.
+  it("login payload fields never reach the consent row; import is on from creation", async () => {
     const res = await app.inject({
       method: "POST",
       url: "/api/auth/login",
-      payload: { ...LOGIN, consentTimetable: true, consent: { timetable: true } },
+      payload: { ...LOGIN, consentTimetable: false, consent: { timetable: false } },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { consent: { timetable: boolean }; session: { accessToken: string } };
-    expect(body.consent.timetable).toBe(false);
-
-    // And no data was imported behind the user's back.
+    expect(body.consent.timetable).toBe(true);
     const sync = await app.inject({
       method: "POST",
       url: "/api/sync",
       headers: { authorization: `Bearer ${body.session.accessToken}` },
     });
-    expect((sync.json() as { status: string }).status).toBe("no_consent");
+    expect((sync.json() as { status: string }).status).toBe("ok");
   });
 
   it("POST /api/sync accepts an empty JSON body (bodyless action)", async () => {
@@ -172,24 +161,15 @@ describe("consent & import", () => {
     expect((res.json() as { status: string }).status).toBe("ok");
   });
 
-  it("no consent → no imported data; consent + sync → lessons appear", async () => {
-    const noConsent = await login(false);
-    expect(noConsent.consent.timetable).toBe(false);
-    const auth = { authorization: `Bearer ${noConsent.session.accessToken}` };
-
-    const sync1 = await app.inject({ method: "POST", url: "/api/sync", headers: auth });
-    expect((sync1.json() as { status: string }).status).toBe("no_consent");
-
-    await app.inject({
-      method: "POST",
-      url: "/api/consent",
-      headers: auth,
-      payload: { timetable: true },
-    });
-    const sync2 = await app.inject({ method: "POST", url: "/api/sync", headers: auth });
-    const result = sync2.json() as { status: string; lessons: number };
+  it("sync imports lessons without any consent step; /api/consent remains accepted (iOS wire compat)", async () => {
+    const first = await login(false);
+    const auth = { authorization: `Bearer ${first.session.accessToken}` };
+    const sync = await app.inject({ method: "POST", url: "/api/sync", headers: auth });
+    const result = sync.json() as { status: string; lessons: number };
     expect(result.status).toBe("ok");
     expect(result.lessons).toBeGreaterThan(0);
+    const c = await app.inject({ method: "POST", url: "/api/consent", headers: auth, payload: { timetable: true } });
+    expect(c.statusCode).toBe(200);
   });
 
   it("expired portal token → sync reports portal_reconnect_required; /api/portal/token repairs it", async () => {

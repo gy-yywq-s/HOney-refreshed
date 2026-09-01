@@ -241,6 +241,16 @@ const MIGRATIONS: string[] = [
   INSERT OR IGNORE INTO experience_associations (experience_id, entity_type, entity_id, relationship)
     SELECT id, 'room', ctx_room_id, 'context' FROM experiences WHERE ctx_room_id IS NOT NULL;
   `,
+  // 009 — Import consent folded into the account (Gary, 2026-09-01: signing in
+  // with the school account IS the decision to bring your timetable along; a
+  // separate consent gate only re-asked returning students and re-imported).
+  // Existing rows become granted; /api/consent stays for iOS wire compat.
+  `
+  UPDATE import_consents
+     SET timetable = 1,
+         granted_at = COALESCE(granted_at, strftime('%s','now') * 1000),
+         revoked_at = NULL;
+  `,
 ];
 
 export function openDatabase(path: string): DatabaseSyncType {

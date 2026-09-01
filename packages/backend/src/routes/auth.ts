@@ -28,6 +28,11 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
       // consent mutation path is POST /api/consent, and the initial sync runs
       // only from that explicit action.
       const consent = ctx.accounts.getConsent(result.user.honey_id);
+      if (result.created) {
+        // First sign-in = first import, in the background. Later sign-ins
+        // never import; Sync now / pull-to-refresh are the manual paths.
+        void ctx.importer.syncTimetable(result.user.honey_id).catch(() => undefined);
+      }
       return reply.send({
         honeyId: result.user.honey_id,
         displayName: result.user.display_name,

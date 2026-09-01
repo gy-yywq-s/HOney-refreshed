@@ -113,6 +113,34 @@ export function SettingsPage() {
             </span>
           </div>
           <div className="card-actions" style={{ marginTop: 0 }}>
+            {connection.connected && (
+              <button
+                className="btn btn--primary"
+                disabled={busyKey === "sync"}
+                onClick={() =>
+                  void run("sync", async () => {
+                    const { result } = await api.syncSeamless();
+                    if (result.status === "ok") {
+                      apiCache.invalidate("timetable");
+                      apiCache.invalidate("next-lesson");
+                      apiCache.invalidate("history");
+                      apiCache.invalidate("directory");
+                      await refreshMe();
+                      setFeedback({
+                        tone: "success",
+                        text: `Synced ${result.lessons} lessons from the school portal.`,
+                      });
+                    } else if (result.status === "portal_reconnect_required") {
+                      setShowReconnect(true);
+                    } else {
+                      setFeedback({ tone: "danger", text: "Could not sync right now." });
+                    }
+                  })
+                }
+              >
+                {busyKey === "sync" ? "Syncing…" : "Sync now"}
+              </button>
+            )}
             <button className="btn btn--ghost" onClick={() => setShowReconnect(true)}>
               Reconnect
             </button>
@@ -158,37 +186,6 @@ export function SettingsPage() {
 
       <section className="card settings-section" aria-label="Imported data">
         <h2 className="section-title">Imported data</h2>
-        <div className="setting-row">
-          <div className="setting-row__main">
-            <span>Import my timetable</span>
-            <span className="caption">
-              {me.consent.timetable
-                ? me.consent.grantedAt
-                  ? `Consent granted ${timeAgo(me.consent.grantedAt)}`
-                  : "Consent granted"
-                : "Import is switched off"}
-            </span>
-          </div>
-          <label className="checkbox" style={{ margin: 0 }}>
-            <input
-              type="checkbox"
-              checked={me.consent.timetable}
-              disabled={busyKey === "consent"}
-              onChange={() =>
-                void run(
-                  "consent",
-                  async () => {
-                    await api.setConsent(!me.consent.timetable);
-                    apiCache.invalidate("");
-                    await refreshMe();
-                  },
-                  me.consent.timetable ? "Timetable import switched off." : "Timetable import on.",
-                )
-              }
-            />
-            <span className="caption">{me.consent.timetable ? "On" : "Off"}</span>
-          </label>
-        </div>
         <div className="setting-row">
           <div className="setting-row__main">
             <span>Delete imported data</span>

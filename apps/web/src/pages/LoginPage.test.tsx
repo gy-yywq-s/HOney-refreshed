@@ -1,10 +1,7 @@
 // @vitest-environment jsdom
 //
-// Regression pin for review 2026-09-01 finding 3: after a fresh sign-in the
-// import-consent step must actually be reachable. The bug: tokens are stored
-// synchronously by api.login, so any state update before setPhase("consent")
-// re-renders LoginPage while phase is still "signin", and the hasSession()
-// guard redirects to /home — silently skipping the §3.2 consent choice.
+// Sign-in is one step (Gary 2026-09-01: import needs no consent gate) —
+// a fresh sign-in lands on Home; the first import runs server-side.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
@@ -87,22 +84,14 @@ async function signIn() {
   });
 }
 
-describe("LoginPage first-login consent step (audit §3.2)", () => {
+describe("LoginPage sign-in (no consent step, 2026-09-01)", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
     state.hasSession = false;
-    state.consentTimetable = false;
-  });
-
-  it("shows the consent step after a fresh sign-in without consent", async () => {
-    renderApp();
-    await signIn();
-    expect(host.textContent).toContain("One more choice.");
-    expect(host.querySelector('[data-testid="home"]')).toBeNull();
-  });
-
-  it("skips straight to home when consent was already granted", async () => {
     state.consentTimetable = true;
+  });
+
+  it("lands on home straight after a fresh sign-in", async () => {
     renderApp();
     await signIn();
     expect(host.querySelector('[data-testid="home"]')).not.toBeNull();

@@ -39,8 +39,8 @@ export class ImportService {
    * backend holds no school password — by design it cannot re-login itself).
    */
   async syncTimetable(honeyId: string): Promise<SyncResult> {
-    const consent = this.accounts.getConsent(honeyId);
-    if (!consent.timetable) return { lessons: 0, teachers: 0, courses: 0, rooms: 0, status: "no_consent" };
+    // No consent gate (2026-09-01): the school sign-in is the import decision.
+    // `no_consent` stays in the status union only for wire compatibility.
 
     const conn = this.accounts.loadPortalToken(honeyId);
     if (!conn) return { lessons: 0, teachers: 0, courses: 0, rooms: 0, status: "portal_reconnect_required" };
