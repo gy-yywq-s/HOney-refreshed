@@ -491,6 +491,113 @@ describe("reports are category-only (audit §3.9)", () => {
   });
 });
 
+describe("report re-evaluation is tri-state (review v3 \u00a712.15B)", () => {
+  /** Insert a published row directly (distinct posts without lesson-dedup limits). */
+  function insertPublished(n: number): string {
+    const id = `exp-tri-${n}`;
+    app.ctx.db
+      .prepare(
+        `INSERT INTO experiences (id, entity_key, lesson_id, ctx_teacher_id, ctx_course_id, ctx_room_id,
+           body, rating, provenance, status, status_detail, ownership_hash, content_hash, policy_version, created_at, published_at)
+         VALUES (?, 'teacher:t1', NULL, NULL, NULL, NULL, 'An ordinary published comment.', NULL,
+                 'verified_retrospective', 'published', NULL, ?, 'ch', 6, 1000, 1000)`,
+      )
+      .run(id, `oh-${n}`);
+    return id;
+  }
+
+  async function report(id: string, category = "other_rule") {
+    return app.inject({
+      method: "POST", url: `/api/experiences/${id}/report`, headers: auth,
+      payload: { category },
+    });
+  }
+
+  it("classifier outage keeps the post public and queues an automatic retry", async () => {
+    const id = insertPublished(1);
+    app.ctx.experiences.llmRunner = async () => ({ ok: false }); // outage
+    const rep = await report(id);
+    expect(rep.statusCode).toBe(200);
+
+    // The post already crossed the publication boundary once — an outage must
+    // not unpublish it (this used to hide the post).
+    const row = app.ctx.db.prepare("SELECT status, body FROM experiences WHERE id = ?").get(id) as unknown as {
+      status: string; body: string | null;
+    };
+    expect(row.status).toBe("published");
+    expect(row.body).not.toBeNull();
+    const rrow = app.ctx.db
+      .prepare("SELECT outcome, retry_at FROM reports WHERE experience_id = ?")
+      .get(id) as unknown as { outcome: string; retry_at: number | null };
+    expect(rrow.outcome).toBe("reevaluation_pending");
+    expect(rrow.retry_at).not.toBeNull();
+
+    // Classifier comes back with a confident violation; the queued retry hides it.
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN, targets_student: true } });
+    const base = Date.now();
+    app.ctx.experiences.now = () => base + 31 * 60_000; // past retry_at
+    const processed = await app.ctx.experiences.processPendingReevaluations();
+    expect(processed).toBe(1);
+    const after = app.ctx.db.prepare("SELECT status FROM experiences WHERE id = ?").get(id) as unknown as {
+      status: string;
+    };
+    expect(after.status).toBe("blocked");
+    const rafter = app.ctx.db
+      .prepare("SELECT outcome, retry_at FROM reports WHERE experience_id = ?")
+      .get(id) as unknown as { outcome: string; retry_at: number | null };
+    expect(rafter.outcome).toBe("reevaluated_hidden");
+    expect(rafter.retry_at).toBeNull();
+  });
+
+  it("an uncertain verdict also keeps the current public state (not a violation)", async () => {
+    const id = insertPublished(2);
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN, uncertain: true } });
+    await report(id);
+    const row = app.ctx.db.prepare("SELECT status FROM experiences WHERE id = ?").get(id) as unknown as {
+      status: string;
+    };
+    expect(row.status).toBe("published");
+    const rrow = app.ctx.db.prepare("SELECT outcome FROM reports WHERE experience_id = ?").get(id) as unknown as {
+      outcome: string;
+    };
+    expect(rrow.outcome).toBe("reevaluation_pending");
+  });
+
+  it("repeat reports by the same account are idempotent and never re-run the LLM", async () => {
+    const id = insertPublished(3);
+    let llmCalls = 0;
+    app.ctx.experiences.llmRunner = async () => {
+      llmCalls++;
+      return { ok: true, features: { ...CLEAN } };
+    };
+    expect((await report(id)).statusCode).toBe(200);
+    expect((await report(id, "slur")).statusCode).toBe(200); // dedup regardless of category
+    const count = app.ctx.db.prepare("SELECT COUNT(*) AS n FROM reports WHERE experience_id = ?").get(id) as unknown as {
+      n: number;
+    };
+    expect(count.n).toBe(1);
+    expect(llmCalls).toBe(1);
+  });
+
+  it("per-account report rate limit (10 per rolling 24h)", async () => {
+    app.ctx.experiences.llmRunner = async () => ({ ok: true, features: { ...CLEAN } });
+    for (let i = 10; i < 20; i++) {
+      expect((await report(insertPublished(i))).statusCode).toBe(200);
+    }
+    const blocked = await report(insertPublished(30));
+    expect(blocked.statusCode).toBe(422);
+    expect((blocked.json() as { error: string }).error).toBe("report_rate_limited");
+  });
+
+  it("DISABLE_REPORTS kill switch stops the report system", async () => {
+    const id = insertPublished(40);
+    app.ctx.settings.setKillSwitch("DISABLE_REPORTS", true);
+    const rep = await report(id);
+    expect(rep.statusCode).toBe(422);
+    expect((rep.json() as { error: string }).error).toBe("reports_disabled");
+  });
+});
+
 describe("reactions, kill switches, abuse, admin gate", () => {
   it("reaction dedup + change + small-cohort hiding", async () => {
     const lessonId = await myLessonId();

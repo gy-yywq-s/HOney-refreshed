@@ -10,6 +10,7 @@ import { POLICY_VERSION } from "../experiences/policy.js";
 const KILL_SWITCHES: KillSwitch[] = [
   "DISABLE_NEW_PUBLICATIONS",
   "DISABLE_REACTIONS",
+  "DISABLE_REPORTS",
   "HIDE_PUBLIC_EXPERIENCES",
   "PRIVATE_NOTES_ONLY_MODE",
 ];

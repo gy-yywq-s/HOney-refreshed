@@ -764,9 +764,21 @@ export class ExperienceService {
     return { ok: true };
   }
 
-  // ---------- reports (§22): category-only, auto re-evaluation, no human queue ----------
+  // ---------- reports (§22 + review v3 §12.15B): category-only, tri-state ----------
+  //
+  // A report triggers automatic re-evaluation under the CURRENT policy (rules
+  // decide, not votes) with THREE possible resolutions:
+  //   CONFIDENT_VIOLATION → hide;  CONFIDENT_ALLOWED → keep;
+  //   UNAVAILABLE/UNCERTAIN → keep the post's current public state and queue an
+  //   automatic retry. The post already crossed the publication boundary once —
+  //   a classifier outage is not evidence of violation, so it must NOT unpublish.
 
-  async report(experienceId: string, category: ReportCategory): Promise<{ ok: boolean; error?: string }> {
+  private static readonly REPORT_RETRY_MS = 30 * 60 * 1000;
+  private static readonly REPORT_RATE_WINDOW_MS = 24 * 3600 * 1000;
+  private static readonly REPORT_RATE_MAX = 10;
+
+  async report(honeyId: string, experienceId: string, category: ReportCategory): Promise<{ ok: boolean; error?: string }> {
+    if (this.settings.killSwitch("DISABLE_REPORTS")) return { ok: false, error: "reports_disabled" };
     const row = this.db
       .prepare("SELECT id, entity_key, body, rating FROM experiences WHERE id = ? AND status = 'published'")
       .get(experienceId) as unknown as
@@ -774,25 +786,117 @@ export class ExperienceService {
       | undefined;
     if (!row || !row.body) return { ok: false, error: "not_found" };
 
+    // Reporter dedup: an unlinkable HMAC mark (same construction as reaction
+    // dedup — recomputable per account+post, joins to nothing). A repeat
+    // report by the same account is idempotent and never re-runs the LLM.
+    const reporterMark = markHash(this.markKey, honeyId, `report:${experienceId}`);
+    const existing = this.db
+      .prepare("SELECT id FROM reports WHERE experience_id = ? AND reporter_mark = ?")
+      .get(experienceId, reporterMark);
+    if (existing) return { ok: true };
+
+    // Per-account rate limit (rolling 24 h window; counts only, no post ids).
+    const rate = this.db
+      .prepare("SELECT window_start, count FROM report_rate WHERE honey_id = ?")
+      .get(honeyId) as unknown as { window_start: number; count: number } | undefined;
+    const windowLive = rate && rate.window_start > this.now() - ExperienceService.REPORT_RATE_WINDOW_MS;
+    if (windowLive && rate!.count >= ExperienceService.REPORT_RATE_MAX) {
+      return { ok: false, error: "report_rate_limited" };
+    }
+    this.db
+      .prepare(
+        `INSERT INTO report_rate (honey_id, window_start, count) VALUES (?, ?, 1)
+         ON CONFLICT(honey_id) DO UPDATE SET
+           window_start = CASE WHEN report_rate.window_start > ? THEN report_rate.window_start ELSE excluded.window_start END,
+           count = CASE WHEN report_rate.window_start > ? THEN report_rate.count + 1 ELSE 1 END`,
+      )
+      .run(honeyId, this.now(),
+        this.now() - ExperienceService.REPORT_RATE_WINDOW_MS,
+        this.now() - ExperienceService.REPORT_RATE_WINDOW_MS);
+
     const reportId = randomUUID();
     this.db
-      .prepare("INSERT INTO reports (id, experience_id, category, outcome, created_at) VALUES (?, ?, ?, 'pending', ?)")
-      .run(reportId, experienceId, category, this.now());
+      .prepare(
+        "INSERT INTO reports (id, experience_id, category, outcome, created_at, reporter_mark) VALUES (?, ?, ?, 'pending', ?, ?)",
+      )
+      .run(reportId, experienceId, category, this.now(), reporterMark);
 
-    // Automatic re-evaluation with the CURRENT policy (rules decide, not votes).
+    // Same post already confidently re-judged KEPT under the current policy →
+    // don't pay for another identical LLM verdict (S: no repeat spend).
+    const priorKept = this.db
+      .prepare(
+        "SELECT 1 FROM reports WHERE experience_id = ? AND outcome = 'reevaluated_kept' AND policy_version = ? AND id != ?",
+      )
+      .get(experienceId, POLICY_VERSION, reportId);
+    if (priorKept) {
+      this.db
+        .prepare("UPDATE reports SET outcome = 'reevaluated_kept', policy_version = ? WHERE id = ?")
+        .run(POLICY_VERSION, reportId);
+      return { ok: true };
+    }
+
+    await this.reevaluate(reportId, experienceId);
+    return { ok: true };
+  }
+
+  /** Re-run moderation for one report and resolve it tri-state. */
+  private async reevaluate(reportId: string, experienceId: string): Promise<void> {
+    const row = this.db
+      .prepare("SELECT id, entity_key, body, rating, status FROM experiences WHERE id = ?")
+      .get(experienceId) as unknown as
+      | { id: string; entity_key: string; body: string | null; rating: number | null; status: string }
+      | undefined;
+    if (!row || row.status !== "published" || !row.body) {
+      // Nothing public left to judge (revoked/hidden meanwhile) — close out.
+      this.db
+        .prepare("UPDATE reports SET outcome = 'reevaluated_kept', retry_at = NULL, policy_version = ? WHERE id = ?")
+        .run(POLICY_VERSION, reportId);
+      return;
+    }
     const entityType = row.entity_key.split(":")[0] ?? "lesson";
     const decision = await this.computeDecision(row.body, entityType, row.rating);
-    // Hide on any non-publishable outcome, INCLUDING failed_closed/uncertain: a
-    // reported post must not stay public just because the classifier is down (S1).
-    const shouldHide = decision.action !== "publish" && decision.action !== "publish_nudge";
-    if (shouldHide) {
+
+    const unavailable =
+      decision.action === "failed_closed" ||
+      (decision.action === "rephrase_required" && decision.reasons.includes("llm:uncertain"));
+    if (unavailable) {
+      // UNAVAILABLE/UNCERTAIN: keep the current public state, retry later.
       this.db
-        .prepare("UPDATE experiences SET status = 'blocked', body = NULL, rating = NULL, status_detail = ? WHERE id = ?")
-        .run("report_reevaluation", experienceId);
-      this.db.prepare("UPDATE reports SET outcome = 'reevaluated_hidden' WHERE id = ?").run(reportId);
-    } else {
-      this.db.prepare("UPDATE reports SET outcome = 'reevaluated_kept' WHERE id = ?").run(reportId);
+        .prepare("UPDATE reports SET outcome = 'reevaluation_pending', retry_at = ? WHERE id = ?")
+        .run(this.now() + ExperienceService.REPORT_RETRY_MS, reportId);
+      return;
     }
-    return { ok: true };
+
+    // Timing (cooldown) is a pre-publication intervention, not a violation —
+    // it never retro-hides an already-published post.
+    const kept =
+      decision.action === "publish" ||
+      decision.action === "publish_nudge" ||
+      decision.action === "cooldown_24h";
+    if (kept) {
+      this.db
+        .prepare("UPDATE reports SET outcome = 'reevaluated_kept', retry_at = NULL, policy_version = ? WHERE id = ?")
+        .run(POLICY_VERSION, reportId);
+      return;
+    }
+
+    // CONFIDENT_VIOLATION under the current policy → hide.
+    this.db
+      .prepare("UPDATE experiences SET status = 'blocked', body = NULL, rating = NULL, status_detail = ? WHERE id = ?")
+      .run("report_reevaluation", experienceId);
+    this.db
+      .prepare("UPDATE reports SET outcome = 'reevaluated_hidden', retry_at = NULL, policy_version = ? WHERE id = ?")
+      .run(POLICY_VERSION, reportId);
+  }
+
+  /** Retry queue sweep: re-run re-evaluations that failed closed earlier. */
+  async processPendingReevaluations(): Promise<number> {
+    const due = this.db
+      .prepare(
+        "SELECT id, experience_id FROM reports WHERE outcome = 'reevaluation_pending' AND retry_at IS NOT NULL AND retry_at <= ? LIMIT 20",
+      )
+      .all(this.now()) as unknown as { id: string; experience_id: string }[];
+    for (const r of due) await this.reevaluate(r.id, r.experience_id);
+    return due.length;
   }
 }

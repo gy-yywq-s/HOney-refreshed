@@ -328,6 +328,7 @@ export interface ReportExperienceInput {
 export type KillSwitchName =
   | "DISABLE_NEW_PUBLICATIONS"
   | "DISABLE_REACTIONS"
+  | "DISABLE_REPORTS"
   | "HIDE_PUBLIC_EXPERIENCES"
   | "PRIVATE_NOTES_ONLY_MODE";
 
@@ -362,7 +363,9 @@ export interface AdminReport {
   id: string;
   experience_id: string;
   category: ReportCategory;
-  outcome: "pending" | "reevaluated_kept" | "reevaluated_hidden" | null;
+  /** `reevaluation_pending` = classifier unavailable/uncertain; the post KEEPS
+   *  its current public state and an automatic retry is queued (§12.15B). */
+  outcome: "pending" | "reevaluated_kept" | "reevaluated_hidden" | "reevaluation_pending" | null;
   created_at: number;
 }
 

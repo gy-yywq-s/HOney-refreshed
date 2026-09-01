@@ -197,6 +197,25 @@ const MIGRATIONS: string[] = [
   ALTER TABLE experiences DROP COLUMN cooldown_until;
   ALTER TABLE reports DROP COLUMN note;
   `,
+  // 007 — report re-evaluation hardening (review v3 §12.15B): tri-state
+  // outcomes (a classifier outage must NOT hide a previously-accepted post),
+  // reporter dedup via an unlinkable HMAC mark (joins to nothing), the policy
+  // version each verdict was judged under (so repeat reports don't re-run the
+  // paid LLM), and a retry queue for unavailable/uncertain re-evaluations.
+  // Rate limiting counts per account WITHOUT any post linkage.
+  `
+  ALTER TABLE reports ADD COLUMN reporter_mark TEXT;
+  ALTER TABLE reports ADD COLUMN policy_version INTEGER;
+  ALTER TABLE reports ADD COLUMN retry_at INTEGER;
+  CREATE UNIQUE INDEX idx_reports_reporter ON reports(experience_id, reporter_mark);
+  CREATE INDEX idx_reports_retry ON reports(retry_at) WHERE retry_at IS NOT NULL;
+
+  CREATE TABLE report_rate (
+    honey_id TEXT PRIMARY KEY REFERENCES honey_users(honey_id) ON DELETE CASCADE,
+    window_start INTEGER NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0
+  ) STRICT;
+  `,
 ];
 
 export function openDatabase(path: string): DatabaseSyncType {

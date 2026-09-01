@@ -12,6 +12,14 @@ const defaultWebDist = resolve(process.cwd(), "apps/web/dist");
 const webDist = process.env.HONEY_WEB_DIST ?? (existsSync(defaultWebDist) ? defaultWebDist : undefined);
 
 const app = buildApp(webDist ? { webDist } : {});
+
+// Report re-evaluation retry queue (review v3 §12.15B): re-run verdicts that
+// failed closed (classifier unavailable/uncertain). unref() — never keeps the
+// process alive on its own.
+setInterval(() => {
+  void app.ctx.experiences.processPendingReevaluations().catch(() => undefined);
+}, 10 * 60_000).unref();
+
 app
   .listen({ port, host })
   .then((addr) => {

@@ -168,12 +168,13 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     "/api/experiences/:id/report",
     { preHandler: ctx.requireAuth },
     async (req, reply) => {
+      const user = ctx.userOf(req);
       const { category, note } = req.body ?? {};
       if (note !== undefined) return reply.code(400).send({ error: "free_text_not_accepted" });
       if (!category || !REPORT_CATEGORIES.includes(category as ReportCategory)) {
         return reply.code(400).send({ error: "bad_category" });
       }
-      const result = await ctx.experiences.report(req.params.id, category as ReportCategory);
+      const result = await ctx.experiences.report(user.honey_id, req.params.id, category as ReportCategory);
       if (!result.ok) return reply.code(422).send({ error: result.error });
       return reply.send(result);
     },
