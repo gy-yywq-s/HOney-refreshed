@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { Lesson } from "@honey/shared";
-import { PortalApi, joinLessons, retrySafeRead } from "@honey/portal-connector";
+import { PortalApi, joinLessons, mergeLessonsById, normalizeTableLessons, retrySafeRead } from "@honey/portal-connector";
 import { portalWeekIndex } from "@honey/shared";
 import type { AccountService } from "./accounts.js";
 import type { EntityRegistry } from "../experiences/entities.js";
@@ -45,23 +45,27 @@ export class ImportService {
     if (!conn) return { lessons: 0, teachers: 0, courses: 0, rooms: 0, status: "portal_reconnect_required" };
 
     const nowDate = this.now();
-    // The portal only serves the past ~2 weeks (older weeks return status:1
-    // "only the last two weeks are viewable"); future weeks are available.
-    const from = new Date(nowDate.getTime() - 2 * 7 * 86_400_000);
-    const to = new Date(nowDate.getTime() + 4 * 7 * 86_400_000);
 
     let lessons: Lesson[];
     try {
       const studentId = Number(conn.studentId);
+      // The Lesson Table carries the whole current+future term with real times in
+      // ONE request — it is the primary source. The weekly schedule is only used
+      // for the PAST weeks the table can't see (and the current week, to pick up
+      // the few lessons the table omits + per-section class data).
       const table = await retrySafeRead(() => this.api.lessonTable(conn.token));
-      const firstWeek = portalWeekIndex(from);
-      const lastWeek = portalWeekIndex(to);
+      const tableLessons = normalizeTableLessons(table);
+
+      const nowWeek = portalWeekIndex(nowDate);
+      const recentWeeks = [nowWeek - 2, nowWeek - 1, nowWeek];
       const weekly = await Promise.all(
-        Array.from({ length: lastWeek - firstWeek + 1 }, (_, i) =>
-          retrySafeRead(() => this.api.weeklySchedule(conn.token, studentId, firstWeek + i)),
-        ),
+        recentWeeks.map((w) => retrySafeRead(() => this.api.weeklySchedule(conn.token, studentId, w))),
       );
-      lessons = joinLessons(weekly.flatMap((w) => w.lessons), table);
+      const weeklyJoined = joinLessons(weekly.flatMap((w) => w.lessons), table);
+
+      // Weekly wins on overlap (history + class data + any current lesson the
+      // table omitted); the table supplies everything from this week onward.
+      lessons = mergeLessonsById(tableLessons, weeklyJoined);
     } catch (e) {
       if (e instanceof Error && "info" in e) {
         const kind = (e as { info: { kind: string } }).info.kind;

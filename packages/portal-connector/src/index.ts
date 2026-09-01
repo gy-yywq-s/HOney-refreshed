@@ -1,7 +1,7 @@
 export * from "./errors.js";
 export { PortalHttp, retrySafeRead, type HttpOptions, type PortalResponse } from "./http.js";
 export { PortalApi, type UserInfoWire, type WeeklyScheduleWire } from "./api.js";
-export { joinLessons, sortLessons } from "./normalize.js";
+export { joinLessons, normalizeTableLessons, mergeLessonsById, sortLessons } from "./normalize.js";
 export {
   PortalSessionCoordinator,
   type CredentialVault,
