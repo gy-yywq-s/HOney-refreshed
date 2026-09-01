@@ -172,6 +172,10 @@ stay public just because the classifier is down).
 ## Versioning & the launch gates
 
 `POLICY_VERSION` (currently 4) stamps every decision and pass. Any prompt/lexicon/engine change
-bumps it and re-runs the regression corpus; §26.2 gates (zero serious published, zero injection
-bypass, 100 % schema-valid, fail-closed on outage, no systematic blocking of ordinary
-negativity, pass binding + replay protection) are the merge bar for this subsystem.
+bumps it and re-runs the regression corpus. The §26.2 gates are asserted as **zero misses in
+that versioned corpus** — no serious/out-of-scope row publishes, no injection row obtains a
+pass, 100 % schema-valid or fail-closed, no systematic blocking of ordinary negativity, pass
+binding + replay protection — and are the merge bar for this subsystem. They are properties of
+the regression suite, **not** a guarantee that no serious content can ever publish; the
+residual-risk posture is fail-closed defaults, report-triggered re-evaluation, kill switches,
+and growing the corpus with every observed miss.
