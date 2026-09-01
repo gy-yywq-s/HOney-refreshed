@@ -1,31 +1,19 @@
-// Appearance controls — surface swatch grid + ui-font segmented control.
-// Used twice: in the topbar's appearance dialog and mirrored as a section on
-// the Settings page. Choices apply instantly (with a crossfade) and persist.
+// Appearance controls — the four background surfaces (Gary's own choice).
+// The ui-font axis is gone (one humanist sans — web-lab round 2). Used in the
+// rail's appearance dialog and mirrored on Settings; applies instantly with
+// a crossfade and persists.
 
 import { useState } from "react";
-import {
-  SURFACE_OPTIONS,
-  UI_FONT_OPTIONS,
-  getSurface,
-  getUiFont,
-  setSurface,
-  setUiFont,
-} from "../lib/theme";
-import type { Surface, UiFont } from "../lib/theme";
+import { SURFACE_OPTIONS, getSurface, setSurface } from "../lib/theme";
+import type { Surface } from "../lib/theme";
 import { Modal } from "./Modal";
 
 export function ThemeControls() {
   const [surface, setSurfaceState] = useState<Surface>(() => getSurface());
-  const [uiFont, setUiFontState] = useState<UiFont>(() => getUiFont());
 
   function chooseSurface(next: Surface) {
     setSurface(next);
     setSurfaceState(next);
-  }
-
-  function chooseUiFont(next: UiFont) {
-    setUiFont(next);
-    setUiFontState(next);
   }
 
   return (
@@ -42,22 +30,6 @@ export function ThemeControls() {
             >
               <i className={`swatch swatch--${option.value}`} aria-hidden="true" />
               <strong>{option.label}</strong>
-            </button>
-          ))}
-        </div>
-      </section>
-      <section className="theme-dialog__section">
-        <h3>Font</h3>
-        <div className="segmented" role="group" aria-label="Font">
-          {UI_FONT_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={uiFont === option.value}
-              title={option.hint}
-              onClick={() => chooseUiFont(option.value)}
-            >
-              {option.label}
             </button>
           ))}
         </div>

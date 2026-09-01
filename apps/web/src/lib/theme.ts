@@ -1,17 +1,14 @@
-// Theme (appearance) state — selectable surface + ui-font, persisted in
-// localStorage and applied as data-attributes on <html>. The inline script in
-// index.html applies the saved values BEFORE first paint; this module is the
-// runtime side: reading, switching (with a whole-surface crossfade) and the
-// theme-color meta.
+// Theme (appearance) state — the four selectable surfaces (Gary's own
+// choice, kept), persisted in localStorage and applied as a data-attribute
+// on <html>. The inline script in index.html applies the saved value BEFORE
+// first paint. The ui-font axis is gone (web-lab round 2: one humanist sans
+// voice — the type is no longer a playground).
 
 export type Surface = "stone" | "white" | "mist" | "night";
-export type UiFont = "grotesk" | "neutral" | "editorial";
 
 export const SURFACE_KEY = "honey.theme.surface";
-export const UI_FONT_KEY = "honey.theme.uiFont";
 
 export const DEFAULT_SURFACE: Surface = "stone";
-export const DEFAULT_UI_FONT: UiFont = "grotesk";
 
 export const SURFACE_OPTIONS: { value: Surface; label: string }[] = [
   { value: "stone", label: "Stone" },
@@ -20,17 +17,11 @@ export const SURFACE_OPTIONS: { value: Surface; label: string }[] = [
   { value: "night", label: "Night" },
 ];
 
-export const UI_FONT_OPTIONS: { value: UiFont; label: string; hint: string }[] = [
-  { value: "grotesk", label: "Grotesk", hint: "Space Grotesk" },
-  { value: "neutral", label: "Neutral", hint: "System" },
-  { value: "editorial", label: "Editorial", hint: "Fraunces heads" },
-];
-
 /** theme-color per surface — keep in sync with the boot script in index.html. */
 const THEME_COLORS: Record<Surface, string> = {
-  stone: "#edf0f1",
+  stone: "#f4f6f7",
   white: "#ffffff",
-  mist: "#e7eeec",
+  mist: "#eef2f2",
   night: "#14171a",
 };
 
@@ -38,12 +29,6 @@ export function normalizeSurface(value: string | null | undefined): Surface {
   return value === "stone" || value === "white" || value === "mist" || value === "night"
     ? value
     : DEFAULT_SURFACE;
-}
-
-export function normalizeUiFont(value: string | null | undefined): UiFont {
-  return value === "grotesk" || value === "neutral" || value === "editorial"
-    ? value
-    : DEFAULT_UI_FONT;
 }
 
 function read(key: string): string | null {
@@ -67,13 +52,6 @@ export function getSurface(): Surface {
     return normalizeSurface(document.documentElement.dataset.surface);
   }
   return normalizeSurface(read(SURFACE_KEY));
-}
-
-export function getUiFont(): UiFont {
-  if (typeof document !== "undefined" && document.documentElement.dataset.uiFont) {
-    return normalizeUiFont(document.documentElement.dataset.uiFont);
-  }
-  return normalizeUiFont(read(UI_FONT_KEY));
 }
 
 let fadeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -103,11 +81,4 @@ export function setSurface(surface: Surface): void {
   write(SURFACE_KEY, surface);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", THEME_COLORS[surface]);
-}
-
-export function setUiFont(font: UiFont): void {
-  withCrossfade(() => {
-    document.documentElement.dataset.uiFont = font;
-  });
-  write(UI_FONT_KEY, font);
 }

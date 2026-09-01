@@ -12,18 +12,15 @@
     <meta name="apple-mobile-web-app-title" content="HOney" />
     <title>HOney</title>
     <script>
-      // Theme boot — runs before first paint so the chosen surface / ui-font
-      // never flash. Mirrors src/lib/theme.ts (the runtime source of truth).
+      // Theme boot — runs before first paint so the chosen surface never
+      // flashes. Mirrors src/lib/theme.ts (the runtime source of truth).
       (function () {
         try {
           var surfaces = { stone: 1, white: 1, mist: 1, night: 1 };
-          var fonts = { grotesk: 1, neutral: 1, editorial: 1 };
           var s = localStorage.getItem("honey.theme.surface");
-          var f = localStorage.getItem("honey.theme.uiFont");
           var root = document.documentElement;
           root.dataset.surface = surfaces[s] ? s : "stone";
-          root.dataset.uiFont = fonts[f] ? f : "grotesk";
-          var colors = { stone: "#edf0f1", white: "#ffffff", mist: "#e7eeec", night: "#14171a" };
+          var colors = { stone: "#f4f6f7", white: "#ffffff", mist: "#eef2f2", night: "#14171a" };
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute("content", colors[root.dataset.surface] || colors.stone);
         } catch (e) {

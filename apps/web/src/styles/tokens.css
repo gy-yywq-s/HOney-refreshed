@@ -1,52 +1,57 @@
 /*
- * HOney web design tokens — the style-independent web system (work order
- * brick-web-sat-restyle). Mechanism follows the reference site (custom props
- * on :root, data-surface / data-ui-font variants chosen in Settings and
- * persisted in localStorage); the values are HOney's own cool system
- * (spec Addendum 3): ink near-black, petrol-teal accent, glacier highlight,
- * four surfaces stone / white / mist / night. Ink fills stay the primary
- * button / active-nav grammar — teal and glacier are temperature, not flood.
+ * HOney web design tokens — web-lab ROUND 2, candidate A ("quiet humanist",
+ * review v3 §5.5): a narrow, cool, school-paper palette and ONE humanist
+ * sans. The interface stops performing; schedule, context and student words
+ * come first. Mechanism kept from round 1: custom props on :root, the four
+ * data-surface variants (Gary's own choice) selected in Settings and applied
+ * pre-paint by the index.html boot script.
  *
- * Measured WCAG contrast (see brick report): accent on stone 5.45:1,
- * night accent on night 10.41:1, ink on glacier 12.78:1, muted on stone
- * 4.73:1, danger on mist 4.94:1 — all AA at their roles.
+ * Palette rules: deep blue-gray ink (not pure black), cool gray secondary,
+ * pale gray-blue hairlines, ONE muted blue-teal accent; semantic colors only
+ * on real states. Cool tones only (CLAUDE.md rule 4d).
  */
 :root {
   color-scheme: light;
 
-  /* Surface: stone (default) — cool gray with the 9px dot-grid texture. */
-  --surface: #edf0f1;
-  --surface-solid: #f7f9f9;
-  --card: rgba(255, 255, 255, 0.5);
-  --soft: rgba(21, 24, 26, 0.05);
+  /* Surface: stone (default) — cool off-white, no texture loops. */
+  --surface: #f4f6f7;
+  --surface-solid: #fbfcfc;
+  --card: rgba(255, 255, 255, 0.72);
+  --soft: rgba(35, 43, 49, 0.05);
 
-  --ink: #15181a;
-  --muted: #646b70;
-  --line: rgba(21, 24, 26, 0.16);
+  --ink: #232b31; /* deep blue-gray */
+  --ink-2: #5c6770; /* secondary text */
+  --ink-3: #7d868e; /* tertiary/meta */
+  --muted: #5c6770;
+  --line: rgba(35, 43, 49, 0.14);
+  --wash: rgba(35, 43, 49, 0.05);
 
-  /* Interactive temperature. */
-  --accent: #136c66; /* petrol teal — links, focus, active accents */
-  --glacier: #9fe8dc; /* highlight / primary CTA pill, always ink text */
-  --danger: #b53844; /* cool red (tuned from #c03d4a for AA on mist) */
-  --ok: #2b7355; /* cool green (tuned from #2f7d5d for AA on mist) */
+  /* ONE restrained accent (muted blue-teal) + its quiet tint. */
+  --accent: #33667c;
+  --accent-tint: #dde8ec;
+  --on-accent: #ffffff;
+  /* Legacy alias (round-1 glacier CTA) → now the quiet tint; ink text on it. */
+  --glacier: #dde8ec;
+  --danger: #b53844;
+  --ok: #2b7355;
 
   /* Shell geometry. */
   --rail: 216px;
 
-  /* Type — self-hosted variable fonts (@fontsource), no runtime CDN. */
+  /* Type — ONE humanist sans, self-hosted (@fontsource). */
   --ui:
-    "Space Grotesk Variable", "Space Grotesk", system-ui, -apple-system,
-    "Segoe UI", sans-serif;
-  --reading: "Fraunces Variable", Fraunces, Iowan Old Style, Georgia, serif;
+    "Source Sans 3 Variable", "Source Sans 3", system-ui, -apple-system,
+    "Segoe UI", "Helvetica Neue", sans-serif;
+  --reading: var(--ui);
   --display: var(--ui);
 
-  --shadow: 0 22px 70px rgba(16, 24, 26, 0.14);
+  --shadow: 0 14px 40px rgba(22, 30, 34, 0.1);
 
-  /* Motion kit. */
+  /* Motion: state-explaining only (route settle, skeletons, progress). */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --dur-fast: 250ms;
-  --dur: 350ms;
-  --dur-slow: 500ms;
+  --dur-fast: 200ms;
+  --dur: 300ms;
+  --dur-slow: 420ms;
 
   background: var(--surface);
   color: var(--ink);
@@ -54,41 +59,38 @@
   font-synthesis: none;
 }
 
-/* Selectable UI type (Settings → Interface type). */
-:root[data-ui-font="neutral"] {
-  --ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-:root[data-ui-font="editorial"] {
-  --ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --display: var(--reading);
-}
-
-/* Selectable surfaces (Settings → Background). */
+/* Selectable surfaces (Settings → Background — Gary's four). */
 :root[data-surface="white"] {
   --surface: #ffffff;
   --surface-solid: #ffffff;
   --card: #ffffff;
-  --soft: #f2f4f4;
-  --line: rgba(16, 18, 20, 0.16);
+  --soft: #f2f4f5;
+  --line: rgba(24, 30, 34, 0.13);
 }
 :root[data-surface="mist"] {
-  --surface: #e7eeec;
-  --surface-solid: #f4f8f6;
-  --card: rgba(255, 255, 255, 0.55);
-  --soft: rgba(29, 53, 48, 0.06);
-  --line: rgba(21, 35, 32, 0.17);
+  --surface: #eef2f2;
+  --surface-solid: #f7faf9;
+  --card: rgba(255, 255, 255, 0.7);
+  --soft: rgba(31, 50, 47, 0.05);
+  --line: rgba(28, 40, 38, 0.14);
 }
 :root[data-surface="night"] {
   color-scheme: dark;
   --surface: #14171a;
-  --surface-solid: #1e2226;
-  --card: rgba(255, 255, 255, 0.04);
+  --surface-solid: #1d2125;
+  --card: rgba(255, 255, 255, 0.045);
   --soft: rgba(255, 255, 255, 0.06);
-  --ink: #eef1f2;
-  --muted: #a8b0b4;
-  --line: rgba(238, 241, 242, 0.18);
-  --accent: #7fd4c8;
+  --ink: #e9edef;
+  --ink-2: #a6afb5;
+  --ink-3: #8b949b;
+  --muted: #a6afb5;
+  --line: rgba(233, 237, 239, 0.16);
+  --wash: rgba(255, 255, 255, 0.06);
+  --accent: #8fc2d4;
+  --accent-tint: rgba(143, 194, 212, 0.16);
+  --on-accent: #10181c;
+  --glacier: rgba(143, 194, 212, 0.16);
   --danger: #f2919a;
   --ok: #83c9a8;
-  --shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
 }

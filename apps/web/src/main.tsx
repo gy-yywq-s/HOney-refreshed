@@ -1,10 +1,10 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
-// Self-hosted variable webfonts (@fontsource) — no runtime font CDN.
-import "@fontsource-variable/space-grotesk";
-import "@fontsource-variable/fraunces/opsz.css";
-import "@fontsource-variable/fraunces/opsz-italic.css";
+// Self-hosted variable webfont (@fontsource) — no runtime font CDN. One
+// humanist sans everywhere (web-lab round 2, candidate A): the content has
+// the personality; the interface doesn't perform (review v3 §5.5.1).
+import "@fontsource-variable/source-sans-3";
 import "./styles/tokens.css";
 import "./styles/foundations.css";
 import "./styles/components.css";

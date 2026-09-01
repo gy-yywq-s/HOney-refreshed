@@ -22,38 +22,6 @@ body {
   background-color: var(--surface);
 }
 
-/* The 9px dot-grid texture, on a fixed layer so it can drift — ambient idle
-   life: a barely perceptible 90s breathing loop, transform-only. White surface
-   drops the grid (clean sheet). */
-body::before {
-  content: "";
-  position: fixed;
-  inset: -48px;
-  z-index: -1;
-  background-image: radial-gradient(
-    color-mix(in srgb, var(--ink) 14%, transparent) 0.65px,
-    transparent 0.65px
-  );
-  background-size: 9px 9px;
-  pointer-events: none;
-  animation: grid-drift 90s var(--ease) infinite alternate;
-  will-change: transform;
-}
-:root[data-surface="white"] body::before {
-  display: none;
-}
-@keyframes grid-drift {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(14px, 9px, 0);
-  }
-  to {
-    transform: translate3d(4px, 18px, 0);
-  }
-}
-
 /* Theme crossfade: html gets .theme-anim for ~450ms around a surface switch. */
 .theme-anim,
 .theme-anim body,
@@ -142,11 +110,11 @@ a.btn:active {
 .page-title {
   margin: 0;
   font-family: var(--display);
-  font-size: clamp(42px, 6vw, 82px);
-  /* 1.02 (not .96): descenders must not be sliced by the element below. */
-  line-height: 1.02;
-  letter-spacing: -0.04em;
-  font-weight: 600;
+  /* Quiet scale (candidate A): a page title, not a campaign headline. */
+  font-size: clamp(28px, 3.4vw, 36px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  font-weight: 650;
 }
 .section-head > p:last-child,
 .section-head__copy {
@@ -158,40 +126,10 @@ a.btn:active {
 .section-title {
   margin: 0 0 12px;
   font-family: var(--display);
-  font-size: 26px;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  font-weight: 600;
-}
-
-/* Hero (Home greeting, Login): oversized head, serif-italic accent line. */
-.hero {
-  padding: clamp(20px, 4vw, 44px) 0 8px;
-}
-.hero h1 {
-  max-width: 1080px;
-  margin: 0;
-  font-family: var(--display);
-  font-size: clamp(44px, 7vw, 96px);
-  line-height: 0.9;
-  letter-spacing: -0.05em;
-  font-weight: 600;
-}
-.hero h1 .hero__accent {
-  display: block;
-  margin-left: 6vw;
-  font-family: var(--reading);
-  font-optical-sizing: auto;
-  font-weight: 420;
-  font-style: italic;
-  letter-spacing: -0.02em;
-}
-.hero-copy {
-  max-width: 650px;
-  margin: 18px 0 0 6vw;
-  color: var(--muted);
-  font-size: 17px;
-  line-height: 1.55;
+  font-size: 21px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  font-weight: 650;
 }
 
 /* Reading serif — Experiences post bodies. */
@@ -386,16 +324,6 @@ a.btn:active {
     opacity: 0.55;
   }
 }
-@keyframes sweep {
-  0%,
-  62% {
-    transform: translateX(-130%) skewX(-14deg);
-  }
-  88%,
-  100% {
-    transform: translateX(230%) skewX(-14deg);
-  }
-}
 
 /* Route-level settle: every view change eases up into place. */
 .view {
@@ -422,37 +350,6 @@ a.btn:active {
   transform: translateY(0);
 }
 
-/* Ambient light sweep across hero display type (60s+ loop, barely there). */
-.sweep-host {
-  position: relative;
-  overflow: hidden;
-}
-.sweep-host::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 42%;
-  background: linear-gradient(
-    100deg,
-    transparent,
-    color-mix(in srgb, var(--surface-solid) 62%, transparent) 50%,
-    transparent
-  );
-  pointer-events: none;
-  animation: sweep 64s linear infinite;
-  will-change: transform;
-}
-
-/* Subtle whole-viewport parallax: the shell writes the transform directly
-   (see useAmbientMotion) — no :root custom property, no full-page recalc. */
-.parallax-slow,
-.parallax-faint {
-  display: inline-block;
-  will-change: transform;
-}
-
 /* The kill rule: every animation and transition collapses. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -466,13 +363,6 @@ a.btn:active {
   }
   .reveal {
     opacity: 1;
-    transform: none;
-  }
-  .sweep-host::after {
-    display: none;
-  }
-  .parallax-slow,
-  .parallax-faint {
     transform: none;
   }
 }

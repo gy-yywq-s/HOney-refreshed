@@ -1,9 +1,8 @@
-// The motion kit's JS half (work order: motion + "alive" addendum). CSS owns
-// the keyframes; this module owns what CSS can't: IntersectionObserver scroll
-// reveals, count-up numbers, the pointer-following card highlight, and the
-// scroll parallax variable. Everything checks prefers-reduced-motion and
-// stays transform/opacity-only; the scroll + pointer handlers are passive
-// and rAF-throttled.
+// The motion kit's JS half — web-lab round 2 keeps ONLY state-explaining
+// motion (review v3 §5.5.3): entrance reveals on navigation, skeletons, and
+// the live clock. Ambient loops, pointer glow, parallax and count-ups are
+// gone. Everything checks prefers-reduced-motion and stays
+// transform/opacity-only.
 
 import { createElement, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactElement, ReactNode } from "react";
@@ -81,35 +80,6 @@ export function Reveal({
   );
 }
 
-/**
- * Count-up for stat-strip numbers: animates 0 → value once per mount, then
- * follows later values directly. Skipped entirely under reduced motion.
- */
-export function useCountUp(target: number | null, duration = 850): number | null {
-  const [value, setValue] = useState<number | null>(target === null ? null : 0);
-  const animated = useRef(false);
-
-  useEffect(() => {
-    if (target === null) return;
-    if (animated.current || prefersReducedMotion() || target === 0) {
-      animated.current = true;
-      setValue(target);
-      return;
-    }
-    animated.current = true;
-    const start = performance.now();
-    let raf = requestAnimationFrame(function step(now: number) {
-      const p = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setValue(Math.round(target * eased));
-      if (p < 1) raf = requestAnimationFrame(step);
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-
-  return value;
-}
-
 /** A ticking clock (for live countdowns); pauses under reduced motion at 60s. */
 export function useNowTick(intervalMs = 1000): number {
   const [now, setNow] = useState(() => Date.now());
@@ -119,49 +89,6 @@ export function useNowTick(intervalMs = 1000): number {
     return () => clearInterval(t);
   }, [intervalMs]);
   return now;
-}
-
-/**
- * Shell-level ambient handlers: writes --py (scrolled px) for the parallax
- * classes, and --mx/--my on hovered .glow cards for the pointer-following
- * highlight. One passive scroll listener + one delegated pointer listener.
- */
-export function useAmbientMotion(): void {
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-    let raf = 0;
-    // Parallax writes transforms directly on the few opted-in nodes; setting
-    // a custom property on :root would invalidate style for the whole
-    // document every frame (measured as scroll jank under CPU throttling).
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        const y = window.scrollY;
-        for (const el of document.querySelectorAll<HTMLElement>(".parallax-slow")) {
-          el.style.transform = `translateY(${(y * -0.05).toFixed(1)}px)`;
-        }
-        for (const el of document.querySelectorAll<HTMLElement>(".parallax-faint")) {
-          el.style.transform = `translateY(${(y * -0.02).toFixed(1)}px)`;
-        }
-        raf = 0;
-      });
-    };
-    const onPointer = (e: PointerEvent) => {
-      const target = e.target instanceof Element ? e.target.closest(".glow") : null;
-      if (!(target instanceof HTMLElement)) return;
-      const rect = target.getBoundingClientRect();
-      target.style.setProperty("--mx", `${(e.clientX - rect.left).toFixed(0)}px`);
-      target.style.setProperty("--my", `${(e.clientY - rect.top).toFixed(0)}px`);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    document.addEventListener("pointermove", onPointer, { passive: true });
-    onScroll();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      document.removeEventListener("pointermove", onPointer);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
 }
 
 /** Hairline skeleton rows for loading states (shimmer under the motion kill rule). */

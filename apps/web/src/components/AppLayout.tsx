@@ -3,7 +3,6 @@ import type { CSSProperties } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import { useAmbientMotion } from "../lib/motion";
 import type { Me } from "../api/types";
 
 import { DESKTOP_TABS, MOBILE_TABS } from "./navTabs";
@@ -26,7 +25,6 @@ function AppLayout() {
   const { me, loading, error, refreshMe } = useAuth();
   const location = useLocation();
   const [themeOpen, setThemeOpen] = useState(false);
-  useAmbientMotion();
 
   if (!me) {
     if (loading) return <div className="fullscreen-note">Loading…</div>;

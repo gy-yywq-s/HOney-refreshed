@@ -104,10 +104,10 @@
 }
 .nextlesson__subject {
   font-family: var(--display);
-  font-size: clamp(26px, 4vw, 40px);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  font-weight: 600;
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  font-weight: 650;
   margin: 4px 0 2px;
 }
 .home-exp-list {
@@ -141,10 +141,10 @@
    grid, accent exam strip, danger now-line, ink lesson blocks. ─────────── */
 .schedule-header {
   font-family: var(--display);
-  font-size: clamp(28px, 4.4vw, 46px);
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-weight: 600;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  font-weight: 650;
   margin: 0 0 16px;
 }
 .daynav {
@@ -655,50 +655,11 @@
 }
 
 /* ── Mobile pass (320 / 375 / 430) ──────────────────────────────────────── */
-@media (max-width: 960px) {
-  .action-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .action-card.primary {
-    grid-column: 1 / -1;
-  }
-}
-
 @media (max-width: 640px) {
-  .hero h1 {
-    font-size: clamp(38px, 13vw, 56px);
-  }
-  .hero h1 .hero__accent,
-  .hero-copy,
-  .home-greeting__sub {
-    margin-left: 18px;
-  }
   .section-head {
     align-items: flex-start;
     flex-direction: column;
     gap: 10px;
-  }
-  .section-head h1,
-  .page-title {
-    font-size: clamp(34px, 11vw, 44px);
-  }
-  .stat {
-    min-height: 96px;
-    padding: 16px 10px;
-  }
-  .stat strong {
-    font-size: clamp(24px, 7.4vw, 30px);
-  }
-  .action-grid {
-    grid-template-columns: 1fr;
-  }
-  .action-card.primary {
-    grid-column: auto;
-  }
-  .action-card {
-    min-height: 240px;
-    padding: 22px;
-    grid-template-rows: 20px minmax(64px, auto) minmax(48px, 1fr) 44px;
   }
 
   /* History: search full-width, the two filters share a row. */
