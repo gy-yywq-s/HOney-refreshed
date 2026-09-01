@@ -8,7 +8,7 @@ export function useRetryFocus<T extends HTMLElement>(loading: boolean) {
   useEffect(() => {
     if (!loading && armed.current) {
       armed.current = false;
-      ref.current?.focus();
+      ref.current?.focus({ preventScroll: true });
     }
   }, [loading]);
   return { ref, arm: () => { armed.current = true; } };

@@ -10,9 +10,11 @@ interface SchoolLoginFormProps {
   onSuccess: (result: LoginResponse, credentials: { username: string; password: string }) => void;
   /** Rendered inside the form, before the submit — options that belong to the sign-in. */
   beforeSubmit?: ReactNode;
+  /** Overrides the submit label (e.g. "Save login"). */
+  submitLabel?: string;
 }
 
-export function SchoolLoginForm({ mode, onSuccess, beforeSubmit }: SchoolLoginFormProps) {
+export function SchoolLoginForm({ mode, onSuccess, beforeSubmit, submitLabel }: SchoolLoginFormProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -63,7 +65,7 @@ export function SchoolLoginForm({ mode, onSuccess, beforeSubmit }: SchoolLoginFo
       </div>
       {beforeSubmit}
       <button className="btn btn--primary btn--block" type="submit" disabled={busy}>
-        {busy ? "Signing in…" : mode === "login" ? "Continue with school account" : "Reconnect"}
+        {busy ? "Signing in…" : submitLabel ?? (mode === "login" ? "Continue with school account" : "Reconnect")}
       </button>
     </form>
   );

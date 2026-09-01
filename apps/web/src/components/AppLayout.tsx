@@ -117,7 +117,7 @@ function AppLayout() {
       {/* Route-level settle: the keyed .view re-runs the entrance per route.
           THE scroll owner (§16.14.3): the app frame owns the viewport; only
           this region scrolls. data-scroll-owner is the restoration handle. */}
-      <main className="main" id="main" data-scroll-owner>
+      <main className="main" id="main" data-scroll-owner tabIndex={-1}>
         <PullToRefresh />
         <div className="view" key={location.pathname}>
           <Outlet />

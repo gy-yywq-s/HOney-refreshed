@@ -115,10 +115,23 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
       }
     };
     const onPointer = (e: PointerEvent) => {
-      if (!overflowRef.current?.contains(e.target as Node)) {
-        setMenuOpen(false);
-        moreBtnRef.current?.focus();
+      const target = e.target as Element | null;
+      if (overflowRef.current?.contains(target)) return;
+      setMenuOpen(false);
+      // Return focus to ··· unless the outside tap is itself a control (the
+      // default focus then belongs to it); after the default, not before.
+      if (!target?.closest("button, a, input, textarea, select, [tabindex]")) {
+        setTimeout(() => moreBtnRef.current?.focus(), 0);
       }
+    };
+    const onArrow = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      const items = Array.from(overflowRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+      if (items.length === 0) return;
+      e.preventDefault();
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      const next = e.key === "ArrowDown" ? (i + 1) % items.length : (i - 1 + items.length) % items.length;
+      items[next]?.focus();
     };
     // Tab-out (focus leaving the overflow group) closes the menu too.
     const onFocusOut = (e: FocusEvent) => {
@@ -127,10 +140,12 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
     };
     const group = overflowRef.current;
     document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onArrow);
     document.addEventListener("pointerdown", onPointer);
     group?.addEventListener("focusout", onFocusOut);
     return () => {
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onArrow);
       document.removeEventListener("pointerdown", onPointer);
       group?.removeEventListener("focusout", onFocusOut);
     };
@@ -255,7 +270,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           )}
         </div>
       </div>
-      {note && <div className="caption post__note">{note}</div>}
+      {note && <div className="caption post__note" role="status">{note}</div>}
       {reporting && (
         <PostReportDialog
           experienceId={exp.id}

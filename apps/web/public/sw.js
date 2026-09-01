@@ -19,17 +19,25 @@ self.addEventListener("install", (event) => {
 });
 
 async function liveAssetSet(html) {
-  // Index refs, then every css url() and js import path those files carry —
-  // fonts and lazy chunks are live too (r4: the index regex alone evicted them).
-  const abs = (p) => new URL(p, self.location.origin).href;
-  const seed = (html.match(/\/assets\/[^"' )]+/g) ?? []).map(abs);
+  // Index refs, then every css url() and js import (Vite emits relative
+  // "./Chunk-hash.js") those files carry — fonts and lazy chunks are live.
+  const abs = (p, base) => new URL(p, base || self.location.origin).href;
+  const seed = (html.match(/\/assets\/[^"' )]+/g) ?? []).map((p) => abs(p));
   const live = new Set(seed);
-  for (const href of seed) {
+  const cache = await caches.open(CACHE);
+  const queue = [...seed];
+  while (queue.length) {
+    const href = queue.shift();
     if (!/\.(js|css)$/.test(href)) continue;
     try {
-      const txt = await (await fetch(href, { cache: "no-store" })).text();
-      for (const m of txt.match(/(?:\.\/|\/)?assets\/[A-Za-z0-9_.-]+\.(?:js|css|woff2)/g) ?? []) live.add(abs("/" + m.replace(/^\.?\//, "")));
-    } catch { /* keep the seed */ }
+      const hit = await cache.match(href);
+      const txt = await (hit ?? (await fetch(href))).text();
+      const refs = txt.match(/(?:\.\.?\/)?[A-Za-z0-9_./-]*assets\/[A-Za-z0-9_.-]+\.(?:js|css|woff2)|\.\/[A-Za-z0-9_-]+-[A-Za-z0-9_-]+\.js/g) ?? [];
+      for (const r of refs) {
+        const u = abs(r, href);
+        if (!live.has(u)) { live.add(u); queue.push(u); }
+      }
+    } catch { /* keep what we have */ }
   }
   return live;
 }
@@ -46,18 +54,21 @@ async function evictStaleAssets(html) {
       const u = new URL(req.url);
       if (u.pathname.startsWith("/assets/") && !live.has(req.url)) await cache.delete(req);
     }
-    lastIndexSig = [...live].sort().join("|");
+    await cache.put(SIG_KEY, new Response(indexSignature(html)));
   } catch {
     /* offline at activate — nothing to evict against */
   }
 }
-let lastIndexSig = "";
+const SIG_KEY = "/__index-sig";
+function indexSignature(html) {
+  return (html.match(/\/assets\/[^"' )]+/g) ?? []).sort().join("|");
+}
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-        .then(evictStaleAssets)
+        .then(() => evictStaleAssets())
         .then(() => self.clients.claim()),
     ),
   );
@@ -97,9 +108,12 @@ self.addEventListener("fetch", (event) => {
           const copy = res.clone();
           caches.open(CACHE).then((cache) => cache.put("/", copy));
           // A deploy that changed only hashes: evict when the index changes.
-          res.clone().text().then((html) => {
-            const seed = (html.match(/\/assets\/[^"' )]+/g) ?? []).sort().join("|");
-            if (seed && !lastIndexSig.includes(seed.split("|")[0])) evictStaleAssets(html);
+          res.clone().text().then(async (html) => {
+            const sig = indexSignature(html);
+            if (!sig) return;
+            const cache = await caches.open(CACHE);
+            const stored = await cache.match(SIG_KEY).then((r) => (r ? r.text() : ""));
+            if (stored !== sig) await evictStaleAssets(html);
           }).catch(() => {});
         }
         return res;

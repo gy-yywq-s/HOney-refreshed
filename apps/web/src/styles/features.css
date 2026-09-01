@@ -438,20 +438,19 @@
   opacity: 0.95;
 }
 .timeline__empty {
-  /* In flow below the hour rows — never painted over the "Free" bands. */
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: var(--sp-3);
+  /* In flow, above the canvas: visible on landing at every height, never
+     drawn over the band rows or under the nav (r4→r5). */
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: var(--sp-2);
+  margin: 0 0 var(--sp-2);
   font-size: var(--fs-secondary);
   font-weight: 600;
   color: var(--muted);
-  pointer-events: none;
+}
+.timeline__empty svg {
+  width: 20px;
+  height: 20px;
 }
 .timeline__empty svg {
   width: 22px;
@@ -569,7 +568,6 @@
   font-weight: 400;
 }
 
-/* Post card — padded card, serif reading body. */
 .exp-card {
   display: flex;
   flex-direction: column;
@@ -626,17 +624,6 @@
   flex-direction: column;
   gap: var(--sp-2);
   margin: var(--sp-3) 0;
-}
-.report-option {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-2);
-  cursor: pointer;
-  color: color-mix(in srgb, var(--ink) 86%, var(--muted));
-}
-.report-option input {
-  accent-color: var(--accent);
-  margin-top: var(--sp-1);
 }
 
 /* Composer — FRAMED_EDITOR: .compose-screen flexes inside .view, the
@@ -1189,7 +1176,7 @@
 @media (max-height: 700px) {
   .main {
     padding-top: var(--sp-4);
-    padding-bottom: 90px;
+    padding-bottom: 90px; /* 90px: nav clearance (documented exception) */
   }
   .stack {
     gap: var(--sp-4);
@@ -1273,24 +1260,33 @@
   margin-top: var(--sp-2);
 }
 @media (max-height: 620px) and (max-width: 960px) {
-  /* Compact heights: the three actions share one row, so the whole column
-     (actions + footnote) stays above the fixed nav on landing. */
+  /* Compact heights: two rows of 44px — Share full-width, then Keep private
+     and Cancel side by side — so every action sits above the nav on landing
+     and no label wraps (r5: the row-of-three broke "Share anonymously"). */
   .compose-actions {
     flex-direction: row;
-    align-items: stretch;
+    flex-wrap: wrap;
   }
   .compose-actions .btn {
     width: auto;
     flex: 1 1 0;
-    padding-inline: var(--sp-2);
+  }
+  .compose-actions .btn:first-child {
+    flex-basis: 100%;
   }
 }
 
-
 /* Where a "Try again" lands: a visible ring on the content that replaced the
    banner (design-is r4). */
+.focus-landing:focus,
 .focus-landing:focus-visible {
+  /* Programmatic landing after a tapped "Try again" must paint too — not
+     only keyboard-driven :focus-visible. */
   outline: 3px solid var(--accent);
   outline-offset: 3px;
   border-radius: 12px;
+}
+.section-title[id]:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }

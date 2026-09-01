@@ -1,7 +1,7 @@
 // Scroll model: FRAMED_SCROLL (§16.14.7) — sticky date nav frame; the day timeline scrolls.
 import { Skeleton } from "../lib/motion";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import type { Lesson, SyncResponse } from "../api/types";
 import { Modal } from "../components/Modal";
@@ -27,7 +27,11 @@ function formatStepperDate(isoDate: string): string {
 }
 
 export function TimetablePage() {
-  const [date, setDate] = useState(todayIsoDate());
+  const [searchParams] = useSearchParams();
+  const [date, setDate] = useState(() => {
+    const q = searchParams.get("date");
+    return q && /^\d{4}-\d{2}-\d{2}$/.test(q) ? q : todayIsoDate();
+  });
   const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
   const [selected, setSelected] = useState<Lesson | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
@@ -141,6 +145,10 @@ export function TimetablePage() {
         </p>
       )}
       <h1 className="schedule-header">{formatDayHeading(date)}</h1>
+      <p className="caption timetable-foot">
+        P1–P6 are the school’s six lesson periods.
+        {data?.lastSyncedAt ? ` Last synced ${timeAgo(data.lastSyncedAt)}.` : ""}
+      </p>
 
       {syncFeedback?.kind === "error" && (
         <div role="alert" className="banner banner--danger">{syncFeedback.message}</div>
@@ -171,17 +179,14 @@ export function TimetablePage() {
         </div>
       ) : (
         <>
-          <div ref={landing.ref} tabIndex={-1} className="focus-landing">
+          <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="region" aria-label="Day timeline">
             <DayTimeline
               date={date}
               lessons={data?.lessons ?? []}
               onSelect={(lesson) => setSelected(lesson)}
             />
           </div>
-          <p className="caption timetable-foot">
-            P1–P6 are the school’s six lesson periods.
-            {data?.lastSyncedAt ? ` Last synced ${timeAgo(data.lastSyncedAt)}.` : ""}
-          </p>
+
         </>
       )}
 
@@ -290,6 +295,13 @@ function DayTimeline({
   const showNow = isToday && nowMinute >= DAY_START && nowMinute <= DAY_END;
 
   return (
+    <>
+      {visible.length === 0 && (
+        <p className="timeline__empty" role="status">
+          <CalendarGlyph />
+          <span>No lessons today</span>
+        </p>
+      )}
     <div className="timeline">
       <div className="timeline__hours" aria-hidden="true">
         {HOUR_MARKS.map((minute) => (
@@ -371,16 +383,11 @@ function DayTimeline({
           );
         })}
 
-        {visible.length === 0 && (
-          <div className="timeline__empty" role="status">
-            <CalendarGlyph />
-            <span>No lessons today</span>
-          </div>
-        )}
 
         {showNow && <div className="timeline__now" style={{ top: topFor(nowMinute, -4) }} />}
       </div>
     </div>
+    </>
   );
 }
 

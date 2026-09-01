@@ -104,7 +104,7 @@ export function HistoryPage() {
         </select>
       </div>
 
-      <div ref={landing.ref} tabIndex={-1} className="focus-landing">
+      <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="region" aria-label="Lessons">
       {history.loading ? (
         <Skeleton lines={4} />
       ) : history.error ? (

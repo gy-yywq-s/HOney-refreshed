@@ -14,9 +14,10 @@ interface ReconnectDialogProps {
 }
 
 /**
- * One dialog, two named purposes (design-is r4): the title, body and submit
- * say what THIS opening does; the stay-connected choice sits inside the
- * form before the submit, with the same caveat the login shows.
+ * One dialog, two named purposes: title, body AND submit label say what this
+ * opening does; the stay-connected choice sits inside the form before the
+ * submit for both purposes (checked by default when saving), with the same
+ * caveat the login shows.
  */
 export function ReconnectDialog({
   onClose,
@@ -35,13 +36,15 @@ export function ReconnectDialog({
         ? "The portal session ended. Sign in again to restore it — your HOney data stays as it is."
         : "Sign in again to refresh the school connection — your HOney data stays as it is.";
   return (
-    <Modal title={title} onClose={onClose}>
-      <p className="muted">{body}</p>
+    <Modal title={title} onClose={onClose} describedBy="school-dialog-body">
+      <p className="muted" id="school-dialog-body">
+        {body}
+      </p>
       <SchoolLoginForm
         mode="reconnect"
+        submitLabel={purpose === "save" ? "Save login" : "Reconnect"}
         beforeSubmit={
-          purpose === "reconnect" ? (
-            <label className="stay-connected">
+          <label className="stay-connected">
               <input
                 type="checkbox"
                 checked={stayConnected}
@@ -53,7 +56,6 @@ export function ReconnectDialog({
                 secure storage).
               </span>
             </label>
-          ) : null
         }
         onSuccess={(_result, creds) => {
           if (stayConnected) void portalCredentials.authorize(creds);

@@ -5,7 +5,7 @@
 // creation; later sign-ins never import. The only option here is the
 // opt-in "stay connected" credential store, unchecked by default.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -14,6 +14,9 @@ import { WordmarkHOney } from "../components/Wordmark";
 import { portalCredentials } from "../lib/portalCredentials";
 
 export function LoginPage() {
+  useEffect(() => {
+    document.title = "Sign in · HOney";
+  }, []);
   const navigate = useNavigate();
   const { refreshMe } = useAuth();
   const [stayConnected, setStayConnected] = useState(false);

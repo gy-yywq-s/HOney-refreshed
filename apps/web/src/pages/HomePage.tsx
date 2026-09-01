@@ -63,7 +63,7 @@ export function HomePage() {
         </p>
       </header>
 
-      <section className="card card--hero nextlesson focus-landing" aria-label="Now and next" ref={landing.ref} tabIndex={-1}>
+      <section className="card card--hero nextlesson focus-landing" aria-label="Now and next" role="region" ref={landing.ref} tabIndex={-1}>
         {progress !== null && (
           <div
             className="nextlesson__wash"
@@ -90,7 +90,10 @@ export function HomePage() {
               {next.teacherName ? ` · ${next.teacherName}` : ""}
               {next.roomName ? ` · ${next.roomName}` : ""}
             </p>
-            <Link className="caption" to="/timetable">
+            <Link
+              className="caption"
+              to={`/timetable?date=${new Date(next.startsAt).toLocaleDateString("en-CA")}`}
+            >
               Open timetable
             </Link>
           </>

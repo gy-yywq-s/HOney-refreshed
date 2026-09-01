@@ -100,7 +100,7 @@ export function PullToRefresh() {
         ref={discRef}
         className={refreshing ? "ptr__disc ptr__disc--spin" : "ptr__disc"}
         role="status"
-        aria-label={refreshing ? "Refreshing" : "Pull down to refresh"}
+        aria-label={refreshing ? "Refreshing" : undefined}
       >
         <svg
           viewBox="0 0 24 24"

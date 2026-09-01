@@ -42,19 +42,6 @@
 }
 
 /* Hover lift for interactive cards (transform+shadow only). */
-.action-card,
-a.card,
-.lift {
-  transition:
-    transform var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease);
-}
-.action-card:hover,
-a.card:hover,
-.lift:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
 
 /* Pointer-following highlight: JS writes --mx/--my on .primary
 /* ── Buttons — pill grammar, ink fill = primary ─────────────────────────── */
@@ -102,12 +89,11 @@ a.btn:hover {
   color: var(--muted);
   opacity: 1;
 }
-.btn--secondary,
+
 .btn--ghost {
   background: transparent;
   color: var(--ink);
 }
-.btn--secondary:hover:not(:disabled),
 .btn--ghost:hover:not(:disabled) {
   background: var(--soft);
 }
@@ -206,6 +192,18 @@ a.btn:hover {
 }
 
 /* ── Chips ──────────────────────────────────────────────────────────────── */
+.chip--ok {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+}
+.chip--danger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.chip--muted {
+  color: var(--muted);
+  background: var(--soft);
+}
 .chip {
   display: inline-flex;
   align-items: center;
@@ -264,8 +262,6 @@ a.btn:hover {
 .react-btn__count {
   font-variant-numeric: tabular-nums;
 }
-
-/* Sort toggle — segmented pill with a sliding thumb. */
 
 /* Stars (dishes only). */
 .stars {
@@ -776,11 +772,7 @@ a.btn:hover {
     color var(--dur-fast) var(--ease),
     transform var(--dur-fast) var(--ease);
 }
-.option-grid button[aria-pressed="true"],
-.segmented button[aria-pressed="true"] {
-  background: var(--ink);
-  color: var(--surface);
-}
+
 .option-grid span {
   color: var(--muted);
   font-size: var(--fs-micro);
@@ -835,12 +827,7 @@ a.btn:hover {
 
 /* Thumb comfort on touch screens. */
 @media (pointer: coarse) {
-  .btn--small,
-  .react-btn,
-  .sort-toggle__btn,
-  .usermenu__button {
-    min-height: 44px;
-  }
+
   .star-input__star {
     min-height: 44px;
     min-width: 44px;

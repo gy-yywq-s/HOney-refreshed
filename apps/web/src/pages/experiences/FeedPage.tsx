@@ -107,7 +107,6 @@ export function ExperiencesFeedPage() {
 
       <div
         className="feed-stream focus-landing"
-        aria-live="polite"
         ref={landing.ref}
         tabIndex={-1}
         role="tabpanel"
@@ -155,7 +154,8 @@ export function ExperiencesFeedPage() {
             </div>
           )
         ) : (
-          feed.items.map((exp, i) => (
+          <div aria-live="polite">
+            {feed.items.map((exp, i) => (
             <div key={exp.id}>
               {i > 0 && i % SHARE_PROMPT_EVERY === 0 && (
                 <aside className="feed-invite">
@@ -167,7 +167,8 @@ export function ExperiencesFeedPage() {
               )}
               <ExperiencePost exp={exp} />
             </div>
-          ))
+          ))}
+          </div>
         )}
 
         <div ref={sentinel} aria-hidden="true" />

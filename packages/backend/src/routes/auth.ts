@@ -28,7 +28,7 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
       const consent = ctx.accounts.getConsent(result.user.honey_id);
       if (result.created) {
         // First sign-in = first import, in the background. Later sign-ins
-        // never import; Sync now / pull-to-refresh are the manual paths.
+        // never import; "Sync now" (POST /api/sync) is the manual path.
         void ctx.importer.syncTimetable(result.user.honey_id).catch(() => undefined);
       }
       return reply.send({

@@ -127,7 +127,7 @@ export function ExperiencesMinePage() {
 
 
   return (
-    <div className="stack focus-landing" ref={landing.ref} tabIndex={-1}>
+    <div className="stack focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label="Your notes and posts">
       <header className="page-head">
         {/* "My submissions/contributions" is administrative language (review v3
             §10.5) — this page is the user's own notes & posts. */}

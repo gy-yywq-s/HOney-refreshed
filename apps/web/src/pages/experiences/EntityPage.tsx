@@ -4,6 +4,7 @@
 // scores, no summaries, no ranking. Course is first-class (§9.10) — course
 // retrospectives compose directly. Scroll model: FRAMED_SCROLL.
 
+import { useEffect } from "react";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Link, useParams } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
@@ -65,20 +66,25 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
     (kind === "course" && (names.course.get(id) ?? names.entity.get(entityKey))) ||
     (kind === "dish" && names.entity.get(entityKey)) ||
     KIND_TITLE[kind];
+  useEffect(() => {
+    document.title = neverListed ? "Not found · HOney" : `${name} · HOney`;
+  });
 
   if (neverListed) {
     return (
       <div className="stack">
         <h1 className="page-title">Nothing is listed at this address.</h1>
-        <p className="muted">
-          <Link to="/experiences/explore">Find someone or something</Link>
-        </p>
+        <div className="card-actions">
+          <Link className="btn btn--primary" to="/experiences/explore">
+            Find someone or something
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="stack focus-landing" ref={landing.ref} tabIndex={-1}>
+    <div className="stack focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label={`${name} experiences`}>
       <header className="page-head">
         <div>
           <div className="overline">{KIND_TITLE[kind]}</div>

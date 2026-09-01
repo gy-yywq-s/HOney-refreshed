@@ -98,7 +98,7 @@ export function SettingsPage() {
             </span>
           </div>
           <button className="btn btn--danger" onClick={() => setConfirm("delete-account")}>
-            Delete…
+            Delete account…
           </button>
         </div>
       </section>
@@ -115,7 +115,7 @@ export function SettingsPage() {
                   ? `Last synced ${timeAgo(connection.lastSyncedAt)}`
                   : "Never synced"}
               {stayConnected &&
-                " · Sync signs in again with your saved school login if the portal session expired."}
+                " · Sync now signs in again with your saved school login if the portal session expired."}
             </span>
           </div>
           <div className="card-actions" style={{ marginTop: 0 }}>
@@ -147,9 +147,11 @@ export function SettingsPage() {
                 {busyKey === "sync" ? "Syncing…" : "Sync now"}
               </button>
             )}
-            <button className="btn btn--ghost" onClick={() => setShowReconnect("reconnect")}>
-              Reconnect
-            </button>
+            {connection.connected && !connection.portalTokenValid && (
+              <button className="btn btn--ghost" onClick={() => setShowReconnect("reconnect")}>
+                Reconnect
+              </button>
+            )}
             {connection.connected && (
               <button
                 className="btn btn--ghost"
@@ -198,7 +200,7 @@ export function SettingsPage() {
             <span className="caption">
               On for every HOney account since 1 September 2026 — your timetable and history are
               imported from the school portal when your account is created, and again whenever
-              you press Sync now or pull to refresh. Delete them below at any time.
+              you press Sync now. Delete them below at any time.
             </span>
           </div>
         </div>
@@ -210,7 +212,7 @@ export function SettingsPage() {
             </span>
           </div>
           <button className="btn btn--danger" onClick={() => setConfirm("delete-data")}>
-            Delete…
+            Delete imported data…
           </button>
         </div>
       </section>

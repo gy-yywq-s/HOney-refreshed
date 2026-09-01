@@ -129,13 +129,7 @@ a.btn:active {
   letter-spacing: -0.015em;
   font-weight: 650;
 }
-.section-head > p:last-child,
-.section-head__copy {
-  max-width: 520px;
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.55;
-}
+
 .section-title {
   margin: 0 0 var(--sp-3);
   font-family: var(--display);
@@ -146,12 +140,6 @@ a.btn:active {
 }
 
 /* Reading serif — Experiences post bodies. */
-.reading {
-  font-family: var(--reading);
-  font-optical-sizing: auto;
-  font-size: var(--fs-title-sm);
-  line-height: 1.62;
-}
 
 /* Muted-ink utilities kept from the old grammar (many screens use them). */
 
@@ -198,38 +186,7 @@ p.text-4 {
   color: var(--muted);
 }
 
-/* Hairline-divided stat strip (Home, Mine). */
-
-.stat {
-  min-height: 108px;
-  padding: var(--sp-5) var(--sp-5);
-  border-right: 1px solid var(--line);
-  min-width: 0;
-}
-.stat:last-child {
-  border-right: 0;
-}
-.stat strong {
-  display: block;
-  font-family: var(--display);
-  font-size: clamp(28px, 4vw, 50px);
-  letter-spacing: -0.04em;
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-}
-.stat span {
-  display: block;
-  margin-top: var(--sp-2);
-  color: var(--muted);
-  font-size: var(--fs-micro);
-}
-
 /* Numbered action-card grid (Home). */
-
-.primary .card-index,
-.primary .card-copy {
-  color: color-mix(in srgb, var(--surface) 72%, transparent);
-}
 
 /* Hairline list rows (History, entities, Mine, Settings rows). */
 
@@ -255,7 +212,6 @@ p.text-4 {
     transform: translateY(0);
   }
 }
-
 
 /* Staggered entrances: index-based delay, capped at 8 (set by markup). */
 .stagger {

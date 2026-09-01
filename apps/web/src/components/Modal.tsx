@@ -8,9 +8,11 @@ interface ModalProps {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** id of the element that describes the dialog (its first sentence). */
+  describedBy?: string;
 }
 
-export function Modal({ title, onClose, children }: ModalProps) {
+export function Modal({ title, onClose, children, describedBy }: ModalProps) {
   const shellRef = useRef<HTMLDivElement>(null);
 
   // Escape closes; Tab cycles inside the dialog; focus starts on the dialog
@@ -52,6 +54,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        aria-describedby={describedBy}
         ref={shellRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}

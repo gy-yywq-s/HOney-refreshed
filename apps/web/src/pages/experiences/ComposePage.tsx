@@ -15,7 +15,7 @@ import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime, formatRemaining } from "../../lib/format";
 import { privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote } from "../../lib/ownershipKeys";
-import { StarInput, describeCheckReasons } from "./shared";
+import { StarInput, describeCheckReasons, useNames } from "./shared";
 import { useComposer } from "./useComposer";
 import type { ComposerTarget } from "./useComposer";
 
@@ -96,6 +96,7 @@ export function ExperiencesComposePage() {
   }, [effectiveLessonId, effectiveEntityKey, history.data, entities.data]);
 
   const composer = useComposer(target);
+  const { names } = useNames();
   const { body, setBody, rating, setRating, status, notice } = composer;
 
   // Republishing a private note: seed the composer from the note's text.
@@ -202,16 +203,56 @@ export function ExperiencesComposePage() {
       </div>
     );
   }
+  // Registry failed: say so, offer a retry, never an editor (r5).
+  if (effectiveEntityKey && !entities.data && entities.error) {
+    return (
+      <div className="stack">
+        <h1 className="page-title">Share an experience</h1>
+        <div role="alert" className="banner banner--danger">
+          <span>{entities.error}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => entities.reload()}>
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
   if (unlisted) {
+    // Same distinction as the entity page: a name the directory still knows
+    // is a delisted duplicate (point at the survivor); an unknown id never
+    // existed.
+    const [kindRaw, entityId = ""] = effectiveEntityKey!.split(":");
+    const kind = kindRaw ?? "";
+    const knownName =
+      (kind === "teacher" && names.teacher.get(entityId)) ||
+      (kind === "room" && names.room.get(entityId)) ||
+      (kind === "course" && names.course.get(entityId)) ||
+      null;
+    const survivor = knownName
+      ? entities.data?.entities.find((e) => e.type === kind && e.name === knownName)
+      : undefined;
     return (
       <div className="stack">
         <h1 className="page-title">Share an experience</h1>
         <section className="card">
-          <p className="text-3">Nothing is listed at this address, so nothing can be shared about it.</p>
+          <p className="text-3">
+            {knownName
+              ? "This entry is no longer listed, so nothing can be shared about it."
+              : "Nothing is listed at this address, so nothing can be shared about it."}
+          </p>
           <div className="card-actions">
-            <Link className="btn btn--primary" to="/experiences/explore">
-              Find someone or something
-            </Link>
+            {survivor ? (
+              <Link
+                className="btn btn--primary"
+                to={`/experiences/compose?entityKey=${encodeURIComponent(survivor.entity_key)}`}
+              >
+                Open the current entry for {survivor.name}
+              </Link>
+            ) : (
+              <Link className="btn btn--primary" to="/experiences/explore">
+                Find someone or something
+              </Link>
+            )}
           </div>
         </section>
       </div>
