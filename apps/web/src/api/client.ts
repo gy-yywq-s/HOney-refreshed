@@ -6,6 +6,7 @@
 import { portalCredentials } from "../lib/portalCredentials";
 import type {
   CommunityScope,
+  EligibilityInfo,
   EligibilityIssued,
   EligibilityRequest,
   IssuerDescriptor,
@@ -262,7 +263,12 @@ export class ApiClient {
     return this.request("GET", "/api/community/scope");
   }
 
-  /** Blind issuance: the server signs a blinded message it never sees unblinded. */
+  /** Issuance step 1: the metadata the issuer would bind for this target (standing checked; nothing signed or counted). */
+  communityEligibilityInfo(input: { lessonId?: string; entityKey?: string; schoolMember?: boolean }): Promise<{ ok: true; info: EligibilityInfo }> {
+    return this.request("POST", "/api/community/eligibility/info", input);
+  }
+
+  /** Issuance step 2: the server signs a blinded message it never sees unblinded. */
   communityEligibility(input: EligibilityRequest & { schoolMember?: boolean }): Promise<EligibilityIssued> {
     return this.request("POST", "/api/community/eligibility", input);
   }

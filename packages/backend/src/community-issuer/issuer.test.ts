@@ -62,29 +62,22 @@ describe.skipIf(!existsSync(TEST_KEY_PATH))("blind eligibility issuer", () => {
     const lessonId = await myLessonId();
     const scope = (await app.inject({ method: "GET", url: "/api/community/scope", headers: auth })).json() as { lessons: string[]; courses: string[]; academicYear: string };
     expect(scope.lessons.length).toBeGreaterThan(0);
-    // The client predicts the metadata (scope + contexts) it expects, blinds under it.
-    const expected: EligibilityInfo = {
-      v: 2, schoolId: "huayaopudong", academicYear: scope.academicYear, scope: "", contexts: {}, provenance: "verified_lesson", week: 0,
-    };
-    // Blinding needs the exact info: ask, then finalize with what the issuer states.
-    const probe = await blindToken(pub, expected);
-    const first = await app.inject({
-      method: "POST", url: "/api/community/eligibility", headers: auth,
-      payload: { lessonId, blindedMessage: Buffer.from(probe.blindedMessage).toString("base64url") },
-    });
+    // Step 1: the metadata the issuer would bind (nothing signed or counted).
+    const first = await app.inject({ method: "POST", url: "/api/community/eligibility/info", headers: auth, payload: { lessonId } });
     expect(first.statusCode).toBe(200);
-    const issued = first.json() as EligibilityIssued;
-    expect(issued.info.scope.startsWith("lesson:")).toBe(true);
-    expect(issued.info.contexts.courseId).toBeTruthy();
-    // The issued metadata differs from the probe's guess, so the probe's blind
-    // does not finalize: blind again under the stated info (what the client does).
-    const blinded = await blindToken(pub, issued.info);
+    const stated = (first.json() as { info: EligibilityInfo }).info;
+    expect(stated.scope.startsWith("lesson:")).toBe(true);
+    expect(stated.contexts.courseId).toBeTruthy();
+    expect(stated.academicYear).toBe(scope.academicYear);
+    // Step 2: blind under exactly that, one counted signing round.
+    const blinded = await blindToken(pub, stated);
     const second = await app.inject({
       method: "POST", url: "/api/community/eligibility", headers: auth,
       payload: { lessonId, blindedMessage: Buffer.from(blinded.blindedMessage).toString("base64url") },
     });
+    expect(second.statusCode).toBe(200);
     const issued2 = second.json() as EligibilityIssued;
-    expect(issued2.info).toEqual(issued.info);
+    expect(issued2.info).toEqual(stated);
     const token = await finalizeToken(pub, issued2.keyId, blinded, issued2.info, fromBase64Url(issued2.blindSignature));
     expect(await verifyToken(pub, token)).toBe(true);
     expect(await verifyToken(pub, { ...token, info: { ...token.info, scope: "teacher:t_x" } })).toBe(false);

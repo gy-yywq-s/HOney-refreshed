@@ -91,17 +91,14 @@ export async function ensureRoots(account: string): Promise<UnlockedRoots> {
 }
 
 /**
- * Blind issuance. The issuer states the exact metadata it verified; the client
- * blinds under that statement, so a first request learns the metadata and the
- * second produces the token (Core's answer is deterministic for a target).
+ * Blind issuance. Step 1 asks the issuer which metadata it would bind for the
+ * target (standing checked, nothing signed or counted); the client blinds
+ * under exactly that; step 2 is the one counted signing round.
  */
 export async function obtainToken(target: PublishTarget | { schoolMember: true }): Promise<{ token: EligibilityToken; info: EligibilityInfo }> {
   const session = await communitySession();
   const request = "schoolMember" in target ? { schoolMember: true } : target;
-  // Round 1: learn the metadata (a probe blinded under a placeholder).
-  const probe = await blindToken(session.issuerKey, { v: 2, schoolId: session.scope.schoolId, academicYear: session.scope.academicYear, scope: "", contexts: {}, provenance: "verified_member", week: 0 });
-  const stated = await api.communityEligibility({ ...request, blindedMessage: toBase64Url(probe.blindedMessage) });
-  // Round 2: the real token under the stated metadata.
+  const stated = await api.communityEligibilityInfo(request);
   const blinded = await blindToken(session.issuerKey, stated.info);
   const issued = await api.communityEligibility({ ...request, blindedMessage: toBase64Url(blinded.blindedMessage) });
   const token = await finalizeToken(session.issuerKey, issued.keyId, blinded, issued.info, fromBase64Url(issued.blindSignature));
