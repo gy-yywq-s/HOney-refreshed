@@ -60,6 +60,13 @@ Do not broaden the product before these three are excellent.
   (the label says so). At the end of the canvas a deliberate pull-up opens History; it needs
   the owner already at its end, a long damped drag, more time than a flick, and shows the
   release point first. Desktop keeps History and Sync now as buttons.
+- **The app is a hierarchy, like a native app** (Gary, 2026-09-02). Four roots are the tabs;
+  every other screen hangs under one (`apps/web/src/lib/navigation.ts` is the single tree:
+  History under Timetable, Lesson under History, Find / Mine / Why / entities under
+  Experiences, the composer under what it is about, Dash under Settings). Every non-root
+  screen shows "‹ Parent" top-left; the tab of the root ancestor is lit; the arrow pops when
+  the parent is the previous entry and otherwise replaces — never a parent/child loop; tab
+  switches replace history; on phones a left-edge swipe is the same "up".
 
 ## 3. Personality
 
