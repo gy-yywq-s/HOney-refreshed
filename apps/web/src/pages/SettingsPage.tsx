@@ -18,6 +18,7 @@ import { timeAgo } from "../lib/format";
 import { ownershipKeys } from "../lib/ownershipKeys";
 import { getSurface } from "../lib/theme";
 import { setLang, t, useLang } from "../lib/i18n";
+import { TEXT_SIZES, setTextSize, useTextSize } from "../lib/textSize";
 
 type PendingConfirm = "disconnect" | "delete-data" | "delete-account" | null;
 type Section = "account" | "connection" | "data" | "privacy" | "appearance";
@@ -28,6 +29,7 @@ const SECTIONS: Record<Section, string> = {
   privacy: "How anonymity works",
   appearance: "Appearance",
 };
+const TEXT_SIZE_LABEL: Record<string, string> = { small: "Small", default: "Default", large: "Large", larger: "Larger" };
 const SURFACE_LABEL: Record<string, string> = { stone: "Stone", white: "White", mist: "Mist", night: "Night" };
 
 /** One sentence for the saved-login caveat, reused wherever it is disclosed. */
@@ -51,6 +53,7 @@ export function SettingsPage() {
   const { me, refreshMe, signOut } = useAuth();
   const navigate = useNavigate();
   const lang = useLang();
+  const textSize = useTextSize();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ tone: "success" | "danger"; text: string } | null>(
     null,
@@ -163,8 +166,8 @@ export function SettingsPage() {
           <h2 className="overline">{t("Appearance")}</h2>
           <Link className="row" to="/settings/appearance">
             <span className="row__main">
-              <span className="row__title">{t("Background")} · {t("Language")}</span>
-              <span className="row__sub">{t(SURFACE_LABEL[getSurface()] ?? "Stone")} · {lang === "zh" ? "中文" : "English"}</span>
+              <span className="row__title">{t("Background")} · {t("Text size")} · {t("Language")}</span>
+              <span className="row__sub">{t(SURFACE_LABEL[getSurface()] ?? "Stone")} · {t(TEXT_SIZE_LABEL[textSize] ?? "Default")} · {lang === "zh" ? "中文" : "English"}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
@@ -410,6 +413,29 @@ export function SettingsPage() {
         <>
           <section aria-label="Background">
             <ThemeControls />
+          </section>
+          <section className="rowlist" aria-label="Text size">
+            <h2 className="overline">{t("Text size")}</h2>
+            <div className="row row--stack">
+              <span className="row__main">
+                <span className="row__sub">{t("Applies to the whole app, before the page paints.")}</span>
+              </span>
+              <div className="cat-chips" role="radiogroup" aria-label={t("Text size")}>
+                {TEXT_SIZES.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    role="radio"
+                    aria-checked={textSize === size}
+                    aria-selected={textSize === size}
+                    className="chip-tab"
+                    onClick={() => setTextSize(size)}
+                  >
+                    {t(TEXT_SIZE_LABEL[size] ?? size)}
+                  </button>
+                ))}
+              </div>
+            </div>
           </section>
           <section className="rowlist" aria-label="Language">
             <h2 className="overline">{t("Language")}</h2>

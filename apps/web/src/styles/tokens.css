@@ -53,14 +53,16 @@
   /* Type ramp (design-is r1, move 1): EVERY rendered size traces here.
      Mobile-native: body 16-17, secondary 15, caption 13, micro 12 —
      nothing below 12px anywhere. Display sizes clamp up on desktop. */
-  --fs-micro: 12px; /* canvas labels, nav labels, chips, tabular meta */
-  --fs-caption: 13px; /* captions, provenance, helper text */
-  --fs-secondary: 15px; /* secondary rows, small buttons, identity lines */
-  --fs-body: 16px; /* default UI text, inputs */
-  --fs-reading: 17px; /* the student's words (post body), buttons */
-  --fs-title-sm: 20px; /* short-post feature text, compact screen titles */
-  --fs-title: 22px; /* card subjects, modal titles (mobile) */
-  --fs-display: 30px; /* page titles (mobile); clamps to 34 on desktop (review v1.1 §2.2) */
+  /* Text size (Settings › Appearance): one scale on the whole ramp. */
+  --text-scale: 1;
+  --fs-micro: calc(12px * var(--text-scale)); /* canvas labels, nav labels, chips, tabular meta */
+  --fs-caption: calc(13px * var(--text-scale)); /* captions, provenance, helper text */
+  --fs-secondary: calc(15px * var(--text-scale)); /* secondary rows, small buttons, identity lines */
+  --fs-body: calc(16px * var(--text-scale)); /* default UI text, inputs */
+  --fs-reading: calc(17px * var(--text-scale)); /* the student's words (post body), buttons */
+  --fs-title-sm: calc(20px * var(--text-scale)); /* short-post feature text, compact screen titles */
+  --fs-title: calc(22px * var(--text-scale)); /* card subjects, modal titles (mobile) */
+  --fs-display: calc(30px * var(--text-scale)); /* page titles (mobile); clamps to 34 on desktop (review v1.1 §2.2) */
 
   /* Spacing scale (design-is r1, move 1): rhythm values only ever step
      through this ladder. (Canvas geometry — timeline band math — is
@@ -93,6 +95,17 @@
   color: var(--ink);
   font-family: var(--ui);
   font-synthesis: none;
+}
+
+/* Text size steps (Settings → Appearance → Text size). */
+:root[data-textsize="small"] {
+  --text-scale: 0.92;
+}
+:root[data-textsize="large"] {
+  --text-scale: 1.1;
+}
+:root[data-textsize="larger"] {
+  --text-scale: 1.22;
 }
 
 /* Selectable surfaces (Settings → Background — Gary's four). */

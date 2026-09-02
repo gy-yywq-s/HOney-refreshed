@@ -22,7 +22,7 @@ body {
   height: 100%;
   overflow: hidden; /* the document is not the scroller — regions are */
   min-width: 320px;
-  font: 400 16px/1.5 var(--ui);
+  font: 400 var(--fs-body) / 1.5 var(--ui);
   color: var(--ink);
   background-color: var(--surface);
 }
@@ -128,7 +128,7 @@ a.btn:active {
   margin: 0;
   font-family: var(--display);
   /* Quiet scale (candidate A): a page title, not a campaign headline. */
-  font-size: clamp(30px, 3.2vw, 34px);
+  font-size: calc(clamp(30px, 3.2vw, 34px) * var(--text-scale));
   line-height: 1.1;
   letter-spacing: -0.015em;
   font-weight: 650;

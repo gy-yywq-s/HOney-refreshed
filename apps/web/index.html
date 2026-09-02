@@ -17,6 +17,8 @@
       (function () {
         try {
           var surfaces = { stone: 1, white: 1, mist: 1, night: 1 };
+          var ts = localStorage.getItem("honey.textsize");
+          if (ts === "small" || ts === "large" || ts === "larger") document.documentElement.dataset.textsize = ts;
           var s = localStorage.getItem("honey.theme.surface");
           if (!surfaces[s] && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
             s = "night"; // system preference honored until the user chooses
