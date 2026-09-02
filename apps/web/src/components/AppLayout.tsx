@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import { parentOf, rootOf, titleOf } from "../lib/navigation";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -144,7 +144,7 @@ function AppLayout() {
             aria-hidden="true"
           />
           {DESKTOP_TABS.map((tab, i) => (
-            <NavLink
+            <Link
               key={tab.to}
               to={tab.to}
               replace
@@ -152,7 +152,7 @@ function AppLayout() {
               aria-current={i === railIndex ? "page" : undefined}
             >
               {tab.label}
-            </NavLink>
+            </Link>
           ))}
         </nav>
         {/* No topbar: appearance + account live at the rail's foot (Gary,
@@ -211,7 +211,7 @@ function AppLayout() {
           aria-hidden="true"
         />
         {MOBILE_TABS.map((tab, i) => (
-          <NavLink
+          <Link
             key={tab.to}
             to={tab.to}
             replace
@@ -220,7 +220,7 @@ function AppLayout() {
           >
             {tab.icon}
             <span>{tab.label}</span>
-          </NavLink>
+          </Link>
         ))}
       </nav>
 
