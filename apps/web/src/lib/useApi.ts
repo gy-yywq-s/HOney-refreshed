@@ -17,9 +17,11 @@ export const apiCache = {
   /** Drop every entry whose key starts with `prefix` ("" clears all). */
   invalidate(prefix: string): void {
     for (const key of cache.keys()) if (key.startsWith(prefix)) cache.delete(key);
+    for (const key of inflight.keys()) if (key.startsWith(prefix)) inflight.delete(key);
   },
   clear(): void {
     cache.clear();
+    inflight.clear(); // a refresh must never be served a pre-refresh promise
   },
 };
 
@@ -84,7 +86,10 @@ export function useApi<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, tick]);
 
-  const reload = useCallback(() => setTick((t) => t + 1), []);
+  const reload = useCallback(() => {
+    if (key !== undefined) inflight.delete(key); // a reload always re-fetches
+    setTick((t) => t + 1);
+  }, [key]);
 
   // Pull-to-refresh: every mounted data hook re-fetches in place. The PTR
   // handler clears the SWR cache first, so this is a true revalidation.

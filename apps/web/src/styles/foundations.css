@@ -48,6 +48,7 @@ body {
 a {
   color: var(--accent);
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 a:hover {
   text-decoration: underline;
@@ -61,10 +62,6 @@ textarea {
   font: inherit;
 }
 button,
-a {
-  -webkit-tap-highlight-color: transparent;
-}
-
 /* Focus — the reference site's 3px accent style, everywhere. */
 button:focus-visible,
 a:focus-visible,
@@ -139,7 +136,6 @@ a.btn:active {
   font-weight: 650;
 }
 
-
 /* Muted-ink utilities kept from the old grammar (many screens use them). */
 
 .text-3,
@@ -185,9 +181,7 @@ p.text-4 {
   color: var(--muted);
 }
 
-
-
-/* ── Motion kit — shared keyframes & scroll-reveal states ───────────────── */
+/* ── Motion kit — shared keyframes ──────────────────────────────────────── */
 
 @keyframes settle {
   from {
@@ -216,20 +210,6 @@ p.text-4 {
   animation-delay: calc(min(var(--i, 0), 8) * 40ms);
 }
 
-/* Scroll-linked reveal (IntersectionObserver adds .is-in; re-armed per route). */
-.reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition:
-    opacity var(--dur-slow) var(--ease),
-    transform var(--dur-slow) var(--ease);
-  transition-delay: calc(min(var(--i, 0), 8) * 40ms);
-}
-.reveal.is-in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* The kill rule: every animation and transition collapses. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -240,9 +220,5 @@ p.text-4 {
     transition-duration: 0.001ms !important;
     transition-delay: 0ms !important;
     scroll-behavior: auto !important;
-  }
-  .reveal {
-    opacity: 1;
-    transform: none;
   }
 }

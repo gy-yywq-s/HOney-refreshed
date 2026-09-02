@@ -98,7 +98,7 @@ export function ExperiencesComposePage() {
   }, [effectiveLessonId, effectiveEntityKey, history.data, entities.data]);
 
   const composer = useComposer(target);
-  const { names } = useNames();
+  const { names } = useNames(!!effectiveEntityKey);
   const landing = useRetryFocus<HTMLElement>(entities.loading);
   const { body, setBody, rating, setRating, status, notice } = composer;
 
@@ -211,18 +211,26 @@ export function ExperiencesComposePage() {
     return (
       <div className="stack">
         <h1 className="page-title">Share an experience</h1>
-        <div role="alert" className="banner banner--danger">
-          <span>{entities.error}</span>
-          <button
-            className="btn btn--ghost btn--small"
-            onClick={() => {
-              landing.arm();
-              entities.reload();
-            }}
-          >
-            Try again
-          </button>
-        </div>
+        <section
+          className="focus-landing"
+          ref={landing.ref}
+          tabIndex={-1}
+          role="region"
+          aria-label="Editor"
+        >
+          <div role="alert" className="banner banner--danger">
+            <span>{entities.error}</span>
+            <button
+              className="btn btn--ghost btn--small"
+              onClick={() => {
+                landing.arm();
+                entities.reload();
+              }}
+            >
+              Try again
+            </button>
+          </div>
+        </section>
       </div>
     );
   }

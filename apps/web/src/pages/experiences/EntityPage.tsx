@@ -32,7 +32,7 @@ const KIND_INTRO: Record<EntityPageKind, (name: string) => string> = {
 
 export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
   const { id = "" } = useParams();
-  const { names, entities } = useNames();
+  const { names, entities, error: namesError, reload: reloadNames } = useNames();
 
   const entityKey = `${kind}:${id}`;
   const filters: FeedFilters = {};
@@ -127,7 +127,14 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
         {KIND_INTRO[kind](name)} No single Experience is the whole picture.
       </p>
 
-      {feed.loading ? (
+      {namesError ? (
+        <div role="alert" className="banner banner--danger">
+          <span>{namesError}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); reloadNames(); }}>
+            Try again
+          </button>
+        </div>
+      ) : feed.loading ? (
         <Skeleton lines={4} />
       ) : feed.error ? (
         <div role="alert" className="banner banner--danger">

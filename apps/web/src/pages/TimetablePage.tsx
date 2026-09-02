@@ -19,11 +19,11 @@ import {
 
 type SyncFeedback = { kind: "result"; result: SyncResponse } | { kind: "error"; message: string };
 
-/** "Mon 1 Sep" for the stepper — compact, tabular, unambiguous. */
+/** Compact day for the stepper, in the same locale the heading uses. */
 function formatStepperDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-").map(Number);
   const day = new Date(y!, (m ?? 1) - 1, d ?? 1);
-  return day.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  return day.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
 export function TimetablePage() {
@@ -38,6 +38,13 @@ export function TimetablePage() {
     }
     return todayIsoDate();
   });
+  // An impossible ?date= must not stay in the address bar over a page that
+  // shows today (r7): replace it so a copied link means what the page shows.
+  useEffect(() => {
+    const q = searchParams.get("date");
+    if (q && q !== date) window.history.replaceState(null, "", `/timetable?date=${date}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
   const [selected, setSelected] = useState<Lesson | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
@@ -91,7 +98,8 @@ export function TimetablePage() {
               const el = pickerRef.current;
               if (!el) return;
               // One visible affordance, one Tab stop: the native picker opens
-              // from the button; the input itself stays out of the tab order.
+              // from the button; when showPicker is unavailable the input
+              // becomes the visible affordance and the button hides.
               if (typeof el.showPicker === "function") {
                 try {
                   el.showPicker();
@@ -153,7 +161,7 @@ export function TimetablePage() {
       )}
       <h1 className="schedule-header">{formatDayHeading(date)}</h1>
       <p className="caption timetable-note">
-        P1–P6 are the school’s six lesson periods.
+        {(data?.lessons.length ?? 0) > 0 || loading ? "P1–P6 are the school’s six lesson periods." : ""}
         {data?.lastSyncedAt ? ` Last synced ${timeAgo(data.lastSyncedAt)}.` : ""}
       </p>
 
@@ -304,11 +312,18 @@ function DayTimeline({
   // nav, so land with the first lesson still ahead at the top of the scroll
   // owner instead of the 09:00 line. Proportions stay; the scroll starts
   // where the day does. Never on a normal-height screen.
+  const landedDate = useRef<string | null>(null);
   useEffect(() => {
     if (window.innerHeight > 620 || visible.length === 0) return;
+    if (landedDate.current === date) return; // once per date — never on a retry
+    landedDate.current = date;
     const ahead = visible.find((l) => !isToday || minuteOfDay(l.endsAt) > nowMinute) ?? visible[0]!;
-    const el = document.querySelector<HTMLElement>(`[data-lesson="${ahead.id}"]`);
-    el?.scrollIntoView({ block: "start" });
+    // After the shell's own route reset (a parent effect), and instantly:
+    // the owner's smooth scroll-behavior must not animate the landing.
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-lesson="${ahead.id}"]`);
+      el?.scrollIntoView({ block: "start", behavior: "instant" });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, visible.length]);
 
@@ -442,8 +457,8 @@ function CalendarGlyph() {
 
 function LessonDetail({ lesson, onClose }: { lesson: Lesson; onClose: () => void }) {
   return (
-    <Modal title={lesson.subjectName} onClose={onClose}>
-      <dl className="kv">
+    <Modal title={lesson.subjectName} onClose={onClose} describedBy="lesson-dialog-body">
+      <dl className="kv" id="lesson-dialog-body">
         <dt>Time</dt>
         <dd>
           {formatTime(lesson.startsAt)}–{formatTime(lesson.endsAt)}

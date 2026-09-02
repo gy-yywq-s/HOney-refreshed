@@ -208,7 +208,7 @@ export function SettingsPage() {
           <div className="setting-row__main">
             <span>Delete imported data</span>
             <span className="caption">
-              Removes all timetable and history data imported from the school portal.
+              Removes your imported lessons — your timetable and history. Shared teacher, course and room entries stay.
             </span>
           </div>
           <button className="btn btn--danger" onClick={() => setConfirm("delete-data")}>
@@ -285,7 +285,7 @@ export function SettingsPage() {
       {confirm === "delete-data" && (
         <ConfirmDialog
           title="Delete imported data?"
-          body="All imported timetable and history data will be removed from HOney. You can import again with Sync now."
+          body="Your imported lessons — timetable and history — are removed from HOney. Shared teacher, course and room entries stay. You can import again with Sync now."
           confirmLabel="Delete imported data"
           danger
           busy={busyKey === "delete-data"}

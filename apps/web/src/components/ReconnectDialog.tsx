@@ -13,9 +13,9 @@ interface ReconnectDialogProps {
 
 /**
  * One dialog, two named purposes: title, body AND submit label say what this
- * opening does; the stay-connected choice sits inside the form before the
- * submit for both purposes (checked by default when saving), with the same
- * caveat the login shows.
+ * opening does. Both purposes render the same one-line stay-connected choice
+ * inside the form before the submit (checked by default when saving); the
+ * storage caveat lives in the body for both.
  */
 export function ReconnectDialog({
   onClose,
@@ -29,7 +29,7 @@ export function ReconnectDialog({
   const body =
     purpose === "save"
       ? "Enter your school login once; it stays encrypted on this device (a browser is less protected than a phone’s secure storage) so routine portal time-outs reconnect on their own."
-      : "The portal session ended. Sign in again to restore it — your HOney data stays as it is.";
+      : "The portal session ended. Sign in again to restore it — your HOney data stays as it is. If you keep the login on this device it stays encrypted here (a browser is less protected than a phone’s secure storage).";
   return (
     <Modal title={title} onClose={onClose} describedBy="school-dialog-body">
       <p className="muted" id="school-dialog-body">
@@ -46,9 +46,7 @@ export function ReconnectDialog({
                 onChange={(e) => setStayConnected(e.target.checked)}
               />
               <span>
-                {purpose === "save"
-                  ? "Stay connected on this device."
-                  : "Stay connected on this device — encrypted, kept only here (a browser is less protected than a phone’s secure storage)."}
+                Stay connected on this device.
               </span>
             </label>
         }

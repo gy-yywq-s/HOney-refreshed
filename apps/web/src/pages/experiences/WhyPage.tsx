@@ -98,7 +98,7 @@ export function ExperiencesWhyPage() {
       </section>
 
       <footer className="doc__footer">
-        <Link to="/experiences">Back to Experiences</Link>
+        <Link className="btn btn--ghost" to="/experiences">Back to Experiences</Link>
       </footer>
     </article>
   );

@@ -223,8 +223,10 @@
   flex: 1 1 100%;
   margin: 0;
 }
-.timetable-note {
-  margin-top: var(--sp-3);
+p.caption.timetable-note {
+  /* Outranks `p.caption { margin-block: 0 }` (r7: the plain rule lost the
+     cascade and painted nothing). */
+  margin-block: var(--sp-3) var(--sp-2);
 }
 @media (max-width: 700px) {
   /* Phones: the stepper takes its own full row; today/utility actions form
@@ -341,8 +343,6 @@
   border-radius: 50%;
   background: var(--danger);
   flex: none;
-  /* Static: the now-line explains state by position, not by pulsing
-     (design-is r2, #9 — no idle animation anywhere). */
 }
 .timeline__now::after {
   content: "";
@@ -352,7 +352,7 @@
 }
 /* Lesson blocks: ink cards on the canvas. */
 .lesson-block {
-  scroll-margin-top: 140px; /* sticky daynav + note: the compact landing block sits below them */
+  scroll-margin-top: var(--sp-2);
   position: absolute;
   left: 10px;
   right: 8px;
@@ -765,6 +765,16 @@
        the first lesson ahead at the top. Normal heights keep 620. */
     .timeline {
       min-height: 540px;
+    }
+  }
+  @media (max-height: 620px) {
+    /* Compact heights: the day nav scrolls with the page (no sticky bar to
+       park over the heading) and the landing block sits at the top. */
+    .daynav {
+      position: static;
+    }
+    .lesson-block--compact {
+      min-height: 36px;
     }
   }
   @media (max-height: 620px) and (max-width: 360px) {
@@ -1310,4 +1320,10 @@
 .main:focus {
   outline: 3px solid var(--accent);
   outline-offset: -3px;
+}
+
+/* The login opt-in label is the tap target for its 22px box. */
+.stay-connected {
+  min-height: 44px;
+  align-items: center;
 }

@@ -156,7 +156,10 @@ export function ExperiencesFeedPage() {
         ) : (
           null
         )}
-        <div aria-live="polite">
+        <p className="sr-only" role="status">
+          {feed.loading ? "" : feed.error ? "Could not load" : `${feed.items.length} experiences`}
+        </p>
+        <div>
           {feed.items.length > 0 && !feed.loading && !feed.error && (
             <>
             {feed.items.map((exp, i) => (

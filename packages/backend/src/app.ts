@@ -96,7 +96,15 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   // and falls back to index.html for client-side routes (deep links §6.3).
   const webDist = opts.webDist ?? process.env.HONEY_WEB_DIST;
   if (webDist && existsSync(join(webDist, "index.html"))) {
-    void app.register(fastifyStatic, { root: webDist });
+    void app.register(fastifyStatic, {
+      root: webDist,
+      setHeaders(res, path) {
+        // The service worker must be re-checked on every load (r5–r7 relay);
+        // hashed assets are immutable by construction.
+        if (path.endsWith("/sw.js")) res.setHeader("cache-control", "no-cache");
+        else if (path.includes("/assets/")) res.setHeader("cache-control", "public, max-age=31536000, immutable");
+      },
+    });
     app.setNotFoundHandler((req, reply) => {
       if (req.url.startsWith("/api/")) {
         return reply.code(404).send({ error: "not_found" });

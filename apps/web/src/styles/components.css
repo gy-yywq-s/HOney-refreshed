@@ -41,8 +41,6 @@
   align-items: center;
 }
 
-
-/* Pointer-following highlight: JS writes --mx/--my on .primary
 /* ── Buttons — pill grammar, ink fill = primary ─────────────────────────── */
 .btn {
   display: inline-flex;
@@ -66,8 +64,12 @@
     transform var(--dur-fast) var(--ease);
 }
 .btn:disabled {
+  /* One disabled treatment for every button: muted text (5.34:1 on
+     stone), soft border, no washed opacity. */
   cursor: default;
-  opacity: 0.65;
+  opacity: 1;
+  color: var(--muted);
+  border-color: var(--line);
 }
 a.btn:hover {
   text-decoration: none;
@@ -242,11 +244,13 @@ a.btn:hover {
     border-color var(--dur-fast) var(--ease),
     transform var(--dur-fast) var(--ease);
 }
-.react-btn:hover:not(:disabled) {
+.react-btn:hover:not([aria-disabled="true"]) {
   background: var(--soft);
   color: var(--ink);
 }
-.react-btn:disabled {
+.react-btn[aria-disabled="true"] {
+  /* Pending: the POST is in flight — visibly quieter, and a second tap
+     is swallowed by the handler, so the pill must say so to sight too. */
   opacity: 0.7;
   cursor: default;
 }
@@ -772,10 +776,6 @@ a.btn:hover {
     transform var(--dur-fast) var(--ease);
 }
 
-.option-grid span {
-  color: var(--muted);
-  font-size: var(--fs-micro);
-}
 .option-grid button[aria-pressed="true"] {
   background: var(--ink);
   color: var(--surface);
@@ -799,7 +799,6 @@ a.btn:hover {
 .swatch--night {
   background: #14171a;
 }
-
 
 /* ── Narrow adjustments ─────────────────────────────────────────────────── */
 @media (max-width: 640px) {

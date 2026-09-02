@@ -66,7 +66,7 @@ export const SUBMIT_ERROR_COPY: Record<string, string> = {
   rating_invalid: "Stars are whole numbers from 1 to 5.",
   lesson_not_yours:
     "That lesson isn't in your imported history, so this account can't review it. Pick a lesson from your own History.",
-  entity_unknown: "This entry isn't listed any more — it may have been removed.",
+  entity_unknown: "This entry is no longer listed.",
   entity_frozen: "New experiences for this entry are paused by the moderators right now.",
   standalone_closed: "Reviews for this entry are closed right now.",
   not_invited: "This entry is invite-only, and this account hasn't been invited to review it.",
@@ -157,14 +157,33 @@ export function buildNameMaps(
 }
 
 /** One-line context ("Maths · Ms Lin · Room 204") from whatever ids resolve. */
-export function useNames() {
-  const directory = useApi(() => api.directory(), [], "directory");
-  const entities = useApi(() => api.entities(), [], "entities");
+export function useNames(enabled = true) {
+  const directory = useApi(
+    () => (enabled ? api.directory() : Promise.resolve(null)),
+    [enabled],
+    enabled ? "directory" : undefined,
+  );
+  const entities = useApi(
+    () => (enabled ? api.entities() : Promise.resolve(null)),
+    [enabled],
+    enabled ? "entities" : undefined,
+  );
   const names = useMemo(
     () => buildNameMaps(directory.data, entities.data?.entities ?? null),
     [directory.data, entities.data],
   );
-  return { names, directory: directory.data, entities: entities.data?.entities ?? null };
+  return {
+    names,
+    directory: directory.data,
+    entities: entities.data?.entities ?? null,
+    /** First lookup failure, so pages can show an error branch (r7). */
+    error: directory.error ?? entities.error,
+    loading: directory.loading || entities.loading,
+    reload: () => {
+      directory.reload();
+      entities.reload();
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
