@@ -53,6 +53,13 @@ export function TimetablePage() {
   const pickerRef = useRef<HTMLInputElement>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
   const landing = useRetryFocus<HTMLDivElement>(loading);
+  // The first settle (success OR error) of a date is its cold landing; any
+  // later data arrival for the same date is a retry and must not scroll.
+  const settledDates = useRef(new Set<string>());
+  const coldLanding = !loading && !settledDates.current.has(date);
+  useEffect(() => {
+    if (!loading) settledDates.current.add(date);
+  }, [loading, date]);
 
   async function runSync() {
     setSyncBusy(true);
@@ -198,6 +205,7 @@ export function TimetablePage() {
             <DayTimeline
               date={date}
               lessons={data?.lessons ?? []}
+              land={coldLanding}
               onSelect={(lesson) => setSelected(lesson)}
             />
           </div>
@@ -286,10 +294,13 @@ function periodLabelFor(start: number, end: number): string | null {
 function DayTimeline({
   date,
   lessons,
+  land,
   onSelect,
 }: {
   date: string;
   lessons: Lesson[];
+  /** True only on the cold landing of a date (never after a retry). */
+  land: boolean;
   onSelect: (lesson: Lesson) => void;
 }) {
   const isToday = date === todayIsoDate();
@@ -312,11 +323,8 @@ function DayTimeline({
   // nav, so land with the first lesson still ahead at the top of the scroll
   // owner instead of the 09:00 line. Proportions stay; the scroll starts
   // where the day does. Never on a normal-height screen.
-  const landedDate = useRef<string | null>(null);
   useEffect(() => {
-    if (window.innerHeight > 620 || visible.length === 0) return;
-    if (landedDate.current === date) return; // once per date — never on a retry
-    landedDate.current = date;
+    if (!land || window.innerHeight > 620 || visible.length === 0) return;
     const ahead = visible.find((l) => !isToday || minuteOfDay(l.endsAt) > nowMinute) ?? visible[0]!;
     // After the shell's own route reset (a parent effect), and instantly:
     // the owner's smooth scroll-behavior must not animate the landing.

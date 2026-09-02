@@ -814,6 +814,11 @@ a.btn:hover {
   .modal {
     max-width: none;
     max-height: 92dvh;
+  }
+  @media (max-height: 620px) {
+    .modal {
+      max-height: 100dvh; /* compact heights: no sheet scroll for a short form */
+    }
     border-radius: 20px 20px 0 0;
     border-left: none;
     border-right: none;
