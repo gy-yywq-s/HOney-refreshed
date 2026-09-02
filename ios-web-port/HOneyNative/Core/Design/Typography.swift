@@ -124,6 +124,8 @@ private extension Font.TextStyle {
         case .footnote: return .footnote
         case .caption: return .caption1
         case .caption2: return .caption2
+        case .extraLargeTitle: return .extraLargeTitle
+        case .extraLargeTitle2: return .extraLargeTitle2
         @unknown default: return .body
         }
     }

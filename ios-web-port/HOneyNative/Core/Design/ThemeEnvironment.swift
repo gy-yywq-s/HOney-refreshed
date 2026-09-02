@@ -4,6 +4,7 @@
 // (none under Reduce Motion). Nothing relaunches, no tab or stack resets.
 
 import SwiftUI
+import UIKit
 import HOneyCore
 
 @MainActor

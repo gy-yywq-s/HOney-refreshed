@@ -139,6 +139,9 @@ enum SnapshotHarness {
     }
 
     static func makeEnvironment(lesson: FixtureTransport.LessonState = .now) async throws -> AppEnvironment {
+        // The school's zone, whatever the runner's clock says: the fixtures
+        // carry Shanghai wall times and the Web references are shot there too.
+        HOneyClock.timeZone = TimeZone(identifier: "Asia/Shanghai")!
         let transport = FixtureTransport()
         transport.lessonState = lesson
         let secrets = InMemorySecretStore()
