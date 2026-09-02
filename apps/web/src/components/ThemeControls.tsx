@@ -34,16 +34,13 @@ export function ThemeControls() {
           ))}
         </div>
       </section>
-      <p className="caption" style={{ marginBottom: 0 }} id="appearance-dialog-body">
-        Saved on this device and applied before the page paints.
-      </p>
     </div>
   );
 }
 
 export function ThemeDialog({ onClose }: { onClose: () => void }) {
   return (
-    <Modal title="Appearance" onClose={onClose} describedBy="appearance-dialog-body">
+    <Modal title="Appearance" onClose={onClose}>
       <ThemeControls />
     </Modal>
   );

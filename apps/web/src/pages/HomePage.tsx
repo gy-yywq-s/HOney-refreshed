@@ -212,7 +212,8 @@ export function HomePage() {
         {/* Opens the portal SIGNED IN: the href carries HOney's live portal
             token to the portal's own login page (lib/portalEntry). */}
         <a className="portal-row" href={portalHref} target="_blank" rel="noopener noreferrer">
-          <span>School Portal</span>
+          <img className="portal-row__icon" src="/oasis.png" alt="" width="22" height="22" />
+          <span className="portal-row__title">School Portal</span>
           <span className="caption">
             {t("Open the official site")} <span aria-hidden="true">&#8599;</span>
           </span>

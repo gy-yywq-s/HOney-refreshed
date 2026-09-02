@@ -413,9 +413,6 @@ export function SettingsPage() {
           <section className="rowlist" aria-label="Text size">
             <h2 className="overline">{t("Text size")}</h2>
             <div className="row row--stack">
-              <span className="row__main">
-                <span className="row__sub">{t("Applies to the whole app, before the page paints.")}</span>
-              </span>
               <div className="cat-chips" role="radiogroup" aria-label={t("Text size")}>
                 {TEXT_SIZES.map((size) => (
                   <button
@@ -436,13 +433,6 @@ export function SettingsPage() {
           <section className="rowlist" aria-label="Language">
             <h2 className="overline">{t("Language")}</h2>
             <div className="row row--stack">
-              <span className="row__main">
-                <span className="row__sub">
-                  {lang === "zh"
-                    ? "界面用中文；HOney、Home、Experiences、Timetable、History、Explore、Settings 这些名字保持英文。"
-                    : "Sentences and actions switch; HOney, Home, Experiences, Timetable, History, Explore and Settings keep their names."}
-                </span>
-              </span>
               <div className="cat-chips" role="radiogroup" aria-label="Language">
                 <button type="button" role="radio" aria-checked={lang === "en"} className="chip-tab" aria-selected={lang === "en"} onClick={() => setLang("en")}>
                   English

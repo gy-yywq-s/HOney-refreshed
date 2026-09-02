@@ -64,10 +64,7 @@ const ZH: Record<string, string> = {
   "In": "还有",
   "Tomorrow": "明天",
   // feed
-  "Written by students, for students.": "学生写给学生。",
   "Why this space exists": "为什么有这个空间",
-  "Your classes": "我的课",
-  "Around school": "学校里",
   "Find someone or something": "找老师、课程、地点或食物",
   "Your notes & posts": "我的笔记与帖子",
   "Share an experience": "分享一段经历",
@@ -193,7 +190,6 @@ const ZH: Record<string, string> = {
   "Background": "背景",
   "Language": "语言",
   "Text size": "字号",
-  "Applies to the whole app, before the page paints.": "对整个应用生效，页面绘制前就已应用。",
   "Small": "小",
   "Default": "默认",
   "Large": "大",

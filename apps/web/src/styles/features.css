@@ -1485,6 +1485,21 @@
   text-decoration: none;
   white-space: nowrap;
 }
+.portal-row__icon {
+  /* The portal's own mark (its favicon, Gary 2026-09-02); monochrome, so
+     night inverts it the way the wordmark is. */
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+:root[data-surface="night"] .portal-row__icon {
+  filter: invert(1);
+}
+.portal-row__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 @media (hover: hover) {
   .portal-row:hover {
     border-color: var(--accent);
