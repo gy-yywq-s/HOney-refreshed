@@ -53,9 +53,17 @@ export function ExperiencesComposePage() {
   const effectiveLessonId = lessonId ?? note?.target.lessonId ?? null;
   const effectiveEntityKey = entityKeyParam ?? note?.target.entityKey ?? null;
 
+  // The lesson comes from History, or — for today's / an upcoming lesson
+  // opened from the Timetable (?date=) — from that day's timetable.
+  const lessonDate = searchParams.get("date");
   const history = useApi(
-    () => (effectiveLessonId ? api.history({ limit: 200, order: "desc" }) : Promise.resolve(null)),
-    [effectiveLessonId],
+    () =>
+      effectiveLessonId
+        ? lessonDate
+          ? api.timetable(lessonDate).then((d) => ({ lessons: d.lessons }))
+          : api.history({ limit: 200, order: "desc" }).then((h) => ({ lessons: h.lessons }))
+        : Promise.resolve(null),
+    [effectiveLessonId, lessonDate],
   );
   const entities = useApi(
     () => (effectiveEntityKey ? api.entities() : Promise.resolve(null)),

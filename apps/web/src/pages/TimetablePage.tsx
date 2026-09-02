@@ -619,7 +619,10 @@ function LessonDetail({
             {t("Open this day")}
           </button>
         )}
-        <Link className="btn btn--primary" to={`/experiences/compose?lessonId=${lesson.id}`}>
+        <Link
+          className="btn btn--primary"
+          to={`/experiences/compose?lessonId=${lesson.id}&date=${new Date(lesson.startsAt).toLocaleDateString("en-CA")}`}
+        >
           {t("Share what this was like")}
         </Link>
         {lesson.teacherId && (

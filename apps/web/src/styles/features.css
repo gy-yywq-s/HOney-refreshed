@@ -1496,6 +1496,11 @@
   .app-frame:has(.compose-textarea:focus) .mobile-nav {
     display: none;
   }
+  .app-frame:has(.nudge) .mobile-nav {
+    /* A decision sheet (nudge / cooling): the nav yields so the primary
+       action is reachable (Gary 2026-09-02: the OK sat under the nav). */
+    display: none;
+  }
 }
 
 /* Inline text links on primary screens: pad the tap zone (a11y audit —
