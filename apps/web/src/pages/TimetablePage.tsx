@@ -13,6 +13,7 @@ import { useRetryFocus } from "../lib/useRetryFocus";
 import { parseCourseName, roomLabel } from "../lib/displayNames";
 import { BANDS, PERIODS, minuteOfDay, overlapsSlot, periodLabelFor } from "../lib/periodCatalog";
 import { WeekView } from "../features/timetable/WeekView";
+import { t, useT } from "../lib/i18n";
 import {
   formatDayTitle,
   formatTime,
@@ -49,6 +50,7 @@ export function TimetablePage() {
   const [selected, setSelected] = useState<Lesson | null>(null);
   const closeLesson = useCallback(() => setSelected(null), []);
   const pickerRef = useRef<HTMLInputElement>(null);
+  useT();
   // Day | Week (addendum v1.1 §3): Day is the default; Week is kept while the
   // student works in the Timetable this session (never a cold-launch default).
   // ?view=week deep-links Week; a ?date= link without ?view= means Day.
@@ -159,16 +161,16 @@ export function TimetablePage() {
       <header className="daynav">
         <div className="daynav__modes" role="tablist" aria-label="Timetable view">
           <button type="button" role="tab" aria-selected={view === "day"} className="daynav__mode" onClick={() => setView("day")}>
-            Day
+            {t("Day")}
           </button>
           <button type="button" role="tab" aria-selected={view === "week"} className="daynav__mode" onClick={() => setView("week")}>
-            Week
+            {t("Week")}
           </button>
         </div>
         <div className="daynav__stepper" role="group" aria-label={view === "week" ? "Choose a week" : "Choose a day"}>
           <button
             className="daynav__arrow"
-            aria-label={view === "week" ? "Previous week" : "Previous day"}
+            aria-label={view === "week" ? t("Previous week") : t("Previous day")}
             onClick={() => setDate((d) => shiftIsoDate(d, view === "week" ? -7 : -1))}
           >
             &lsaquo;
@@ -225,7 +227,7 @@ export function TimetablePage() {
           </h1>
           <button
             className="daynav__arrow"
-            aria-label={view === "week" ? "Next week" : "Next day"}
+            aria-label={view === "week" ? t("Next week") : t("Next day")}
             onClick={() => setDate((d) => shiftIsoDate(d, view === "week" ? 7 : 1))}
           >
             &rsaquo;
@@ -233,7 +235,7 @@ export function TimetablePage() {
         </div>
         {(view === "week" ? mondayOf(todayIsoDate()) !== monday : !isToday) && (
           <button className="btn btn--ghost btn--small daynav__today" onClick={() => setDate(todayIsoDate())}>
-            {view === "week" ? "This week" : "Back to today"}
+            {view === "week" ? t("This week") : t("Back to today")}
           </button>
         )}
         {/* Desktop only: the phone answers these with gestures — pull down
@@ -614,26 +616,26 @@ function LessonDetail({
       <div className="modal__actions">
         {onOpenDay && (
           <button type="button" className="btn btn--ghost" onClick={onOpenDay}>
-            Open this day
+            {t("Open this day")}
           </button>
         )}
         <Link className="btn btn--primary" to={`/experiences/compose?lessonId=${lesson.id}`}>
-          Share what this was like
+          {t("Share what this was like")}
         </Link>
         {lesson.teacherId && (
           <Link className="btn btn--ghost" to={`/experiences/teacher/${lesson.teacherId}`}>
-            Experiences with {lesson.teacherName ?? "this teacher"}
+            {t("Experiences with")} {lesson.teacherName ?? "this teacher"}
           </Link>
         )}
         {lesson.courseId && (
           <Link className="btn btn--ghost" to={`/experiences/course/${lesson.courseId}`}>
-            Experiences from this course
+            {t("Experiences from this course")}
           </Link>
         )}
       </div>
       {(extra || (lesson.topicName && lesson.topicName !== lesson.subjectName)) && (
         <details className="disclosure">
-          <summary>More lesson details</summary>
+          <summary>{t("More lesson details")}</summary>
           <dl className="kv">
             {lesson.topicName && lesson.topicName !== lesson.subjectName && (
               <>

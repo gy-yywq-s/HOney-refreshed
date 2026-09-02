@@ -572,7 +572,7 @@
   align-items: stretch;
   min-height: 20px;
   padding: 0 var(--sp-3);
-  border: 1px solid var(--line);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 28%, transparent);
   border-radius: 10px;
   background: var(--cell);
   color: var(--ink);
@@ -694,6 +694,9 @@
 }
 
 /* ── History — hairline rows under month eyebrows ───────────────────────── */
+.history__title {
+  margin-bottom: var(--sp-4); /* the search block breathes under the title */
+}
 .filters {
   display: flex;
   gap: var(--sp-2);
@@ -703,19 +706,20 @@
 .filters .input {
   flex: 1;
   min-width: 160px;
-  border-radius: 99px;
 }
-.month-group {
-  margin-bottom: var(--sp-6);
+.day-group {
+  margin-bottom: var(--sp-5);
 }
-.month-group__label {
-  margin: 0 0 var(--sp-1);
-  color: var(--muted);
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  letter-spacing: 0.01em;
+.day-group__label {
+  /* The day is the row heading (Gary 2026-09-02): one line, ink, a rule under it. */
+  margin: 0;
+  padding: 0 0 var(--sp-2);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-secondary);
+  font-weight: 650;
+  color: var(--ink);
 }
-.month-group__list {
+.day-group__list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -724,15 +728,18 @@
   display: flex;
   align-items: center;
   gap: var(--sp-4);
-  min-height: 60px;
+  min-height: 56px;
   padding: var(--sp-3) 0;
   border-top: 1px solid var(--line);
 }
-.history-row__date {
-  width: 92px;
-  flex-shrink: 0;
-  font-size: var(--fs-caption);
-  color: var(--muted);
+.day-group__list > .history-row:first-child {
+  border-top: 0;
+}
+.history-row__time {
+  flex: none;
+  font-size: var(--fs-secondary);
+  font-weight: 600;
+  color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
 .history-row__body {
@@ -973,9 +980,6 @@
   }
   .history-row {
     gap: var(--sp-3);
-  }
-  .history-row__date {
-    width: 72px;
   }
 
   /* Timetable: tighter hours gutter. The canvas fills the frame; the floor

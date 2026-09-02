@@ -12,6 +12,7 @@ import { useRetryFocus } from "../lib/useRetryFocus";
 import { formatDayBucket, formatDayTitle, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
 import { roomLabel } from "../lib/displayNames";
 import { ChevronRightIcon } from "../components/icons";
+import { useT } from "../lib/i18n";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
 
@@ -21,6 +22,7 @@ export function HomePage() {
   const landing = useRetryFocus<HTMLElement>(loading);
   const fromClasses = useFromYourClasses(10);
   const now = useNowTick(1000);
+  const t = useT();
 
   if (!me) return null;
 
@@ -41,15 +43,15 @@ export function HomePage() {
   const sameDay = !!next && new Date(next.startsAt).toDateString() === new Date(now).toDateString();
   const when = (() => {
     if (!next) return null;
-    if (isNow) return `${formatRemaining(next.endsAt - now)} left`;
-    if (sameDay) return `In ${formatRemaining(next.startsAt - now)}`;
+    if (isNow) return `${formatRemaining(next.endsAt - now)} ${t("left")}`;
+    if (sameDay) return `${t("In")} ${formatRemaining(next.startsAt - now)}`;
     const start = new Date(next.startsAt);
     const tomorrow = start.toDateString() === new Date(now + 86_400_000).toDateString();
-    const day = tomorrow ? "Tomorrow" : start.toLocaleDateString("en-GB", { weekday: "long" });
+    const day = tomorrow ? t("Tomorrow") : start.toLocaleDateString("en-GB", { weekday: "long" });
     return `${day} · ${formatTime(next.startsAt)}`;
   })();
   const soon = !!next && !isNow && sameDay && next.startsAt - now < 10 * 60_000;
-  const stateLabel = isNow ? "Now" : "Next lesson";
+  const stateLabel = isNow ? t("Now") : t("Next lesson");
   const stale = lastSyncedAt !== null && isStale(lastSyncedAt);
   const cardName = next
     ? [
@@ -61,7 +63,7 @@ export function HomePage() {
       ]
         .filter(Boolean)
         .join(", ") + ". Open timetable"
-    : "Nothing coming up. Open timetable";
+    : `${t("Nothing coming up")}. Open timetable`;
 
   // The same string as the Timetable's own heading — one formatter (r10).
   const today = formatDayTitle(new Date(now).toLocaleDateString("en-CA"));
@@ -70,7 +72,7 @@ export function HomePage() {
   return (
     <div className="stack home">
       <header className="home-head">
-        <h1 className="home-head__hi">Hi, {me.displayName}</h1>
+        <h1 className="home-head__hi">{t("Hi,")} {me.displayName}</h1>
         <p className="home-head__date">{today}</p>
       </header>
 
@@ -87,7 +89,7 @@ export function HomePage() {
         {loading ? (
           <div className="card card--hero nextlesson" aria-busy="true">
             <div className="nextlesson__head">
-              <span className="nextlesson__label">Next lesson</span>
+              <span className="nextlesson__label">{t("Next lesson")}</span>
             </div>
             <Skeleton lines={2} />
           </div>
@@ -95,7 +97,7 @@ export function HomePage() {
           <div role="alert" className="banner banner--danger">
             <span>{error}</span>
             <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); reload(); }}>
-              Try again
+              {t("Try again")}
             </button>
           </div>
         ) : next ? (
@@ -131,7 +133,7 @@ export function HomePage() {
                 </span>
               )}
             </div>
-            {stale && <div className="nextlesson__stale">Last updated {timeAgo(lastSyncedAt!)}</div>}
+            {stale && <div className="nextlesson__stale">{t("Last updated")} {timeAgo(lastSyncedAt!)}</div>}
             <span className="nextlesson__chev">
               <ChevronRightIcon size={18} />
             </span>
@@ -139,10 +141,10 @@ export function HomePage() {
         ) : (
           <Link className="card card--hero nextlesson nextlesson--empty" to="/timetable" aria-label={cardName}>
             <div className="nextlesson__head">
-              <span className="nextlesson__label">Nothing coming up</span>
+              <span className="nextlesson__label">{t("Nothing coming up")}</span>
             </div>
-            <div className="nextlesson__subject">No upcoming lessons in your timetable.</div>
-            {stale && <div className="nextlesson__stale">Last updated {timeAgo(lastSyncedAt!)}</div>}
+            <div className="nextlesson__subject">{t("No upcoming lessons in your timetable.")}</div>
+            {stale && <div className="nextlesson__stale">{t("Last updated")} {timeAgo(lastSyncedAt!)}</div>}
             <span className="nextlesson__chev">
               <ChevronRightIcon size={18} />
             </span>
@@ -152,13 +154,13 @@ export function HomePage() {
 
       <section className="home-voices" aria-label="From your classes">
         <div className="home-voices__head">
-          <span className="eyebrow">From your classes</span>
+          <span className="eyebrow">{t("From your classes")}</span>
         </div>
         {fromClasses.loading ? (
           <Skeleton lines={2} />
         ) : fromClasses.error || previews.length === 0 ? (
           <p className="muted home-voices__empty">
-            When someone shares an experience connected to your classes, it will appear here.
+            {t("When someone shares an experience connected to your classes, it will appear here.")}
           </p>
         ) : (
           <ul className="home-voices__list">
@@ -186,7 +188,7 @@ export function HomePage() {
 
       <div className="home-foot">
         <Link className="btn btn--primary" to="/experiences/compose">
-          Share something
+          {t("Share something")}
         </Link>
         <a
           className="portal-row"
@@ -196,7 +198,7 @@ export function HomePage() {
         >
           <span>School Portal</span>
           <span className="caption">
-            Open the official site <span aria-hidden="true">&#8599;</span>
+            {t("Open the official site")} <span aria-hidden="true">&#8599;</span>
           </span>
         </a>
       </div>

@@ -20,6 +20,7 @@ import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
 import { ChevronRightIcon, CloseIcon, SearchIcon } from "../../components/icons";
 import { entityPath } from "./shared";
+import { useT } from "../../lib/i18n";
 
 const SECTIONS: { type: EntityType; label: string }[] = [
   { type: "teacher", label: "Teachers" },
@@ -47,6 +48,7 @@ function restore(): { q: string; cat: EntityType } {
 
 export function ExperiencesExplorePage() {
   const initial = useMemo(restore, []);
+  const t = useT();
   const [q, setQ] = useState(initial.q);
   const [cat, setCat] = useState<EntityType>(initial.cat);
   useEffect(() => {
@@ -117,7 +119,7 @@ export function ExperiencesExplorePage() {
     <div className="stack explore">
       <header className="explore-head">
         <h1 className="page-title">Explore</h1>
-        <p className="muted explore-head__sub">Teachers, courses, places and food.</p>
+        <p className="muted explore-head__sub">{t("Teachers, courses, places and food.")}</p>
       </header>
 
       <div className="explore-frame">
@@ -128,13 +130,13 @@ export function ExperiencesExplorePage() {
           <input
             className="search-box"
             type="search"
-            placeholder="Search names and experiences"
-            aria-label="Search names and experiences"
+            placeholder={t("Search names and experiences")}
+            aria-label={t("Search names and experiences")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
           {q && (
-            <button type="button" className="search-field__clear" aria-label="Clear search" onClick={() => setQ("")}>
+            <button type="button" className="search-field__clear" aria-label={t("Clear search")} onClick={() => setQ("")}>
               <CloseIcon size={16} />
             </button>
           )}
@@ -150,7 +152,7 @@ export function ExperiencesExplorePage() {
                 className="chip-tab"
                 onClick={() => setCat(s.type)}
               >
-                {s.label}
+                {t(s.label)}
               </button>
             ))}
           </div>
@@ -168,7 +170,7 @@ export function ExperiencesExplorePage() {
               if (directory.error) directory.reload();
             }}
           >
-            Try again
+            {t("Try again")}
           </button>
         </div>
       )}
@@ -181,7 +183,7 @@ export function ExperiencesExplorePage() {
           <Skeleton lines={6} />
         ) : entities.error ? null : needle ? (
           matches.length === 0 ? (
-            <p className="empty">Nothing by that name.</p>
+            <p className="empty">{t("Nothing by that name.")}</p>
           ) : (
             matches.map((s) => (
               <ExploreSection
@@ -197,7 +199,7 @@ export function ExperiencesExplorePage() {
           <>
             {recent.length > 0 && (
               <section aria-label="Recently opened" className="explore-recent">
-                <h2 className="overline">Recently opened</h2>
+                <h2 className="overline">{t("Recently opened")}</h2>
                 <ul className="entity-list">
                   {recent.map((r) => (
                     <li key={r.path}>
@@ -238,7 +240,7 @@ export function ExperiencesExplorePage() {
                     search.reload();
                   }}
                 >
-                  Try again
+                  {t("Try again")}
                 </button>
               </div>
             ) : search.data && search.data.experiences.length > 0 ? (

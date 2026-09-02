@@ -5,22 +5,32 @@ import { api } from "../api/client";
 import type { Lesson } from "../api/types";
 import { useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
-import { formatShortDate, formatTime, monthLabel } from "../lib/format";
+import { formatDayTitle, formatRelativeDay, formatTime, todayIsoDate, shiftIsoDate } from "../lib/format";
+import { roomLabel } from "../lib/displayNames";
+import { t, useT } from "../lib/i18n";
 import { staggerStyle , Skeleton } from "../lib/motion";
 
-interface MonthGroup {
+interface DayGroup {
+  date: string;
   label: string;
   lessons: Lesson[];
 }
 
-/** Lessons arrive chronologically ordered, so grouping preserves order. */
-function groupByMonth(lessons: Lesson[]): MonthGroup[] {
-  const groups: MonthGroup[] = [];
+/** One group per school day (Gary 2026-09-02): lessons arrive in order. */
+function groupByDay(lessons: Lesson[]): DayGroup[] {
+  const groups: DayGroup[] = [];
+  const today = todayIsoDate();
+  const yesterday = shiftIsoDate(today, -1);
   for (const lesson of lessons) {
-    const label = monthLabel(lesson.startsAt);
+    const date = new Date(lesson.startsAt).toLocaleDateString("en-CA");
     const last = groups[groups.length - 1];
-    if (last && last.label === label) last.lessons.push(lesson);
-    else groups.push({ label, lessons: [lesson] });
+    if (last && last.date === date) {
+      last.lessons.push(lesson);
+      continue;
+    }
+    const title = formatDayTitle(date);
+    const label = date === today ? `${formatRelativeDay(lesson.startsAt)} · ${title}` : date === yesterday ? `${formatRelativeDay(lesson.startsAt)} · ${title}` : title;
+    groups.push({ date, label, lessons: [lesson] });
   }
   return groups;
 }
@@ -30,6 +40,7 @@ export function HistoryPage() {
   const navigate = useNavigate();
   // ?select=1: rows become pickable (used by the Experiences composer).
   const selectMode = searchParams.get("select") === "1";
+  useT();
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -56,11 +67,11 @@ export function HistoryPage() {
   );
   const landing = useRetryFocus<HTMLDivElement>(history.loading);
 
-  const groups = useMemo(() => groupByMonth(history.data?.lessons ?? []), [history.data]);
+  const groups = useMemo(() => groupByDay(history.data?.lessons ?? []), [history.data]);
 
   return (
     <div>
-      <h1 className="page-title">History</h1>
+      <h1 className="page-title history__title">History</h1>
       {selectMode && (
         <div role="status" className="banner banner--success">
           Pick the lesson your experience is about.
@@ -71,8 +82,8 @@ export function HistoryPage() {
         <input
           className="input"
           type="search"
-          placeholder="Search lessons…"
-          aria-label="Search lessons"
+          placeholder={t("Search lessons…")}
+          aria-label={t("Search lessons…")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -118,28 +129,24 @@ export function HistoryPage() {
         <p className="card empty">No lessons match.</p>
       ) : (
         groups.map((group) => (
-          <section className="month-group" key={group.label}>
-            <h2 className="month-group__label">{group.label}</h2>
-            <ul className="month-group__list">
+          <section className="day-group" key={group.date}>
+            <h2 className="day-group__label">{group.label}</h2>
+            <ul className="day-group__list">
               {group.lessons.map((lesson, rowIndex) => (
                 <li className="history-row stagger" style={staggerStyle(rowIndex)} key={lesson.id}>
-                  <span className="history-row__date">
-                    {formatShortDate(lesson.startsAt)}
-                    <br />
-                    {formatTime(lesson.startsAt)}
-                  </span>
                   <span className="history-row__body">
                     <span>{lesson.subjectName}</span>
                     <span className="caption">
-                      {[lesson.teacherName, lesson.roomName].filter(Boolean).join(" · ")}
+                      {[lesson.teacherName, roomLabel(lesson.roomName)].filter(Boolean).join(" · ")}
                     </span>
                   </span>
+                  <span className="history-row__time">{formatTime(lesson.startsAt)}</span>
                   {selectMode && (
                     <button
                       className="btn btn--ghost btn--small"
                       onClick={() => navigate(`/experiences/compose?lessonId=${lesson.id}`)}
                     >
-                      Select
+                      {t("Select")}
                     </button>
                   )}
                 </li>

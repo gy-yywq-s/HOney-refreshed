@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { Link, Navigate, Outlet, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import { parentOf, rootOf, titleOf } from "../lib/navigation";
 import { useRetryFocus } from "../lib/useRetryFocus";
+import { useT } from "../lib/i18n";
 import { Skeleton } from "../lib/motion";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -47,6 +48,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const navType = useNavigationType();
   const [themeOpen, setThemeOpen] = useState(false);
+  const t = useT();
 
   const parent = parentOf(location.pathname, location.search);
   const parentRef = useRef(parent);
@@ -138,7 +140,7 @@ function AppLayout() {
         <Skeleton lines={3} />
       ) : (
         <div role="alert" className="banner banner--danger">
-          <span>{error ?? "Could not load your account."}</span>
+          <span>{error ?? t("Could not load your account.")}</span>
           <button
             className="btn btn--ghost btn--small"
             onClick={() => {
@@ -146,7 +148,7 @@ function AppLayout() {
               void refreshMe();
             }}
           >
-            Try again
+            {t("Try again")}
           </button>
         </div>
       )}
@@ -159,7 +161,7 @@ function AppLayout() {
   return (
     <div className="app-frame">
       <a className="skip-link" href="#main">
-        Skip to content
+        {t("Skip to content")}
       </a>
       {/* Desktop shell: fixed left rail — brand up top, numbered nav center,
           the active pill slides between items. Hidden ≤960px. */}
@@ -225,7 +227,7 @@ function AppLayout() {
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M15 5l-7 7 7 7" />
                 </svg>
-                <span className="sr-only">Back to </span>
+                <span className="sr-only">{t("Back to ")}</span>
                 <span>{backLabel}</span>
               </Link>
             </nav>

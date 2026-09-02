@@ -9,6 +9,7 @@
 
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { t } from "../lib/i18n";
 
 const SHOW_AT = 24;
 const OPEN_AT = 110; // damped px
@@ -39,7 +40,7 @@ export function PullToHistory() {
       mark.style.opacity = String(Math.max(0, Math.min(1, (pull - SHOW_AT) / 40)));
       if (pull >= OPEN_AT) mark.dataset.ready = "";
       else delete mark.dataset.ready;
-      label.textContent = pull >= OPEN_AT ? "Release to open History" : "Pull up for History";
+      label.textContent = pull >= OPEN_AT ? t("Release to open History") : t("Pull up for History");
     };
     const reset = () => {
       pull = 0;

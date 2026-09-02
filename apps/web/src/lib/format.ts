@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 // Small date/time helpers. "iso date" below means a local-timezone YYYY-MM-DD.
 
 export function toIsoDate(d: Date): string {
@@ -108,8 +109,8 @@ export function formatRemaining(ms: number): string {
 export function formatRelativeDay(timestamp: number, now = Date.now()): string {
   const d = new Date(timestamp);
   const today = new Date(now);
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === new Date(now - 86_400_000).toDateString()) return "Yesterday";
+  if (d.toDateString() === today.toDateString()) return t("Today");
+  if (d.toDateString() === new Date(now - 86_400_000).toDateString()) return t("Yesterday");
   return formatShortDate(timestamp);
 }
 

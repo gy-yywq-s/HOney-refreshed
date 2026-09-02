@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import { apiCache } from "../lib/useApi";
 import { emitRefresh, emitSync, syncAvailable } from "../lib/refresh";
+import { t } from "../lib/i18n";
 
 const REFRESH_AT = 64; // px of damped pull that commits a refresh
 const SYNC_AT = 132; // px of damped pull that commits a school sync
@@ -22,11 +23,11 @@ type Stage = "idle" | "pull" | "refresh" | "sync";
 function labelFor(stage: Stage, syncable: boolean): string {
   switch (stage) {
     case "pull":
-      return "Pull to refresh";
+      return t("Pull to refresh");
     case "refresh":
-      return syncable ? "Release to refresh · pull further to sync" : "Release to refresh";
+      return syncable ? t("Release to refresh · pull further to sync") : t("Release to refresh");
     case "sync":
-      return "Release to sync with school";
+      return t("Release to sync with school");
     default:
       return "";
   }
@@ -106,7 +107,7 @@ export function PullToRefresh() {
       setBusy(stage);
       group.style.transform = `translateY(${REFRESH_AT}px)`;
       group.dataset.stage = stage;
-      label.textContent = stage === "sync" ? "Syncing with school…" : "Refreshing…";
+      label.textContent = stage === "sync" ? t("Syncing with school…") : t("Refreshing…");
       const started = Date.now();
       if (stage === "sync") {
         emitSync();

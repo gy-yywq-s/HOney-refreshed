@@ -14,6 +14,7 @@ import { useLoadMoreSentinel } from "../../features/experiences/useLoadMoreSenti
 import { Skeleton } from "../../lib/motion";
 import type { FeedScope } from "../../api/types";
 import { BookmarkIcon, PenIcon, SearchIcon } from "../../components/icons";
+import { useT } from "../../lib/i18n";
 
 const SCOPE_STORAGE = "honey.exp.scope";
 const SHARE_PROMPT_EVERY = 8; // one gentle invitation per ~8 posts (§9.7.4)
@@ -23,6 +24,7 @@ export function ExperiencesFeedPage() {
     localStorage.getItem(SCOPE_STORAGE) === "school" ? "school" : "my_classes",
   );
   const feed = useFeedController(scope);
+  const t = useT();
 
   function switchScope(next: FeedScope) {
     setScope(next);
@@ -69,22 +71,22 @@ export function ExperiencesFeedPage() {
         <div className="feed-head__row">
           <h1 className="page-title">Experiences</h1>
           <div className="feed-head__tools">
-            <Link className="iconbtn" to="/experiences/explore" aria-label="Find someone or something" title="Find someone or something">
+            <Link className="iconbtn" to="/experiences/explore" aria-label={t("Find someone or something")} title={t("Find someone or something")}>
               <SearchIcon />
             </Link>
-            <Link className="iconbtn" to="/experiences/mine" aria-label="Your notes & posts" title="Your notes & posts">
+            <Link className="iconbtn" to="/experiences/mine" aria-label={t("Your notes & posts")} title={t("Your notes & posts")}>
               <BookmarkIcon />
             </Link>
             {showHeaderShare && (
-              <Link className="iconbtn iconbtn--primary" to="/experiences/compose" aria-label="Share an experience" title="Share an experience">
+              <Link className="iconbtn iconbtn--primary" to="/experiences/compose" aria-label={t("Share an experience")} title={t("Share an experience")}>
                 <PenIcon />
               </Link>
             )}
           </div>
         </div>
         <p className="feed-identity">
-          <strong>Written by students, for students.</strong>{" "}
-          <Link to="/experiences/why">Why this space exists</Link>
+          <strong>{t("Written by students, for students.")}</strong>{" "}
+          <Link to="/experiences/why">{t("Why this space exists")}</Link>
         </p>
         <div
           className="scope-switch"
@@ -112,7 +114,7 @@ export function ExperiencesFeedPage() {
             className={scope === "my_classes" ? "scope-switch__btn scope-switch__btn--on" : "scope-switch__btn"}
             onClick={() => switchScope("my_classes")}
           >
-            Your classes
+            {t("Your classes")}
           </button>
           <button
             role="tab"
@@ -123,14 +125,14 @@ export function ExperiencesFeedPage() {
             className={scope === "school" ? "scope-switch__btn scope-switch__btn--on" : "scope-switch__btn"}
             onClick={() => switchScope("school")}
           >
-            Around school
+            {t("Around school")}
           </button>
         </div>
       </header>
 
       {feed.newAvailable && (
         <button type="button" className="feed-new" onClick={() => void feed.jumpToNew()}>
-          New experiences are available
+          {t("New experiences are available")}
         </button>
       )}
 
@@ -154,28 +156,28 @@ export function ExperiencesFeedPage() {
                 void feed.refresh();
               }}
             >
-              Try again
+              {t("Try again")}
             </button>
           </div>
         ) : feed.items.length === 0 ? (
           scope === "my_classes" ? (
             <div className="feed-empty">
               <p>
-                <strong>Nothing from your classes yet.</strong>
+                <strong>{t("Nothing from your classes yet.")}</strong>
               </p>
-              <p className="muted">A small honest note is enough.</p>
+              <p className="muted">{t("A small honest note is enough.")}</p>
               <Link className="btn btn--primary" to="/experiences/compose">
-                Share the first one
+                {t("Share the first one")}
               </Link>
             </div>
           ) : (
             <div className="feed-empty">
               <p>
-                <strong>Nothing has been shared yet.</strong>
+                <strong>{t("Nothing has been shared yet.")}</strong>
               </p>
-              <p className="muted">A short thought is enough to begin.</p>
+              <p className="muted">{t("A short thought is enough to begin.")}</p>
               <Link className="btn btn--primary" to="/experiences/compose">
-                Share an experience
+                {t("Share an experience")}
               </Link>
             </div>
           )
@@ -192,9 +194,9 @@ export function ExperiencesFeedPage() {
             <div key={exp.id}>
               {i > 0 && i % SHARE_PROMPT_EVERY === 0 && (
                 <aside className="feed-invite">
-                  <p>Anything from school you want to put into words?</p>
+                  <p>{t("Anything from school you want to put into words?")}</p>
                   <Link className="btn btn--ghost btn--small" to="/experiences/compose">
-                    Share an experience
+                    {t("Share an experience")}
                   </Link>
                 </aside>
               )}
@@ -208,7 +210,7 @@ export function ExperiencesFeedPage() {
         <div ref={sentinel} aria-hidden="true" />
         {feed.loadingMore && <div className="feed-append muted">…</div>}
         {feed.end && feed.items.length > 0 && (
-          <div className="feed-end caption">You’re all caught up.</div>
+          <div className="feed-end caption">{t("You’re all caught up.")}</div>
         )}
       </div>
     </div>

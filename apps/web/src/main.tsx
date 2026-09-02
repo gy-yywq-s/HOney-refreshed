@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { startUpdateCheck } from "./lib/updateCheck";
+import { applyLang } from "./lib/i18n";
 // Self-hosted variable webfont (@fontsource) — no runtime font CDN. One
 // humanist sans everywhere (web-lab round 2, candidate A): the content has
 // the personality; the interface doesn't perform (review v3 §5.5.1).
@@ -12,6 +13,7 @@ import "./styles/components.css";
 import "./styles/features.css";
 import "./styles/admin.css";
 
+applyLang();
 const el = document.getElementById("root");
 if (el) {
   createRoot(el).render(

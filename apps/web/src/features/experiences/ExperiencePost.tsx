@@ -13,6 +13,7 @@ import type { EntitySummary, PublicExperience, ReportCategory } from "../../api/
 import { Modal } from "../../components/Modal";
 import { formatDayBucket } from "../../lib/format";
 import { PROVENANCE_LINE, Stars } from "../../pages/experiences/shared";
+import { useT } from "../../lib/i18n";
 
 
 const REACTION_EXPLAINER =
@@ -91,6 +92,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const t = useT();
   // Focus home for the report dialog: its opener (the menu item) unmounts
   // when the menu closes, so Modal's restore would land on <body> (a11y
   // audit) — return focus to the persistent overflow trigger instead.
@@ -216,7 +218,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
       </p>
       {clamped && (
         <button type="button" className="post__more" onClick={() => setExpanded(true)}>
-          Read more
+          {t("Read more")}
         </button>
       )}
 
@@ -226,7 +228,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           className={myValue === 1 ? "react-btn react-btn--on" : "react-btn"}
           title={REACTION_EXPLAINER}
           aria-pressed={myValue === 1}
-          aria-label="Matches my experience"
+          aria-label={t("Matches my experience")}
           aria-disabled={pendingValue === 1 || undefined}
           onClick={() => void react(1)}
         >
@@ -238,7 +240,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           className={myValue === -1 ? "react-btn react-btn--on" : "react-btn"}
           title={REACTION_EXPLAINER}
           aria-pressed={myValue === -1}
-          aria-label="Doesn’t match my experience"
+          aria-label={t("Doesn’t match my experience")}
           aria-disabled={pendingValue === -1 || undefined}
           onClick={() => void react(-1)}
         >
@@ -251,7 +253,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
             type="button"
             className="react-btn react-btn--more"
             ref={moreBtnRef}
-            aria-label="More options"
+            aria-label={t("More options")}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             aria-controls={menuId}
@@ -273,7 +275,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
                   setReporting(true);
                 }}
               >
-                Report
+                {t("Report")}
               </button>
             </div>
           )}

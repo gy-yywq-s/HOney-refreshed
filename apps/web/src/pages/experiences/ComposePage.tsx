@@ -16,6 +16,7 @@ import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime, formatRemaining, formatRelativeDay } from "../../lib/format";
 import { entityTitle, roomLabel } from "../../lib/displayNames";
 import { ChevronRightIcon } from "../../components/icons";
+import { t, useT } from "../../lib/i18n";
 import { privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote } from "../../lib/ownershipKeys";
 import { StarInput, describeCheckReasons, useNames } from "./shared";
@@ -37,6 +38,7 @@ export function ExperiencesComposePage() {
   const noteId = searchParams.get("noteId");
 
   const [note, setNote] = useState<PrivateNote | null>(null);
+  useT();
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -176,7 +178,7 @@ export function ExperiencesComposePage() {
   if (status.kind === "published") {
     return (
       <div className="stack">
-        <h1 className="page-title">Shared.</h1>
+        <h1 className="page-title">{t("Shared.")}</h1>
         <section className="card card--hero">
           <p>
             Your school identity is not shown with this Experience — it is stored without an author
@@ -200,7 +202,7 @@ export function ExperiencesComposePage() {
   if (saved) {
     return (
       <div className="stack">
-        <h1 className="page-title">Kept private</h1>
+        <h1 className="page-title">{t("Kept private")}</h1>
         <section className="card card--hero">
           <p>
             The note stays only on this device — it was never sent anywhere. You can edit, delete or
@@ -266,7 +268,7 @@ export function ExperiencesComposePage() {
                 history.reload();
               }}
             >
-              Try again
+              {t("Try again")}
             </button>
           </div>
         </section>
@@ -294,7 +296,7 @@ export function ExperiencesComposePage() {
                 entities.reload();
               }}
             >
-              Try again
+              {t("Try again")}
             </button>
           </div>
         </section>
@@ -345,15 +347,15 @@ export function ExperiencesComposePage() {
 
   return (
     <div className="compose-screen">
-      <h1 className="page-title">{target ? "Share an experience" : "What is this about?"}</h1>
+      <h1 className="page-title">{target ? t("Share an experience") : t("What is this about?")}</h1>
 
       {target ? (
         <section className="compose-target" aria-label="What this is about">
           <div className="compose-target__row">
-            <span className="eyebrow">About</span>
+            <span className="eyebrow">{t("About")}</span>
             {!noteId && (
               <Link className="compose-target__change" to="/experiences/compose">
-                Change
+                {t("Change")}
               </Link>
             )}
           </div>
@@ -365,9 +367,9 @@ export function ExperiencesComposePage() {
            editor; History and Explore are secondary rows, not hero buttons. */
         <section className="picker focus-landing" aria-label="What is this about?" ref={landing.ref} tabIndex={-1}>
           <p className="caption picker__hint">
-            One of your own lessons, or a teacher, course, place or dish.
+            {t("One of your own lessons, or a teacher, course, place or dish.")}
           </p>
-          <h3 className="overline">Recent lessons</h3>
+          <h3 className="overline">{t("Recent lessons")}</h3>
           {recentLessons.loading ? (
             <Skeleton lines={4} />
           ) : recentLessons.error ? (
@@ -380,7 +382,7 @@ export function ExperiencesComposePage() {
                   recentLessons.reload();
                 }}
               >
-                Try again
+                {t("Try again")}
               </button>
             </div>
           ) : recentLessons.data && recentLessons.data.lessons.length > 0 ? (
@@ -405,24 +407,24 @@ export function ExperiencesComposePage() {
               ))}
             </ul>
           ) : (
-            <p className="caption">No lessons in your history yet.</p>
+            <p className="caption">{t("No lessons in your history yet.")}</p>
           )}
           <ul className="entity-list">
             <li>
               <Link className="entity-row" to="/history?select=1">
                 <span className="entity-row__main">
-                  <span className="entity-row__title">See full History</span>
+                  <span className="entity-row__title">{t("See full History")}</span>
                 </span>
                 <ChevronRightIcon size={18} />
               </Link>
             </li>
           </ul>
-          <h3 className="overline">Other school context</h3>
+          <h3 className="overline">{t("Other school context")}</h3>
           <ul className="entity-list">
             <li>
               <Link className="entity-row" to="/experiences/explore">
                 <span className="entity-row__main">
-                  <span className="entity-row__title">Teachers, courses, places and food</span>
+                  <span className="entity-row__title">{t("Teachers, courses, places and food")}</span>
                 </span>
                 <ChevronRightIcon size={18} />
               </Link>
@@ -435,29 +437,29 @@ export function ExperiencesComposePage() {
         <section className="compose-editor focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label="Editor">
           <div className="field">
             <label className="field__label" htmlFor="compose-body">
-              {COMPOSE_PROMPT}
+              {t(COMPOSE_PROMPT)}
             </label>
             <textarea
               id="compose-body"
               className="input compose-textarea"
               rows={4}
               maxLength={5000}
-              placeholder="Your own experience, in your own words"
+              placeholder={t("Your own experience, in your own words")}
               value={body}
               onChange={(e) => setBody(e.target.value)}
               disabled={status.kind === "nudge"}
             />
-            <span className="text-4 compose-hint">{COMPOSE_HELPER}</span>
+            <span className="text-4 compose-hint">{t(COMPOSE_HELPER)}</span>
             {body.trim().length > 0 && (
               <span className="caption compose-draft" role="status">
-                Draft saved on this device
+                {t("Draft saved on this device")}
               </span>
             )}
           </div>
 
           {target.isDish && (
             <div className="field">
-              <span className="field__label">Rating (dishes only — optional)</span>
+              <span className="field__label">{t("Rating (dishes only — optional)")}</span>
               <StarInput value={rating} onChange={setRating} />
             </div>
           )}
@@ -465,8 +467,8 @@ export function ExperiencesComposePage() {
           {pausing && !notice && (
             <div className="banner banner--warning" role="status">
               <span>
-                Cooling · you can share these words in {formatRemaining(pauseUntil - Date.now())}. Edit them
-                to say it differently and check again now.
+                {t("Cooling · you can share these words in")} {formatRemaining(pauseUntil - Date.now())}.{" "}
+                {t("Edit them to say it differently and check again now.")}
               </span>
             </div>
           )}
@@ -508,26 +510,28 @@ export function ExperiencesComposePage() {
                 onClick={() => void composer.publish()}
               >
                 {busy
-                  ? "Checking…"
+                  ? t("Checking…")
                   : pausing
-                    ? `Share in ${formatRemaining(pauseUntil - Date.now())}`
+                    ? `${t("Share in")} ${formatRemaining(pauseUntil - Date.now())}`
                     : note?.cooldown
-                      ? "Share now"
-                      : "Continue to share"}
+                      ? composer.heldCooldown()
+                        ? t("Share now")
+                        : t("Check and share")
+                      : t("Continue to share")}
               </button>
               <button
                 className="btn btn--ghost"
                 disabled={saveBusy || body.trim().length === 0 || busy}
                 onClick={() => void savePrivately()}
               >
-                {saveBusy ? "Saving…" : "Keep private"}
+                {saveBusy ? t("Saving…") : t("Keep private")}
               </button>
             </div>
           )}
 
           <p className="text-4" style={{ marginBottom: 0 }}>
-            Public sharing runs a text check. Public Experiences are stored without an ordinary
-            author field. <Link to="/settings/privacy">How anonymity works</Link>
+            {t("Public sharing runs a text check. Public Experiences are stored without an ordinary author field.")}{" "}
+            <Link to="/settings/privacy">{t("How anonymity works")}</Link>
           </p>
         </section>
       )}
@@ -552,10 +556,9 @@ function NudgePreflight({
 }) {
   return (
     <section className="card nudge" aria-label="Before you publish">
-      <span className="eyebrow">Before you share</span>
+      <span className="eyebrow">{t("Before you share")}</span>
       <p style={{ marginTop: 0 }}>
-        This can be shared as it is. Is there anything that would help someone understand what you
-        mean?
+        {t("This can be shared as it is. Is there anything that would help someone understand what you mean?")}
       </p>
       {describeCheckReasons(reasons).length > 0 && (
         <ul className="compose-reasons">
@@ -566,13 +569,13 @@ function NudgePreflight({
       )}
       <div className="card-actions compose-actions">
         <button className="btn btn--primary" disabled={busy} onClick={onPublish}>
-          {busy ? "Sharing…" : "Share as written"}
+          {busy ? t("Saving…") : t("Share as written")}
         </button>
         <button className="btn btn--ghost" disabled={busy} onClick={onAddContext}>
-          Add a little context
+          {t("Add a little context")}
         </button>
         <button className="btn btn--ghost" disabled={busy || saveBusy} onClick={onKeepPrivate}>
-          Keep private
+          {t("Keep private")}
         </button>
       </div>
     </section>
@@ -583,17 +586,17 @@ function CooldownPanel({ retryAt, onOk }: { retryAt: number; onOk: () => void })
   const remaining = Math.max(0, retryAt - Date.now());
   return (
     <section className="card nudge" aria-label="Cooling off">
-      <span className="eyebrow">Publishing can wait</span>
+      <span className="eyebrow">{t("Publishing can wait")}</span>
       <p style={{ marginTop: 0 }}>
         Your words are kept in your private notes on this device. You can share them in{" "}
         {formatRemaining(remaining)} — or edit them to say it differently and check again sooner.
       </p>
       <p className="text-3" style={{ marginTop: 0 }}>
-        This is a pause, not a judgment about your experience.
+        {t("This is a pause, not a judgment about your experience.")}
       </p>
       <div className="card-actions compose-actions">
         <button className="btn btn--primary" onClick={onOk}>
-          OK
+          {t("OK")}
         </button>
       </div>
     </section>

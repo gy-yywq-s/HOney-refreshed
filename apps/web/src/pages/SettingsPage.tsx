@@ -17,6 +17,7 @@ import { portalCredentials } from "../lib/portalCredentials";
 import { timeAgo } from "../lib/format";
 import { ownershipKeys } from "../lib/ownershipKeys";
 import { getSurface } from "../lib/theme";
+import { setLang, t, useLang } from "../lib/i18n";
 
 type PendingConfirm = "disconnect" | "delete-data" | "delete-account" | null;
 type Section = "account" | "connection" | "data" | "privacy" | "appearance";
@@ -49,6 +50,7 @@ export function SettingsPage() {
   }, [section]);
   const { me, refreshMe, signOut } = useAuth();
   const navigate = useNavigate();
+  const lang = useLang();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ tone: "success" | "danger"; text: string } | null>(
     null,
@@ -74,12 +76,12 @@ export function SettingsPage() {
 
   const connection = me.connection;
   const connectionLine = !connection.connected
-    ? "Not connected"
+    ? t("Not connected")
     : !connection.portalTokenValid
-      ? "Connected · portal session expired"
+      ? `${t("Connected")} · ${t("portal session expired")}`
       : connection.lastSyncedAt
-        ? `Connected · synced ${timeAgo(connection.lastSyncedAt)}`
-        : "Connected · never synced";
+        ? `${t("Connected")} · ${t("synced")} ${timeAgo(connection.lastSyncedAt)}`
+        : `${t("Connected")} · ${t("never synced")}`;
 
   const feedbackEl = feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>;
 
@@ -90,7 +92,7 @@ export function SettingsPage() {
         {feedbackEl}
 
         <section className="rowlist" aria-label="Account">
-          <h2 className="overline">Account</h2>
+          <h2 className="overline">{t("Account")}</h2>
           <Link className="row" to="/settings/account">
             <span className="row__main">
               <span className="row__title">{me.displayName}</span>
@@ -101,18 +103,18 @@ export function SettingsPage() {
         </section>
 
         <section className="rowlist" aria-label="School connection">
-          <h2 className="overline">School connection</h2>
+          <h2 className="overline">{t("School connection")}</h2>
           <Link className="row" to="/settings/connection">
             <span className="row__main">
               <span className="row__title">{connectionLine}</span>
-              <span className="row__sub">Sync, reconnect, saved login</span>
+              <span className="row__sub">{t("Sync, reconnect, saved login")}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
           <div className="row">
             <span className="row__main">
-              <span className="row__title">Stay connected on this device</span>
-              <span className="row__sub">Reconnects automatically after routine portal time-outs.</span>
+              <span className="row__title">{t("Stay connected on this device")}</span>
+              <span className="row__sub">{t("Reconnects automatically after routine portal time-outs.")}</span>
             </span>
             <Switch
               on={stayConnected}
@@ -129,12 +131,12 @@ export function SettingsPage() {
         </section>
 
         <section className="rowlist" aria-label="Imported data">
-          <h2 className="overline">Imported data</h2>
+          <h2 className="overline">{t("Imported data")}</h2>
           <Link className="row" to="/settings/data">
             <span className="row__main">
-              <span className="row__title">Timetable &amp; lesson history</span>
+              <span className="row__title">{t("Timetable & lesson history")}</span>
               <span className="row__sub">
-                {connection.lastSyncedAt ? `Last import ${timeAgo(connection.lastSyncedAt)}` : "Not imported yet"}
+                {connection.lastSyncedAt ? `${t("Last import")} ${timeAgo(connection.lastSyncedAt)}` : t("Not imported yet")}
               </span>
             </span>
             <ChevronRightIcon size={18} />
@@ -142,49 +144,49 @@ export function SettingsPage() {
         </section>
 
         <section className="rowlist" aria-label="Experiences and privacy">
-          <h2 className="overline">Experiences &amp; privacy</h2>
+          <h2 className="overline">{t("Experiences & privacy")}</h2>
           <Link className="row" to="/experiences/mine">
             <span className="row__main">
-              <span className="row__title">Your notes &amp; post controls</span>
+              <span className="row__title">{t("Your notes & post controls")}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
           <Link className="row" to="/settings/privacy">
             <span className="row__main">
-              <span className="row__title">How anonymity works</span>
+              <span className="row__title">{t("How anonymity works")}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
         </section>
 
         <section className="rowlist" aria-label="Appearance">
-          <h2 className="overline">Appearance</h2>
+          <h2 className="overline">{t("Appearance")}</h2>
           <Link className="row" to="/settings/appearance">
             <span className="row__main">
-              <span className="row__title">Background</span>
-              <span className="row__sub">{SURFACE_LABEL[getSurface()] ?? "Stone"}</span>
+              <span className="row__title">{t("Background")} · {t("Language")}</span>
+              <span className="row__sub">{t(SURFACE_LABEL[getSurface()] ?? "Stone")} · {lang === "zh" ? "中文" : "English"}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
         </section>
 
         <section className="rowlist" aria-label="About">
-          <h2 className="overline">About</h2>
+          <h2 className="overline">{t("About")}</h2>
           <div className="row">
             <span className="row__main">
-              <span className="row__title">Build {__BUILD__}</span>
-              <span className="row__sub">The app reloads itself when a newer build is live.</span>
+              <span className="row__title">{t("Build")} {__BUILD__}</span>
+              <span className="row__sub">{t("The app reloads itself when a newer build is live.")}</span>
             </span>
           </div>
         </section>
 
         {me.isAdmin && (
           <section className="rowlist" aria-label="Admin">
-            <h2 className="overline">Admin</h2>
+            <h2 className="overline">{t("Admin")}</h2>
             <Link className="row" to="/dash">
               <span className="row__main">
-                <span className="row__title">Open Dash</span>
-                <span className="row__sub">The operational console for admins.</span>
+                <span className="row__title">{t("Open Dash")}</span>
+                <span className="row__sub">{t("The operational console for admins.")}</span>
               </span>
               <ChevronRightIcon size={18} />
             </Link>
@@ -220,7 +222,7 @@ export function SettingsPage() {
                 </span>
               </span>
               <button type="button" className="btn btn--danger-outline btn--small" onClick={() => void signOut()}>
-                Sign out
+                {t("Sign out")}
               </button>
             </div>
           </section>
@@ -232,7 +234,7 @@ export function SettingsPage() {
               stay — they carry no author ID and are controlled only by the keys on your devices.
             </p>
             <button className="btn btn--danger" onClick={() => setConfirm("delete-account")}>
-              Delete account…
+              {t("Delete account…")}
             </button>
           </section>
         </>
@@ -275,11 +277,11 @@ export function SettingsPage() {
                     })
                   }
                 >
-                  {busyKey === "sync" ? "Syncing…" : "Sync now"}
+                  {busyKey === "sync" ? t("Syncing with school…") : t("Sync now")}
                 </button>
                 {!connection.portalTokenValid && (
                   <button className="btn btn--ghost" onClick={() => setShowReconnect("reconnect")}>
-                    Reconnect
+                    {t("Reconnect")}
                   </button>
                 )}
                 <button
@@ -287,7 +289,7 @@ export function SettingsPage() {
                   onClick={() => setConfirm("disconnect")}
                   disabled={busyKey === "disconnect"}
                 >
-                  Disconnect
+                  {t("Disconnect")}
                 </button>
               </div>
             )}
@@ -295,8 +297,8 @@ export function SettingsPage() {
           <section className="rowlist" aria-label="Saved login">
             <div className="row">
               <span className="row__main">
-                <span className="row__title">Stay connected on this device</span>
-                <span className="row__sub">Reconnects automatically after routine portal time-outs.</span>
+                <span className="row__title">{t("Stay connected on this device")}</span>
+                <span className="row__sub">{t("Reconnects automatically after routine portal time-outs.")}</span>
               </span>
               <Switch
                 on={stayConnected}
@@ -327,7 +329,7 @@ export function SettingsPage() {
           <section className="rowlist" aria-label="Imported data">
             <div className="row">
               <span className="row__main">
-                <span className="row__title">Timetable &amp; lesson history</span>
+                <span className="row__title">{t("Timetable & lesson history")}</span>
                 <span className="row__sub">
                   Imported from the school portal when your account is created, and again whenever
                   you sync — Sync now, or pulling the timetable down to sync.
@@ -350,7 +352,7 @@ export function SettingsPage() {
               room and lesson entries stay. You can import again with Sync now.
             </p>
             <button className="btn btn--danger" onClick={() => setConfirm("delete-data")}>
-              Delete imported data…
+              {t("Delete imported data…")}
             </button>
           </section>
         </>
@@ -405,9 +407,31 @@ export function SettingsPage() {
       )}
 
       {section === "appearance" && (
-        <section aria-label="Background">
-          <ThemeControls />
-        </section>
+        <>
+          <section aria-label="Background">
+            <ThemeControls />
+          </section>
+          <section className="rowlist" aria-label="Language">
+            <h2 className="overline">{t("Language")}</h2>
+            <div className="row row--stack">
+              <span className="row__main">
+                <span className="row__sub">
+                  {lang === "zh"
+                    ? "界面用中文；HOney、Home、Experiences、Timetable、History、Explore、Settings 这些名字保持英文。"
+                    : "Sentences and actions switch; HOney, Home, Experiences, Timetable, History, Explore and Settings keep their names."}
+                </span>
+              </span>
+              <div className="cat-chips" role="radiogroup" aria-label="Language">
+                <button type="button" role="radio" aria-checked={lang === "en"} className="chip-tab" aria-selected={lang === "en"} onClick={() => setLang("en")}>
+                  English
+                </button>
+                <button type="button" role="radio" aria-checked={lang === "zh"} className="chip-tab" aria-selected={lang === "zh"} onClick={() => setLang("zh")}>
+                  中文
+                </button>
+              </div>
+            </div>
+          </section>
+        </>
       )}
 
       {confirm === "disconnect" && (

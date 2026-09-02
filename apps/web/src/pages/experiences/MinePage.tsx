@@ -17,6 +17,7 @@ import { Skeleton } from "../../lib/motion";
 import { apiCache, useApi } from "../../lib/useApi";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Stars, provenanceLabel, useNames } from "./shared";
+import { t, useT } from "../../lib/i18n";
 
 interface StatusMeta {
   label: string;
@@ -49,6 +50,7 @@ export function ExperiencesMinePage() {
   const [revoking, setRevoking] = useState<string | null>(null); // ownership key
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const { names, error: namesError, loading: namesLoading, reload: reloadNames } = useNames();
+  useT();
 
   const keyList = useMemo(() => keys.map((k) => k.key), [keys]);
   const mine = useApi(
@@ -129,9 +131,9 @@ export function ExperiencesMinePage() {
   return (
     <div className="stack focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label="Your notes & posts">
       <header className="page-head page-head--tools">
-        <h1 className="page-title">Your notes &amp; posts</h1>
+        <h1 className="page-title">{t("Your notes & posts")}</h1>
         {!empty && (
-          <Link className="iconbtn iconbtn--primary" to="/experiences/compose" aria-label="Share an experience" title="Share an experience">
+          <Link className="iconbtn iconbtn--primary" to="/experiences/compose" aria-label={t("Share an experience")} title={t("Share an experience")}>
             <PenIcon />
           </Link>
         )}
@@ -140,10 +142,10 @@ export function ExperiencesMinePage() {
       {keys.length > 0 && (
         <Link className="row row--quiet" to="/settings/privacy#keys">
           <span className="row__main">
-            <span className="row__title">Post controls are stored on this device.</span>
+            <span className="row__title">{t("Post controls are stored on this device.")}</span>
           </span>
           <span className="row__act">
-            Manage <ChevronRightIcon size={16} />
+            {t("Manage")} <ChevronRightIcon size={16} />
           </span>
         </Link>
       )}
@@ -160,11 +162,11 @@ export function ExperiencesMinePage() {
       {empty ? (
         <div className="feed-empty">
           <p>
-            <strong>Nothing here yet.</strong>
+            <strong>{t("Nothing here yet.")}</strong>
           </p>
-          <p className="muted">Keep something private or share an Experience when you are ready.</p>
+          <p className="muted">{t("Keep something private or share an Experience when you are ready.")}</p>
           <Link className="btn btn--primary" to="/experiences/compose">
-            Share an experience
+            {t("Share an experience")}
           </Link>
         </div>
       ) : mine.loading || notes === null ? (
@@ -180,7 +182,7 @@ export function ExperiencesMinePage() {
         <>
           {privateList.length > 0 && (
             <section aria-label="Private notes" className="mine-group">
-              <h2 className="overline">Private notes</h2>
+              <h2 className="overline">{t("Private notes")}</h2>
               {privateList.map((note) => (
                 <PrivateNoteRow key={note.id} note={note} onDelete={(id) => void deleteNote(id)} />
               ))}
@@ -188,7 +190,7 @@ export function ExperiencesMinePage() {
           )}
           {shared.length > 0 && (
             <section aria-label="Shared" className="mine-group">
-              <h2 className="overline">Shared</h2>
+              <h2 className="overline">{t("Shared")}</h2>
               {shared.map((exp) => (
                 <SharedRow
                   key={exp.id}
@@ -274,7 +276,7 @@ function SharedRow({
             disabled={busy}
             onClick={() => onRevoke(ownershipKey)}
           >
-            Remove…
+            {t("Remove…")}
           </button>
         )}
       </div>
@@ -306,22 +308,22 @@ function PrivateNoteRow({
       <div className="mine-item__foot">
         {cooling ? (
           <span className="mine-item__status mine-item__status--cooling">
-            Cooling · you can share this in {formatRemaining(remaining)}
+            {t("Cooling · you can share this in")} {formatRemaining(remaining)}
           </span>
         ) : paused ? (
-          <span className="mine-item__status mine-item__status--ok">Pause over · ready to share</span>
+          <span className="mine-item__status mine-item__status--ok">{t("Pause over · ready to share")}</span>
         ) : (
-          <span className="mine-item__status mine-item__status--muted">Private · only on this device</span>
+          <span className="mine-item__status mine-item__status--muted">{t("Private · only on this device")}</span>
         )}
         <span className="mine-item__actions">
           <Link
             className={paused ? "btn btn--primary btn--small" : "btn btn--ghost btn--small"}
             to={`/experiences/compose?noteId=${encodeURIComponent(note.id)}`}
           >
-            {paused ? "Share now" : cooling ? "Edit" : "Edit / share"}
+            {paused ? t("Share now") : cooling ? t("Edit") : t("Edit / share")}
           </Link>
           <button type="button" className="btn btn--ghost btn--small" onClick={() => setConfirming(true)}>
-            Delete
+            {t("Delete")}
           </button>
         </span>
       </div>
