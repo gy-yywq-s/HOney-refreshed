@@ -19,6 +19,10 @@ export interface HOneyConfig {
   /** vault.sqlite — a separate file from the core database by design. */
   vaultDbPath: string;
   production: boolean;
+  /** The Community process's loopback address for the Dash proxy (never a public URL). */
+  communityInternalUrl: string;
+  /** Shared with Community for /internal/admin/* only. */
+  internalSecret: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
@@ -30,7 +34,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
   const defaultDb = env.HOSTD_DATA_DIR ? `${env.HOSTD_DATA_DIR}/honey.db` : "./honey.db";
   const dbPath = env.HONEY_DB_PATH ?? defaultDb;
   const dataDir = dirname(dbPath);
+  if (!env.HONEY_INTERNAL_SECRET && env.NODE_ENV === "production") {
+    throw new Error("HONEY_INTERNAL_SECRET is required in production");
+  }
   return {
+    communityInternalUrl: env.HONEY_COMMUNITY_INTERNAL_URL ?? "http://127.0.0.1:8873",
+    internalSecret: env.HONEY_INTERNAL_SECRET ?? "dev-internal-secret",
     dbPath,
     keysDir: env.HONEY_KEYS_DIR ?? join(dataDir, "keys"),
     vaultDbPath: env.HONEY_VAULT_DB_PATH ?? join(dataDir, "vault.db"),

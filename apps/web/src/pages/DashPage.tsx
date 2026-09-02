@@ -86,6 +86,12 @@ export function DashPage() {
       <h1 className="page-title">Dash</h1>
       {feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>}
       {overview.error && <div role="alert" className="banner banner--danger">{overview.error}</div>}
+      {overview.data && !overview.data.communityReachable && (
+        <div role="alert" className="banner banner--danger">The Community process is unreachable: post counts, reports and moderation settings below are unavailable.</div>
+      )}
+      {overview.data && !overview.data.issuerReady && (
+        <div className="banner banner--warning">No blind-eligibility issuer key is loaded: students cannot share until `issuer:keygen` has run on the server.</div>
+      )}
 
       <section aria-label="Overview">
         <h2 className="overline">Overview</h2>

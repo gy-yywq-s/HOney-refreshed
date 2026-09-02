@@ -1,0 +1,23 @@
+[Unit]
+Description=HOney Core - accounts, canonical school data, eligibility issuer, Control Vault (loopback :8872)
+After=network.target
+
+[Service]
+Type=simple
+User=honey
+Group=honey
+WorkingDirectory=/home/honey/app
+EnvironmentFile=/home/honey/.secrets/honey.env
+ExecStart=/usr/bin/node packages/backend/dist/server.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/honey/data
+ProtectHome=read-only
+# The Community and Access databases are hidden from this process.
+InaccessiblePaths=-/home/honey/data/community.db -/home/honey/data/community.db-wal -/home/honey/data/community.db-shm -/home/honey/data/access.db -/home/honey/data/access.db-wal -/home/honey/data/access.db-shm -/home/honey/.secrets/community.env -/home/honey/.secrets/access.env
+
+[Install]
+WantedBy=multi-user.target

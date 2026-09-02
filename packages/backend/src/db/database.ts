@@ -322,6 +322,21 @@ const MIGRATIONS: string[] = [
   ) STRICT;
   CREATE INDEX idx_issuance_day ON issuance_marks(day);
   `,
+  // 005 — the v1 Experiences store leaves Core (spec §29, §41): posts,
+  // reactions, reports, passes and account-side abuse counters now live in the
+  // Community process's own database. Development posts are not migrated by
+  // decision. Core keeps invite marks and its issuance switches.
+  `
+  DROP TABLE IF EXISTS experience_associations;
+  DROP TABLE IF EXISTS experience_eligibility;
+  DROP TABLE IF EXISTS reactions;
+  DROP TABLE IF EXISTS reports;
+  DROP TABLE IF EXISTS report_rate;
+  DROP TABLE IF EXISTS review_marks;
+  DROP TABLE IF EXISTS pass_nonces;
+  DROP TABLE IF EXISTS abuse_counters;
+  DROP TABLE IF EXISTS experiences;
+  `,
 ];
 
 export class SchemaEpochError extends Error {

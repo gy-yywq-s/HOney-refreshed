@@ -28,7 +28,7 @@ export function registerCommunityRoutes(app: FastifyInstance, ctx: AppContext): 
       academicYear: ctx.profile.academicYearFor(Date.now()),
       teachers: ids("SELECT DISTINCT teacher_id AS id FROM user_lesson_exposures WHERE honey_id = ? AND teacher_id IS NOT NULL"),
       courses: ids("SELECT DISTINCT course_id AS id FROM user_lesson_exposures WHERE honey_id = ? AND course_id IS NOT NULL"),
-      lessons: ids("SELECT lesson_instance_id AS id FROM user_lesson_exposures WHERE honey_id = ?").map((id) => ctx.experiences.lessonToken(id)),
+      lessons: ids("SELECT lesson_instance_id AS id FROM user_lesson_exposures WHERE honey_id = ?").map((id) => ctx.eligibility.lessonToken(id)),
     };
   });
 
@@ -48,7 +48,7 @@ export function registerCommunityRoutes(app: FastifyInstance, ctx: AppContext): 
       if (typeof blindedMessage !== "string" || !B64URL.test(blindedMessage) || blindedMessage.length < 300 || blindedMessage.length > 400) {
         return reply.code(400).send({ error: "blinded_message_invalid" });
       }
-      const gated = ctx.experiences.gate(user.honey_id);
+      const gated = ctx.eligibility.gate();
       if (gated) return reply.code(422).send({ error: gated });
 
       const now = Date.now();
@@ -68,7 +68,7 @@ export function registerCommunityRoutes(app: FastifyInstance, ctx: AppContext): 
           week: portalWeekIndex(new Date(now)),
         };
       } else {
-        const resolved = ctx.experiences.resolveTarget(user.honey_id, lessonId, entityKey);
+        const resolved = ctx.eligibility.resolveTarget(user.honey_id, lessonId, entityKey);
         if (!resolved.ok) return reply.code(422).send({ error: resolved.error });
         const t = resolved.target;
         if (!ctx.limits.take(user.honey_id, t.entityKey, ISSUANCE_PER_SCOPE_PER_DAY)) {
@@ -96,7 +96,7 @@ export function registerCommunityRoutes(app: FastifyInstance, ctx: AppContext): 
           academicYear,
           scope: t.entityKey,
           contexts,
-          provenance: t.provenance as EligibilityInfo["provenance"],
+          provenance: t.provenance,
           week: portalWeekIndex(new Date(now)),
         };
       }

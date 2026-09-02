@@ -20,40 +20,23 @@ import type {
   AdminLlmTestResponse,
   AdminOverview,
   AdminReportsResponse,
-  CheckExperienceInput,
-  CheckExperienceResponse,
   DirectoryResponse,
   EntitiesResponse,
   EntityType,
-  ExperienceEligibilityInput,
-  ExperienceEligibilityResponse,
-  ExperiencesFeedParams,
-  ExperiencesFeedResponse,
-  FeedPage,
-  FeedParams,
-  FeedScope,
-  FeedUpdatesResponse,
-  FromMyClassesParams,
   HistoryParams,
   HistoryResponse,
   KillSwitchName,
   LoginInput,
   LoginResponse,
   Me,
-  MyExperiencesResponse,
   NextLessonResponse,
-  PublishExperienceInput,
-  PublishExperienceResponse,
-  ReactResponse,
-  ReportCategory,
   SessionTokens,
   StandaloneMode,
   SyncResponse,
   PortalEntryResponse,
   TimetableResponse,
-  SearchResponse,
-  EntityStats,
   TimetableRangeResponse,
+  UnresolvedLabel,
 } from "./types";
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -205,7 +188,7 @@ export class ApiClient {
     return this.request("GET", "/api/directory");
   }
 
-  // ---- Experiences (community) ----
+  // ---- The public entity directory (posts themselves live in the Community process) ----
 
   entities(type?: EntityType, q?: string): Promise<EntitiesResponse> {
     const query = new URLSearchParams();
@@ -215,91 +198,11 @@ export class ApiClient {
     return this.request("GET", qs ? `/api/entities?${qs}` : "/api/entities");
   }
 
-  experiencesFeed(params: ExperiencesFeedParams = {}): Promise<ExperiencesFeedResponse> {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== "") query.set(key, String(value));
-    }
-    const qs = query.toString();
-    return this.request("GET", qs ? `/api/experiences?${qs}` : "/api/experiences");
-  }
-
-  /** Cursor-paged social stream (review v3 §12.6). Cursors are opaque — pass back verbatim. */
-  /** Find mode: entities + published experiences matching the words. */
-  search(q: string): Promise<SearchResponse> {
-    return this.request("GET", `/api/experiences/search?q=${encodeURIComponent(q)}`);
-  }
-
-  /** Descriptive counts for an entity page — never a score. */
-  entityStats(entityKey: string): Promise<EntityStats> {
-    return this.request("GET", `/api/experiences/stats?entityKey=${encodeURIComponent(entityKey)}`);
-  }
-
-  feedPage(params: FeedParams): Promise<FeedPage> {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== "") query.set(key, String(value));
-    }
-    return this.request("GET", `/api/experiences/feed?${query.toString()}`);
-  }
-
-  /** Quiet new-content probe — never moves the reader (§9.6C). */
-  feedUpdates(scope: FeedScope, head: string): Promise<FeedUpdatesResponse> {
-    const query = new URLSearchParams({ scope, head });
-    return this.request("GET", `/api/experiences/feed/updates?${query.toString()}`);
-  }
-
-  /** Domain query (audit §4.2): posts relevant to my verified exposure. */
-  fromMyClasses(params: FromMyClassesParams = {}): Promise<ExperiencesFeedResponse> {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== "") query.set(key, String(value));
-    }
-    const qs = query.toString();
-    return this.request(
-      "GET",
-      qs ? `/api/experiences/from-my-classes?${qs}` : "/api/experiences/from-my-classes",
-    );
-  }
-
-  // ---- Publication flow: eligibility → check → publish (contract §Experiences) ----
-
-  /** Step 1: authenticated, single-use, scope-bound eligibility token. */
-  experienceEligibility(
-    input: ExperienceEligibilityInput,
-  ): Promise<ExperienceEligibilityResponse> {
-    return this.request("POST", "/api/experiences/eligibility", input);
-  }
-
-  /** Step 2: synchronous moderation preflight. The draft is NEVER persisted. */
-  checkExperience(input: CheckExperienceInput): Promise<CheckExperienceResponse> {
-    return this.request("POST", "/api/experiences/check", input);
-  }
-
-  /** Step 3: publish. No session auth — the eligibility token + pass are the only proof. */
-  publishExperience(input: PublishExperienceInput): Promise<PublishExperienceResponse> {
-    return this.request("POST", "/api/experiences/publish", input, { auth: false });
-  }
-
-  /** Own submissions, proved by client-held keys (any status). */
-  myExperiences(keys: string[]): Promise<MyExperiencesResponse> {
-    return this.request("POST", "/api/experiences/mine", { keys });
-  }
-
-  revokeExperience(ownershipKey: string): Promise<{ ok: boolean }> {
-    return this.request("POST", "/api/experiences/revoke", { ownershipKey });
-  }
-
-  reactToExperience(id: string, value: 1 | -1 | 0): Promise<ReactResponse> {
-    return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/react`, { value });
-  }
-
-  /** Reports are category-only (audit §3.9): the backend rejects any free text. */
-  reportExperience(id: string, category: ReportCategory): Promise<{ ok: boolean }> {
-    return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/report`, { category });
-  }
-
   // ---- Admin dash (isAdmin only) ----
+
+  adminUnresolvedLabels(): Promise<{ labels: UnresolvedLabel[] }> {
+    return this.request("GET", "/api/admin/import/unresolved");
+  }
 
   adminOverview(): Promise<AdminOverview> {
     return this.request("GET", "/api/admin/overview");

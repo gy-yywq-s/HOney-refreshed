@@ -18,7 +18,7 @@ import { recentContexts } from "../../lib/recentContexts";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
 import { ChevronRightIcon, CloseIcon, SearchIcon } from "../../components/icons";
-import { entityPath } from "./shared";
+import { entityPath, searchExperiences } from "./shared";
 import { useT } from "../../lib/i18n";
 
 const SECTIONS: { type: EntityType; label: string }[] = [
@@ -70,9 +70,9 @@ export function ExperiencesExplorePage() {
   }, [q]);
   const searchQ = debounced.length >= 2 ? debounced : "";
   const search = useApi(
-    () => (searchQ ? api.search(searchQ) : Promise.resolve(null)),
+    () => (searchQ ? searchExperiences(searchQ) : Promise.resolve(null)),
     [searchQ],
-    searchQ ? `search:${searchQ}` : undefined,
+    searchQ ? `community:search:${searchQ}` : undefined,
   );
   const recent = recentContexts.list();
   // Arm on every flag a retry on this page reloads (r9 contract).

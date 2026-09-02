@@ -12,23 +12,26 @@ import { ImportService } from "./services/importer.js";
 import { TimetableService } from "./services/timetable.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerDataRoutes } from "./routes/data.js";
-import { registerExperienceRoutes } from "./routes/experiences.js";
+import { registerEntityRoutes } from "./routes/entities.js";
 import { registerAdminRoutes } from "./routes/admin.js";
 import { registerCommunityRoutes } from "./routes/community.js";
 import { registerVaultRoutes } from "./routes/vault.js";
 import { EntityDirectory } from "./school/directory.js";
 import { profileFor } from "./school/profiles/huayaopudong.js";
-import { ExperienceService } from "./experiences/service.js";
 import { SettingsService } from "./experiences/settings.js";
 import { EligibilityIssuer, type IssuerKeyFile } from "./community-issuer/issuer.js";
+import { EligibilityService } from "./community-issuer/eligibility.js";
 import { IssuanceLimits } from "./community-issuer/issuance-limits.js";
+import { CommunityAdminClient } from "./community-issuer/community-admin.js";
 import { openVaultDatabase } from "./control-vault/vault-db.js";
 import { ControlVaultStore } from "./control-vault/vault-records.js";
 import { deriveKey } from "./crypto.js";
 
-// HOney Core backend (Bands 3 & 4). UI-agnostic domain API only — no screen
-// shapes here (spec §14). The server-side connector never holds a school
-// password: it acts on per-login transients or sealed short-lived tokens.
+// HOney Core (Bands 3 & 4): accounts, canonical school data, the blind
+// eligibility issuer and the Control Vault. UI-agnostic domain API only — no
+// screen shapes here (spec §14). The server-side connector never holds a
+// school password. Posts live in the Community process; Core has no handle
+// to them by construction.
 
 /** Server-side vault: no credentials, no persisted coordinator session (login-per-request model). */
 const emptyVault: CredentialVault = {
@@ -50,6 +53,8 @@ export interface BuildAppOptions {
   issuerKey?: IssuerKeyFile;
   /** vault.sqlite path for tests (defaults to config.vaultDbPath). */
   vaultDbPath?: string;
+  /** Community admin transport for tests. */
+  communityFetch?: typeof fetch;
 }
 
 export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: AppContext } {
@@ -74,11 +79,12 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   const entities = new EntityDirectory(db, profile);
   const importer = new ImportService(db, accounts, portalApi, profile);
   const timetable = new TimetableService(db);
-  const settings = new SettingsService(db, config.sealKey);
-  const experiences = new ExperienceService(db, entities, settings, config.sealKey);
+  const settings = new SettingsService(db);
+  const eligibility = new EligibilityService(db, entities, settings, config.sealKey);
   const limits = new IssuanceLimits(db, deriveKey(config.sealKey, "issuance-mark"));
   const vaultDb = openVaultDatabase(opts.vaultDbPath ?? config.vaultDbPath);
   const vault = new ControlVaultStore(vaultDb, deriveKey(config.sealKey, "vault-locator"));
+  const communityAdmin = new CommunityAdminClient(config.communityInternalUrl, config.internalSecret, opts.communityFetch ?? fetch);
 
   const ctx: AppContext = {
     db,
@@ -89,12 +95,13 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
     timetable,
     profile,
     entities,
-    experiences,
     settings,
+    eligibility,
     issuer: null,
     issuerReady: Promise.resolve(),
     limits,
     vault,
+    communityAdmin,
     ...makeAuthHelpers(accounts),
   };
   // The issuer key is read asynchronously (WebCrypto import); routes await it.
@@ -130,7 +137,7 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   app.get("/api/health", async () => ({ status: "ok", service: "honey-backend" }));
   registerAuthRoutes(app, ctx);
   registerDataRoutes(app, ctx);
-  registerExperienceRoutes(app, ctx);
+  registerEntityRoutes(app, ctx);
   registerAdminRoutes(app, ctx);
   registerCommunityRoutes(app, ctx);
   registerVaultRoutes(app, ctx);

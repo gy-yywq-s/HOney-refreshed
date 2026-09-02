@@ -189,13 +189,13 @@ export function ExperiencesComposePage() {
         <h1 className="page-title">{t("Shared.")}</h1>
         <section className="card card--hero">
           <p>
-            Your school identity is not shown with this Experience — it is stored without an author
-            field, and the publish request carried no ordinary account identity.
+            Your school identity is not attached to this Experience — the request that published it
+            carried no HOney session, only a blind proof that you may write about this.
           </p>
           <p className="text-3">
-            This browser keeps a one-time ownership key so you can manage or remove the post later.
-            Keep it: what you wrote may still make you recognisable to people who know the
-            situation.
+            Your post controls on this device can list or remove it later (Settings › Post
+            controls keeps them backed up). What you wrote may still make you recognisable to
+            people who know the situation.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/mine">
@@ -493,6 +493,11 @@ export function ExperiencesComposePage() {
                 )}
                 {notice.suggestKeepPrivate && (
                   <p className="text-4 compose-notice-alt">You can keep it as a private note instead.</p>
+                )}
+                {notice.restoreLink && (
+                  <p className="text-4 compose-notice-alt">
+                    <Link to="/settings/post-controls">{t("Restore post controls")}</Link>
+                  </p>
                 )}
               </div>
             </div>

@@ -7,14 +7,16 @@ import type { ImportService } from "./services/importer.js";
 import type { TimetableService } from "./services/timetable.js";
 import type { EntityDirectory } from "./school/directory.js";
 import type { SchoolProfile } from "./school/types.js";
-import type { ExperienceService } from "./experiences/service.js";
 import type { SettingsService } from "./experiences/settings.js";
 import type { EligibilityIssuer } from "./community-issuer/issuer.js";
+import type { EligibilityService } from "./community-issuer/eligibility.js";
 import type { IssuanceLimits } from "./community-issuer/issuance-limits.js";
+import type { CommunityAdminClient } from "./community-issuer/community-admin.js";
 import type { ControlVaultStore } from "./control-vault/vault-records.js";
 
 // Assembled per-app dependency context. Routes receive this instead of
-// importing singletons, so tests wire mock portals in freely.
+// importing singletons, so tests wire mock portals in freely. Nothing here
+// can read a Community post: Core has no Community database handle.
 
 export interface AppContext {
   db: DatabaseSync;
@@ -26,14 +28,17 @@ export interface AppContext {
   /** The school profile: curated, deterministic canonicalization knowledge. */
   profile: SchoolProfile;
   entities: EntityDirectory;
-  experiences: ExperienceService;
   settings: SettingsService;
+  /** Standing checks for blind issuance (lesson/entity targets, modes, invites). */
+  eligibility: EligibilityService;
   /** Blind eligibility issuer (Anonymous Control v2); null until a key exists. */
   issuer: EligibilityIssuer | null;
   /** Resolves once the issuer key file has been read (keys load asynchronously). */
   issuerReady: Promise<void>;
   limits: IssuanceLimits;
   vault: ControlVaultStore;
+  /** Dash → Community internal admin surface (loopback + internal secret). */
+  communityAdmin: CommunityAdminClient;
   requireAuth: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
   bearerToken: (req: FastifyRequest) => string;
   userOf: (req: FastifyRequest) => HOneyUserRow;

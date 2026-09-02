@@ -170,6 +170,79 @@ export interface PublishResponseV2 {
 export type PublishErrorV2 = CheckErrorV2 | "pass_invalid" | "pass_mismatch";
 
 // ---------------------------------------------------------------------------
+// Reading (identity-free). The viewer's scope travels as canonical ids it got
+// from Core (`CommunityScope`); Community never learns who asks. Names are
+// null on the wire: clients join them from Core's directory/entities.
+// ---------------------------------------------------------------------------
+
+export interface EntityRefV2 {
+  type: "teacher" | "course" | "lesson" | "room" | "dish";
+  id: string;
+  /** Always null from Community; clients fill it from Core's entity directory. */
+  name: string | null;
+}
+
+export interface PublicExperienceV2 {
+  id: string;
+  primary: EntityRefV2;
+  contexts: EntityRefV2[];
+  body: string | null;
+  rating: number | null;
+  provenance: "verified_lesson" | "verified_retrospective" | "verified_member";
+  /** Days since epoch — exact timestamps never exist publicly. */
+  publishedDay: number | null;
+  /** null = counts hidden (small cohort). */
+  reactions: { likes: number; dislikes: number } | null;
+}
+
+/** "Your classes": the viewer's canonical exposure (from GET /api/community/scope). */
+export interface ExposureScope {
+  teachers: string[];
+  courses: string[];
+  lessons: string[];
+}
+
+export interface FeedRequestV2 {
+  scope: "school" | "my_classes";
+  exposure?: ExposureScope;
+  cursor?: string;
+  limit?: number;
+  entityKey?: string;
+  teacherId?: string;
+  courseId?: string;
+  roomId?: string;
+}
+
+export interface FeedPageV2 {
+  items: PublicExperienceV2[];
+  nextCursor: string | null;
+  headCursor: string | null;
+}
+
+export interface FeedUpdatesRequestV2 {
+  scope: "school" | "my_classes";
+  exposure?: ExposureScope;
+  head: string;
+}
+
+export interface FromMyClassesRequestV2 {
+  exposure: ExposureScope;
+  before?: number;
+  limit?: number;
+}
+
+export interface SearchResponseV2 {
+  q: string;
+  experiences: PublicExperienceV2[];
+}
+
+export interface EntityStatsV2 {
+  experiences: number;
+  courses: number;
+  teachers: number;
+}
+
+// ---------------------------------------------------------------------------
 // Ownership: mine (school/year posting key) · revoke (per-post control key)
 // ---------------------------------------------------------------------------
 

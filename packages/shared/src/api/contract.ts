@@ -1,6 +1,10 @@
-// The HOney HTTP API contract — the SINGLE SOURCE OF TRUTH for every /api/* request
-// and response shape. Backend routes and the web client both depend on these types;
-// clients never import backend code, so the only coupling is this contract over HTTP.
+// The HOney Core HTTP API contract — the SINGLE SOURCE OF TRUTH for every /api/*
+// request and response shape. Backend routes and the web client both depend on these
+// types; clients never import backend code, so the only coupling is this contract over HTTP.
+//
+// Posts live in the Community process (`/community/v2/*`, identity-free): their contract
+// is `@honey/shared/community-v2`. Core here is accounts, canonical school data, the
+// blind eligibility issuer and the Control Vault.
 
 export interface SessionTokens {
   accessToken: string;
@@ -138,21 +142,8 @@ export type PortalEntryResponse =
   | { status: "portal_reconnect_required" };
 
 // ---------------------------------------------------------------------------
-// Experiences (anonymous community — App A). Field names mirror the wire
-// exactly (snake_case where the backend sends snake_case).
-//
-// V1 Experiences objects: lesson / teacher / course / classroom / canteen
-// dish. Course became a FIRST-CLASS browse + retrospective entity in the
-// product-v2 reset (review v3 §9.10) — it was previously context-only.
-//
-// Publication is a two-call flow (no server-side pending state, ever):
-//   1. POST /api/experiences/eligibility (authenticated) → single-use token
-//   2. POST /api/experiences/check       (authenticated) → moderation lane
-//      (+ short-lived content-bound pass when the lane permits publication);
-//      the draft body is NEVER persisted by check.
-//   3. POST /api/experiences/publish     (NO session auth) → verifies the
-//      eligibility token + pass and stores the post. The publish request
-//      carries no account identity; published posts store no author ID.
+// The public entity directory (canonical teachers · courses · rooms · dishes).
+// Community posts reference these ids; clients join names from here.
 // ---------------------------------------------------------------------------
 
 export type EntityType = "teacher" | "course" | "room" | "dish";
@@ -168,272 +159,9 @@ export interface EntitiesResponse {
   entities: EntityRef[];
 }
 
-export interface ReactionCounts {
-  likes: number;
-  dislikes: number;
-}
-
-/**
- * A named entity reference carried ON the post payload (review v3 §12.4): the
- * feed is a complete domain representation — clients never join a directory
- * to render a post. Lesson summaries carry the opaque lesson token and a null
- * name (their display context comes from the accompanying contexts).
- */
-export interface EntitySummary {
-  type: "teacher" | "course" | "lesson" | "room" | "dish";
-  id: string;
-  name: string | null;
-}
-
-export type ExperienceProvenance = "verified_lesson" | "verified_retrospective" | "verified_member";
-
-/**
- * A published post as the PUBLIC feed exposes it: no author, no raw lesson id,
- * no internal status/policy fields, and only a coarse day bucket (days since
- * epoch) — exact timestamps never exist publicly.
- */
-export interface PublicExperience {
-  id: string;
-  entity_key: string;
-  ctx_teacher_id: string | null;
-  ctx_course_id: string | null;
-  ctx_room_id: string | null;
-  body: string | null;
-  rating: number | null;
-  provenance: ExperienceProvenance;
-  publishedDay: number | null;
-  /** null means counts are hidden (below the small-cohort threshold). */
-  reactions: ReactionCounts | null;
-  /**
-   * The authenticated viewer's own reaction (0 = none). Restored server-side
-   * from the unlinkable dedup mark — public identity never exists (§12.15C).
-   */
-  myReaction?: 1 | -1 | 0;
-  /** Complete named context (see EntitySummary). ctx_* ids above are the
-   *  legacy read path and will be removed at convergence. */
-  primary?: EntitySummary;
-  contexts?: EntitySummary[];
-}
-
-export interface ExperiencesFeedParams {
-  entityKey?: string;
-  teacherId?: string;
-  /** Context filter only (filter-time association) — course is not an entity. */
-  courseId?: string;
-  roomId?: string;
-  q?: string;
-  sort?: "newest" | "oldest";
-  /** Epoch ms; return posts published strictly before this instant. */
-  before?: number;
-  limit?: number;
-}
-
-export interface ExperiencesFeedResponse {
-  experiences: PublicExperience[];
-}
-
-/** GET /api/experiences/from-my-classes?before=&limit= (authenticated). */
-export interface FromMyClassesParams {
-  before?: number;
-  limit?: number;
-}
-
-// ---- cursor feed (review v3 §12.6): the social stream's read surface ----
-
-export type FeedScope = "my_classes" | "school";
-
-export interface FeedParams {
-  scope: FeedScope;
-  /** Opaque, sealed server cursor. Never decode client-side. */
-  cursor?: string;
-  /** Page size, clamped server-side to 5–25 (default 20). */
-  limit?: number;
-  /** Optional entity filters (entity pages reuse the same stream). */
-  entityKey?: string;
-  teacherId?: string;
-  courseId?: string;
-  roomId?: string;
-}
-
-/** Find mode (product review §8.1): entities grouped by type, then matching
- *  published experiences. Additive; iOS may ignore. */
-export interface SearchResponse {
-  q: string;
-  entities: EntityRef[];
-  experiences: PublicExperience[];
-}
-
-/** Descriptive counts for an entity page (review §8.3) — never a score. */
-export interface EntityStats {
-  experiences: number;
-  courses: number;
-  teachers: number;
-}
-
-export interface FeedPage {
-  items: PublicExperience[];
-  /** null = end of stream. Pass back verbatim to continue. */
-  nextCursor: string | null;
-  /**
-   * Position of the newest item at fetch time; poll /api/experiences/feed/updates
-   * with it to learn whether new posts exist WITHOUT disturbing the reader.
-   */
-  headCursor: string | null;
-}
-
-/** GET /api/experiences/feed/updates?scope=&head= */
-export interface FeedUpdatesResponse {
-  newItemsAvailable: boolean;
-}
-
-// ---- step 1: eligibility (authenticated; single-use, scope-bound) ----
-
-export interface ExperienceEligibilityInput {
-  /** Exactly one of lessonId / entityKey. */
-  lessonId?: string;
-  entityKey?: string;
-}
-
-export interface ExperienceEligibilityResponse {
-  ok: true;
-  /** Single-use, client-held. The server stores only its sha256. */
-  eligibilityToken: string;
-  expiresAt: number;
-}
-
-export type ExperienceEligibilityError =
-  | "publications_disabled"
-  | "temporarily_suspended"
-  | "target_required"
-  | "lesson_not_yours"
-  | "entity_unknown"
-  | "entity_frozen"
-  | "standalone_closed"
-  | "not_invited"
-  | "no_verified_exposure"
-  | "already_reviewed";
-
-// ---- step 2: moderation preflight (authenticated; NEVER persists the body) ----
-
-export interface CheckExperienceInput {
-  /** Exactly one of lessonId / entityKey (same target the eligibility is for). */
-  lessonId?: string;
-  entityKey?: string;
-  body: string;
-  rating?: number;
-  /** Present only when re-checking after a cooldown lane result. */
-  cooldownTicket?: string;
-}
-
-export type CheckLane =
-  | "publish"
-  | "nudge"
-  | "cooldown"
-  | "edit_required"
-  | "blocked_serious"
-  | "out_of_scope"
-  | "failed_closed";
-
-export interface CheckExperienceResponse {
-  lane: CheckLane;
-  reasons: string[];
-  policyVersion: number;
-  /**
-   * Opaque short-lived content-bound publication pass. Present for lanes
-   * `publish` and `nudge` — a nudge STILL requires the user's explicit choice
-   * (add context / publish as-is / keep private); the server never publishes.
-   */
-  pass?: string;
-  /** Present for lane `cooldown`: re-check with this ticket after retryAt. */
-  cooldown?: { ticket: string; retryAt: number };
-}
-
-export type CheckExperienceError =
-  | ExperienceEligibilityError
-  | "body_invalid"
-  | "rating_invalid"
-  | "rating_not_allowed"
-  | "cooldown_ticket_invalid";
-
-// ---- step 3: publish (NO session auth — token + pass only) ----
-
-export interface PublishExperienceInput {
-  eligibilityToken: string;
-  pass: string;
-  body: string;
-  rating?: number;
-}
-
-export interface PublishExperienceResponse {
-  ok: true;
-  experienceId: string;
-  /** Client-held; the server keeps only a hash. Shown once — store it. */
-  ownershipKey: string;
-}
-
-export type PublishExperienceError =
-  | "publications_disabled"
-  | "pass_invalid"
-  | "pass_content_mismatch"
-  | "pass_scope_mismatch"
-  | "eligibility_invalid"
-  | "eligibility_expired"
-  | "eligibility_used"
-  | "already_reviewed"
-  | "entity_frozen"
-  | "rating_not_allowed";
-
-// ---- own-submission lifecycle (looked up by client-held ownership keys) ----
-
-export type MyExperienceStatus = "published" | "blocked" | "revoked";
-
-/** Own-submission row. Only ever exists for posts that were actually published. */
-export interface MyExperience {
-  id: string;
-  entity_key: string;
-  /** Opaque lesson token — never the roster-joinable instance id. */
-  lesson_id: string | null;
-  ctx_teacher_id: string | null;
-  ctx_course_id: string | null;
-  ctx_room_id: string | null;
-  body: string | null;
-  rating: number | null;
-  provenance: ExperienceProvenance;
-  status: MyExperienceStatus;
-  status_detail: string | null;
-  policy_version: number;
-  created_at: number;
-  published_at: number | null;
-}
-
-export interface MyExperiencesResponse {
-  experiences: MyExperience[];
-}
-
-// ---- reports (category-only; free text is never accepted) ----
-
-export type ReportCategory =
-  | "serious_allegation"
-  | "doxxing"
-  | "slur"
-  | "targets_student"
-  | "not_experience"
-  | "other_rule";
-
-export interface ReportExperienceInput {
-  category: ReportCategory;
-}
-
-/** POST /api/experiences/:id/react → the authoritative state to render. */
-export interface ReactResponse {
-  ok: true;
-  value: 1 | -1 | 0;
-  /** null = counts hidden (small cohort). Roll optimistic UI back on error. */
-  reactions: ReactionCounts | null;
-}
-
 // ---------------------------------------------------------------------------
-// Admin dash (isAdmin only)
+// Admin dash (isAdmin only). Core owns entities, invites, standalone modes and
+// the issuance switches; post-side settings are proxied to Community.
 // ---------------------------------------------------------------------------
 
 export type KillSwitchName =
@@ -453,10 +181,14 @@ export interface AdminOverview {
     entities: number;
   };
   policyVersion: number;
-  killSwitches: Record<KillSwitchName, boolean>;
+  killSwitches: Record<string, boolean>;
   /** Cooling-off period before a high-arousal draft may be re-checked (whole hours). */
   cooldownHours: number;
   llm: { configured: boolean; model: string };
+  /** False when the Community process could not be reached for this overview. */
+  communityReachable: boolean;
+  /** False until the blind-eligibility issuer key is loaded. */
+  issuerReady: boolean;
 }
 
 export interface AdminImportResult {
@@ -475,13 +207,20 @@ export interface AdminLlmTestResponse {
 export interface AdminReport {
   id: string;
   experience_id: string;
-  category: ReportCategory;
+  category: string;
   /** `reevaluation_pending` = classifier unavailable/uncertain; the post KEEPS
-   *  its current public state and an automatic retry is queued (§12.15B). */
+   *  its current public state and an automatic retry is queued. */
   outcome: "pending" | "reevaluated_kept" | "reevaluated_hidden" | "reevaluation_pending" | null;
   created_at: number;
 }
 
 export interface AdminReportsResponse {
   reports: AdminReport[];
+}
+
+export interface UnresolvedLabel {
+  fieldKind: string;
+  rawValue: string;
+  suggestedValue: string | null;
+  seenAt: number;
 }

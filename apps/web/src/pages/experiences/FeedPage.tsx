@@ -9,10 +9,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Link } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
-import { useFeedController } from "../../features/experiences/useFeedController";
+import { useFeedController, type FeedScope } from "../../features/experiences/useFeedController";
 import { useLoadMoreSentinel } from "../../features/experiences/useLoadMoreSentinel";
 import { Skeleton } from "../../lib/motion";
-import type { FeedScope } from "../../api/types";
 import { BookmarkIcon, PenIcon, SearchIcon } from "../../components/icons";
 import { useT } from "../../lib/i18n";
 
