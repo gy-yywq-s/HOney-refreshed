@@ -67,6 +67,18 @@ Do not broaden the product before these three are excellent.
   screen shows "‹ Parent" top-left; the tab of the root ancestor is lit; the arrow pops when
   the parent is the previous entry and otherwise replaces — never a parent/child loop; tab
   switches replace history; on phones a left-edge swipe is the same "up".
+- **Review v1.1 (2026-09-02) is implemented as the composition baseline.** Home's Now/Next is
+  one lesson object (state + relative time on one row, subject, time · teacher · room, whole
+  card a link). Experiences opens with the title, three toolbar icons and one culture line
+  ("Written by students, for students." + Why); provenance sits on its own line before the
+  words. Explore is a framed finder: a real search field and four category chips, one
+  category listed in full at a time (rule 4f), typing filters every category and finds
+  experiences. Raw portal course strings are split once for display into title +
+  "2026 Autumn · 备考班 · teacher" (`apps/web/src/lib/displayNames.ts`). The composer's picker
+  is rows; "Continue to share" / "Keep private". Notes & Posts is the user's words first,
+  the device-key note one quiet row. Settings is concise rows with one detail screen each
+  under `/settings/:section`. Geometry: page inset 20, cards 16 / controls 14 / fields 12,
+  pills only for genuine choice pills, a 54px bottom nav with a soft selected block.
 
 ## 3. Personality
 

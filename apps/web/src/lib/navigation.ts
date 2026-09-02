@@ -24,7 +24,7 @@ const NODES: RouteNode[] = [
   { pattern: "/history", title: "History", parent: "/timetable" },
   { pattern: "/history/lesson/:id", title: "Lesson", parent: "/history" },
   { pattern: "/experiences", title: "Experiences", parent: null },
-  { pattern: "/experiences/explore", title: "Find someone or something", parent: "/experiences" },
+  { pattern: "/experiences/explore", title: "Explore", parent: "/experiences" },
   { pattern: "/experiences/mine", title: "Your notes & posts", parent: "/experiences" },
   { pattern: "/experiences/why", title: "Why this space exists", parent: "/experiences" },
   { pattern: "/experiences/compose", title: "Share an experience", parent: "/experiences" },
