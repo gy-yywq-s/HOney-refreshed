@@ -2,7 +2,7 @@
 
 Every native file names the Web source it was ported from. Reverse map:
 
-| Web source (at 2d1b562) | Native destination | Action |
+| Web source (at 9cbedf6) | Native destination | Action |
 |---|---|---|
 | `packages/shared/src/api/contract.ts` | `HOneyCore/Sources/HOneyCore/API/DTO/Wire.swift`; fixtures `packages/shared/fixtures/api/*.json` ⇄ `packages/shared/src/api/fixtures.ts` (TS `satisfies`) ⇄ `FixtureDecodingTests` | mandatory parity |
 | `apps/web/src/api/client.ts` | `API/APIClient.swift` (bearer, single-flight refresh, session lost), `API/PublicationAPIClient.swift` (identity-free publish), `API/APIError.swift`, `Experiences/Copy.swift` (`APIErrorCopy`) | same API, native transport |
@@ -22,7 +22,7 @@ Every native file names the Web source it was ported from. Reverse map:
 | `apps/web/src/pages/experiences/FeedPage.tsx`, `features/experiences/useFeedController.ts` | `Features/Experiences/Feed/ExperiencesFeedView.swift`, `FeedViewModel.swift`; `Experiences/FeedStore.swift` | preserve |
 | `apps/web/src/features/experiences/ExperiencePost.tsx` | `Features/Experiences/Feed/ExperiencePostRow.swift`; `Domain/ExperienceDisplay.swift`; `Experiences/FeedStore.swift` (`ReactionState`) | preserve anatomy |
 | `apps/web/src/pages/experiences/shared.tsx` | `Experiences/Copy.swift`, `Domain/ExperienceDisplay.swift`, `HOneyNative/Features/Experiences/Names.swift` | preserve copy |
-| `apps/web/src/pages/experiences/ExplorePage.tsx` | `Features/Experiences/Explore/ExploreView.swift` | `.searchable`, complete listing |
+| `apps/web/src/pages/experiences/ExplorePage.tsx` | `Features/Experiences/Explore/ExploreView.swift` | Web frame (field + chips), complete listing |
 | `apps/web/src/pages/experiences/EntityPage.tsx` | `Features/Experiences/Entity/EntityExperiencesView.swift` | preserve |
 | `apps/web/src/pages/experiences/ComposePage.tsx`, `useComposer.ts` | `Features/Experiences/Compose/TargetPickerView.swift`, `ComposerView.swift`, `ComposerViewModel.swift`; `Experiences/ComposerController.swift` (+ tests) | reimplement cleanly, same API |
 | `apps/web/src/pages/experiences/MinePage.tsx` | `Features/Experiences/Mine/NotesAndPostsView.swift` | Keychain / file wording |
@@ -31,7 +31,11 @@ Every native file names the Web source it was ported from. Reverse map:
 | `apps/web/src/pages/TimetablePage.tsx` | `Features/Timetable/TimetableRootView.swift`, `TimetableViewModel.swift`, `Day/DayTimelineView.swift`, `LessonDetail/LessonDetailSheet.swift`; `Domain/DayGeometry.swift` | preserve product, native interaction |
 | `apps/web/src/features/timetable/WeekView.tsx` | `Features/Timetable/Week/WeekTimetableView.swift`; `Domain/WeekMatrix.swift` | native Grid |
 | `apps/web/src/pages/HistoryPage.tsx` | `Features/Timetable/History/HistoryView.swift`; `Domain/HistoryGrouping.swift` | whole-row native interaction |
-| `apps/web/src/pages/SettingsPage.tsx` | `Features/Settings/SettingsViews.swift` | preserve grouping; drop Web appearance experiment |
-| `apps/web/src/styles/tokens.css` | `HOneyNative/Core/Design/Tokens.swift` | refine, no literal CSS |
+| `apps/web/src/pages/SettingsPage.tsx` | `Features/Settings/SettingsViews.swift` | open row groups; Background · Accent · Text size · Language |
+| `apps/web/src/styles/tokens.css`, `lib/theme.ts`, `lib/textSize.ts` | `HOneyCore/Domain/Appearance.swift` (`ThemePalette`, tested against tokens.css), `HOneyNative/Core/Design/Theme.swift`, `ThemeEnvironment.swift`, `Tokens.swift` | exact colours, spacing, radii |
+| `apps/web/src/styles/fonts.css`, `foundations.css` (type grammar) | `Resources/Fonts/SourceSans3VF-*.ttf`, `Core/Design/Typography.swift` (`TypeRole`, `sectionLabel()`) | same family and ramp |
+| `apps/web/src/styles/components.css`, `features.css` (buttons, controls, rows, banners, modal, tab bar) | `Core/Design/ButtonStyles.swift`, `ControlStyles.swift`, `RowStyles.swift`, `Components.swift`, `Sheets.swift`, `App/TabBarView.swift` | same geometry and colours |
+| `apps/web/src/components/ThemeControls.tsx` | `Features/Settings/SettingsViews.swift` (`AppearanceView`) | every option |
 | `packages/shared/src/portal/contract.ts`, `packages/portal-connector/src/api.ts` (server-side policy) | `Portal/PortalWire.swift`, `Portal/PortalAPI.swift`, `Portal/PortalSessionCoordinator.swift`, `Portal/AccessRules.swift`; `HOneyNative/Features/Access/*` | Access: direct-to-school, consumed-permit fix |
-| `Modal.tsx`, `PullToRefresh.tsx`, `PullToHistory.tsx`, service worker, viewport code | — | not ported (spec §2.3) |
+| `Modal.tsx` | `Core/Design/Sheets.swift` (`WebSheet`, `ConfirmSheet`) | Web content in a native sheet |
+| `PullToRefresh.tsx`, `PullToHistory.tsx`, service worker, viewport code | — | not ported (port spec §2.3) |

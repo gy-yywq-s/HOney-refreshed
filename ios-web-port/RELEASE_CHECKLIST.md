@@ -53,7 +53,16 @@ otherwise — before a build is handed to anyone. Record the exact commit.
 14. [ ] VoiceOver pass: Home lesson card reads state → subject → time →
         teacher → room → relative time; a post reads context → provenance →
         body → reactions → options.
-15. [ ] Reduce Motion: the progress fill updates without animation.
+15. [ ] Reduce Motion: the progress fill updates without animation; a theme
+        change switches without the crossfade.
+16. [ ] Appearance: every Background × Accent pair applies at once across all
+        five tabs, the open sheet and the status bar; nothing resets; relaunch
+        paints the chosen surface at the first frame (no white/black flash).
+17. [ ] Typography: Latin text is Source Sans 3 on every screen (compare the
+        Web side by side); a mixed string such as `Edexcel Economics-U4 · 活动课老师`
+        keeps its baseline; Text size Larger + the largest Dynamic Type still lays out.
+18. [ ] The parity board (`WEB_VISUAL_FIDELITY.md`) has a Web/native pair
+        for every core screen and Gary has approved the baseline.
 
 ## Evidence
 

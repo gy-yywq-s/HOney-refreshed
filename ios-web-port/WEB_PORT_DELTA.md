@@ -1,25 +1,29 @@
 # Web → native port delta
 
-Locked Web snapshot: `integration/product-v2 @ 2d1b56297a5b8b4bd613d022b05cafdb709cd67e`
-(port spec §1.1). Every later Web change is classified here before it may
-touch the native app (spec §1.2). Nothing is copied because it is newer.
+Locked Web source: `integration/product-v2 @ 9cbedf68a0ecc1b12017942c1782099800024eed`
+(fidelity spec v2 §0.2 moved it from 2d1b562). Every later Web change is
+classified here before it may touch the native app; nothing is copied
+because it is newer. **Visual policy lives in `WEB_VISUAL_FIDELITY.md`**
+(default class `REQUIRED`); this file keeps the behavioural classification
+and the history.
 
 | Web commit | What changed | Class | Native action |
 |---|---|---|---|
-| `5c76376` refine(web): drop Settings helper copy; keep three labels English in zh; OASIS mark on the portal row | Settings › Appearance loses its helper sentences; "Written by students, for students." / "Your classes" / "Around school" stay English under 中文; the Portal row shows the OASIS mark | `COPY_SYNC_OPTIONAL` (helper copy — native Appearance never had it), `BEHAVIOR_SYNC_REQUIRED` (English labels — Gary's decision applies to both clients), `COPY_SYNC_OPTIONAL` (OASIS mark) | Adopted: L10n keeps the three strings English; PortalRow shows the OASIS mark |
-| `9cbedf6` feat(web): accent schemes as their own appearance axis; Cobalt pairs blue with the teal | Web gains a selectable accent-scheme axis (Harbour, Cobalt, Moss, Clay, Plum, Iris, Amber) | `WEB_ONLY` | Not ported: spec §7.2 / §20.5 — one canonical accent (Harbour) + system dark; a native scheme picker is a `DEFERRED_PRODUCT_DECISION` |
+| `5c76376` refine(web): drop Settings helper copy; keep three labels English in zh; OASIS mark on the portal row | Settings › Appearance loses its helper sentences; "Written by students, for students." / "Your classes" / "Around school" stay English under 中文; the Portal row shows the OASIS mark | `REQUIRED` | Adopted: no helper copy on Appearance; L10n keeps the three strings English; PortalRow shows the OASIS mark |
+| `9cbedf6` feat(web): accent schemes as their own appearance axis; Cobalt pairs blue with the teal | Background and Accent are independent axes; seven schemes with tint, on-accent and night lift; Cobalt's `--accent-2` companion | `REQUIRED` | Adopted in full: `HOneyAccent`, `ThemePalette.resolve`, Settings › Appearance › Accent, `theme.accent2` on the Home wash |
 
 ## Intentional native differences (spec-approved)
 
 - Access is a fifth tab (Gary, 2026-09-02: 「access要有」). The Web has no Access; the native
-  screen talks to the school portal directly with the Keychain school login. Spec §32's
-  "no Access" is overridden by the owner's instruction.
+  screen talks to the school portal directly with the Keychain school login, in the Web's
+  token and component grammar.
+- Settings stays a primary tab (fidelity spec v2 §0.1).
 - Pull-to-refresh is `.refreshable`; school sync is the explicit **Sync with school** action
-  (Timetable menu, Settings › School connection) — the Web's deep-pull-and-hold stage is not
-  ported (spec §24).
-- Appearance: System / Light / Dark + language; no surface or text-size selector (spec §20.5).
-- Composer outcomes are native sheets; publish uses the dedicated identity-free client
-  (spec §15–16).
+  (Timetable overflow, Settings › School connection) — the Web's deep-pull-and-hold stage is not
+  ported (port spec v1 §24).
+- Composer outcomes: Shared / Kept private replace the screen as on the Web; the nudge and the
+  cooling panel rise as sheets in the `.nudge` surface; publish uses the dedicated identity-free client.
+- The first-share disclosure sheet is a native addition (port spec v1 §22.3).
 
 ## Review 11d42e3 (2026-09-02) — what changed on the branch afterwards
 
@@ -42,8 +46,8 @@ themselves were kept as reviewed). Applied, in order:
 6. Access freshness authority — stale permits visible, never actionable;
    authority withdrawn after every open until a fresh read;
 7. navigation/product — Home previews open the Stream at that post; the
-   composer belongs to the Experiences tab; sentence-case section labels;
-   preview count from the container; Home preview errors shown as errors;
+   composer belongs to the Experiences tab; preview count from the
+   container; Home preview errors shown as errors;
 8. feed/portal hardening — top-visible anchor via scrollPosition, FeedStore
    task identity + empty-feed restore, probe only on the Stream, haptics on
    deliberate taps, Latin-only letter groups, cancellation ≠ network error,
@@ -54,6 +58,14 @@ themselves were kept as reviewed). Applied, in order:
     delegate was spelled in a form WebKit never bound, so the HTTPS-only
     allowlist was inert; the async form is bound and `responds(to:)` is
     tested, so the unsigned CI lane catches a regression.
+
+## Fidelity pass v2 (2026-09-02)
+
+The visual direction of the review (uppercase section labels, System /
+Light / Dark, one fixed accent, system typography, `.insetGrouped`,
+`.borderedProminent`) was superseded by the fidelity spec: the Web's font,
+casing, four Backgrounds, seven Accent schemes, four Text sizes, component
+weight and page grammar were reproduced. See `WEB_VISUAL_FIDELITY.md`.
 
 Per-post control keys (review §5.2) stay behind `OwnershipKeyStoring`
 (versioned export); a master-secret model waits for a server protocol.

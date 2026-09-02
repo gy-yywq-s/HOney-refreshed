@@ -1,8 +1,10 @@
 # HOneyNative — the iPhone port of the current Web
 
 Clean-room SwiftUI reimplementation of HOney's Web product at
-`integration/product-v2 @ 2d1b562` (spec: *HOney current Web → iPhone native
-port v1.0*, 2026-09-02). Nothing from the old `ios/` target is compiled,
+`integration/product-v2 @ 9cbedf6` (port spec v1.0 + *visual fidelity spec v2.0*,
+2026-09-02): the Web's font (Source Sans 3), sentence casing, four Backgrounds, seven
+Accent schemes, four Text sizes and component grammar, reproduced before any native
+reinterpretation (`WEB_VISUAL_FIDELITY.md`). Nothing from the old `ios/` target is compiled,
 imported or used as authority — `scripts/check-no-reuse.sh` enforces it in CI.
 
 ```
@@ -13,8 +15,11 @@ ios-web-port/
   HOneyNative/           the SwiftUI app: App (environment, tabs, deep links), Core (Keychain, design
                          tokens, components), Features (Login, Home, Portal, Experiences, Timetable,
                          Access, Settings), Resources (icon, wordmark, OASIS mark)
-  HOneyNativeTests/      simulator tests: Keychain, identity-free transport, deep-link router
+  HOneyNativeTests/      simulator tests: Keychain, identity-free transport, deep-link router,
+                         portal delegate, typography, appearance persistence, text-case audit,
+                         and the visual fixture snapshots (published to `ios-web-port-evidence`)
   WEB_PORT_DELTA.md      later Web changes, classified before they may enter
+  WEB_VISUAL_FIDELITY.md the visual fidelity ledger (Web source → native, class, evidence)
   TRACEABILITY.md        Web file → native file
 ```
 
@@ -26,7 +31,9 @@ no team baked in. iOS 17+, iPhone, portrait.
 
 Without a Mac: the `iOS web port` GitHub workflow runs the Core tests on
 Linux (Swift 6.1) and builds + tests the app on a macOS runner on every push
-touching `ios-web-port/`.
+touching `ios-web-port/`. The macOS lane renders the contract fixtures through the
+real shell at 390 × 844 in the required themes and force-pushes the PNGs to the
+`ios-web-port-evidence` branch, readable without a token on the public repo.
 
 ## Contract parity
 
