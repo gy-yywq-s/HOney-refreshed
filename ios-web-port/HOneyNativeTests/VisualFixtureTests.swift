@@ -172,19 +172,32 @@ enum SnapshotHarness {
             .environment(env)
             .environment(env.navigator)
         let host = UIHostingController(rootView: root)
-        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        // A window only draws when it belongs to the test host's scene; an
+        // orphan UIWindow(frame:) renders blank (the first CI run proved it).
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+        let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.frame = CGRect(origin: .zero, size: size)
         window.rootViewController = host
         window.makeKeyAndVisible()
+        host.view.frame = window.bounds
         host.view.layoutIfNeeded()
         try await Task.sleep(nanoseconds: UInt64(settle * 1_000_000_000))
         host.view.layoutIfNeeded()
-        let image = UIGraphicsImageRenderer(bounds: window.bounds, format: { let f = UIGraphicsImageRendererFormat(); f.scale = 2; return f }()).image { _ in
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 2
+        var image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
             window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        if isBlank(image) {
+            image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { ctx in
+                window.layer.render(in: ctx.cgContext)
+            }
         }
         if let dir = outputDirectory, let data = image.pngData() {
             try data.write(to: dir.appendingPathComponent("\(name).png"))
         }
         window.isHidden = true
+        window.rootViewController = nil
         return image
     }
 
