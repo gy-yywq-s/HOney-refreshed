@@ -43,9 +43,11 @@ struct NameMaps {
         return exp.entityKey
     }
 
+    @MainActor
     static func load(_ env: AppEnvironment, reload: Bool = false) async throws -> NameMaps {
-        async let directory = env.timetable.directory(reload: reload)
-        async let entities = env.timetable.entities(reload: reload)
+        let repo = env.timetable
+        async let directory = repo.directory(reload: reload)
+        async let entities = repo.entities(reload: reload)
         return NameMaps(directory: try await directory, entities: try await entities)
     }
 }

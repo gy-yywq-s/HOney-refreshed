@@ -82,11 +82,13 @@ struct ExploreView: View {
 
     // MARK: Data
 
+    @MainActor
     private func load(reload: Bool = false) async {
         loading = entities.isEmpty
         do {
-            async let ents = env.timetable.entities(reload: reload)
-            async let dir = env.timetable.directory(reload: reload)
+            let repo = env.timetable
+            async let ents = repo.entities(reload: reload)
+            async let dir = repo.directory(reload: reload)
             let (e, d) = (try await ents, try await dir)
             entities = e.entities.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             let known = Set(e.entities.map(\.entityKey))

@@ -26,8 +26,12 @@ final class HomeViewModel {
     func load(reload: Bool = false) async {
         async let lesson: Void = loadLesson(reload: reload)
         async let voices: Void = loadPreviews()
-        async let portal: Void = env.portal.prewarm()
+        async let portal: Void = prewarmPortal()
         _ = await (lesson, voices, portal)
+    }
+
+    private func prewarmPortal() async {
+        await env.portal.prewarm()
     }
 
     private func loadLesson(reload: Bool) async {

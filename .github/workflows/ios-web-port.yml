@@ -32,6 +32,9 @@ jobs:
   app:
     name: HOneyNative (macOS runner)
     runs-on: macos-15
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v4
       - name: Toolchain
@@ -56,6 +59,33 @@ jobs:
             -destination "id=${{ steps.sim.outputs.udid }}" \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log | grep -E "error:|warning: unre|Test Case|Executed|BUILD|TEST" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
+      # The repo is public but job logs need a token to download; a check run's
+      # output is readable by anyone, so the compiler's own words land there.
+      - name: Publish compile/test errors as a check run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, re
+          log = open('xcodebuild.log', encoding='utf-8', errors='replace').read() if os.path.exists('xcodebuild.log') else ''
+          keep = re.compile(r'error:|Fatal error|failed \(|XCTAssert|\*\* (BUILD|TEST)')
+          seen = []
+          for line in log.splitlines():
+              if keep.search(line) and line not in seen:
+                  seen.append(line)
+          text = '\n'.join(seen)[:60000] or 'no error lines matched'
+          ok = '** TEST SUCCEEDED **' in log
+          body = {
+              "name": "xcodebuild errors",
+              "head_sha": os.environ["GITHUB_SHA"],
+              "status": "completed",
+              "conclusion": "success" if ok else "neutral",
+              "output": {"title": "xcodebuild " + ("succeeded" if ok else "errors"), "summary": f"{len(seen)} matching lines", "text": "```\n" + text + "\n```"},
+          }
+          open('check.json', 'w').write(json.dumps(body))
+          EOF
+          gh api "repos/${{ github.repository }}/check-runs" --input check.json > /dev/null || echo "check run not posted"
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4

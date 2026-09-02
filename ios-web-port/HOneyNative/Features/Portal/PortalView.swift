@@ -20,7 +20,7 @@ enum PortalPhase: Equatable {
 /// session and the last page the student was on.
 @MainActor
 final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegate {
-    static let shared = PortalWebController()
+    nonisolated(unsafe) static let shared = PortalWebController()
 
     @Published private(set) var phase: PortalPhase = .preparing
     @Published private(set) var canGoBack = false

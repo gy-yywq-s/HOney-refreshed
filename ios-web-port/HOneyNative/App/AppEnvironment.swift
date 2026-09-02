@@ -80,25 +80,27 @@ final class AppEnvironment {
         self.language = prefs.language
         L10n.language = prefs.language
         let sessionStore = SecretSessionStore(store: secrets)
-        api = APIClient(baseURL: config.honeyBaseURL, transport: URLSessionTransport(), sessionStore: sessionStore)
-        publication = PublicationAPIClient(baseURL: config.honeyBaseURL, transport: URLSessionTransport.identityFree())
-        portalVault = SecretPortalVault(store: secrets)
-        portalAPI = PortalAPI(baseURL: config.portalBaseURL, transport: URLSessionTransport(configuration: {
-            let c = URLSessionConfiguration.default
-            c.timeoutIntervalForRequest = 20
-            c.timeoutIntervalForResource = 30
-            c.waitsForConnectivity = false
-            c.requestCachePolicy = .reloadIgnoringLocalCacheData
-            return c
-        }()))
-        portalCoordinator = PortalSessionCoordinator(api: portalAPI, sessions: portalVault, credentials: portalVault)
-        feedStore = FeedStore()
-        timetable = TimetableRepository(api: api)
-        notes = PrivateNoteStore(directory: storageDirectory, writeOptions: writeOptions)
-        drafts = ComposerDraftStore(directory: storageDirectory, writeOptions: writeOptions)
-        keys = SecretOwnershipKeyStore(store: secrets, account: "anonymous")
-        navigator = Navigator()
-        portal = PortalController(api: api, coordinator: portalCoordinator, vault: portalVault, prefs: prefs, home: config.portalHome)
+        let api = APIClient(baseURL: config.honeyBaseURL, transport: URLSessionTransport(), sessionStore: sessionStore)
+        let portalVault = SecretPortalVault(store: secrets)
+        let portalConfig = URLSessionConfiguration.default
+        portalConfig.timeoutIntervalForRequest = 20
+        portalConfig.timeoutIntervalForResource = 30
+        portalConfig.waitsForConnectivity = false
+        portalConfig.requestCachePolicy = .reloadIgnoringLocalCacheData
+        let portalAPI = PortalAPI(baseURL: config.portalBaseURL, transport: URLSessionTransport(configuration: portalConfig))
+        let portalCoordinator = PortalSessionCoordinator(api: portalAPI, sessions: portalVault, credentials: portalVault)
+        self.api = api
+        self.publication = PublicationAPIClient(baseURL: config.honeyBaseURL, transport: URLSessionTransport.identityFree())
+        self.portalVault = portalVault
+        self.portalAPI = portalAPI
+        self.portalCoordinator = portalCoordinator
+        self.feedStore = FeedStore()
+        self.timetable = TimetableRepository(api: api)
+        self.notes = PrivateNoteStore(directory: storageDirectory, writeOptions: writeOptions)
+        self.drafts = ComposerDraftStore(directory: storageDirectory, writeOptions: writeOptions)
+        self.keys = SecretOwnershipKeyStore(store: secrets, account: "anonymous")
+        self.navigator = Navigator()
+        self.portal = PortalController(api: api, coordinator: portalCoordinator, vault: portalVault, prefs: prefs, home: config.portalHome)
     }
 
     static func live() -> AppEnvironment {
@@ -269,7 +271,7 @@ actor TimetableRepository {
     private var directory: DirectoryResponse?
     private var entities: EntitiesResponse?
     private var histories: [String: HistoryResponse] = [:]
-    private var inflight: [String: Task<Any, Error>] = [:]
+    private var inflight: [String: Task<any Sendable, Error>] = [:]
 
     init(api: APIClient) { self.api = api }
 
@@ -338,7 +340,7 @@ actor TimetableRepository {
 
     private func coalesce<T: Sendable>(_ key: String, _ work: @escaping @Sendable () async throws -> T) async throws -> T {
         if let task = inflight[key] { return try await task.value as! T }
-        let task = Task<Any, Error> { try await work() as Any }
+        let task = Task<any Sendable, Error> { try await work() as any Sendable }
         inflight[key] = task
         defer { inflight[key] = nil }
         return try await task.value as! T
