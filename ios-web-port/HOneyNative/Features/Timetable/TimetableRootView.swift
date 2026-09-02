@@ -133,7 +133,7 @@ struct TimetableRootView: View {
             HStack(spacing: 0) {
                 Button { model.step(-1) } label: {
                     Text("‹").font(ramp.font(.sectionTitle)).foregroundStyle(theme.ink2)
-                        .frame(width: HSize.control, minHeight: HSize.control)
+                        .frame(width: HSize.control).frame(minHeight: HSize.control)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -164,7 +164,7 @@ struct TimetableRootView: View {
                 .accessibilityAddTraits(.isHeader)
                 Button { model.step(1) } label: {
                     Text("›").font(ramp.font(.sectionTitle)).foregroundStyle(theme.ink2)
-                        .frame(width: HSize.control, minHeight: HSize.control)
+                        .frame(width: HSize.control).frame(minHeight: HSize.control)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
