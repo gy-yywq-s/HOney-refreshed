@@ -14,7 +14,7 @@ import { useApi } from "../../lib/useApi";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime, formatRemaining, formatRelativeDay } from "../../lib/format";
-import { entityTitle, roomLabel } from "../../lib/displayNames";
+import { lessonTitle, roomLabel } from "../../lib/displayNames";
 import { ChevronRightIcon } from "../../components/icons";
 import { t, useT } from "../../lib/i18n";
 import { privateNotes } from "../../lib/ownershipKeys";
@@ -75,7 +75,7 @@ export function ExperiencesComposePage() {
     if (effectiveLessonId) {
       const lesson: Lesson | undefined = history.data?.lessons.find((l) => l.id === effectiveLessonId);
       return {
-        label: lesson ? lesson.subjectName : "A lesson from your history",
+        label: lesson ? lessonTitle(lesson) : "A lesson from your history",
         ...(lesson
           ? {
               detail: [
@@ -100,7 +100,7 @@ export function ExperiencesComposePage() {
       return {
         // Never flash the raw key while the registry loads (r2 visual); an
         // unknown key after load is handled below (no editor).
-        label: entity ? entityTitle(entity.type, entity.name) : "Loading…",
+        label: entity ? entity.name : "Loading…",
         detail:
           type === "room" ? "Place" : type === "dish" ? "Food" : type === "course" ? "Course" : "Teacher",
         entityKey: effectiveEntityKey,
@@ -402,7 +402,7 @@ export function ExperiencesComposePage() {
                     to={`/experiences/compose?lessonId=${encodeURIComponent(l.id)}`}
                   >
                     <span className="entity-row__main">
-                      <span className="entity-row__title">{l.subjectName}</span>
+                      <span className="entity-row__title">{lessonTitle(l)}</span>
                       <span className="caption">
                         {[formatRelativeDay(l.startsAt), l.teacherName, roomLabel(l.roomName)]
                           .filter(Boolean)

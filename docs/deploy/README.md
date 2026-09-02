@@ -24,3 +24,18 @@ sudo systemctl restart honey && sleep 1 && curl -s https://honey.gaelisus.com/ap
 
 The production OpenRouter key is swapped later via the admin dash (sealed in the DB) or by
 editing the secrets env. The historical hostd manifest draft lives in git history only.
+
+## Development database reset (schema epoch change)
+
+There is no migration across schema epochs (canonical school data, 2026-09-02): a database
+from an earlier epoch makes the service refuse to start (`SchemaEpochError`). Reset it:
+
+```bash
+sudo systemctl stop honey
+sudo -u honey bash -lc 'cd /home/honey/app && npx --yes pnpm@11.24.0 --filter @honey/backend db:reset:dev -- --yes'
+sudo systemctl start honey && sleep 1 && curl -s https://honey.gaelisus.com/api/health
+```
+
+The script deletes the SQLite files, recreates the schema, imports the real fixture into a
+throwaway account and asserts the canonicalization before exiting 0. Accounts are re-created by
+signing in again (a school login is signup); the first sign-in re-imports the live timetable.

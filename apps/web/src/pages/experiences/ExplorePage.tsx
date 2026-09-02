@@ -4,8 +4,8 @@
 // category is browsable at a time (Teachers / Courses / Places / Food) and
 // EVERY entity in it is listed (owner rule 4f — never "use search to find
 // the rest"). Typing filters every category and, from two characters,
-// also finds published experiences that mention the words. Raw portal
-// course strings are split into title + metadata for display.
+// also finds published experiences that mention the words. Names arrive
+// canonical from the server (a Course is "AL ECON U4", never a class label).
 // Scroll model: FRAMED_EDITOR/FRAMED_SCROLL hybrid.
 
 import { useEffect, useMemo, useState } from "react";
@@ -15,7 +15,6 @@ import type { EntityRef, EntityType } from "../../api/types";
 import { useApi } from "../../lib/useApi";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
 import { recentContexts } from "../../lib/recentContexts";
-import { entityMeta, entityTitle } from "../../lib/displayNames";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
 import { ChevronRightIcon, CloseIcon, SearchIcon } from "../../components/icons";
@@ -316,8 +315,8 @@ function ExploreSection({
 }
 
 function ExploreRow({ entity, mine }: { entity: EntityRef; mine: boolean }) {
-  const title = entityTitle(entity.type, entity.name);
-  const meta = entityMeta(entity.type, entity.name);
+  // Names are canonical from the server ("AL ECON U4"): nothing to split here.
+  const title = entity.name;
   return (
     <li>
       <Link
@@ -327,15 +326,9 @@ function ExploreRow({ entity, mine }: { entity: EntityRef; mine: boolean }) {
       >
         <span className="entity-row__main">
           <span className="entity-row__title">{title}</span>
-          {(meta || mine) && (
+          {mine && (
             <span className="caption">
-              {meta}
-              {mine && (
-                <>
-                  {meta ? " · " : ""}
-                  <span className="sr-only">, </span>from your classes
-                </>
-              )}
+              <span className="sr-only">, </span>from your classes
             </span>
           )}
         </span>

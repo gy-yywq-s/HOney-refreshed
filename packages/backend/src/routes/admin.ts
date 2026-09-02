@@ -30,12 +30,11 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
         `SELECT
            (SELECT COUNT(*) FROM honey_users) AS users,
            (SELECT COUNT(*) FROM experiences WHERE status = 'published') AS published,
-           (SELECT COUNT(*) FROM reports WHERE outcome = 'pending') AS openReports,
-           (SELECT COUNT(*) FROM entity_registry WHERE active = 1) AS entities`,
+           (SELECT COUNT(*) FROM reports WHERE outcome = 'pending') AS openReports`,
       )
       .get() as Record<string, number>;
     return {
-      counts,
+      counts: { ...counts, entities: ctx.entities.count() },
       policyVersion: POLICY_VERSION,
       killSwitches: Object.fromEntries(KILL_SWITCHES.map((k) => [k, ctx.settings.killSwitch(k)])),
       cooldownHours: ctx.settings.cooldownHours(),
@@ -101,6 +100,14 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
       return { ok: true, ...result, skippedInvalid: items.length - cleaned.length };
     },
   );
+
+  /**
+   * Source labels the canonical resolver could not place (spec §13.3 no.10):
+   * visible here so a rule can be added; never promoted into a browse list.
+   */
+  app.get("/api/admin/import/unresolved", { preHandler: requireAdmin }, async () => {
+    return { labels: ctx.importer.school.unresolvedLabels() };
+  });
 
   app.post<{ Body: { entityKey?: string; active?: boolean } }>(
     "/api/admin/entities/active",

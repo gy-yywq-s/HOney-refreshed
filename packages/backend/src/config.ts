@@ -10,6 +10,9 @@ export interface HOneyConfig {
   /** HOney refresh-token TTL (ms). */
   refreshTtlMs: number;
   adminStudentId: string;
+  /** The single school this deployment serves (canonical-data scope). */
+  schoolId: string;
+  schoolName: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
@@ -27,5 +30,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
     accessTtlMs: 60 * 60 * 1000,
     refreshTtlMs: 30 * 24 * 60 * 60 * 1000,
     adminStudentId: env.HONEY_ADMIN_STUDENT_ID ?? "0088",
+    schoolId: env.HONEY_SCHOOL_ID ?? "huayaopudong",
+    schoolName: env.HONEY_SCHOOL_NAME ?? "huayaopudong.com",
   };
 }

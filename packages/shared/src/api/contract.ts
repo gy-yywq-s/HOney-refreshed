@@ -36,14 +36,27 @@ export interface Me {
   connection: { connected: boolean; lastSyncedAt: string | null; portalTokenValid: boolean };
 }
 
+/**
+ * One lesson instance, read from the canonical school data (2026-09): the
+ * five layers are distinct objects — Subject (broad area), Course (the
+ * curricular unit students mean, e.g. "AL ECON U4"), Class section (the
+ * school's operational teaching group — never an Experiences entity),
+ * Lesson instance, Topic. Every name here is canonical; clients never
+ * re-parse portal strings.
+ */
 export interface Lesson {
   id: string;
+  subjectId: string | null;
   subjectName: string;
+  /** Canonical course id / display name ("AL ECON U4"); null when the label is unresolved. */
+  courseId: string | null;
+  courseName: string | null;
+  /** Operational section ("2026 Autumn · Prep Class"); context only, not an entity. */
+  classSectionId: string | null;
+  classSectionName: string | null;
   topicName: string | null;
   teacherId: string | null;
   teacherName: string | null;
-  courseId: string | null;
-  courseName: string | null;
   roomId: string | null;
   roomName: string | null;
   /** Epoch milliseconds (the backend sends numbers, not ISO strings). */
@@ -109,6 +122,8 @@ export interface SyncResponse {
   teachers: number;
   courses: number;
   rooms: number;
+  /** Source labels the canonical resolver could not place (visible in Dash, never in browse lists). */
+  unresolved?: number;
 }
 
 /**

@@ -72,6 +72,7 @@ Per-stage documentation lives in [`docs/architecture/`](docs/architecture/):
 | M0 | [`m0-foundation.md`](docs/architecture/m0-foundation.md) | Monorepo layout, toolchain, CI |
 | M1 | [`m1-portal-connector.md`](docs/architecture/m1-portal-connector.md) | Portal auth state machine, endpoints, failure matrix |
 | M2 | [`m2-honey-core.md`](docs/architecture/m2-honey-core.md) | Accounts, sessions, consent, data API |
+| ★ | [`canonical-school-data.md`](docs/architecture/canonical-school-data.md) | **Canonical school data** — Subject · Course · Class section · Lesson · Topic, the import resolver, real fixtures, dev reset |
 | M3 | [`m3-experiences.md`](docs/architecture/m3-experiences.md) | Anonymity model, entities, ops |
 | ★ | [`moderation-pipeline.md`](docs/architecture/moderation-pipeline.md) | **The moderation pipeline** — layers, LLM constraints, pass mechanics |
 | M5 | [`m5-web-and-deploy.md`](docs/architecture/m5-web-and-deploy.md) | Web app, admin dash, deploy |
@@ -137,7 +138,7 @@ backend rule, and change a backend implementation while preserving the contract.
 ```
 packages/shared            Domain types + portal wire contract (the API of the boundaries)
 packages/portal-connector  Band-4 school-portal connector (auth coordinator, endpoints, mock portal)
-packages/backend           HOney Core backend (Fastify)
+packages/backend           HOney Core backend (Fastify); fixtures/school = real, roster-free import records
 apps/web                   Web app (Vite + React)
 ios/                       iOS app (Swift; built via GitHub Actions macOS runners)
 design/                    Brand + design tokens

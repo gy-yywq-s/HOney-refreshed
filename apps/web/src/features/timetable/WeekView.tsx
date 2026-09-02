@@ -6,7 +6,7 @@
 
 import type { Lesson } from "../../api/types";
 import { useEffect, useState } from "react";
-import { compactSubjectName, roomLabel, shortSubjectName } from "../../lib/displayNames";
+import { compactLessonTitle, lessonTitle, roomLabel } from "../../lib/displayNames";
 import { BANDS, PERIODS, minuteLabel, minuteOfDay, overlapsSlot } from "../../lib/periodCatalog";
 import { formatDayTitle, formatTime, shiftIsoDate } from "../../lib/format";
 import { Skeleton } from "../../lib/motion";
@@ -42,7 +42,7 @@ function usePhoneColumns(): boolean {
 
 export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onSelect, today, now }: WeekViewProps) {
   const phone = usePhoneColumns();
-  const cellName = (subject: string) => (phone ? shortSubjectName(subject) : compactSubjectName(subject));
+  const cellName = (lesson: Lesson) => compactLessonTitle(lesson, phone);
   // Mon–Fri always; Saturday/Sunday only when the imported week has a lesson
   // there (Gary 2026-09-02) — then the matrix scrolls sideways.
   const all = WEEKDAYS.map((_, i) => shiftIsoDate(monday, i));
@@ -132,7 +132,7 @@ export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onS
                   }
                   const label = [
                     `${formatDayTitle(date)}, Period ${band.period}`,
-                    first.subjectName,
+                    lessonTitle(first),
                     `${formatTime(first.startsAt)} to ${formatTime(first.endsAt)}`,
                     first.teacherName,
                     roomLabel(first.roomName),
@@ -151,7 +151,7 @@ export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onS
                   return (
                     <td key={date} className={cls}>
                       <button type="button" className="week__lesson" onClick={() => onSelect(first)} aria-label={label}>
-                        <span className="week__subject">{cellName(first.subjectName)}</span>
+                        <span className="week__subject">{cellName(first)}</span>
                         {first.roomName && <span className="week__room">{first.roomName}</span>}
                         {cellLessons.length > 1 && <span className="week__more">+{cellLessons.length - 1}</span>}
                       </button>
@@ -171,7 +171,7 @@ export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onS
               <li key={lesson.id}>
                 <button type="button" className="entity-row week__otherrow" onClick={() => onSelect(lesson)}>
                   <span className="entity-row__main">
-                    <span className="entity-row__title">{lesson.subjectName}</span>
+                    <span className="entity-row__title">{lessonTitle(lesson)}</span>
                     <span className="caption">
                       {[formatDayTitle(date), `${formatTime(lesson.startsAt)}–${formatTime(lesson.endsAt)}`, roomLabel(lesson.roomName)]
                         .filter(Boolean)

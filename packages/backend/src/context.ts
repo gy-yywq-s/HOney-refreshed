@@ -5,7 +5,8 @@ import type { HOneyConfig } from "./config.js";
 import type { AccountService, HOneyUserRow } from "./services/accounts.js";
 import type { ImportService } from "./services/importer.js";
 import type { TimetableService } from "./services/timetable.js";
-import type { EntityRegistry } from "./experiences/entities.js";
+import type { EntityDirectory } from "./school/directory.js";
+import type { SchoolProfile } from "./school/types.js";
 import type { ExperienceService } from "./experiences/service.js";
 import type { SettingsService } from "./experiences/settings.js";
 
@@ -19,7 +20,9 @@ export interface AppContext {
   accounts: AccountService;
   importer: ImportService;
   timetable: TimetableService;
-  entities: EntityRegistry;
+  /** The school profile: curated, deterministic canonicalization knowledge. */
+  profile: SchoolProfile;
+  entities: EntityDirectory;
   experiences: ExperienceService;
   settings: SettingsService;
   requireAuth: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;

@@ -5,7 +5,7 @@ import fastifyStatic from "@fastify/static";
 import { HOneyPortalConnector, PortalApi, PortalHttp } from "@honey/portal-connector";
 import type { CredentialVault } from "@honey/portal-connector";
 import { loadConfig, type HOneyConfig } from "./config.js";
-import { openDatabase } from "./db/database.js";
+import { ensureSchool, openDatabase } from "./db/database.js";
 import { makeAuthHelpers, type AppContext } from "./context.js";
 import { AccountService } from "./services/accounts.js";
 import { ImportService } from "./services/importer.js";
@@ -14,7 +14,8 @@ import { registerAuthRoutes } from "./routes/auth.js";
 import { registerDataRoutes } from "./routes/data.js";
 import { registerExperienceRoutes } from "./routes/experiences.js";
 import { registerAdminRoutes } from "./routes/admin.js";
-import { EntityRegistry } from "./experiences/entities.js";
+import { EntityDirectory } from "./school/directory.js";
+import { profileFor } from "./school/profiles/huayaopudong.js";
 import { ExperienceService } from "./experiences/service.js";
 import { SettingsService } from "./experiences/settings.js";
 
@@ -49,11 +50,13 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   if (opts.dbPath) config.dbPath = opts.dbPath;
 
   const db = openDatabase(config.dbPath);
+  const profile = profileFor(config.schoolId);
+  ensureSchool(db, profile.id, config.schoolName);
   const connector = new HOneyPortalConnector({ baseUrl: config.portalBaseUrl, vault: emptyVault });
   const portalApi = new PortalApi(new PortalHttp({ baseUrl: config.portalBaseUrl }));
   const accounts = new AccountService(db, config);
-  const entities = new EntityRegistry(db);
-  const importer = new ImportService(db, accounts, portalApi, entities);
+  const entities = new EntityDirectory(db, profile);
+  const importer = new ImportService(db, accounts, portalApi, profile);
   const timetable = new TimetableService(db);
   const settings = new SettingsService(db, config.sealKey);
   const experiences = new ExperienceService(db, entities, settings, config.sealKey);
@@ -65,6 +68,7 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
     accounts,
     importer,
     timetable,
+    profile,
     entities,
     experiences,
     settings,

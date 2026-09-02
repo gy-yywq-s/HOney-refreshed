@@ -6,7 +6,7 @@ import { extractFeatures, type LlmVerdict } from "./llm.js";
 import { normalizeText } from "./normalize.js";
 import { decide, POLICY_VERSION, type PolicyDecision } from "./policy.js";
 import { contentHashOf, contextHashOf, issuePass, markHash, verifyPass, type PassPayload } from "./pass.js";
-import type { EntityRegistry } from "./entities.js";
+import type { EntityDirectory } from "../school/directory.js";
 import type { SettingsService } from "./settings.js";
 import type {
   CheckExperienceResponse,
@@ -136,7 +136,7 @@ export class ExperienceService {
 
   constructor(
     private readonly db: DatabaseSync,
-    private readonly registry: EntityRegistry,
+    private readonly directory: EntityDirectory,
     private readonly settings: SettingsService,
     sealKey: Buffer,
     now: () => number = Date.now,
@@ -212,7 +212,7 @@ export class ExperienceService {
         mark: markHash(this.markKey, honeyId, key),
       };
     } else if (entityKey) {
-      const entity = this.registry.get(entityKey);
+      const entity = this.directory.get(entityKey);
       if (!entity) return { ok: false, error: "entity_unknown" };
       if (this.settings.frozenEntity(entity.entity_key)) return { ok: false, error: "entity_frozen" };
       const mode = this.settings.standaloneMode(entity.entity_key, entity.type);
@@ -917,7 +917,7 @@ export class ExperienceService {
   search(honeyId: string, q: string): SearchResponse {
     const query = q.trim().slice(0, 60);
     if (!query) return { q: "", entities: [], experiences: [] };
-    const entities = this.registry.list(undefined, query).slice(0, 30);
+    const entities = this.directory.list(undefined, query).slice(0, 30);
     let experiences: PublicExperience[] = [];
     if (!this.settings.killSwitch("HIDE_PUBLIC_EXPERIENCES")) {
       const rows = this.db
@@ -997,20 +997,10 @@ export class ExperienceService {
     };
   }
 
-  /** Display name for an entity id (normalized tables first, registry for the rest). */
+  /** Canonical display name for an entity id (posts keep their context even if delisted). */
   private entityName(type: EntitySummary["type"], id: string): string | null {
-    const bySql: Partial<Record<EntitySummary["type"], string>> = {
-      teacher: "SELECT display_name AS name FROM teachers WHERE id = ?",
-      course: "SELECT name FROM courses WHERE id = ?",
-      room: "SELECT name FROM rooms WHERE id = ?",
-    };
-    const sql = bySql[type];
-    if (sql) {
-      const row = this.db.prepare(sql).get(id) as unknown as { name: string } | undefined;
-      if (row?.name) return row.name;
-    }
-    const reg = this.registry.get(`${type}:${id}`);
-    return reg?.name ?? null;
+    if (type === "lesson") return null;
+    return this.directory.name(type, id);
   }
 
   // ---------- reactions (§10) ----------
@@ -1051,7 +1041,7 @@ export class ExperienceService {
         this.userLessonTokens(honeyId).has(row.lesson_id)
       );
     } else {
-      const entity = this.registry.get(row.entity_key);
+      const entity = this.directory.get(row.entity_key);
       eligible = !!entity && this.verifiedExposure(honeyId, row.entity_key, entity.type) !== "";
     }
     if (!eligible) return { ok: false, error: "not_eligible" };
