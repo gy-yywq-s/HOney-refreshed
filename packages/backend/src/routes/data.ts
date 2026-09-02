@@ -33,6 +33,19 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
     if (!session || session.expiresAt.getTime() - Date.now() < 5 * 60_000) {
       return { status: "portal_reconnect_required" };
     }
+    // The clock is not the truth: the school invalidates a token when the
+    // student signs in elsewhere (the official site, the app), and a dead
+    // token would land them on the portal's login page (Gary 2026-09-02).
+    // One cheap identity call tells; a portal outage keeps the token.
+    try {
+      await ctx.connector.api.userInfo(session.token);
+    } catch (e) {
+      const kind = e instanceof Error && "info" in e ? (e as { info: { kind: string } }).info.kind : "";
+      if (kind === "sessionExpired" || kind === "credentialsRejected") {
+        ctx.accounts.markPortalExpired(user.honey_id);
+        return { status: "portal_reconnect_required" };
+      }
+    }
     const url = `${ctx.config.portalBaseUrl}/student/login?token=${encodeURIComponent(session.token)}`;
     return { status: "ok", url, expiresAt: session.expiresAt.getTime() };
   });
