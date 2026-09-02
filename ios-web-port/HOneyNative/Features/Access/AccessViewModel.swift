@@ -2,11 +2,12 @@
 // gate — direct to the school portal with the saved school login; HOney
 // never relays. Every failure stays on this screen.
 //
-// The consumed-permit fix: the permit list is re-read from the portal on
-// appear, on foreground, on pull, and after EVERY open attempt (success,
-// refusal or unknown outcome), and a permit counts as used when its door
-// flag is set or its status says opened — so a gate opened from the
-// official site stops showing as openable here.
+// Freshness authority (review 11d42e3 §3.5): the permit list is re-read
+// on appear, on foreground, on pull and after EVERY open attempt; a
+// permit may open a gate only when the latest read succeeded and no open
+// attempt is unconfirmed. A permit counts as used when its door flag is
+// set or its status says opened, so a gate opened on the official site
+// stops showing as openable here. One mutation at a time, never replayed.
 
 import Foundation
 import Observation
@@ -17,14 +18,12 @@ import HOneyCore
 final class AccessViewModel {
     private let env: AppEnvironment
     private var refreshTask: Task<Void, Never>?
+    private var generation = 0
 
-    private(set) var permits: [ExitPermit] = []
-    private(set) var doors: [PortalDoor] = []
+    private(set) var authority = AccessAuthority()
     private(set) var connection: PortalSessionState = .restoring
     private(set) var loading = false
     private(set) var working = false
-    private(set) var didLoadPermits = false
-    private(set) var didLoadDoors = false
     private(set) var permitsError: String?
     private(set) var doorsError: String?
     var banner: (tone: BannerTone, text: String)?
@@ -32,8 +31,13 @@ final class AccessViewModel {
 
     init(env: AppEnvironment) { self.env = env }
 
-    var openable: [ExitPermit] { ExitPermit.openable(permits) }
-    var listed: [ExitPermit] { ExitPermit.sortedForList(permits) }
+    var permits: [ExitPermit] { authority.permits }
+    var doors: [PortalDoor] { authority.doors }
+    var openable: [ExitPermit] { authority.openable() }
+    var listed: [ExitPermit] { ExitPermit.sortedForList(authority.permits) }
+    var permitsUsable: Bool { authority.permitsUsable }
+    var staleMessage: String? { authority.staleMessage }
+    var commuterRouteAvailable: Bool { authority.commuterRouteAvailable }
     var needsSchoolLogin: Bool {
         switch connection {
         case .noCredentials, .userActionRequired: return true
@@ -41,48 +45,62 @@ final class AccessViewModel {
         }
     }
 
+    /// The HOney account changed under this screen: nothing cached may show.
+    func reset() {
+        generation += 1
+        refreshTask?.cancel()
+        refreshTask = nil
+        authority.reset()
+        banner = nil
+        permitsError = nil
+        doorsError = nil
+        draft = PermitDraft.quick()
+    }
+
     /// Single-flight refresh: appear, foreground, pull and post-action all
     /// share one round trip.
     func refresh(keepBanner: Bool = false) async {
         if let refreshTask { await refreshTask.value; return }
-        let task = Task { await self.performRefresh(keepBanner: keepBanner) }
+        let gen = generation
+        let task = Task { await self.performRefresh(keepBanner: keepBanner, generation: gen) }
         refreshTask = task
         await task.value
-        refreshTask = nil
+        if refreshTask == task { refreshTask = nil }
     }
 
-    private func performRefresh(keepBanner: Bool) async {
+    private func performRefresh(keepBanner: Bool, generation gen: Int) async {
         loading = true
         defer { loading = false }
         if !keepBanner { banner = nil }
         if !env.portalVault.hasCredentials {
             connection = .noCredentials
             permitsError = AccessCopy.describe(PortalError.noCredentials)
-            doorsError = nil
-            didLoadPermits = false
-            didLoadDoors = false
+            authority.permitsFailed(permitsError ?? "")
+            authority.doorsFailed()
             return
         }
         await env.portalCoordinator.restore()
+        guard gen == generation else { return }
         connection = await env.portalCoordinator.currentState()
         async let permitsResult = fetchPermits()
         async let doorsResult = fetchDoors()
         let (p, d) = await (permitsResult, doorsResult)
+        guard gen == generation else { return }
         switch p {
         case .success(let rows):
-            permits = rows.map(ExitPermit.init)
-            didLoadPermits = true
+            authority.permitsLoaded(rows)
             permitsError = nil
         case .failure(let error):
-            permitsError = AccessCopy.describe(error, fallback: "Permits are temporarily unavailable.")
+            let message = AccessCopy.describe(error, fallback: "Permits are temporarily unavailable.")
+            permitsError = message
+            authority.permitsFailed(message)
         }
         switch d {
         case .success(let list):
-            doors = list
-            didLoadDoors = true
+            authority.doorsLoaded(list)
             doorsError = nil
         case .failure(let error):
-            didLoadDoors = false
+            authority.doorsFailed()
             doorsError = AccessCopy.describe(error, fallback: "Gate names are temporarily unavailable.")
         }
         connection = await env.portalCoordinator.currentState()
@@ -121,13 +139,23 @@ final class AccessViewModel {
         }
     }
 
-    /// Open a gate. Non-idempotent → never auto-replayed. Whatever the
-    /// portal answers, the permit list is re-read so a consumed permit
-    /// stops offering itself.
+    /// Open a gate. Non-idempotent → never auto-replayed. The permit
+    /// authority is withdrawn before the request and restored only by a
+    /// successful re-read, whatever the portal answers.
     func openGate(route: AccessRoute, door: PortalDoor) async {
         guard !working else { return }
+        switch route {
+        case .commuter:
+            guard authority.commuterRouteAvailable else { banner = (.warning, "Gate names are unavailable. Refresh Access and try again."); return }
+        case .permit(let recordId):
+            guard let permit = authority.permits.first(where: { $0.recordId == recordId }), authority.mayUse(permit) else {
+                banner = (.warning, staleMessage ?? "This permit cannot be used until the list is refreshed.")
+                return
+            }
+        }
         working = true
         defer { working = false }
+        if case .permit = route { authority.openAttempted() }
         do {
             let token = try await env.portalCoordinator.prepareForSensitiveAction()
             let result = try await env.portalAPI.openDoor(token: token, recordId: route.recordId, doorKey: door.key)
@@ -161,7 +189,7 @@ final class AccessViewModel {
         banner = (.warning, AccessCopy.describe(error))
         if let portalError = error as? PortalError {
             switch portalError {
-            case .credentialsRejected, .userActionRequired: connection = .userActionRequired(.unknown)
+            case .credentialsRejected, .userActionRequired, .identityMismatch: connection = .userActionRequired(.unknown)
             case .noCredentials: connection = .noCredentials
             default: break
             }

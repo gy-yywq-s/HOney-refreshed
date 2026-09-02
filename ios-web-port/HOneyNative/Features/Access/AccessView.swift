@@ -49,6 +49,10 @@ struct AccessView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await model?.refresh(keepBanner: true) } }
         }
+        .onChange(of: env.scope) { _, _ in
+            model?.reset()
+            Task { await model?.refresh() }
+        }
         .sheet(isPresented: $showSchoolLogin) {
             SchoolLoginSheet(purpose: .save) { Task { await model?.refresh() } }
         }
@@ -163,15 +167,15 @@ struct AccessView: View {
             if model.loading, permits.isEmpty {
                 LoadingPlaceholder(lines: 2)
             } else {
-                if let error = model.permitsError, !model.needsSchoolLogin {
-                    InlineStatusBanner(text: error + (permits.isEmpty ? "" : " The list below may be out of date."), tone: .warning, action: (L10n.t("Try again"), { Task { await model.refresh() } }))
+                if let stale = model.staleMessage, !model.needsSchoolLogin {
+                    InlineStatusBanner(text: stale + (permits.isEmpty ? "" : " The list below may be out of date and cannot open a gate until it is refreshed."), tone: .warning, action: (L10n.t("Try again"), { Task { await model.refresh(keepBanner: true) } }))
                 }
                 if visible.isEmpty {
-                    Text(model.didLoadPermits ? "No permits." : "Permits unavailable.").font(HType.secondary).foregroundStyle(Color.honeySecondary)
+                    Text(model.permitsUsable ? "No permits." : "Permits unavailable.").font(HType.secondary).foregroundStyle(Color.honeySecondary)
                         .padding(.vertical, HSpace.x2)
                 } else {
                     ForEach(visible) { permit in
-                        PermitRow(permit: permit, actionable: model.didLoadPermits && !model.working) {
+                        PermitRow(permit: permit, actionable: model.permitsUsable && !model.working) {
                             beginGateFlow(model, route: .permit(recordId: permit.recordId))
                         } withdraw: {
                             withdrawing = permit
@@ -210,13 +214,13 @@ struct AccessView: View {
 
     private func permitSubtitle(_ model: AccessViewModel) -> String {
         if model.loading { return "Checking permits…" }
-        guard model.didLoadPermits else { return "Permits unavailable" }
+        guard model.permitsUsable else { return model.permits.isEmpty ? "Permits unavailable" : "Refresh to use a permit" }
         let n = model.openable.count
         return n == 0 ? "No permit usable right now" : n == 1 ? "Use the approved permit" : "Choose one of \(n) permits"
     }
 
     private func beginGateFlow(_ model: AccessViewModel, route: AccessRoute) {
-        guard model.didLoadDoors, !model.doors.isEmpty else {
+        guard model.commuterRouteAvailable else {
             model.banner = (.warning, model.doorsError ?? "Gate names are unavailable. Refresh Access and try again.")
             return
         }
@@ -224,8 +228,8 @@ struct AccessView: View {
     }
 
     private func beginPermitSelection(_ model: AccessViewModel) {
-        guard model.didLoadPermits else {
-            model.banner = (.warning, "Permits are not available yet. Refresh Access and try again.")
+        guard model.permitsUsable else {
+            model.banner = (.warning, model.staleMessage ?? "Permits are not available yet. Refresh Access and try again.")
             return
         }
         let usable = model.openable
@@ -352,7 +356,7 @@ struct PermitRow: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
-            let openable = permit.isOpenable(now: context.date)
+            let openable = actionable && permit.isOpenable(now: context.date)
             HStack(alignment: .center, spacing: HSpace.x3) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(permit.displayReason).font(HType.body).foregroundStyle(Color.honeyInk)
@@ -372,7 +376,6 @@ struct PermitRow: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
-                        .disabled(!actionable)
                         .accessibilityHint("Choose a gate to open with this permit")
                     }
                 }
