@@ -49,7 +49,11 @@ themselves were kept as reviewed). Applied, in order:
    deliberate taps, Latin-only letter groups, cancellation ≠ network error,
    timeouts named, strict concurrency `complete`, per-configuration servers;
 9. signed runtime proof — `RELEASE_CHECKLIST.md`; CI publishes warning
-   counts with the errors.
+   counts with the errors;
+10. (found by that warning count on `0fb6a8e`) the portal's navigation-policy
+    delegate was spelled in a form WebKit never bound, so the HTTPS-only
+    allowlist was inert; the async form is bound and `responds(to:)` is
+    tested, so the unsigned CI lane catches a regression.
 
 Per-post control keys (review §5.2) stay behind `OwnershipKeyStoring`
 (versioned export); a master-secret model waits for a server protocol.
