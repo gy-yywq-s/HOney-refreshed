@@ -81,12 +81,13 @@ export function HomePage() {
 
   return (
     <div className="stack home">
+      {/* The brand bar leads the first screen (Gary 2026-09-02): wordmark
+          centred, then a rule that runs edge to edge — the reference build's
+          top bar, in this system's stroke. Hidden where the rail carries it. */}
+      <div className="home-brand">
+        <WordmarkHOney height={30} />
+      </div>
       <header className="home-head">
-        {/* The wordmark leads the first screen (Gary 2026-09-02: it gives Home
-            its proportion); the desktop rail already carries it, so it hides there. */}
-        <div className="home-head__mark">
-          <WordmarkHOney height={22} />
-        </div>
         <h1 className="home-head__hi">{lang === "zh" ? `你好，${me.displayName}` : `Hi, ${me.displayName}`}</h1>
         <p className="home-head__date">{today}</p>
       </header>
