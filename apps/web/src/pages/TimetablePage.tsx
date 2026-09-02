@@ -1,6 +1,6 @@
 // Scroll model: FRAMED_SCROLL (§16.14.7) — sticky date nav frame; the day timeline scrolls.
 import { Skeleton } from "../lib/motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import type { Lesson, SyncResponse } from "../api/types";
@@ -11,6 +11,8 @@ import { useSyncHandler } from "../lib/refresh";
 import { apiCache, useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
 import { parseCourseName, roomLabel } from "../lib/displayNames";
+import { BANDS, PERIODS, minuteOfDay, overlapsSlot, periodLabelFor } from "../lib/periodCatalog";
+import { WeekView } from "../features/timetable/WeekView";
 import {
   formatDayTitle,
   formatTime,
@@ -18,6 +20,8 @@ import {
   timeAgo,
   todayIsoDate,
   formatShortDate,
+  mondayOf,
+  formatWeekRange,
 } from "../lib/format";
 
 type SyncFeedback = { kind: "result"; result: SyncResponse } | { kind: "error"; message: string };
@@ -41,24 +45,62 @@ export function TimetablePage() {
     }
     return todayIsoDate();
   });
+  const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
+  const [selected, setSelected] = useState<Lesson | null>(null);
+  const closeLesson = useCallback(() => setSelected(null), []);
+  const pickerRef = useRef<HTMLInputElement>(null);
+  // Day | Week (addendum v1.1 §3): Day is the default; Week is kept while the
+  // student works in the Timetable this session (never a cold-launch default).
+  // ?view=week deep-links Week; a ?date= link without ?view= means Day.
+  const [view, setView] = useState<"day" | "week">(() => {
+    const v = searchParams.get("view");
+    if (v === "week") return "week";
+    if (v === "day" || searchParams.get("date")) return "day";
+    try {
+      return sessionStorage.getItem("honey.timetable.view") === "week" ? "week" : "day";
+    } catch {
+      return "day";
+    }
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("honey.timetable.view", view);
+    } catch {
+      /* ignore */
+    }
+  }, [view]);
+  const monday = mondayOf(date);
+  const week = useApi(
+    () => (view === "week" ? api.timetableRange(monday, shiftIsoDate(monday, 4)) : Promise.resolve(null)),
+    [view, monday],
+    view === "week" ? `timetable:week:${monday}` : undefined,
+  );
+  const weekDays = useMemo(() => {
+    if (!week.data) return null;
+    const map: Record<string, Lesson[]> = {};
+    for (const d of week.data.days) map[d.date] = d.lessons;
+    return map;
+  }, [week.data]);
   // The address bar names the day shown, after every change (r8): a copied
   // link means what the page shows, an impossible ?date= is replaced.
   useEffect(() => {
     // Compare against the address bar itself (React Router never re-reads a
     // replaceState). Bare /timetable stays bare while showing today: a copied
     // "today" link must not pin yesterday tomorrow (recorded decision).
-    const current = new URLSearchParams(window.location.search).get("date");
-    if (current === null && date === todayIsoDate()) return;
-    if (current !== date) window.history.replaceState(null, "", `/timetable?date=${date}`);
-  }, [date]);
-  const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
-  const [selected, setSelected] = useState<Lesson | null>(null);
-  const closeLesson = useCallback(() => setSelected(null), []);
-  const pickerRef = useRef<HTMLInputElement>(null);
+    const params = new URLSearchParams(window.location.search);
+    const current = params.get("date");
+    const currentView = params.get("view");
+    if (current === null && currentView === null && date === todayIsoDate() && view === "day") return;
+    if (current !== date || (currentView ?? "day") !== view) {
+      const next = new URLSearchParams({ date });
+      if (view === "week") next.set("view", "week");
+      window.history.replaceState(null, "", `/timetable?${next}`);
+    }
+  }, [date, view]);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
   const [showReconnect, setShowReconnect] = useState(false);
-  const landing = useRetryFocus<HTMLDivElement>(loading);
+  const landing = useRetryFocus<HTMLDivElement>(loading || week.loading);
   // Landing contract: the FIRST settle (success or error) of a date — cold
   // load, re-entry or a date step — lands once; every later arrival for the
   // same date (a retry, a refresh) must not scroll.
@@ -110,11 +152,19 @@ export function TimetablePage() {
   return (
     <div className="timetable-screen">
       <header className="daynav">
-        <div className="daynav__stepper" role="group" aria-label="Choose a day">
+        <div className="daynav__modes" role="tablist" aria-label="Timetable view">
+          <button type="button" role="tab" aria-selected={view === "day"} className="daynav__mode" onClick={() => setView("day")}>
+            Day
+          </button>
+          <button type="button" role="tab" aria-selected={view === "week"} className="daynav__mode" onClick={() => setView("week")}>
+            Week
+          </button>
+        </div>
+        <div className="daynav__stepper" role="group" aria-label={view === "week" ? "Choose a week" : "Choose a day"}>
           <button
             className="daynav__arrow"
-            aria-label="Previous day"
-            onClick={() => setDate((d) => shiftIsoDate(d, -1))}
+            aria-label={view === "week" ? "Previous week" : "Previous day"}
+            onClick={() => setDate((d) => shiftIsoDate(d, view === "week" ? -7 : -1))}
           >
             &lsaquo;
           </button>
@@ -127,7 +177,7 @@ export function TimetablePage() {
             <button
               type="button"
               className="daynav__datebtn"
-              aria-label={`Pick a date (${formatDayTitle(date)})`}
+              aria-label={view === "week" ? `Pick a week (${formatWeekRange(monday)})` : `Pick a date (${formatDayTitle(date)})`}
               onClick={() => {
                 const el = pickerRef.current;
                 if (!el) return;
@@ -138,9 +188,9 @@ export function TimetablePage() {
                 }
               }}
             >
-              <span className="daynav__date-long">{formatDayTitle(date)}</span>
+              <span className="daynav__date-long">{view === "week" ? formatWeekRange(monday) : formatDayTitle(date)}</span>
               <span className="daynav__date-short" aria-hidden="true">
-                {formatStepperDate(date)}
+                {view === "week" ? formatWeekRange(monday) : formatStepperDate(date)}
               </span>
               <svg className="daynav__caret" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
                 <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -170,15 +220,15 @@ export function TimetablePage() {
           </h1>
           <button
             className="daynav__arrow"
-            aria-label="Next day"
-            onClick={() => setDate((d) => shiftIsoDate(d, 1))}
+            aria-label={view === "week" ? "Next week" : "Next day"}
+            onClick={() => setDate((d) => shiftIsoDate(d, view === "week" ? 7 : 1))}
           >
             &rsaquo;
           </button>
         </div>
-        {!isToday && (
+        {(view === "week" ? mondayOf(todayIsoDate()) !== monday : !isToday) && (
           <button className="btn btn--ghost btn--small daynav__today" onClick={() => setDate(todayIsoDate())}>
-            Back to today
+            {view === "week" ? "This week" : "Back to today"}
           </button>
         )}
         {/* Desktop only: the phone answers these with gestures — pull down
@@ -224,9 +274,27 @@ export function TimetablePage() {
           </div>
         )}
 
-      <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="region" aria-label="Day timeline">
+      <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="region" aria-label={view === "week" ? "Week overview" : "Day timeline"}>
 
-      {loading ? (
+      {view === "week" ? (
+        <WeekView
+          monday={monday}
+          days={weekDays}
+          loading={week.loading}
+          error={week.error}
+          onRetry={() => {
+            landing.arm();
+            week.reload();
+          }}
+          onOpenDay={(d) => {
+            setDate(d);
+            setView("day");
+          }}
+          onSelect={(lesson) => setSelected(lesson)}
+          today={todayIsoDate()}
+          now={Date.now()}
+        />
+      ) : loading ? (
         <Skeleton lines={4} />
       ) : error ? (
         <div role="alert" className="banner banner--danger">
@@ -245,7 +313,22 @@ export function TimetablePage() {
       )}
 
       </div>
-      {selected && <LessonDetail lesson={selected} onClose={closeLesson} />}
+      {selected && (
+        <LessonDetail
+          lesson={selected}
+          onClose={closeLesson}
+          {...(view === "week"
+            ? {
+                onOpenDay: () => {
+                  const d = new Date(selected.startsAt).toLocaleDateString("en-CA");
+                  setSelected(null);
+                  setDate(d);
+                  setView("day");
+                },
+              }
+            : {})}
+        />
+      )}
       {showReconnect && (
         <ReconnectDialog
           onClose={() => setShowReconnect(false)}
@@ -273,34 +356,9 @@ interface DayRange {
   end: number;
 }
 
-interface TimelineBand {
-  id: string;
-  start: number;
-  end: number;
-  kind: "period" | "break";
-  /** Period number, or the break's label. */
-  period?: number;
-  label?: string;
-}
+// The period catalog (P1–P6, Lunch, Dinner) lives in lib/periodCatalog.ts,
+// shared with the Week overview.
 
-/** Legacy TimelineBand.standard, verbatim. */
-const BANDS: TimelineBand[] = [
-  { id: "p1", start: 9 * 60, end: 10 * 60 + 30, kind: "period", period: 1 },
-  { id: "p2", start: 10 * 60 + 30, end: 12 * 60, kind: "period", period: 2 },
-  { id: "lunch", start: 12 * 60, end: 13 * 60 + 30, kind: "break", label: "Lunch Break" },
-  { id: "p3", start: 13 * 60 + 30, end: 15 * 60, kind: "period", period: 3 },
-  { id: "p4", start: 15 * 60, end: 16 * 60 + 30, kind: "period", period: 4 },
-  { id: "p5", start: 16 * 60 + 30, end: 18 * 60, kind: "period", period: 5 },
-  { id: "dinner", start: 18 * 60, end: 18 * 60 + 30, kind: "break", label: "Dinner Break" },
-  { id: "p6", start: 18 * 60 + 30, end: 20 * 60, kind: "period", period: 6 },
-];
-
-const PERIODS = BANDS.filter((b) => b.kind === "period");
-
-function minuteOfDay(timestamp: number): number {
-  const d = new Date(timestamp);
-  return d.getHours() * 60 + d.getMinutes();
-}
 
 function rangeFor(lessons: Lesson[]): DayRange {
   let start = DEFAULT_START;
@@ -326,14 +384,6 @@ function geometryFor(range: DayRange) {
   return { clamp, topFor, heightBetween, hourMarks };
 }
 
-function overlapsSlot(slot: TimelineBand, start: number, end: number): boolean {
-  return start < slot.end && end > slot.start;
-}
-
-function periodLabelFor(start: number, end: number): string | null {
-  const slot = PERIODS.find((s) => overlapsSlot(s, start, end));
-  return slot ? `P${slot.period}` : null;
-}
 
 function DayTimeline({
   date,
@@ -520,7 +570,16 @@ function CalendarGlyph() {
   );
 }
 
-function LessonDetail({ lesson, onClose }: { lesson: Lesson; onClose: () => void }) {
+function LessonDetail({
+  lesson,
+  onClose,
+  onOpenDay,
+}: {
+  lesson: Lesson;
+  onClose: () => void;
+  /** From the Week overview: the semantic-zoom step down to the day. */
+  onOpenDay?: () => void;
+}) {
   const course = lesson.courseName ? parseCourseName(lesson.courseName, lesson.teacherName) : null;
   const extra = course && course.meta ? course.meta : null;
   return (
@@ -547,6 +606,11 @@ function LessonDetail({ lesson, onClose }: { lesson: Lesson; onClose: () => void
         )}
       </div>
       <div className="modal__actions">
+        {onOpenDay && (
+          <button type="button" className="btn btn--ghost" onClick={onOpenDay}>
+            Open this day
+          </button>
+        )}
         <Link className="btn btn--primary" to={`/experiences/compose?lessonId=${lesson.id}`}>
           Share what this was like
         </Link>

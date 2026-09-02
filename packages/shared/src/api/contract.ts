@@ -64,6 +64,14 @@ export interface TimetableResponse {
   lastSyncedAt: string | null;
 }
 
+/** Several consecutive days in one request (the Week overview). */
+export interface TimetableRangeResponse {
+  from: string;
+  to: string;
+  days: { date: string; lessons: Lesson[] }[];
+  lastSyncedAt: string | null;
+}
+
 export interface NextLessonResponse {
   nextLesson: NextLesson | null;
   lastSyncedAt: string | null;

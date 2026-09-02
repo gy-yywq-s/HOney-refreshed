@@ -3,6 +3,7 @@ import type { AppContext } from "../context.js";
 import type {
   SyncResponse,
   TimetableResponse,
+  TimetableRangeResponse,
   NextLessonResponse,
   HistoryResponse,
   DirectoryResponse,
@@ -34,6 +35,39 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
       return {
         date: dayStart.toISOString().slice(0, 10),
         lessons: ctx.timetable.lessonsForDay(user.honey_id, dayStart.getTime(), dayEnd.getTime()),
+        lastSyncedAt: connection.lastSyncedAt?.toISOString() ?? null,
+      };
+    },
+  );
+
+  // The Week overview (addendum v1.1 §18.1): one request for up to 8 days.
+  app.get<{ Querystring: { from?: string; to?: string } }>(
+    "/api/timetable/range",
+    { preHandler: ctx.requireAuth },
+    async (req, reply): Promise<TimetableRangeResponse> => {
+      const user = ctx.userOf(req);
+      const from = req.query.from ? new Date(`${req.query.from}T00:00:00`) : null;
+      const to = req.query.to ? new Date(`${req.query.to}T00:00:00`) : null;
+      if (!from || !to || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to < from)
+        return reply.code(400).send({ error: "bad range" });
+      const days: TimetableRangeResponse["days"] = [];
+      const cursor = new Date(from);
+      cursor.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 8 && cursor <= to; i++) {
+        const dayStart = new Date(cursor);
+        const dayEnd = new Date(cursor);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+        days.push({
+          date: `${dayStart.getFullYear()}-${String(dayStart.getMonth() + 1).padStart(2, "0")}-${String(dayStart.getDate()).padStart(2, "0")}`,
+          lessons: ctx.timetable.lessonsForDay(user.honey_id, dayStart.getTime(), dayEnd.getTime()),
+        });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      const connection = ctx.accounts.getConnection(user.honey_id);
+      return {
+        from: days[0]?.date ?? req.query.from!,
+        to: days[days.length - 1]?.date ?? req.query.to!,
+        days,
         lastSyncedAt: connection.lastSyncedAt?.toISOString() ?? null,
       };
     },

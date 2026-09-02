@@ -57,3 +57,24 @@ export function roomLabel(room: string | null | undefined): string {
   if (!room) return "";
   return /^[0-9]+[A-Za-z]?$/.test(room.trim()) ? `Room ${room.trim()}` : room;
 }
+
+/**
+ * The subject as a Week-matrix cell reads it (addendum §9.4): a stable,
+ * meaningful short form — never initials invented from every capital.
+ * "Edexcel Economics-U4" → "Economics"; "CIE Chinese Language & Literature"
+ * → "Chinese"; "IELTS-Speaking" → "IELTS"; "CIE Physics-A2" → "Physics";
+ * "Activity" → "Activity"; "Public Speaking" → "Public Speaking".
+ */
+const BOARD_WORDS = /^(Edexcel|CIE|Cambridge|AQA|OCR|IGCSE|GCSE|IAL|IB|AP)\b\s*/i;
+const UNIT_SUFFIX = /[-\s](U\d+|A[12]|AS|P\d+|L\d+|Y\d+)$/i;
+export function compactSubjectName(subject: string): string {
+  let s = subject.trim().replace(BOARD_WORDS, "").replace(UNIT_SUFFIX, "").trim();
+  if (!s) return subject.trim();
+  // "IELTS-Speaking" → "IELTS": a hyphenated qualifier after a short head.
+  const hy = s.match(/^([A-Za-z]{3,8})-([A-Za-z].*)$/);
+  if (hy) s = hy[1]!;
+  if (s.length <= 16) return s;
+  // "Chinese Language & Literature" → "Chinese": the head word carries the identity.
+  const head = s.split(/\s+/)[0]!;
+  return head.length >= 4 ? head : s;
+}

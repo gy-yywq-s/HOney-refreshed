@@ -41,6 +41,7 @@ import type {
   TimetableResponse,
   SearchResponse,
   EntityStats,
+  TimetableRangeResponse,
 } from "./types";
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -146,6 +147,10 @@ export class ApiClient {
 
   timetable(date: string): Promise<TimetableResponse> {
     return this.request("GET", `/api/timetable?date=${encodeURIComponent(date)}`);
+  }
+
+  timetableRange(from: string, to: string): Promise<TimetableRangeResponse> {
+    return this.request("GET", `/api/timetable/range?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
   }
 
   nextLesson(): Promise<NextLessonResponse> {

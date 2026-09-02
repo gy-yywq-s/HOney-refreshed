@@ -233,6 +233,31 @@
   margin-bottom: var(--sp-4);
   padding: var(--sp-2) 0;
 }
+.daynav__modes {
+  /* Day | Week: a genuine choice pill, Day first (addendum §3.2). */
+  display: inline-flex;
+  flex: none;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface-solid);
+}
+.daynav__mode {
+  border: 0;
+  background: none;
+  min-height: 32px;
+  padding: 0 var(--sp-4);
+  border-radius: 99px;
+  font: inherit;
+  font-size: var(--fs-secondary);
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.daynav__mode[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--surface);
+}
 .daynav__row {
   flex: 1 1 auto;
   display: flex;
@@ -362,6 +387,10 @@
   }
   .daynav__date {
     flex: 1;
+  }
+  .daynav__modes {
+    align-self: center;
+    margin-bottom: var(--sp-1);
   }
   .daynav__today {
     align-self: center;
@@ -1900,4 +1929,181 @@ button.row:hover {
   color: var(--ink);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Week overview: a period matrix (addendum v1.1 §5–§13) ──────────────── */
+.week {
+  /* A dense instrument: it may use a narrower margin than prose (§6). */
+  margin: 0 calc(-1 * (var(--page-x) - 10px));
+}
+.week__table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px 0;
+}
+.week__table th,
+.week__table td {
+  padding: 0;
+  vertical-align: top;
+}
+.week__gutter {
+  width: 32px;
+  text-align: left;
+}
+.week__day {
+  padding-bottom: var(--sp-1);
+}
+.week__daybtn {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  color: var(--ink-2);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+.week__dayname {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+}
+.week__daynum {
+  font-size: var(--fs-body);
+  font-weight: 650;
+  color: var(--ink);
+}
+.week__day--today .week__daybtn {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.week__day--today .week__daynum {
+  color: var(--accent);
+}
+.week__row .week__gutter {
+  display: table-cell;
+  padding-top: var(--sp-2);
+}
+.week__period {
+  display: block;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+.week__start {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.week__cell {
+  height: 66px;
+  border-top: 1px solid var(--line);
+}
+.week__cell--today {
+  background: color-mix(in srgb, var(--accent-tint) 45%, transparent);
+}
+.week__lesson {
+  width: 100%;
+  height: 100%;
+  min-height: 62px;
+  margin: 2px 0;
+  padding: var(--sp-2) 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-solid);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.week__subject {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.week__room {
+  font-size: var(--fs-micro);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.week__more {
+  font-size: var(--fs-micro);
+  color: var(--accent);
+  font-weight: 700;
+}
+.week__cell--now .week__lesson {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+.week__cell--now .week__room {
+  color: inherit;
+  opacity: 0.8;
+}
+.week__break th {
+  height: 26px;
+  vertical-align: middle;
+  text-align: center;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.week__other {
+  margin-top: var(--sp-4);
+  padding: 0 10px;
+}
+.week__otherrow {
+  width: 100%;
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  font: inherit;
+  cursor: pointer;
+}
+@media (max-width: 374px) {
+  .week__cell {
+    height: 60px;
+  }
+  .week__lesson {
+    min-height: 56px;
+    padding: 6px 4px;
+  }
+  .week__room {
+    display: none;
+  }
+  .week__start {
+    display: none;
+  }
+  .week__gutter {
+    width: 28px;
+  }
+}
+@media (max-height: 700px) {
+  .week__cell {
+    height: 58px;
+  }
+  .week__lesson {
+    min-height: 54px;
+  }
 }
