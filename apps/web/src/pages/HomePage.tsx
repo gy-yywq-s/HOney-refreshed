@@ -12,7 +12,7 @@ import { useRetryFocus } from "../lib/useRetryFocus";
 import { formatDayBucket, formatDayTitle, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
 import { roomLabel } from "../lib/displayNames";
 import { ChevronRightIcon } from "../components/icons";
-import { useT } from "../lib/i18n";
+import { useLang, useT } from "../lib/i18n";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
 
@@ -23,6 +23,7 @@ export function HomePage() {
   const fromClasses = useFromYourClasses(10);
   const now = useNowTick(1000);
   const t = useT();
+  const lang = useLang();
 
   if (!me) return null;
 
@@ -72,7 +73,7 @@ export function HomePage() {
   return (
     <div className="stack home">
       <header className="home-head">
-        <h1 className="home-head__hi">{t("Hi,")} {me.displayName}</h1>
+        <h1 className="home-head__hi">{lang === "zh" ? `你好，${me.displayName}` : `Hi, ${me.displayName}`}</h1>
         <p className="home-head__date">{today}</p>
       </header>
 

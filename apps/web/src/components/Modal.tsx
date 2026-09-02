@@ -1,9 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const CLOSE_MS = 320; // matches the sheet's transition; the fallback if transitionend never fires
+const DISMISS_PX = 110; // damped drag that commits a dismiss
+const DISMISS_VELOCITY = 0.6; // px/ms — a flick commits too
 
 interface ModalProps {
   title: string;
@@ -13,12 +17,48 @@ interface ModalProps {
   describedBy?: string | undefined;
 }
 
+function reducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * The dialog / bottom sheet. On phones it presents like a native sheet
+ * (Gary 2026-09-02, the Ionic reference): it slides up on the iOS curve,
+ * slides DOWN before it leaves (never a jump cut), and follows the finger —
+ * drag it down past the threshold or flick it to dismiss, otherwise it
+ * springs back. Escape, the × and the backdrop close through the same
+ * exit. Focus starts on the dialog and returns to the opener; the app
+ * behind is inert.
+ */
 export function Modal({ title, onClose, children, describedBy }: ModalProps) {
   const shellRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [closing, setClosing] = useState(false);
   // Read through a ref: an inline onClose (new identity each render) must
-  // not re-run the effect below — its cleanup moves focus and drops inert.
+  // not re-run the focus/inert effect — its cleanup moves focus.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const closingRef = useRef(false);
+
+  // One exit for every closer: animate out, then let the owner unmount.
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    if (reducedMotion()) {
+      onCloseRef.current();
+      return;
+    }
+    setClosing(true);
+    const shell = shellRef.current;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      onCloseRef.current();
+    };
+    shell?.addEventListener("transitionend", finish, { once: true });
+    window.setTimeout(finish, CLOSE_MS + 40);
+  }, []);
 
   // Escape closes; Tab cycles inside the dialog; focus starts on the dialog
   // and returns to the opener on close (design audit 2026-09-01, fix 6).
@@ -28,7 +68,7 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
     shell?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onCloseRef.current();
+        requestClose();
         return;
       }
       if (e.key !== "Tab" || !shell) return;
@@ -54,12 +94,71 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
       root?.removeAttribute("inert");
       opener?.focus?.();
     };
-  }, []);
+  }, [requestClose]);
+
+  // The sheet follows the finger (phones): a drag from anywhere on the sheet
+  // while its own content is at the top; the backdrop thins with it.
+  useEffect(() => {
+    const shell = shellRef.current;
+    const overlay = overlayRef.current;
+    if (!shell || !overlay) return;
+    const sheet = () => window.matchMedia("(max-width: 640px)").matches;
+    let startY = 0;
+    let startT = 0;
+    let lastY = 0;
+    let lastT = 0;
+    let dragging = false;
+    let dy = 0;
+    const onStart = (e: TouchEvent) => {
+      if (!sheet() || closingRef.current || shell.scrollTop > 0) return;
+      const t = e.touches[0]!;
+      startY = lastY = t.clientY;
+      startT = lastT = Date.now();
+      dy = 0;
+      dragging = true;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!dragging) return;
+      const t = e.touches[0]!;
+      dy = Math.max(0, t.clientY - startY);
+      if (dy > 0 && e.cancelable) e.preventDefault(); // the sheet moves, not its content
+      lastY = t.clientY;
+      lastT = Date.now();
+      shell.dataset.dragging = "";
+      shell.style.transform = `translateY(${dy}px)`;
+      overlay.style.opacity = String(Math.max(0.2, 1 - dy / 480));
+    };
+    const onEnd = () => {
+      if (!dragging) return;
+      dragging = false;
+      delete shell.dataset.dragging;
+      const dt = Math.max(1, Date.now() - lastT + (lastT - startT) * 0);
+      const velocity = (lastY - startY) / Math.max(1, lastT - startT);
+      shell.style.transform = "";
+      overlay.style.opacity = "";
+      if (dy >= DISMISS_PX || velocity > DISMISS_VELOCITY) requestClose();
+      void dt;
+    };
+    shell.addEventListener("touchstart", onStart, { passive: true });
+    shell.addEventListener("touchmove", onMove, { passive: false });
+    shell.addEventListener("touchend", onEnd, { passive: true });
+    shell.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      shell.removeEventListener("touchstart", onStart);
+      shell.removeEventListener("touchmove", onMove);
+      shell.removeEventListener("touchend", onEnd);
+      shell.removeEventListener("touchcancel", onEnd);
+    };
+  }, [requestClose]);
 
   return createPortal(
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      ref={overlayRef}
+      className={closing ? "modal-overlay modal-overlay--closing" : "modal-overlay"}
+      onClick={requestClose}
+    >
       <div
-        className="modal"
+        className={closing ? "modal modal--closing" : "modal"}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -68,9 +167,10 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
+        <span className="modal__grab" aria-hidden="true" />
         <div className="modal__head">
           <h2 className="modal__title">{title}</h2>
-          <button className="modal__close" onClick={onClose} aria-label="Close">
+          <button className="modal__close" onClick={requestClose} aria-label="Close">
             &times;
           </button>
         </div>
