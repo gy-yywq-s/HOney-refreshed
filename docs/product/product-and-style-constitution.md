@@ -79,6 +79,17 @@ Do not broaden the product before these three are excellent.
   the device-key note one quiet row. Settings is concise rows with one detail screen each
   under `/settings/:section`. Geometry: page inset 20, cards 16 / controls 14 / fields 12,
   pills only for genuine choice pills, a 54px bottom nav with a soft selected block.
+- **Timetable is Day first with a Week overview one tap away** (addendum v1.1, 2026-09-02).
+  Week is a school-period matrix — Mon–Fri columns, P1–P6 rows from the one period catalog
+  (`apps/web/src/lib/periodCatalog.ts`), Lunch/Dinner as spanning separators, cells = compact
+  subject + room, today's column tinted, the current lesson the strongest cell, never a time
+  line, never horizontal scroll at ≥320. A cell opens the lesson sheet ("Open this day"); a
+  weekday header opens Day for that date. The mode persists for the session only; Day is
+  every cold entry. One request per week (`GET /api/timetable/range`).
+- **The cooling-off period is a Dash setting** (whole hours, default 24; wheel of presets). A
+  cooling outcome keeps the words as a private note at once, carrying the remaining time and
+  the server's ticket; Your notes & posts says "Cooling · can be shared in …" / "Pause over ·
+  ready to share again", and the re-check reuses the ticket for unchanged text.
 
 ## 3. Personality
 
