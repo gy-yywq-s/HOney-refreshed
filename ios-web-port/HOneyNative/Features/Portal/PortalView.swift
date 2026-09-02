@@ -22,6 +22,11 @@ enum PortalPhase: Equatable {
 final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegate {
     nonisolated(unsafe) static let shared = PortalWebController()
 
+    /// Stored defaults only, so the singleton can be created outside the actor.
+    nonisolated override init() {
+        super.init()
+    }
+
     @Published private(set) var phase: PortalPhase = .preparing
     @Published private(set) var canGoBack = false
     private(set) lazy var webView: WKWebView = {
