@@ -15,12 +15,17 @@
 html {
   height: 100%;
   min-width: 320px;
+  /* The document must never rubber-band: on iOS a touch that reaches it
+     (a region too short to scroll) dragged the whole window while the
+     shell's own pull indicator moved too (Settings wobbled, 2026-09-02). */
+  overscroll-behavior: none;
 }
 
 body {
   margin: 0;
   height: 100%;
   overflow: hidden; /* the document is not the scroller — regions are */
+  overscroll-behavior: none;
   min-width: 320px;
   font: 400 var(--fs-body) / 1.5 var(--ui);
   color: var(--ink);

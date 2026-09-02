@@ -664,6 +664,14 @@
 .view > * {
   flex: 0 0 auto;
 }
+@media (pointer: coarse) {
+  .main > .view {
+    /* Always one pixel more than the region: iOS only rubber-bands a
+       region that can scroll, and the pull-to-refresh reads that band.
+       Without it a short screen (Settings) handed the drag to the document. */
+    min-height: calc(100% + 1px);
+  }
+}
 .view > .timetable-screen,
 .view > .compose-screen {
   flex: 1 1 auto;
@@ -673,8 +681,13 @@
 /* ── Pull-to-refresh — the shell's own; body scroll lock removed the
    browser's gesture, so the scroll owner provides one (lib/refresh.ts). ── */
 .ptr {
-  position: sticky;
+  /* Fixed to the frame, not sticky in the scroller: on iOS the pull IS the
+     region's rubber band (negative scrollTop), and a sticky child would
+     ride down with the content instead of waiting in the space it opens. */
+  position: fixed;
   top: 0;
+  left: var(--rail);
+  right: 0;
   height: 0;
   z-index: 25;
   display: flex;
@@ -686,6 +699,8 @@
   /* One pill: icon + stage label on a solid ground, readable over the
      dark lesson cards (the disc + caption pair squashed to an ellipse and
      lost its label on dark, Gary 2026-09-02). Same form as the pull-up mark. */
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
@@ -700,11 +715,29 @@
   font-weight: 600;
   white-space: nowrap;
   opacity: 0;
+  transition:
+    background-color 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+.ptr__pill::after {
+  /* Stage 2 is held, not flicked: while the finger rests at the sync
+     distance this fill runs across the pill; only a full fill arms it. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(var(--ptr-hold, 0));
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  pointer-events: none;
 }
 .ptr__pill[data-stage="sync"] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--surface-solid);
+}
+.ptr__pill > * {
+  position: relative; /* above the hold fill */
 }
 .ptr__icon {
   flex: none;

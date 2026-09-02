@@ -1,31 +1,51 @@
 // Pull-to-refresh for the app's scroll owner. Locking body scroll
 // (§16.14) removed the browser's native gesture, so the shell provides
-// its own: a drag down from the top of [data-scroll-owner] arms a quiet
-// indicator; releasing past the first threshold clears the SWR cache and
-// emits REFRESH_EVENT, which every mounted data hook answers by
-// re-fetching in place. Pulled further (second stage, 2026-09-02), the
-// release syncs with the school portal instead — only on a screen that
-// registered a sync handler. Touch-only by design — keyboard/desktop
-// reload still works and the desktop keeps its buttons.
+// its own. Two stages (Gary, 2026-09-02): release past the first re-reads
+// HOney (clears the SWR cache, emits REFRESH_EVENT); pulled far further
+// AND held, the release syncs with the school portal — only on a screen
+// that registered a sync handler. Stage rules live in lib/pullStages.ts.
+//
+// Motion (2026-09-02, after the Ionic reference build): the content is
+// never moved by hand while the finger is down on iOS. iOS already
+// rubber-bands the scroll region; the pill simply READS that displacement
+// (negative scrollTop, the way Ionic's native refresher does) so there is
+// exactly one motion on screen. Elsewhere — no rubber band — a damped
+// finger drag moves the content itself. Both engines hold the content a
+// little way down while the work runs, then ease it home. Touch-only by
+// design — keyboard/desktop reload still works and the desktop keeps its
+// buttons.
 
 import { useEffect, useRef, useState } from "react";
 import { apiCache } from "../lib/useApi";
 import { emitRefresh, emitSync, syncAvailable } from "../lib/refresh";
 import { t } from "../lib/i18n";
+import { commitFor, HOLD_MS, REFRESH_AT, stageFor, syncAtFor, type PullStage } from "../lib/pullStages";
 
-const REFRESH_AT = 64; // px of damped pull that commits a refresh
-const SYNC_AT = 132; // px of damped pull that commits a school sync
-const MAX_PULL = 156;
+const MAX_PULL = 180; // drag engine: the content will not follow past this
+const DRAG_DAMPING = 0.45;
+const HOLD_PX = 56; // where the content rests while the work runs
 const MIN_SPIN_MS = 650; // the indicator must read as "something happened"
+const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
-type Stage = "idle" | "pull" | "refresh" | "sync";
+/** iOS/iPadOS WebKit: the scroll region rubber-bands and reports it. */
+function rubberBands(): boolean {
+  try {
+    return navigator.maxTouchPoints > 0 && CSS.supports("background: -webkit-named-image(apple-pay-logo-black)");
+  } catch {
+    return false;
+  }
+}
 
-function labelFor(stage: Stage, syncable: boolean): string {
+function labelFor(stage: PullStage): string {
   switch (stage) {
     case "pull":
       return t("Pull to refresh");
     case "refresh":
-      return syncable ? t("Release to refresh · pull further to sync") : t("Release to refresh");
+      return t("Release to refresh");
+    case "further":
+      return t("Keep pulling to sync with school");
+    case "hold":
+      return t("Hold to sync…");
     case "sync":
       return t("Release to sync with school");
     default:
@@ -45,35 +65,102 @@ export function PullToRefresh() {
     const group = groupRef.current;
     const label = labelRef.current;
     if (!owner || !group || !label) return;
+    const native = rubberBands();
+    const content = (): HTMLElement | null => owner.querySelector<HTMLElement>(":scope > .view");
 
     let startY = 0;
-    let pull = 0;
+    let px = 0; // real displacement of the content
     let armed = false;
     let syncable = false;
-
-    const stageFor = (px: number): Stage =>
-      px >= SYNC_AT && syncable ? "sync" : px >= REFRESH_AT ? "refresh" : px > 12 ? "pull" : "idle";
+    let holdSince = 0; // when the pull first reached the sync distance
+    let holdTimer = 0;
+    let stage: PullStage = "idle";
+    const thresholds = () => ({ refreshAt: REFRESH_AT, syncAt: syncAtFor(owner.clientHeight), holdMs: HOLD_MS });
 
     const paint = () => {
-      const shown = Math.min(pull, MAX_PULL);
-      const stage = stageFor(pull);
-      group.style.transform = `translateY(${shown}px)`;
-      group.style.opacity = String(Math.min(1, shown / REFRESH_AT));
+      const th = thresholds();
+      const heldMs = holdSince ? Date.now() - holdSince : 0;
+      const next = stageFor(px, syncable, heldMs, th);
+      if (next === "hold" || next === "sync") {
+        if (!holdSince) holdSince = Date.now();
+      } else {
+        holdSince = 0;
+      }
+      stage = next;
+      group.style.opacity = String(Math.min(1, px / th.refreshAt));
       group.dataset.stage = stage;
-      group.style.setProperty("--ptr-spin", `${shown * 2.4}deg`);
-      label.textContent = labelFor(stage, syncable);
+      group.style.setProperty("--ptr-spin", `${Math.min(px, MAX_PULL) * 2.4}deg`);
+      group.style.setProperty("--ptr-hold", stage === "hold" ? String(Math.min(1, heldMs / th.holdMs)) : stage === "sync" ? "1" : "0");
+      label.textContent = labelFor(stage);
+      // The hold fill runs on a clock, not on finger movement: keep painting
+      // while the finger rests at the sync distance.
+      window.clearTimeout(holdTimer);
+      if (stage === "hold") holdTimer = window.setTimeout(paint, 40);
     };
-    const reset = () => {
-      pull = 0;
-      armed = false;
-      group.style.transition = "transform 180ms ease, opacity 180ms ease";
-      group.style.transform = "translateY(0)";
+
+    const settle = () => {
+      const view = content();
+      if (!view) return;
+      view.style.transition = `transform 0.36s ${EASE}`;
+      view.style.transform = "";
+      window.setTimeout(() => {
+        view.style.transition = "";
+      }, 400);
+    };
+    const hide = () => {
+      group.style.transition = "opacity 180ms ease";
       group.style.opacity = "0";
       group.dataset.stage = "idle";
+      group.style.setProperty("--ptr-hold", "0");
       window.setTimeout(() => {
         group.style.transition = "";
         label.textContent = "";
       }, 200);
+    };
+    const reset = () => {
+      window.clearTimeout(holdTimer);
+      px = 0;
+      armed = false;
+      holdSince = 0;
+      stage = "idle";
+      hide();
+      if (!native) settle();
+    };
+
+    const commit = (what: "refresh" | "sync") => {
+      window.clearTimeout(holdTimer);
+      armed = false;
+      holdSince = 0;
+      setBusy(what);
+      group.dataset.stage = what;
+      group.style.opacity = "1";
+      group.style.setProperty("--ptr-hold", "0");
+      label.textContent = what === "sync" ? t("Syncing with school…") : t("Refreshing…");
+      // Hold the content down under the pill while the work runs — on iOS
+      // this catches the rubber band's snap-back so the content does not
+      // bounce over the indicator (Ionic does the same).
+      const view = content();
+      if (view) {
+        view.style.transition = `transform 0.3s ${EASE}`;
+        view.style.transform = `translateY(${HOLD_PX}px)`;
+      }
+      const started = Date.now();
+      if (what === "sync") {
+        emitSync();
+      } else {
+        apiCache.clear();
+        emitRefresh();
+      }
+      window.setTimeout(
+        () => {
+          setBusy("");
+          px = 0;
+          stage = "idle";
+          hide();
+          settle();
+        },
+        Math.max(0, MIN_SPIN_MS - (Date.now() - started)),
+      );
     };
 
     const onStart = (e: TouchEvent) => {
@@ -83,53 +170,60 @@ export function PullToRefresh() {
       if (target?.closest(".modal-overlay, textarea, input, select")) return;
       startY = e.touches[0]!.clientY;
       armed = true;
-      pull = 0;
+      px = 0;
+      holdSince = 0;
       syncable = syncAvailable();
+      if (!native) {
+        const view = content();
+        if (view) view.style.transition = "none";
+      }
     };
-    const onMove = (e: TouchEvent) => {
+    // iOS engine: the rubber band is the pull; read it.
+    const onScroll = () => {
       if (!armed || busyRef.current) return;
+      const top = owner.scrollTop;
+      if (top > 0) {
+        reset();
+        return;
+      }
+      px = -top;
+      paint();
+    };
+    // Drag engine: a damped finger drag moves the content.
+    const onMove = (e: TouchEvent) => {
+      if (native || !armed || busyRef.current) return;
       if (owner.scrollTop > 0) {
         reset();
         return;
       }
       const dy = e.touches[0]!.clientY - startY;
-      pull = dy > 0 ? dy * 0.45 : 0; // damped — the pull should feel weighted
+      px = dy > 0 ? Math.min(MAX_PULL, dy * DRAG_DAMPING) : 0;
+      const view = content();
+      if (view) view.style.transform = px > 0 ? `translateY(${px}px)` : "";
       paint();
     };
     const onEnd = () => {
       if (!armed) return;
-      const stage = stageFor(pull);
-      if (stage !== "refresh" && stage !== "sync") {
+      const what = commitFor(stage);
+      if (!what) {
         reset();
         return;
       }
-      armed = false;
-      setBusy(stage);
-      group.style.transform = `translateY(${REFRESH_AT}px)`;
-      group.dataset.stage = stage;
-      label.textContent = stage === "sync" ? t("Syncing with school…") : t("Refreshing…");
-      const started = Date.now();
-      if (stage === "sync") {
-        emitSync();
-      } else {
-        apiCache.clear();
-        emitRefresh();
-      }
-      window.setTimeout(() => {
-        setBusy("");
-        reset();
-      }, Math.max(0, MIN_SPIN_MS - (Date.now() - started)));
+      commit(what);
     };
 
     owner.addEventListener("touchstart", onStart, { passive: true });
     owner.addEventListener("touchmove", onMove, { passive: true });
     owner.addEventListener("touchend", onEnd, { passive: true });
     owner.addEventListener("touchcancel", onEnd, { passive: true });
+    owner.addEventListener("scroll", onScroll, { passive: true });
     return () => {
+      window.clearTimeout(holdTimer);
       owner.removeEventListener("touchstart", onStart);
       owner.removeEventListener("touchmove", onMove);
       owner.removeEventListener("touchend", onEnd);
       owner.removeEventListener("touchcancel", onEnd);
+      owner.removeEventListener("scroll", onScroll);
     };
   }, []);
 

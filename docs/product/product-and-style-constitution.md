@@ -56,8 +56,11 @@ Do not broaden the product before these three are excellent.
 - **On phones the timetable is a native-style screen with no captions and no utility buttons**
   (Gary, 2026-09-02). The date bar sits flush under the status bar and *is* the heading; the
   native date input lies invisibly over it, so a tap opens the platform calendar. Pull-to-
-  refresh has two stages — release to refresh, pull further to sync with the school portal
-  (the label says so). At the end of the canvas a deliberate pull-up opens History; it needs
+  refresh never moves the content by hand on iOS: the region's own rubber band *is* the pull
+  and the pill reads it (one motion, the Ionic way); the content rests a little way down while
+  the work runs, then eases home. It has two stages — release to refresh; the sync stage is a
+  far pull that must also be HELD until a fill crosses the pill (the pill turns accent only
+  then), so it cannot fire by accident. At the end of the canvas a deliberate pull-up opens History; it needs
   the owner already at its end, a long damped drag, more time than a flick, and shows the
   release point first. Desktop keeps History and Sync now as buttons.
 - **The app is a hierarchy, like a native app** (Gary, 2026-09-02). Four roots are the tabs;
