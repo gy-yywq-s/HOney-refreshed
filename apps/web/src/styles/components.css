@@ -814,17 +814,17 @@ a.btn:hover {
   .modal {
     max-width: none;
     max-height: 92dvh;
-  }
-  @media (max-height: 620px) {
-    .modal {
-      max-height: 100dvh; /* compact heights: no sheet scroll for a short form */
-    }
     border-radius: 20px 20px 0 0;
     border-left: none;
     border-right: none;
     border-bottom: none;
     padding: var(--sp-5) var(--sp-4) calc(var(--sp-6) + env(safe-area-inset-bottom));
     animation: sheet-up 0.42s var(--ease) both;
+  }
+}
+@media (max-width: 640px) and (max-height: 620px) {
+  .modal {
+    max-height: 100dvh; /* compact heights: no sheet scroll for a short form */
   }
 }
 

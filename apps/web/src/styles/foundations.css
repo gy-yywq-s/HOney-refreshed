@@ -48,7 +48,6 @@ body {
 a {
   color: var(--accent);
   text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
 }
 a:hover {
   text-decoration: underline;
@@ -62,6 +61,10 @@ textarea {
   font: inherit;
 }
 button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Focus — the reference site's 3px accent style, everywhere. */
 button:focus-visible,
 a:focus-visible,
