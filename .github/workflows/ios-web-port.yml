@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: No-reuse gate
         run: bash ios-web-port/scripts/check-no-reuse.sh
+      - name: No small caps / forced uppercase
+        run: bash ios-web-port/scripts/check-text-case.sh
       - name: Contract fixtures are checked in
         run: test "$(ls packages/shared/fixtures/api/*.json | wc -l)" -ge 30
       - name: swift test
@@ -33,7 +35,7 @@ jobs:
     name: HOneyNative (macOS runner)
     runs-on: macos-15
     permissions:
-      contents: read
+      contents: write # the parity snapshots land on the ios-web-port-evidence branch
       checks: write
     steps:
       - uses: actions/checkout@v4
@@ -51,14 +53,44 @@ jobs:
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           echo "Using simulator $UDID"
       - name: Build & test
+        env:
+          # xcodebuild forwards TEST_RUNNER_* to the test process: the visual
+          # fixture tests write their PNGs here (fidelity spec v2 §18).
+          TEST_RUNNER_HONEY_SNAPSHOT_DIR: ${{ github.workspace }}/snapshots
         run: |
           set -o pipefail
+          mkdir -p snapshots
           xcodebuild test \
             -project ios-web-port/HOneyNative.xcodeproj \
             -scheme HOneyNative \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log | grep -E "error:|warning: unre|Test Case|Executed|BUILD|TEST" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
+      - name: Upload parity snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-snapshots
+          path: snapshots
+          if-no-files-found: ignore
+      # The repo is public: the evidence branch makes every PNG readable at
+      # raw.githubusercontent.com without a token. Force-pushed, one commit,
+      # never merged.
+      - name: Publish snapshots to the evidence branch
+        if: always() && github.ref == 'refs/heads/ios-web-port'
+        run: |
+          if ls snapshots/*.png >/dev/null 2>&1; then
+            rm -rf evidence && mkdir evidence && cp snapshots/*.png evidence/
+            cd evidence
+            git init -q && git checkout -q -b ios-web-port-evidence
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            { echo "# Native parity snapshots"; echo; echo "Rendered from \`ios-web-port@${GITHUB_SHA}\` by VisualFixtureTests (390 × 844 @2x)."; echo; for f in *.png; do echo "- ${f%.png}"; done; } > README.md
+            git add -A && git commit -q -m "snapshots for ${GITHUB_SHA}"
+            git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" ios-web-port-evidence || echo "evidence push refused"
+          else
+            echo "no snapshots to publish"
+          fi
       # The repo is public but job logs need a token to download; a check run's
       # output is readable by anyone, so the compiler's own words land there.
       - name: Publish compile/test errors as a check run
