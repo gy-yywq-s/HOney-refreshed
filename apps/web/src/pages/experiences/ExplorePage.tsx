@@ -151,7 +151,6 @@ export function ExperiencesExplorePage() {
                 onClick={() => setCat(s.type)}
               >
                 {s.label}
-                {entities.data && <span className="chip-tab__n">{totals[s.type]}</span>}
               </button>
             ))}
           </div>

@@ -103,3 +103,12 @@ export function formatRemaining(ms: number): string {
   if (h === 0) return `${min} min`;
   return min === 0 ? `${h} h` : `${h} h ${min} min`;
 }
+
+/** "Today" / "Yesterday" / "Tue 1 Sept" — for rows of the student's own lessons. */
+export function formatRelativeDay(timestamp: number, now = Date.now()): string {
+  const d = new Date(timestamp);
+  const today = new Date(now);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === new Date(now - 86_400_000).toDateString()) return "Yesterday";
+  return formatShortDate(timestamp);
+}

@@ -13,7 +13,7 @@ import type { EntityRef, Lesson } from "../../api/types";
 import { useApi } from "../../lib/useApi";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
-import { formatShortDate, formatTime, formatRemaining, formatDayBucket } from "../../lib/format";
+import { formatShortDate, formatTime, formatRemaining, formatRelativeDay } from "../../lib/format";
 import { entityTitle, roomLabel } from "../../lib/displayNames";
 import { ChevronRightIcon } from "../../components/icons";
 import { privateNotes } from "../../lib/ownershipKeys";
@@ -312,7 +312,7 @@ export function ExperiencesComposePage() {
 
   return (
     <div className="compose-screen">
-      <h1 className="page-title">Share an experience</h1>
+      <h1 className="page-title">{target ? "Share an experience" : "What is this about?"}</h1>
 
       {target ? (
         <section className="compose-target" aria-label="What this is about">
@@ -331,7 +331,6 @@ export function ExperiencesComposePage() {
         /* The target picker (review v1.1 §7): plain rows, one tap to the
            editor; History and Explore are secondary rows, not hero buttons. */
         <section className="picker focus-landing" aria-label="What is this about?" ref={landing.ref} tabIndex={-1}>
-          <h2 className="picker__title">What is this about?</h2>
           <p className="caption picker__hint">
             One of your own lessons, or a teacher, course, place or dish.
           </p>
@@ -362,7 +361,7 @@ export function ExperiencesComposePage() {
                     <span className="entity-row__main">
                       <span className="entity-row__title">{l.subjectName}</span>
                       <span className="caption">
-                        {[formatDayBucket(l.startsAt), l.teacherName, roomLabel(l.roomName)]
+                        {[formatRelativeDay(l.startsAt), l.teacherName, roomLabel(l.roomName)]
                           .filter(Boolean)
                           .join(" · ")}
                       </span>

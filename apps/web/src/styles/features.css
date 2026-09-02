@@ -74,7 +74,7 @@
    with a chevron. The slot reserves its settled height so nothing on Home
    shifts when the hero resolves late (r10 CLS 0.185). */
 .nextlesson-slot {
-  min-height: 168px;
+  min-height: 150px;
   display: flex;
   flex-direction: column;
 }
@@ -176,7 +176,8 @@
 .nextlesson__room {
   white-space: nowrap;
 }
-.nextlesson__chev {
+.nextlesson > .nextlesson__chev {
+  /* Outranks the `> :not(.nextlesson__wash) { position: relative }` rule. */
   position: absolute;
   right: var(--sp-4);
   top: 50%;
@@ -1704,14 +1705,10 @@ button.row:hover {
   }
 }
 .cat-chips {
+  /* Every category visible (rule 4f): the chips wrap, never clip. */
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-2);
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 1px;
-}
-.cat-chips::-webkit-scrollbar {
-  display: none;
 }
 .chip-tab {
   flex: none;

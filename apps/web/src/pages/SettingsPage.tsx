@@ -109,8 +109,8 @@ export function SettingsPage() {
           <h2 className="overline">School connection</h2>
           <Link className="row" to="/settings/connection">
             <span className="row__main">
-              <span className="row__title">School connection</span>
-              <span className="row__sub">{connectionLine}</span>
+              <span className="row__title">{connectionLine}</span>
+              <span className="row__sub">Sync, reconnect, saved login</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
