@@ -78,3 +78,28 @@ export function compactSubjectName(subject: string): string {
   const head = s.split(/\s+/)[0]!;
   return head.length >= 4 ? head : s;
 }
+
+/**
+ * The narrowest tier (addendum §9.3 / §19.2): a stable short form for phone
+ * columns where the compact name would still break mid-word. A curated map,
+ * never initials; anything unmapped keeps its compact name.
+ */
+const SHORT: Record<string, string> = {
+  Economics: "Econ",
+  Mathematics: "Maths",
+  Chemistry: "Chem",
+  Geography: "Geog",
+  Literature: "Lit",
+  Psychology: "Psych",
+  Computing: "Comp",
+  Business: "Bus",
+  Accounting: "Acc",
+  Sociology: "Soc",
+  Philosophy: "Phil",
+  Statistics: "Stats",
+};
+export function shortSubjectName(subject: string, maxChars = 8): string {
+  const compact = compactSubjectName(subject);
+  if (compact.length <= maxChars) return compact;
+  return SHORT[compact] ?? compact;
+}

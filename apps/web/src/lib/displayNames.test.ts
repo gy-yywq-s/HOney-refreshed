@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compactSubjectName, parseCourseName, roomLabel } from "./displayNames";
+import { compactSubjectName, parseCourseName, roomLabel, shortSubjectName } from "./displayNames";
 
 describe("parseCourseName", () => {
   it("splits a portal course string into title and metadata", () => {
@@ -43,5 +43,14 @@ describe("compactSubjectName", () => {
     expect(compactSubjectName("Activity")).toBe("Activity");
     expect(compactSubjectName("Public Speaking")).toBe("Public Speaking");
     expect(compactSubjectName("TMUA")).toBe("TMUA");
+  });
+});
+
+describe("shortSubjectName", () => {
+  it("maps only when the compact name would not fit a phone column", () => {
+    expect(shortSubjectName("Edexcel Economics-U4")).toBe("Econ");
+    expect(shortSubjectName("CIE Physics-A2")).toBe("Physics");
+    expect(shortSubjectName("Activity")).toBe("Activity");
+    expect(shortSubjectName("Public Speaking")).toBe("Public Speaking");
   });
 });

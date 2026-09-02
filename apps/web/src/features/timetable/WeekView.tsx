@@ -5,7 +5,8 @@
 // <table> so screen readers get row/column headers for free.
 
 import type { Lesson } from "../../api/types";
-import { compactSubjectName, roomLabel } from "../../lib/displayNames";
+import { useEffect, useState } from "react";
+import { compactSubjectName, roomLabel, shortSubjectName } from "../../lib/displayNames";
 import { BANDS, PERIODS, minuteLabel, minuteOfDay, overlapsSlot } from "../../lib/periodCatalog";
 import { formatDayTitle, formatTime, shiftIsoDate } from "../../lib/format";
 import { Skeleton } from "../../lib/motion";
@@ -26,7 +27,21 @@ export interface WeekViewProps {
   now: number;
 }
 
+/** Phone columns (≤430px) take the short tier; wider columns the compact name. */
+function usePhoneColumns(): boolean {
+  const [narrow, setNarrow] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 430px)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 430px)");
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return narrow;
+}
+
 export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onSelect, today, now }: WeekViewProps) {
+  const phone = usePhoneColumns();
+  const cellName = (subject: string) => (phone ? shortSubjectName(subject) : compactSubjectName(subject));
   const dates = WEEKDAYS.map((_, i) => shiftIsoDate(monday, i));
   const unplaced: { date: string; lesson: Lesson }[] = [];
   const grid = new Map<string, Lesson[]>(); // `${date}|${bandId}` → lessons
@@ -127,7 +142,7 @@ export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onS
                   return (
                     <td key={date} className={cls}>
                       <button type="button" className="week__lesson" onClick={() => onSelect(first)} aria-label={label}>
-                        <span className="week__subject">{compactSubjectName(first.subjectName)}</span>
+                        <span className="week__subject">{cellName(first.subjectName)}</span>
                         {first.roomName && <span className="week__room">{first.roomName}</span>}
                         {cellLessons.length > 1 && <span className="week__more">+{cellLessons.length - 1}</span>}
                       </button>
