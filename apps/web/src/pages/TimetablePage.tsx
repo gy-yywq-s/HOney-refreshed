@@ -1,6 +1,6 @@
 // Scroll model: FRAMED_SCROLL (§16.14.7) — sticky date nav frame; the day timeline scrolls.
 import { Skeleton } from "../lib/motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, describeApiError } from "../api/client";
 import type { Lesson, SyncResponse } from "../api/types";
@@ -8,9 +8,8 @@ import { Modal } from "../components/Modal";
 import { ReconnectDialog } from "../components/ReconnectDialog";
 import { apiCache, useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
-import { portalCredentials } from "../lib/portalCredentials";
 import {
-  formatDayHeading,
+  formatDayTitle,
   formatTime,
   shiftIsoDate,
   timeAgo,
@@ -50,11 +49,10 @@ export function TimetablePage() {
   }, [date]);
   const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
   const [selected, setSelected] = useState<Lesson | null>(null);
+  const closeLesson = useCallback(() => setSelected(null), []);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
   const [showReconnect, setShowReconnect] = useState(false);
-  const pickerRef = useRef<HTMLInputElement>(null);
-  const [pickerVisible, setPickerVisible] = useState(false);
   const landing = useRetryFocus<HTMLDivElement>(loading);
   // Landing contract: the FIRST settle (success or error) of a date — cold
   // load, re-entry or a date step — lands once; every later arrival for the
@@ -102,7 +100,7 @@ export function TimetablePage() {
 
   return (
     <div className="timetable-screen">
-      <div className="daynav">
+      <header className="daynav">
         <div className="daynav__stepper" role="group" aria-label="Choose a day">
           <button
             className="daynav__arrow"
@@ -111,45 +109,37 @@ export function TimetablePage() {
           >
             &lsaquo;
           </button>
-          <button
-            type="button"
-            hidden={pickerVisible}
-            className="daynav__date"
-            aria-label={`Pick a date (${formatStepperDate(date)})`}
-            onClick={() => {
-              const el = pickerRef.current;
-              if (!el) return;
-              // One visible affordance, one Tab stop: the native picker opens
-              // from the button; when showPicker is unavailable the input
-              // becomes the visible affordance and the button hides.
-              if (typeof el.showPicker === "function") {
+          {/* The date is the page heading and the picker in one: the native
+              <input type="date"> sits invisibly over the text, so a tap or
+              a click opens the platform's own calendar (iOS included). */}
+          <h1 className="daynav__date">
+            <span className="daynav__date-long">{formatDayTitle(date)}</span>
+            <span className="daynav__date-short" aria-hidden="true">
+              {formatStepperDate(date)}
+            </span>
+            <svg className="daynav__caret" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+              <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <input
+              className="daynav__picker"
+              type="date"
+              aria-label={`Pick a date (${formatDayTitle(date)})`}
+              value={date}
+              onClick={(e) => {
+                // Desktop browsers open the calendar only from their own
+                // icon; ask for it directly. Platforms that opened it on the
+                // tap already (iOS) throw here, which is fine.
                 try {
-                  el.showPicker();
-                  return;
+                  e.currentTarget.showPicker?.();
                 } catch {
-                  /* fall through to the visible input */
+                  /* picker already open or unsupported */
                 }
-              }
-              setPickerVisible(true);
-              requestAnimationFrame(() => el.focus());
-            }}
-          >
-            {formatStepperDate(date)}
-          </button>
-          <input
-            ref={pickerRef}
-            className={pickerVisible ? "daynav__picker daynav__picker--visible" : "daynav__picker"}
-            type="date"
-            tabIndex={pickerVisible ? 0 : -1}
-            aria-hidden={pickerVisible ? undefined : "true"}
-            aria-label={pickerVisible ? "Pick a date" : undefined}
-            value={date}
-            onBlur={() => setPickerVisible(false)}
-            onChange={(e) => {
-              if (e.target.value) setDate(e.target.value);
-              setPickerVisible(false);
-            }}
-          />
+              }}
+              onChange={(e) => {
+                if (e.target.value) setDate(e.target.value);
+              }}
+            />
+          </h1>
           <button
             className="daynav__arrow"
             aria-label="Next day"
@@ -158,38 +148,29 @@ export function TimetablePage() {
             &rsaquo;
           </button>
         </div>
-        {!isToday && (
-          <button className="btn btn--ghost btn--small" onClick={() => setDate(todayIsoDate())}>
-            Back to today
+        <div className="daynav__row">
+          {isToday ? (
+            <span className="caption daynav__state">
+              {data?.lastSyncedAt ? `Synced ${timeAgo(data.lastSyncedAt)}` : ""}
+            </span>
+          ) : (
+            <button className="btn btn--ghost btn--small" onClick={() => setDate(todayIsoDate())}>
+              Back to today
+            </button>
+          )}
+          <span className="daynav__spacer" />
+          <Link className="btn btn--ghost btn--small" to="/history">
+            History
+          </Link>
+          <button
+            className="btn btn--primary btn--small"
+            onClick={() => void runSync()}
+            disabled={syncBusy}
+          >
+            {syncBusy ? "Syncing…" : "Sync now"}
           </button>
-        )}
-        <span className="daynav__spacer" />
-        <Link className="btn btn--ghost btn--small" to="/history">
-          History
-        </Link>
-        <button
-          className="btn btn--primary btn--small"
-          onClick={() => void runSync()}
-          disabled={syncBusy}
-        >
-          {syncBusy ? "Syncing…" : "Sync now"}
-        </button>
-      </div>
-
-      {portalCredentials.isAuthorized() && (
-        <p className="caption daynav__note">
-          Sync now signs in again with your saved school login if the portal session expired.
-        </p>
-      )}
-      <h1 className="schedule-header">{formatDayHeading(date)}</h1>
-      <p className="caption timetable-note">
-        {[
-          (data?.lessons.length ?? 0) > 0 || loading ? "P1–P6 are the school’s six lesson periods." : null,
-          data?.lastSyncedAt ? `Last synced ${timeAgo(data.lastSyncedAt)}.` : null,
-        ]
-          .filter(Boolean)
-          .join(" ")}
-      </p>
+        </div>
+      </header>
 
       {syncFeedback?.kind === "error" && (
         <div role="alert" className="banner banner--danger">{syncFeedback.message}</div>
@@ -235,7 +216,7 @@ export function TimetablePage() {
       )}
 
       </div>
-      {selected && <LessonDetail lesson={selected} onClose={() => setSelected(null)} />}
+      {selected && <LessonDetail lesson={selected} onClose={closeLesson} />}
       {showReconnect && (
         <ReconnectDialog
           onClose={() => setShowReconnect(false)}

@@ -15,6 +15,10 @@ interface ModalProps {
 
 export function Modal({ title, onClose, children, describedBy }: ModalProps) {
   const shellRef = useRef<HTMLDivElement>(null);
+  // Read through a ref: an inline onClose (new identity each render) must
+  // not re-run the effect below — its cleanup moves focus and drops inert.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   // Escape closes; Tab cycles inside the dialog; focus starts on the dialog
   // and returns to the opener on close (design audit 2026-09-01, fix 6).
@@ -24,7 +28,7 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
     shell?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || !shell) return;
@@ -50,7 +54,7 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
       root?.removeAttribute("inert");
       opener?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>

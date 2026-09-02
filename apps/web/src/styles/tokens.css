@@ -14,6 +14,10 @@
   color-scheme: light;
 
   /* Surface: stone (default) — cool off-white, no texture loops. */
+  /* Device insets (standalone PWA): one source; the audit harness overrides
+     them inline on <html> to emulate a real phone. */
+  --inset-top: env(safe-area-inset-top, 0px);
+  --inset-bottom: env(safe-area-inset-bottom, 0px);
   --surface: #f4f6f7;
   --surface-solid: #fbfcfc;
   --card: rgba(255, 255, 255, 0.72);

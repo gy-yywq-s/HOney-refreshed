@@ -31,6 +31,14 @@ export function formatTime(timestamp: number | string): string {
   });
 }
 
+/** "Wednesday, 2 September" — the timetable bar's heading. */
+export function formatDayTitle(iso: string): string {
+  const d = parseIsoDate(iso);
+  const weekday = d.toLocaleDateString("en-GB", { weekday: "long" });
+  const dayMonth = d.toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+  return `${weekday}, ${dayMonth}`;
+}
+
 export function formatDayHeading(iso: string): string {
   return parseIsoDate(iso).toLocaleDateString("en-GB", {
     weekday: "long",

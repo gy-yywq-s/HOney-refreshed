@@ -665,15 +665,15 @@ a.btn:hover {
   }
   .main {
     margin-left: 0;
-    padding: calc(var(--sp-4) + env(safe-area-inset-top)) var(--sp-4)
-      calc(96px + env(safe-area-inset-bottom)); /* 96px: nav clearance (documented exception) */
+    padding: calc(var(--sp-4) + var(--inset-top)) var(--sp-4)
+      calc(84px + var(--inset-bottom)); /* 84px = nav 64 + its 10px offset + one 10px gap (documented exception) */
   }
   .mobile-nav {
     position: fixed;
     z-index: 30;
     left: 10px;
     right: 10px;
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    bottom: calc(10px + var(--inset-bottom));
     min-height: 58px;
     padding: var(--sp-2);
     display: grid;
@@ -819,7 +819,7 @@ a.btn:hover {
     border-left: none;
     border-right: none;
     border-bottom: none;
-    padding: var(--sp-5) var(--sp-4) calc(var(--sp-6) + env(safe-area-inset-bottom));
+    padding: var(--sp-5) var(--sp-4) calc(var(--sp-6) + var(--inset-bottom));
     animation: sheet-up 0.42s var(--ease) both;
   }
 }
