@@ -188,6 +188,7 @@ const ZH: Record<string, string> = {
   "Your notes & post controls": "我的笔记与帖子控制",
   "Appearance": "外观",
   "Background": "背景",
+  "Accent": "强调色",
   "Language": "语言",
   "Text size": "字号",
   "Small": "小",

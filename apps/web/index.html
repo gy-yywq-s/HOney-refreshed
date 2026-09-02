@@ -25,6 +25,9 @@
           }
           var root = document.documentElement;
           root.dataset.surface = surfaces[s] ? s : "stone";
+          var accents = { cobalt: 1, moss: 1, clay: 1, plum: 1, iris: 1, amber: 1 };
+          var a = localStorage.getItem("honey.theme.accent");
+          if (accents[a]) root.dataset.accent = a; // harbour = the default tokens
           var colors = { stone: "#f4f6f7", white: "#ffffff", mist: "#eef2f2", night: "#14171a" };
           var meta = document.querySelector('meta[name="theme-color"]');
           if (meta) meta.setAttribute("content", colors[root.dataset.surface] || colors.stone);

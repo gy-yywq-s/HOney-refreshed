@@ -107,8 +107,12 @@ productivity dashboard, an editorial portfolio, a growth product, or a design-sy
 
 - One humanist sans (Source Sans 3), one type ramp (12 / 13 / 15 / 16 / 17 / 20 / 22 / 28,
   display clamps up to 36), nothing below 12 px, no small all-caps titles.
-- One cool palette, one muted blue-teal accent (`#33667c`, night `#8fc2d4`); warm hues only
-  for semantic danger/ok.
+- One cool palette, one accent SCHEME at a time (Settings › Accent, Gary 2026-09-02): the
+  default is the muted blue-teal Harbour (`#33667c`, night `#8fc2d4`); the other schemes are
+  Harbour rotated in OKLCH hue with lightness and chroma untouched, so weight and contrast never
+  change, and Cobalt pairs a true blue with the Harbour teal as companion for the wide soft
+  areas (`--accent-2`). A scheme is accent + tint + companion + night lift — never one colour.
+  Warm hues only for semantic danger/ok.
 - One spacing ladder (4 / 8 / 12 / 16 / 20 / 24 / 32 / 44); shell clearances are the only
   documented literal exceptions.
 - Cards only for genuinely self-contained objects; separators, whitespace and typographic

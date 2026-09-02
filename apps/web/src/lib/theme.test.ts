@@ -2,9 +2,34 @@
 // boot script in index.html relies on. If these change, index.html must too.
 
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SURFACE, SURFACE_KEY, SURFACE_OPTIONS, normalizeSurface } from "./theme";
+import {
+  ACCENT_KEY,
+  ACCENT_OPTIONS,
+  DEFAULT_ACCENT,
+  DEFAULT_SURFACE,
+  SURFACE_KEY,
+  SURFACE_OPTIONS,
+  normalizeAccent,
+  normalizeSurface,
+} from "./theme";
 
 describe("theme", () => {
+  it("keeps the accent axis under its own key, harbour as the attribute-less default", () => {
+    expect(ACCENT_KEY).toBe("honey.theme.accent");
+    expect(DEFAULT_ACCENT).toBe("harbour");
+    // index.html's boot list: every non-default value, and only those.
+    expect(ACCENT_OPTIONS.map((o) => o.value).filter((v) => v !== "harbour")).toEqual([
+      "cobalt",
+      "moss",
+      "clay",
+      "plum",
+      "iris",
+      "amber",
+    ]);
+    expect(normalizeAccent("teal")).toBe("harbour");
+    expect(normalizeAccent("plum")).toBe("plum");
+  });
+
   it("persists under the agreed localStorage key", () => {
     expect(SURFACE_KEY).toBe("honey.theme.surface");
   });

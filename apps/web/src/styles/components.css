@@ -728,7 +728,7 @@
   inset: 0;
   transform-origin: left center;
   transform: scaleX(var(--ptr-hold, 0));
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent-2) 22%, transparent);
   pointer-events: none;
 }
 .ptr__pill[data-stage="sync"] {
@@ -1016,6 +1016,9 @@
 }
 .option-grid.four {
   grid-template-columns: repeat(4, 1fr);
+}
+.option-grid.three {
+  grid-template-columns: repeat(3, 1fr);
 }
 .option-grid button {
   min-height: 78px;

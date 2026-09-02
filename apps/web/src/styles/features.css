@@ -101,7 +101,7 @@
   top: 0;
   bottom: 0;
   left: 0;
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent-2) 22%, transparent);
   pointer-events: none;
   /* Width steps once per tick without a transition: nothing animates while
      a lesson is in progress (r9 idle-motion census). */

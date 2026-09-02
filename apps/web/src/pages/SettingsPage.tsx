@@ -17,7 +17,7 @@ import { ChevronRightIcon } from "../components/icons";
 import { portalCredentials } from "../lib/portalCredentials";
 import { timeAgo } from "../lib/format";
 import { ownershipKeys } from "../lib/ownershipKeys";
-import { getSurface } from "../lib/theme";
+import { ACCENT_OPTIONS, getAccent, getSurface } from "../lib/theme";
 import { setLang, t, useLang } from "../lib/i18n";
 import { TEXT_SIZES, setTextSize, useTextSize } from "../lib/textSize";
 
@@ -161,8 +161,8 @@ export function SettingsPage() {
           <h2 className="overline">{t("Appearance")}</h2>
           <Link className="row" to="/settings/appearance">
             <span className="row__main">
-              <span className="row__title">{t("Background")} · {t("Text size")} · {t("Language")}</span>
-              <span className="row__sub">{t(SURFACE_LABEL[getSurface()] ?? "Stone")} · {t(TEXT_SIZE_LABEL[textSize] ?? "Default")} · {lang === "zh" ? "中文" : "English"}</span>
+              <span className="row__title">{t("Background")} · {t("Accent")} · {t("Text size")} · {t("Language")}</span>
+              <span className="row__sub">{t(SURFACE_LABEL[getSurface()] ?? "Stone")} · {ACCENT_OPTIONS.find((o) => o.value === getAccent())?.label ?? "Harbour"} · {t(TEXT_SIZE_LABEL[textSize] ?? "Default")} · {lang === "zh" ? "中文" : "English"}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>

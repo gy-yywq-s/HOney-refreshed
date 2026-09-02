@@ -35,6 +35,10 @@
   --accent: #33667c;
   --accent-tint: #dde8ec;
   --on-accent: #ffffff;
+  /* The scheme's companion: the colour of the soft, wide areas (progress
+     wash, hold fill) as opposed to text and actions. Same as the accent
+     unless a scheme pairs two hues (Gary 2026-09-02: 搭配的重点在搭配). */
+  --accent-2: var(--accent);
   /* Legacy alias (round-1 glacier CTA) → now the quiet tint; ink text on it. */
   --glacier: #dde8ec;
   --danger: #b53844;
@@ -143,4 +147,77 @@
   --danger: #f2919a;
   --ok: #83c9a8;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+}
+
+/* Selectable accent SCHEMES (Settings → Accent, Gary 2026-09-02) — a scheme,
+   not one colour: accent + its tint + the ink that sits on it, for the light
+   surfaces AND for night. Every scheme is the default (Harbour, blue-teal)
+   rotated in OKLCH hue with lightness and chroma untouched, so contrast,
+   weight and the night lift are identical across the set. The night rules
+   come after the surface block and pair both attributes, so they win. */
+/* Cobalt (Gary 2026-09-02: a blue that is not teal-led): a true blue for
+   text and actions, paired with the Harbour teal as its companion — the
+   pale teal tint and the teal progress wash — so the teal is a part of
+   the scheme without leading it. */
+:root[data-accent="cobalt"] {
+  --accent: #3b5d9c;
+  --accent-tint: #dde8ec;
+  --glacier: #dde8ec;
+  --accent-2: #33667c;
+}
+:root[data-accent="moss"] {
+  --accent: #43694b;
+  --accent-tint: #e0e8e1;
+  --glacier: #e0e8e1;
+}
+:root[data-accent="clay"] {
+  --accent: #7e5340;
+  --accent-tint: #eee3df;
+  --glacier: #eee3df;
+}
+:root[data-accent="plum"] {
+  --accent: #745170;
+  --accent-tint: #ebe3ea;
+  --glacier: #ebe3ea;
+}
+:root[data-accent="iris"] {
+  --accent: #5e5981;
+  --accent-tint: #e5e5ee;
+  --glacier: #e5e5ee;
+}
+:root[data-accent="amber"] {
+  --accent: #725b32;
+  --accent-tint: #eae5dc;
+  --glacier: #eae5dc;
+}
+:root[data-surface="night"][data-accent="cobalt"] {
+  --accent: #9db9ed;
+  --accent-tint: rgba(143, 194, 212, 0.16);
+  --glacier: rgba(143, 194, 212, 0.16);
+  --accent-2: #8fc2d4;
+}
+:root[data-surface="night"][data-accent="moss"] {
+  --accent: #9fc4a5;
+  --accent-tint: rgba(159, 196, 165, 0.16);
+  --glacier: rgba(159, 196, 165, 0.16);
+}
+:root[data-surface="night"][data-accent="clay"] {
+  --accent: #daae9a;
+  --accent-tint: rgba(218, 174, 154, 0.16);
+  --glacier: rgba(218, 174, 154, 0.16);
+}
+:root[data-surface="night"][data-accent="plum"] {
+  --accent: #cfaccb;
+  --accent-tint: rgba(207, 172, 203, 0.16);
+  --glacier: rgba(207, 172, 203, 0.16);
+}
+:root[data-surface="night"][data-accent="iris"] {
+  --accent: #b8b3dd;
+  --accent-tint: rgba(184, 179, 221, 0.16);
+  --glacier: rgba(184, 179, 221, 0.16);
+}
+:root[data-surface="night"][data-accent="amber"] {
+  --accent: #cdb58e;
+  --accent-tint: rgba(205, 181, 142, 0.16);
+  --glacier: rgba(205, 181, 142, 0.16);
 }

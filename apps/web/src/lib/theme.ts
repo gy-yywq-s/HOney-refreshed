@@ -82,3 +82,43 @@ export function setSurface(surface: Surface): void {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", THEME_COLORS[surface]);
 }
+
+/* ── Accent schemes (Settings → Accent, Gary 2026-09-02) ────────────────
+   A second axis, separate from the background. Each value is a SCHEME —
+   accent, tint, on-accent ink, night lift — defined in tokens.css; the
+   default (Harbour) is the base tokens, so it carries no attribute. */
+
+export type Accent = "harbour" | "cobalt" | "moss" | "clay" | "plum" | "iris" | "amber";
+
+export const ACCENT_KEY = "honey.theme.accent";
+export const DEFAULT_ACCENT: Accent = "harbour";
+
+/** Swatch colours: the light accent of each scheme (see tokens.css). */
+export const ACCENT_OPTIONS: { value: Accent; label: string; swatch: string; night: string }[] = [
+  { value: "harbour", label: "Harbour", swatch: "#33667c", night: "#8fc2d4" },
+  { value: "cobalt", label: "Cobalt", swatch: "#3b5d9c", night: "#9db9ed" },
+  { value: "moss", label: "Moss", swatch: "#43694b", night: "#9fc4a5" },
+  { value: "clay", label: "Clay", swatch: "#7e5340", night: "#daae9a" },
+  { value: "plum", label: "Plum", swatch: "#745170", night: "#cfaccb" },
+  { value: "iris", label: "Iris", swatch: "#5e5981", night: "#b8b3dd" },
+  { value: "amber", label: "Amber", swatch: "#725b32", night: "#cdb58e" },
+];
+
+export function normalizeAccent(value: string | null | undefined): Accent {
+  return ACCENT_OPTIONS.some((o) => o.value === value) ? (value as Accent) : DEFAULT_ACCENT;
+}
+
+export function getAccent(): Accent {
+  if (typeof document !== "undefined" && document.documentElement.dataset.accent) {
+    return normalizeAccent(document.documentElement.dataset.accent);
+  }
+  return normalizeAccent(read(ACCENT_KEY));
+}
+
+export function setAccent(accent: Accent): void {
+  withCrossfade(() => {
+    if (accent === DEFAULT_ACCENT) delete document.documentElement.dataset.accent;
+    else document.documentElement.dataset.accent = accent;
+  });
+  write(ACCENT_KEY, accent);
+}
