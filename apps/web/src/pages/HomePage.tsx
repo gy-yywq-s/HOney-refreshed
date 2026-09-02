@@ -20,6 +20,7 @@ import { useRetryFocus } from "../lib/useRetryFocus";
 import { formatDayBucket, formatDayTitle, formatRemaining, formatTime } from "../lib/format";
 import { roomLabel } from "../lib/displayNames";
 import { ChevronRightIcon, PenIcon } from "../components/icons";
+import { WordmarkHOney } from "../components/Wordmark";
 import { useLang, useT } from "../lib/i18n";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
@@ -79,6 +80,11 @@ export function HomePage() {
   return (
     <div className="stack home">
       <header className="home-head">
+        {/* The wordmark leads the first screen (Gary 2026-09-02: it gives Home
+            its proportion); the desktop rail already carries it, so it hides there. */}
+        <div className="home-head__mark">
+          <WordmarkHOney height={22} />
+        </div>
         <h1 className="home-head__hi">{lang === "zh" ? `你好，${me.displayName}` : `Hi, ${me.displayName}`}</h1>
         <p className="home-head__date">{today}</p>
       </header>

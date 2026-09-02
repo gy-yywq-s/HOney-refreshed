@@ -1131,33 +1131,3 @@
   to { background-position: -200% 0; }
 }
 
-/* Opt-in row for staying connected to the school portal. */
-.stay-connected {
-  display: flex;
-  gap: var(--sp-3);
-  align-items: flex-start;
-  margin: var(--sp-1) 0 var(--sp-5);
-  padding: var(--sp-4);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--soft);
-  cursor: pointer;
-  text-align: left;
-  min-height: 44px; /* the label is the tap target for its 22px box */
-}
-.stay-connected input {
-  margin-top: 0;
-  width: 22px;
-  height: 22px;
-  flex: none;
-  accent-color: var(--accent);
-}
-.stay-connected span {
-  font-size: var(--fs-caption);
-  line-height: 1.5;
-  color: var(--muted);
-}
-.stay-connected strong {
-  color: var(--ink);
-  font-weight: 600;
-}

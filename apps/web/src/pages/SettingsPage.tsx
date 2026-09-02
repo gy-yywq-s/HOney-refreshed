@@ -60,7 +60,9 @@ export function SettingsPage() {
   );
   const [confirm, setConfirm] = useState<PendingConfirm>(null);
   const [showReconnect, setShowReconnect] = useState<null | "reconnect" | "save">(null);
-  const [stayConnected, setStayConnected] = useState(portalCredentials.isAuthorized());
+  // On by default; the switch reflects the wish, not whether a login is
+  // stored yet (a sign-in from before the default flipped stores none).
+  const [stayConnected, setStayConnected] = useState(portalCredentials.wanted());
 
   if (!me) return null;
   // The old Imported-data screen folded into School connection.
@@ -125,9 +127,13 @@ export function SettingsPage() {
               on={stayConnected}
               label="Stay connected on this device"
               onChange={(next) => {
-                if (next) setShowReconnect("save");
-                else {
+                if (next) {
+                  portalCredentials.setWanted(true);
+                  setStayConnected(true);
+                  if (!portalCredentials.isAuthorized()) setShowReconnect("save");
+                } else {
                   portalCredentials.clear();
+                  portalCredentials.setWanted(false);
                   setStayConnected(false);
                 }
               }}
@@ -189,7 +195,7 @@ export function SettingsPage() {
             purpose={showReconnect}
             onClose={() => setShowReconnect(null)}
             onReconnected={() => {
-              setStayConnected(portalCredentials.isAuthorized());
+              setStayConnected(portalCredentials.wanted());
               void refreshMe();
             }}
           />
@@ -296,9 +302,13 @@ export function SettingsPage() {
                 on={stayConnected}
                 label="Stay connected on this device"
                 onChange={(next) => {
-                  if (next) setShowReconnect("save");
-                  else {
+                  if (next) {
+                    portalCredentials.setWanted(true);
+                    setStayConnected(true);
+                    if (!portalCredentials.isAuthorized()) setShowReconnect("save");
+                  } else {
                     portalCredentials.clear();
+                    portalCredentials.setWanted(false);
                     setStayConnected(false);
                   }
                 }}
@@ -510,7 +520,7 @@ export function SettingsPage() {
           purpose={showReconnect}
           onClose={() => setShowReconnect(null)}
           onReconnected={() => {
-            setStayConnected(portalCredentials.isAuthorized());
+            setStayConnected(portalCredentials.wanted());
             void refreshMe();
           }}
         />

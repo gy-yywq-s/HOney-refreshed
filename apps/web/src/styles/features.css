@@ -1363,10 +1363,22 @@
 
 /* Home (product-v2 §6.3): a quiet doorway — greeting, focal lesson, two
    voices, one share action, one portal row. */
+.home-head__mark {
+  /* The wordmark leads the first screen (Gary 2026-09-02). */
+  margin: 0 0 var(--sp-4);
+}
+@media (min-width: 961px) {
+  .home-head__mark {
+    display: none; /* the rail already carries it */
+  }
+}
 .home-head__hi {
   margin: 0;
   font-size: calc(clamp(24px, 4vw, 32px) * var(--text-scale));
   letter-spacing: -0.01em;
+  /* The lighter greeting of the Ionic build (Gary 2026-09-02): same Source
+     Sans 3, at Ionic's heading weight 500 instead of the browser's 700. */
+  font-weight: 500;
 }
 .home-head__date {
   margin: var(--sp-1) 0 0;

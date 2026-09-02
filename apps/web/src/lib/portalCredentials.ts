@@ -19,6 +19,9 @@
 
 const CRED_STORAGE_KEY = "honey.portal.cred";
 const CRED_CRYPTOKEY_KEY = "honey.portal.credKey";
+/** Set only when the student turned "Stay connected" OFF in Settings: the
+ *  store is wanted by default (Gary, 2026-09-02 — no choice at sign-in). */
+const OPT_OUT_KEY = "honey.portal.stayOff";
 const STORE_VERSION = 1;
 
 export interface PortalCredentials {
@@ -69,9 +72,20 @@ export class PortalCredentialStore {
     private readonly cryptoObj: Crypto = globalThis.crypto,
   ) {}
 
-  /** True once the user has opted into staying connected on this device. */
+  /** True while credentials are actually kept on this device. */
   isAuthorized(): boolean {
     return this.storage.getItem(CRED_STORAGE_KEY) !== null;
+  }
+
+  /** Whether the student wants HOney to keep the login here: on unless
+   *  they turned it off in Settings. Sign-in and reconnects consult this. */
+  wanted(): boolean {
+    return this.storage.getItem(OPT_OUT_KEY) === null;
+  }
+
+  setWanted(on: boolean): void {
+    if (on) this.storage.removeItem(OPT_OUT_KEY);
+    else this.storage.setItem(OPT_OUT_KEY, "1");
   }
 
   /** Opt in: encrypt and keep the school credentials on this device. */

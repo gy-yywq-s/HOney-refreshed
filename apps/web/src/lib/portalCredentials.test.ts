@@ -25,6 +25,16 @@ describe("PortalCredentialStore", () => {
     expect(await store.load()).toBeNull();
   });
 
+  it("is wanted by default and only an explicit opt-out changes that", () => {
+    expect(store.wanted()).toBe(true);
+    store.setWanted(false);
+    expect(store.wanted()).toBe(false);
+    expect(backing.getItem("honey.portal.stayOff")).toBe("1");
+    store.setWanted(true);
+    expect(store.wanted()).toBe(true);
+    expect(backing.getItem("honey.portal.stayOff")).toBeNull();
+  });
+
   it("round-trips credentials and reports authorized", async () => {
     await store.authorize({ username: "s0088", password: "hunter2" });
     expect(store.isAuthorized()).toBe(true);
