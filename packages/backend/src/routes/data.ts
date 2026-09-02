@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { AppContext } from "../context.js";
 import type {
   SyncResponse,
+  PortalEntryResponse,
   TimetableResponse,
   TimetableRangeResponse,
   NextLessonResponse,
@@ -17,6 +18,23 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
     const user = ctx.userOf(req);
     const result = await ctx.importer.syncTimetable(user.honey_id);
     return result;
+  });
+
+  // The school portal's web app signs in from a token in its login URL (the
+  // path its WeChat mini-program uses); HOney hands the student over with
+  // the token it already holds, so "School Portal" opens signed in (Gary,
+  // 2026-09-02 — staying signed in must not be the student's configuration).
+  // Tokens live about a day: a small margin keeps a nearly-dead one from
+  // landing the student on the login page anyway.
+  app.get("/api/portal/entry", { preHandler: ctx.requireAuth }, async (req, reply): Promise<PortalEntryResponse> => {
+    const user = ctx.userOf(req);
+    void reply.header("cache-control", "no-store");
+    const session = ctx.accounts.loadPortalToken(user.honey_id);
+    if (!session || session.expiresAt.getTime() - Date.now() < 5 * 60_000) {
+      return { status: "portal_reconnect_required" };
+    }
+    const url = `${ctx.config.portalBaseUrl}/student/login?token=${encodeURIComponent(session.token)}`;
+    return { status: "ok", url, expiresAt: session.expiresAt.getTime() };
   });
 
   app.get<{ Querystring: { date?: string } }>(

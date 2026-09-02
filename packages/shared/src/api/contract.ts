@@ -111,6 +111,17 @@ export interface SyncResponse {
   rooms: number;
 }
 
+/**
+ * GET /api/portal/entry (additive, 2026-09-02): a URL that opens the school
+ * portal's web app already signed in — its login page accepts the portal
+ * token in the query and stores it itself. "portal_reconnect_required" when
+ * HOney holds no valid token; the client reconnects with the saved login
+ * and asks again.
+ */
+export type PortalEntryResponse =
+  | { status: "ok"; url: string; expiresAt: number }
+  | { status: "portal_reconnect_required" };
+
 // ---------------------------------------------------------------------------
 // Experiences (anonymous community — App A). Field names mirror the wire
 // exactly (snake_case where the backend sends snake_case).

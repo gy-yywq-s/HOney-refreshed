@@ -38,6 +38,7 @@ import type {
   SessionTokens,
   StandaloneMode,
   SyncResponse,
+  PortalEntryResponse,
   TimetableResponse,
   SearchResponse,
   EntityStats,
@@ -123,6 +124,26 @@ export class ApiClient {
 
   sync(): Promise<SyncResponse> {
     return this.request("POST", "/api/sync");
+  }
+
+  /** A URL that opens the school portal signed in (see lib/portalEntry). */
+  portalEntry(): Promise<PortalEntryResponse> {
+    return this.request("GET", "/api/portal/entry");
+  }
+
+  /**
+   * Make sure HOney holds a live portal token: ask for the entry; if the
+   * portal session ended and this device keeps the school login, sign in
+   * again silently (the same /api/auth/login) and ask once more.
+   */
+  async portalEntrySeamless(): Promise<{ entry: PortalEntryResponse; reconnected: boolean }> {
+    let entry = await this.portalEntry();
+    if (entry.status !== "portal_reconnect_required") return { entry, reconnected: false };
+    const creds = await portalCredentials.load();
+    if (!creds) return { entry, reconnected: false };
+    await this.login({ username: creds.username, password: creds.password });
+    entry = await this.portalEntry();
+    return { entry, reconnected: true };
   }
 
   /**

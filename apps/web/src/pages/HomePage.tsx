@@ -24,6 +24,7 @@ import { WordmarkHOney } from "../components/Wordmark";
 import { useLang, useT } from "../lib/i18n";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
+import { usePortalEntry } from "../lib/portalEntry";
 
 export function HomePage() {
   const { me } = useAuth();
@@ -33,6 +34,7 @@ export function HomePage() {
   const now = useNowTick(1000);
   const t = useT();
   const lang = useLang();
+  const portalHref = usePortalEntry();
 
   if (!me) return null;
 
@@ -206,12 +208,9 @@ export function HomePage() {
       </section>
 
       <div className="home-foot home-zone">
-        <a
-          className="portal-row"
-          href="https://www.huayaopudong.com/student/notification"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        {/* Opens the portal SIGNED IN: the href carries HOney's live portal
+            token to the portal's own login page (lib/portalEntry). */}
+        <a className="portal-row" href={portalHref} target="_blank" rel="noopener noreferrer">
           <span>School Portal</span>
           <span className="caption">
             {t("Open the official site")} <span aria-hidden="true">&#8599;</span>
