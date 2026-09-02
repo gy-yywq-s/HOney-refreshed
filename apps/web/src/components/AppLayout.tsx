@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, matchPath, useLocation } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { Me } from "../api/types";
@@ -18,7 +18,18 @@ export function RequireAuth() {
 
 /** Topbar context per route — chrome only, no behavior. */
 
+// Every real route pattern; a path matching none is the 404 and marks no tab.
+const KNOWN_ROUTES = [
+  "/home", "/timetable", "/history", "/history/lesson/:id", "/experiences", "/experiences/explore",
+  "/experiences/why", "/experiences/mine", "/experiences/compose", "/experiences/teacher/:id",
+  "/experiences/course/:id", "/experiences/room/:id", "/experiences/dish/:id",
+  "/experiences/place/:id", "/experiences/food/:id", "/settings", "/dash",
+];
+function isKnownRoute(path: string): boolean {
+  return KNOWN_ROUTES.some((p) => matchPath({ path: p, end: true }, path) !== null);
+}
 function tabIndex(path: string, tabs: { to: string }[]): number {
+  if (!isKnownRoute(path)) return -1;
   return tabs.findIndex((tab) => path === tab.to || path.startsWith(`${tab.to}/`));
 }
 
@@ -63,6 +74,7 @@ function AppLayout() {
     );
   }
 
+  const known = isKnownRoute(location.pathname);
   const railIndex = tabIndex(location.pathname, DESKTOP_TABS);
   const mobileIndex = tabIndex(location.pathname, MOBILE_TABS);
 
@@ -88,7 +100,8 @@ function AppLayout() {
             <NavLink
               key={tab.to}
               to={tab.to}
-              className={({ isActive }) => (isActive ? "nav-item is-active" : "nav-item")}
+              className={({ isActive }) => (isActive && known ? "nav-item is-active" : "nav-item")}
+              aria-current={undefined}
             >
               {tab.label}
             </NavLink>
@@ -137,7 +150,7 @@ function AppLayout() {
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
-              isActive ? "mobile-nav__item is-active" : "mobile-nav__item"
+              isActive && known ? "mobile-nav__item is-active" : "mobile-nav__item"
             }
           >
             {tab.icon}

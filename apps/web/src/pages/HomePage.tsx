@@ -9,7 +9,7 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
-import { formatDayBucket, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
+import { formatDayBucket, formatDayHeading, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
 
@@ -44,11 +44,7 @@ export function HomePage() {
     return `${day} · ${formatTime(next.startsAt)}`;
   })();
 
-  const today = new Date(now).toLocaleDateString("en-GB", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  const today = formatDayHeading(new Date(now).toLocaleDateString("en-CA"));
   const previews = (fromClasses.experiences ?? []).filter((e) => e.body).slice(0, 2);
 
   return (

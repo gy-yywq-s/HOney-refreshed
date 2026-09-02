@@ -80,7 +80,8 @@
   left: 0;
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   pointer-events: none;
-  transition: width 1s var(--ease); /* progress explains state; no breathing */
+  /* Width steps once per tick without a transition: nothing animates while
+     a lesson is in progress (r9 idle-motion census). */
 }
 .nextlesson > :not(.nextlesson__wash) {
   position: relative;
@@ -121,6 +122,7 @@
 /* ── Timetable — the Day canvas, restyled: surface-solid bands, hairline
    grid, accent exam strip, danger now-line, ink lesson blocks. ─────────── */
 .timetable-screen {
+  padding-bottom: var(--sp-2);
   /* FRAMED_SCROLL: this screen is a flex column filling .view, so the day
      canvas can actually stretch (its flex:1 was inert without this —
      Gary's 2026-09-01 screenshot: squashed bands + dead space below). */
@@ -355,7 +357,7 @@ p.caption.timetable-note {
 }
 /* Lesson blocks: ink cards on the canvas. */
 .lesson-block {
-  scroll-margin-top: 100px; /* compact landing: heading + note (≈96px) stay in view above block 1 (documented exception) */
+  scroll-margin-top: calc(var(--sp-8) * 2 + var(--sp-3)); /* compact landing: heading + note stay in view above block 1 */
   position: absolute;
   left: 10px;
   right: 8px;
@@ -447,7 +449,7 @@ p.caption.timetable-note {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin: var(--sp-2) 0;
+  margin: 0 0 var(--sp-2);
   font-size: var(--fs-secondary);
   font-weight: 600;
   color: var(--muted);
@@ -769,8 +771,6 @@ p.caption.timetable-note {
     .timeline {
       min-height: 540px;
     }
-  }
-  @media (max-height: 620px) {
     /* Compact heights: the day nav scrolls with the page (no sticky bar to
        park over the heading) and the landing block sits at the top. */
     .daynav {
@@ -1174,6 +1174,7 @@ p.caption.timetable-note {
   margin: var(--sp-2) 0 0;
 }
 .home-foot {
+  min-height: 44px; /* reserved: resolves late (r9 CLS 0.095) */
   display: flex;
   align-items: center;
   gap: var(--sp-4);
@@ -1313,7 +1314,7 @@ p.caption.timetable-note {
      keyboard "Try again") — never on an ordinary tap inside the region. */
   outline: 3px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 12px;
+  border-radius: 17px; /* the card radius the system already renders */
 }
 .section-title[id]:focus {
   outline: 3px solid var(--accent);
@@ -1333,6 +1334,11 @@ p.caption.timetable-note {
   /* The skip landing paints in the shell's padding gutter, off content. */
   outline: 3px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 12px;
+  border-radius: 17px; /* the card radius the system already renders */
 }
 
+
+
+.home-voices {
+  min-height: 132px; /* reserved: resolves late (r9 CLS 0.095) */
+}

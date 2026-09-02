@@ -39,7 +39,8 @@ export function ExperiencesExplorePage() {
     [searchQ],
   );
   const recent = recentContexts.list();
-  const landing = useRetryFocus<HTMLDivElement>(entities.loading);
+  // Arm on both flags the retry reloads (r9 contract).
+  const landing = useRetryFocus<HTMLDivElement>(entities.loading || directory.loading);
 
   const byType = useMemo(() => {
     const groups: Record<EntityType, EntityRef[]> = { teacher: [], course: [], room: [], dish: [] };
@@ -120,7 +121,7 @@ export function ExperiencesExplorePage() {
       <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="group" aria-label="Everything listed">
       {entities.loading ? (
         <Skeleton lines={6} />
-      ) : (
+      ) : entities.error || directory.error ? null : (
         SECTIONS.map(({ type, label }) => (
           <ExploreSection
             key={type}

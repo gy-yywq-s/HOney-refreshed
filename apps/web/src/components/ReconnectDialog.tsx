@@ -37,7 +37,15 @@ export function ReconnectDialog({
       </p>
       <SchoolLoginForm
         mode="reconnect"
-        submitLabel={purpose === "save" ? (stayConnected ? "Save login" : "Continue without saving") : "Reconnect"}
+        submitLabel={
+          purpose === "save"
+            ? stayConnected
+              ? "Save login"
+              : "Sign in without saving"
+            : stayConnected
+              ? "Reconnect and save login"
+              : "Reconnect only"
+        }
         beforeSubmit={
           <label className="stay-connected">
               <input

@@ -41,9 +41,12 @@ export function TimetablePage() {
   // The address bar names the day shown, after every change (r8): a copied
   // link means what the page shows, an impossible ?date= is replaced.
   useEffect(() => {
-    const q = searchParams.get("date");
-    if (q !== date) window.history.replaceState(null, "", `/timetable?date=${date}`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Compare against the address bar itself (React Router never re-reads a
+    // replaceState). Bare /timetable stays bare while showing today: a copied
+    // "today" link must not pin yesterday tomorrow (recorded decision).
+    const current = new URLSearchParams(window.location.search).get("date");
+    if (current === null && date === todayIsoDate()) return;
+    if (current !== date) window.history.replaceState(null, "", `/timetable?date=${date}`);
   }, [date]);
   const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
   const [selected, setSelected] = useState<Lesson | null>(null);
@@ -59,15 +62,19 @@ export function TimetablePage() {
   // The render right after a date change still carries the previous
   // date's loading=false, so "settled" is only trusted once this date has
   // been seen loading (or it is the date the screen mounted with).
+  // Landing contract (r9): the first settled render of a date — cold load,
+  // re-entry or a date step, cached or not — lands once; a retry or a
+  // refresh never scrolls. "Settled" means the lessons object on screen is
+  // not the previous date's (the render right after a date change still
+  // carries the old data).
   const settledDates = useRef(new Set<string>());
-  const loadingSeenFor = useRef<string | null>(null);
-  const mountDate = useRef(date);
-  if (loading) loadingSeenFor.current = date;
-  const trusted = loadingSeenFor.current === date || mountDate.current === date;
-  const coldLanding = !loading && trusted && !settledDates.current.has(date);
+  const lessonsAtChange = useRef<{ date: string; lessons: unknown }>({ date, lessons: data?.lessons });
+  if (lessonsAtChange.current.date !== date) lessonsAtChange.current = { date, lessons: data?.lessons };
+  const fresh = !loading && data !== null && data.lessons !== lessonsAtChange.current.lessons;
+  const coldLanding = (fresh || (data !== null && !loading && settledDates.current.size === 0)) && !settledDates.current.has(date);
   useEffect(() => {
-    if (!loading && trusted) settledDates.current.add(date);
-  }, [loading, date, trusted]);
+    if (coldLanding) settledDates.current.add(date);
+  }, [coldLanding, date]);
 
   async function runSync() {
     setSyncBusy(true);
@@ -202,6 +209,8 @@ export function TimetablePage() {
           </div>
         )}
 
+      <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="region" aria-label="Day timeline">
+
       {loading ? (
         <Skeleton lines={4} />
       ) : error ? (
@@ -213,7 +222,7 @@ export function TimetablePage() {
         </div>
       ) : (
         <>
-          <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="region" aria-label="Day timeline">
+          <div>
             <DayTimeline
               date={date}
               lessons={data?.lessons ?? []}
@@ -225,6 +234,7 @@ export function TimetablePage() {
         </>
       )}
 
+      </div>
       {selected && <LessonDetail lesson={selected} onClose={() => setSelected(null)} />}
       {showReconnect && (
         <ReconnectDialog
@@ -337,12 +347,18 @@ function DayTimeline({
   // where the day does. Never on a normal-height screen.
   useEffect(() => {
     if (!land || window.innerHeight > 620 || visible.length === 0) return;
-    const ahead = visible.find((l) => !isToday || minuteOfDay(l.endsAt) > nowMinute) ?? visible[0]!;
+    // Always the FIRST lesson of the day: the heading and the note stay in
+    // view in every clock state; later lessons are one swipe down.
+    const first = visible[0]!;
     // After the shell's own route reset (a parent effect), and instantly:
     // the owner's smooth scroll-behavior must not animate the landing.
     requestAnimationFrame(() => {
-      const el = document.querySelector<HTMLElement>(`[data-lesson="${ahead.id}"]`);
+      const el = document.querySelector<HTMLElement>(`[data-lesson="${first.id}"]`);
       el?.scrollIntoView({ block: "start", behavior: "instant" });
+      // Reset the keyboard's starting point so Tab 1 is still the skip link.
+      const skip = document.querySelector<HTMLElement>(".skip-link");
+      skip?.focus({ preventScroll: true });
+      skip?.blur();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, visible.length, land]);

@@ -306,13 +306,14 @@ export function SettingsPage() {
       {confirm === "delete-account" && (
         <ConfirmDialog
           title="Delete your HOney account?"
-          body="This permanently removes your account and your imported lessons; shared teacher, course, room and lesson entries stay. This cannot be undone."
+          body="This permanently removes your account and your imported lessons; shared teacher, course, room and lesson entries stay, and published experiences stay (they carry no author ID). The school login saved on this device is cleared. This cannot be undone."
           confirmLabel="Delete account"
           danger
           busy={busyKey === "delete-account"}
           onClose={() => setConfirm(null)}
           onConfirm={() =>
             void run("delete-account", async () => {
+                portalCredentials.clear(); // the saved school login goes with the account
               await api.deleteAccount();
               navigate("/login", { replace: true });
             })

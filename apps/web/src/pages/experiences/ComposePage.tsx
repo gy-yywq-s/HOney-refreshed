@@ -106,7 +106,7 @@ export function ExperiencesComposePage() {
   );
   const composer = useComposer(target);
   const { names } = useNames(!!effectiveEntityKey);
-  const landing = useRetryFocus<HTMLElement>(entities.loading);
+  const landing = useRetryFocus<HTMLElement>(entities.loading || history.loading);
   const { body, setBody, rating, setRating, status, notice } = composer;
 
   // Republishing a private note: seed the composer from the note's text.
@@ -213,6 +213,37 @@ export function ExperiencesComposePage() {
       </div>
     );
   }
+  // Lesson lookup (?lessonId=): a skeleton while History loads, a banner
+  // with a retry when it fails — never an editor over an unknown lesson (r9).
+  if (effectiveLessonId && !history.data && !history.error) {
+    return (
+      <div className="stack">
+        <h1 className="page-title">Share an experience</h1>
+        <Skeleton lines={4} />
+      </div>
+    );
+  }
+  if (effectiveLessonId && !history.data && history.error) {
+    return (
+      <div className="stack">
+        <h1 className="page-title">Share an experience</h1>
+        <section className="focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label="Could not load">
+          <div role="alert" className="banner banner--danger">
+            <span>{history.error}</span>
+            <button
+              className="btn btn--ghost btn--small"
+              onClick={() => {
+                landing.arm();
+                history.reload();
+              }}
+            >
+              Try again
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
   // Registry failed: say so, offer a retry, never an editor (r5).
   if (effectiveEntityKey && !entities.data && entities.error) {
     return (
@@ -223,7 +254,7 @@ export function ExperiencesComposePage() {
           ref={landing.ref}
           tabIndex={-1}
           role="region"
-          aria-label="Couldn’t load"
+          aria-label="Could not load"
         >
           <div role="alert" className="banner banner--danger">
             <span>{entities.error}</span>

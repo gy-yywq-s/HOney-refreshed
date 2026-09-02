@@ -5,7 +5,7 @@
 // invitation, and the persistent student-to-student identity line.
 // Scroll model: FRAMED_SCROLL (web-lab.md).
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Link } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
@@ -30,6 +30,26 @@ export function ExperiencesFeedPage() {
 
   const sentinel = useLoadMoreSentinel(feed.loadMore);
   const landing = useRetryFocus<HTMLDivElement>(feed.loading);
+  // One announcement per change (r9): the tab's own empty sentence, the
+  // count on a fresh page, "N more" on load-more, nothing on error (the
+  // alert speaks) — never a repeat of an unchanged count.
+  const announced = useRef<{ scope: FeedScope; count: number } | null>(null);
+  const [statusText, setStatusText] = useState("");
+  useEffect(() => {
+    if (feed.loading || feed.error) return;
+    const n = feed.items.length;
+    const prev = announced.current;
+    let text = "";
+    if (!prev || prev.scope !== scope) {
+      text = n === 0 ? (scope === "my_classes" ? "Nothing from your classes yet" : "Nothing has been shared yet") : n === 1 ? "1 experience" : `${n} experiences`;
+    } else if (n > prev.count) {
+      text = `${n - prev.count} more`;
+    } else {
+      return;
+    }
+    announced.current = { scope, count: n };
+    setStatusText(text);
+  }, [feed.loading, feed.error, feed.items.length, scope]);
   // The empty and error states carry their own action — one per screen.
   const showHeaderShare = feed.loading || (feed.error === null && feed.items.length > 0);
 
@@ -157,13 +177,7 @@ export function ExperiencesFeedPage() {
           null
         )}
         <p className="sr-only" role="status">
-          {feed.loading || feed.error
-            ? ""
-            : feed.items.length === 0
-              ? "Nothing has been shared yet"
-              : feed.items.length === 1
-                ? "1 experience"
-                : `${feed.items.length} experiences`}
+          {statusText}
         </p>
         <div>
           {feed.items.length > 0 && !feed.loading && !feed.error && (

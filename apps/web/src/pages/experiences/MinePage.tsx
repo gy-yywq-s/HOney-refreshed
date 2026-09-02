@@ -46,7 +46,7 @@ export function ExperiencesMinePage() {
   const [feedback, setFeedback] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null); // ownership key
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const { names, error: namesError, reload: reloadNames } = useNames();
+  const { names, error: namesError, loading: namesLoading, reload: reloadNames } = useNames();
 
   const keyList = useMemo(() => keys.map((k) => k.key), [keys]);
   const mine = useApi(
@@ -56,7 +56,8 @@ export function ExperiencesMinePage() {
         : Promise.resolve({ experiences: [] as MyExperience[] }),
     [keyList.join(",")],
   );
-  const landing = useRetryFocus<HTMLDivElement>(mine.loading);
+  // Arm on every loading flag a retry on this page can toggle (r9 contract).
+  const landing = useRetryFocus<HTMLDivElement>(mine.loading || namesLoading);
 
   const loadNotes = useCallback(() => {
     void privateNotes.list().then(setNotes);

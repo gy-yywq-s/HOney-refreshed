@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { describeApiError } from "../api/client";
 import { REFRESH_EVENT } from "./refresh";
 
@@ -8,6 +8,16 @@ import { REFRESH_EVENT } from "./refresh";
 // a background failure keeps the cached view. Keyed entries only — callers
 // without a key keep plain fetch-on-mount behavior.
 const cache = new Map<string, unknown>();
+const CACHE_MAX = 40; // per-session SWR cap (r9 relay): oldest entries drop first
+function remember(key: string, value: unknown): void {
+  if (cache.has(key)) cache.delete(key);
+  cache.set(key, value);
+  while (cache.size > CACHE_MAX) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
 // In-flight requests by key: two hooks mounting in the same tick share one
 // network call instead of racing (design-is r6: compose fired /api/entities
 // twice, concurrently).
@@ -49,10 +59,14 @@ export function useApi<T>(
     loading: initial === null,
   });
   const [tick, setTick] = useState(0);
+  // A reload() is a forced miss: the next effect run shows loading=true even
+  // when the key is cached, so a retry landing has a flag to arm on (r9).
+  const forced = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    const hit = key !== undefined && cache.has(key) ? (cache.get(key) as T) : null;
+    const hit = key !== undefined && cache.has(key) && !forced.current ? (cache.get(key) as T) : null;
+    forced.current = false;
     setState({ data: hit, error: null, loading: hit === null });
     const run = (): Promise<T> => {
       if (key === undefined) return fn();
@@ -70,7 +84,7 @@ export function useApi<T>(
         // cache after the one that replaced it (r8): only the live effect's
         // request may store its body.
         if (cancelled) return;
-        if (key !== undefined) cache.set(key, data);
+        if (key !== undefined) remember(key, data);
         setState({ data, error: null, loading: false });
       },
       (err: unknown) => {
@@ -92,6 +106,7 @@ export function useApi<T>(
 
   const reload = useCallback(() => {
     if (key !== undefined) inflight.delete(key); // a reload always re-fetches
+    forced.current = true;
     setTick((t) => t + 1);
   }, [key]);
 

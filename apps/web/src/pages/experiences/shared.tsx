@@ -12,11 +12,13 @@ import { useApi } from "../../lib/useApi";
 // ---------------------------------------------------------------------------
 
 /** Spec §7.3: provenance is labeled honestly — never "verified use" for dishes. */
-const PROVENANCE_LABELS: Record<string, string> = {
-  verified_lesson: "Verified lesson experience",
-  verified_retrospective: "From someone who has taken this over time",
-  verified_member: "Verified school member",
+/** One register for provenance everywhere (stream line and Mine chip). */
+export const PROVENANCE_LINE: Record<string, string> = {
+  verified_lesson: "from a class you’ve taken",
+  verified_retrospective: "from someone who has taken this over time",
+  verified_member: "from a student here",
 };
+const PROVENANCE_LABELS = PROVENANCE_LINE;
 
 export function provenanceLabel(provenance: string): string {
   return PROVENANCE_LABELS[provenance] ?? "Verified school member";

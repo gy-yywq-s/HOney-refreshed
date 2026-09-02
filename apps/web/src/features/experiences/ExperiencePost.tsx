@@ -12,14 +12,8 @@ import { api, ApiError } from "../../api/client";
 import type { EntitySummary, PublicExperience, ReportCategory } from "../../api/types";
 import { Modal } from "../../components/Modal";
 import { formatDayBucket } from "../../lib/format";
-import { Stars } from "../../pages/experiences/shared";
+import { PROVENANCE_LINE, Stars } from "../../pages/experiences/shared";
 
-/** Human provenance lines (§9.7.6): context a student can say out loud. */
-const PROVENANCE_LINE: Record<string, string> = {
-  verified_lesson: "from a class you’ve taken",
-  verified_retrospective: "from someone who has taken this over time",
-  verified_member: "from a student here",
-};
 
 const REACTION_EXPLAINER =
   "Reactions show whether this matches the experience of students who have had the same class or place. They do not verify a post as fact.";
@@ -160,7 +154,10 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
   const shown = clamped ? body.slice(0, CLAMP_CHARS).replace(/\s+\S*$/, "") + "…" : body;
 
   async function react(value: 1 | -1) {
-    if (busy) return;
+    if (busy) {
+      setNote("Saving your reaction…"); // the second tap gets a response (r9)
+      return;
+    }
     const prev = myValue;
     const prevCounts = counts;
     const next: 1 | -1 | 0 = myValue === value ? 0 : value;
@@ -264,6 +261,9 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
                 role="menuitem"
                 ref={firstItemRef}
                 onClick={() => {
+                  // Focus the persistent trigger BEFORE the menu item unmounts
+                  // so the dialog captures a live opener (r9).
+                  moreBtnRef.current?.focus();
                   setMenuOpen(false);
                   setReporting(true);
                 }}

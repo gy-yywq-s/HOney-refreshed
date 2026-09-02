@@ -83,10 +83,10 @@ a.btn:hover {
   background: color-mix(in srgb, var(--ink) 86%, var(--accent));
 }
 .btn--primary:disabled {
-  /* AA even while disabled (design-is r1): soft fill + muted text, not a
-     washed ink block (was 2.19:1). */
-  background: color-mix(in srgb, var(--ink) 8%, var(--surface));
-  border-color: transparent;
+  /* One disabled treatment for every button (r9): transparent, muted text,
+     soft border — the same as a disabled ghost. */
+  background: transparent;
+  border-color: var(--line);
   color: var(--muted);
   opacity: 1;
 }
@@ -248,8 +248,8 @@ a.btn:hover {
   background: var(--soft);
   color: var(--ink);
 }
+.react-btn:disabled,
 .react-btn[aria-disabled="true"] {
-  pointer-events: none; /* the second tap has nothing to do until the POST settles */
   /* Pending: the POST is in flight — visibly quieter, and a second tap
      is swallowed by the handler, so the pill must say so to sight too. */
   opacity: 0.7;

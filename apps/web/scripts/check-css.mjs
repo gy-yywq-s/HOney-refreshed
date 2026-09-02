@@ -39,13 +39,22 @@ function parse(css, f, ctx = "root", seen = new Map()) {
       seen.set(key, true);
       if (body.includes("{")) report(f, `nested block inside a rule: "${key.slice(0, 60)}"`);
       const parts = key.split(",").map((s) => s.trim());
-      const pseudo = parts.filter((p) => /:focus|:hover|:active/.test(p));
-      const bare = parts.filter((p) => /^[a-z]+$/.test(p));
-      if (pseudo.length && bare.length) report(f, `bare selector "${bare.join(",")}" mixed with state selectors: "${key.slice(0, 80)}"`);
+      // Any member WITHOUT a state pseudo-class beside members WITH one is a
+      // dangling selector (class-, attribute- or :where-spelled included).
+      const hasState = (p) => /:(focus|focus-visible|focus-within|hover|active)\b/.test(p);
+      const withState = parts.filter(hasState);
+      const without = parts.filter((p) => !hasState(p));
+      if (withState.length && without.length) report(f, `selector(s) "${without.join(",")}" without a state pseudo-class beside state selectors: "${key.slice(0, 80)}"`);
     }
     i = k;
   }
 }
-for (const f of files) parse(readFileSync(join(dir, f), "utf8"), f);
+for (const f of files) {
+  const css = readFileSync(join(dir, f), "utf8");
+  const opens = (css.match(/\{/g) ?? []).length, closes = (css.match(/\}/g) ?? []).length;
+  if (opens !== closes) report(f, `unbalanced braces: ${opens} '{' vs ${closes} '}'`);
+  if (/\}\s*\}/.test(css.replace(/@[^{]+\{[^{}]*(\{[^{}]*\}[^{}]*)*\}/g, (m) => m.replace(/\}\s*\}$/, "}"))) && false) report(f, "stray '}'");
+  parse(css, f);
+}
 if (problems) { console.error(`[check-css] ${problems} problem(s)`); process.exit(1); }
 console.log(`[check-css] ${files.length} stylesheet(s) clean`);
