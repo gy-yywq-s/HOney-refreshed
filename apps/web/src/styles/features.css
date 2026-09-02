@@ -1322,8 +1322,3 @@ p.caption.timetable-note {
   outline-offset: -3px;
 }
 
-/* The login opt-in label is the tap target for its 22px box. */
-.stay-connected {
-  min-height: 44px;
-  align-items: center;
-}

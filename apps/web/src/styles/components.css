@@ -868,6 +868,7 @@ a.btn:hover {
   background: var(--soft);
   cursor: pointer;
   text-align: left;
+  min-height: 44px; /* the label is the tap target for its 22px box */
 }
 .stay-connected input {
   margin-top: 0;
