@@ -58,6 +58,7 @@ const ZH: Record<string, string> = {
   "Share something": "分享一点什么",
   "School Portal": "School Portal",
   "Open the official site": "打开学校官网",
+  "Sign in once to open": "登录一次即可打开",
   "Last updated": "上次更新",
   "Hi,": "你好，",
   "left": "后结束",

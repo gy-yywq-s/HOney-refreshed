@@ -60,9 +60,11 @@ export function SettingsPage() {
   );
   const [confirm, setConfirm] = useState<PendingConfirm>(null);
   const [showReconnect, setShowReconnect] = useState<null | "reconnect" | "save">(null);
-  // On by default; the switch reflects the wish, not whether a login is
-  // stored yet (a sign-in from before the default flipped stores none).
-  const [stayConnected, setStayConnected] = useState(portalCredentials.wanted());
+  // On by default, but the switch shows what is actually kept: a sign-in
+  // from before the default flipped stored nothing, and an "on" switch over
+  // an empty store left the portal asking for the login (Gary 2026-09-02).
+  // Turning it on with nothing stored asks for the login once.
+  const [stayConnected, setStayConnected] = useState(portalCredentials.wanted() && portalCredentials.isAuthorized());
 
   if (!me) return null;
   // The old Imported-data screen folded into School connection.
@@ -195,7 +197,7 @@ export function SettingsPage() {
             purpose={showReconnect}
             onClose={() => setShowReconnect(null)}
             onReconnected={() => {
-              setStayConnected(portalCredentials.wanted());
+              setStayConnected(portalCredentials.wanted() && portalCredentials.isAuthorized());
               void refreshMe();
             }}
           />
@@ -510,7 +512,7 @@ export function SettingsPage() {
           purpose={showReconnect}
           onClose={() => setShowReconnect(null)}
           onReconnected={() => {
-            setStayConnected(portalCredentials.wanted());
+            setStayConnected(portalCredentials.wanted() && portalCredentials.isAuthorized());
             void refreshMe();
           }}
         />

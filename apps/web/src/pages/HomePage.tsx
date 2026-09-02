@@ -12,8 +12,10 @@
 // new?" / "Start a post") — so it reads as joining what is above it. No
 // "last updated … ago" on a Home card; Settings carries that.
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import { ReconnectDialog } from "../components/ReconnectDialog";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
@@ -34,7 +36,8 @@ export function HomePage() {
   const now = useNowTick(1000);
   const t = useT();
   const lang = useLang();
-  const portalHref = usePortalEntry();
+  const portal = usePortalEntry();
+  const [portalLogin, setPortalLogin] = useState(false);
 
   if (!me) return null;
 
@@ -211,14 +214,32 @@ export function HomePage() {
       <div className="home-foot home-zone">
         {/* Opens the portal SIGNED IN: the href carries HOney's live portal
             token to the portal's own login page (lib/portalEntry). */}
-        <a className="portal-row" href={portalHref} target="_blank" rel="noopener noreferrer">
-          <img className="portal-row__icon" src="/oasis.png" alt="" width="22" height="22" />
-          <span className="portal-row__title">School Portal</span>
-          <span className="caption">
-            {t("Open the official site")} <span aria-hidden="true">&#8599;</span>
-          </span>
-        </a>
+        {portal.needsLogin ? (
+          /* HOney cannot enter signed in and nothing here can renew: ask for
+             the school login once (kept on this device), never land the
+             student on the portal's own login page. */
+          <button type="button" className="portal-row" onClick={() => setPortalLogin(true)}>
+            <img className="portal-row__icon" src="/oasis.png" alt="" width="22" height="22" />
+            <span className="portal-row__title">School Portal</span>
+            <span className="caption">{t("Sign in once to open")}</span>
+          </button>
+        ) : (
+          <a className="portal-row" href={portal.href} target="_blank" rel="noopener noreferrer">
+            <img className="portal-row__icon" src="/oasis.png" alt="" width="22" height="22" />
+            <span className="portal-row__title">School Portal</span>
+            <span className="caption">
+              {t("Open the official site")} <span aria-hidden="true">&#8599;</span>
+            </span>
+          </a>
+        )}
       </div>
+      {portalLogin && (
+        <ReconnectDialog
+          purpose="reconnect"
+          onClose={() => setPortalLogin(false)}
+          onReconnected={() => portal.refresh()}
+        />
+      )}
     </div>
   );
 }
