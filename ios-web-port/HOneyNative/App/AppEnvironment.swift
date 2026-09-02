@@ -188,7 +188,7 @@ final class AppEnvironment {
         await journal.setAccount(me.honeyId)
         portalVault.setAccount(me.honeyId, expectedName: me.displayName)
         await portalCoordinator.accountChanged()
-        await portal.reset()
+        portal.reset()
         await PortalWebController.shared.resetForAccountChange()
     }
 
@@ -205,7 +205,7 @@ final class AppEnvironment {
         await journal.setAccount(nil)
         portalVault.setAccount(nil, expectedName: nil)
         await portalCoordinator.accountChanged()
-        await portal.reset()
+        portal.reset()
         await PortalWebController.shared.resetForAccountChange()
         await feedStore.invalidateAll()
         await timetable.invalidateAll()

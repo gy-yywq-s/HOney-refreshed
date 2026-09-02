@@ -460,7 +460,3 @@ struct GatePickerSheet: View {
         .presentationDetents([.medium])
     }
 }
-
-extension AccessRoute: Identifiable {
-    public var id: Int { recordId }
-}

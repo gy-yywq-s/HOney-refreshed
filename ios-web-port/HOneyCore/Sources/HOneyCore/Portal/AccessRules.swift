@@ -115,10 +115,12 @@ public struct ExitPermit: Sendable, Equatable, Hashable, Identifiable {
 }
 
 /// Which route opens the gate.
-public enum AccessRoute: Sendable, Equatable, Hashable {
+public enum AccessRoute: Sendable, Equatable, Hashable, Identifiable {
     /// Day student — record_id == -2, no permit needed.
     case commuter
     case permit(recordId: Int)
+
+    public var id: Int { recordId }
 
     public var recordId: Int {
         switch self {

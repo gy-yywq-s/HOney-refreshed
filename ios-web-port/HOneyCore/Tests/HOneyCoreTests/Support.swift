@@ -50,10 +50,10 @@ final class ScriptedTransport: HTTPTransport, @unchecked Sendable {
     }
 
     func send(_ request: HTTPRequest) async throws -> HTTPResponse {
-        lock.lock()
-        requests.append(request)
-        let handler = handlers.isEmpty ? fallback : handlers.removeFirst()
-        lock.unlock()
+        let handler = lock.withLock {
+            requests.append(request)
+            return handlers.isEmpty ? fallback : handlers.removeFirst()
+        }
         return try await handler(request)
     }
 

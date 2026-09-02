@@ -105,7 +105,7 @@ public actor FeedStore {
         let id = UUID()
         let task = Task<FeedState, Error> {
             let page = try await fetch(key.params())
-            return try await self.applyFirst(page, key: key, generation: generation)
+            return try self.applyFirst(page, key: key, generation: generation)
         }
         inflightFirst[key] = Inflight(id: id, task: task)
         defer {

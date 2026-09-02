@@ -3,6 +3,7 @@
 // router. Everything else is covered on Linux in HOneyCoreTests.
 
 import XCTest
+import WebKit
 import HOneyCore
 @testable import HOneyNative
 
@@ -63,6 +64,35 @@ final class IdentityFreeTransportTests: XCTestCase {
         XCTAssertNil(config.urlCredentialStorage)
         XCTAssertNil(config.urlCache)
         XCTAssertNotNil(URLSessionTransport.identityFree())
+    }
+}
+
+@MainActor
+final class PortalWebControllerTests: XCTestCase {
+    /// WebKit only calls a delegate method whose selector it recognises. A
+    /// spelling that "nearly matches" compiles, is never called, and leaves
+    /// the allowlist inert — this is what 0fb6a8e shipped as a warning.
+    func testNavigationPolicyDelegateIsBound() {
+        let controller = PortalWebController()
+        let selector = NSSelectorFromString("webView:decidePolicyForNavigationAction:decisionHandler:")
+        XCTAssertTrue(controller.responds(to: selector))
+        XCTAssertTrue(controller.responds(to: #selector(WKNavigationDelegate.webView(_:didFinish:))))
+        XCTAssertTrue(controller.responds(to: #selector(WKNavigationDelegate.webViewWebContentProcessDidTerminate(_:))))
+    }
+
+    func testPolicyKeepsSchoolInsideAndRefusesPlainHTTP() {
+        let controller = PortalWebController()
+        controller.open(entry: nil, home: URL(string: "https://portal.example.edu/")!, allowedHosts: ["portal.example.edu"]) { nil }
+        XCTAssertEqual(controller.policy(for: URL(string: "https://portal.example.edu/student/home")!), .allow)
+        XCTAssertEqual(controller.policy(for: URL(string: "https://sub.portal.example.edu/x")!), .allow)
+        XCTAssertEqual(controller.policy(for: URL(string: "http://portal.example.edu/")!), .cancel, "plain HTTP is refused")
+        XCTAssertEqual(controller.policy(for: URL(string: "about:blank")!), .allow)
+    }
+
+    func testSensitiveURLsAreNeverKept() {
+        XCTAssertTrue(PortalWebController.isSensitive(URL(string: "https://p.example.edu/student/login")!))
+        XCTAssertTrue(PortalWebController.isSensitive(URL(string: "https://p.example.edu/entry?token=abc")!))
+        XCTAssertFalse(PortalWebController.isSensitive(URL(string: "https://p.example.edu/student/home?tab=2")!))
     }
 }
 

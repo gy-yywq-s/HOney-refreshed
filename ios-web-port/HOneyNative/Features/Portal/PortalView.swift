@@ -22,7 +22,7 @@ enum PortalPhase: Equatable {
 /// session and the last page the student was on — for one account.
 @MainActor
 final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegate {
-    nonisolated(unsafe) static let shared = PortalWebController()
+    static let shared = PortalWebController()
 
     /// Stored defaults only, so the singleton can be created outside the actor.
     nonisolated override init() {
@@ -119,22 +119,25 @@ final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegat
 
     // MARK: WKNavigationDelegate
 
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        guard let url = navigationAction.request.url else { decisionHandler(.cancel); return }
+    // The async form is the one WebKit binds under strict concurrency; the
+    // completion-handler spelling "nearly matched" and was never called, which
+    // would have left the allowlist inert (CI warning on 0fb6a8e).
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+        guard let url = navigationAction.request.url else { return .cancel }
+        return policy(for: url)
+    }
+
+    /// HTTPS to an allowlisted school host stays inside; anything else outside
+    /// the school opens in the system browser; plain HTTP is refused.
+    func policy(for url: URL) -> WKNavigationActionPolicy {
         let scheme = url.scheme?.lowercased() ?? ""
-        if scheme == "about" || scheme == "blob" || scheme == "data" { decisionHandler(.allow); return }
-        guard scheme == "https", let host = url.host?.lowercased() else {
-            // Plain HTTP to the school is not allowed; anything else is not ours.
-            decisionHandler(.cancel)
-            return
-        }
+        if scheme == "about" || scheme == "blob" || scheme == "data" { return .allow }
+        guard scheme == "https", let host = url.host?.lowercased() else { return .cancel }
         if allowedHosts.contains(host) || allowedHosts.contains(where: { host.hasSuffix("." + $0) }) {
-            decisionHandler(.allow)
-        } else {
-            // Outside the school: the system browser, never inside HOney.
-            UIApplication.shared.open(url)
-            decisionHandler(.cancel)
+            return .allow
         }
+        UIApplication.shared.open(url)
+        return .cancel
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
