@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { startUpdateCheck } from "./lib/updateCheck";
 // Self-hosted variable webfont (@fontsource) — no runtime font CDN. One
 // humanist sans everywhere (web-lab round 2, candidate A): the content has
 // the personality; the interface doesn't perform (review v3 §5.5.1).
@@ -28,3 +29,4 @@ if ("serviceWorker" in navigator && !import.meta.env.DEV) {
     void navigator.serviceWorker.register("/sw.js");
   });
 }
+if (!import.meta.env.DEV) startUpdateCheck();

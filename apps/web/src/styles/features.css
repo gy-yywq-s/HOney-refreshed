@@ -1933,8 +1933,24 @@ button.row:hover {
 
 /* ── Week overview: a period matrix (addendum v1.1 §5–§13) ──────────────── */
 .week {
-  /* A dense instrument: it may use a narrower margin than prose (§6). */
+  /* A dense instrument: it may use a narrower margin than prose (§6).
+     Mon–Fri never scroll sideways; a weekend column, when lessons exist,
+     makes the matrix wider and it scrolls inside this box. */
   margin: 0 calc(-1 * (var(--page-x) - 10px));
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.week::-webkit-scrollbar {
+  display: none;
+}
+.week__table th.week__gutter {
+  /* The period column stays put while the days scroll. */
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
 }
 .week__table {
   width: 100%;

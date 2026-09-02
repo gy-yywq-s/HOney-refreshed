@@ -71,7 +71,7 @@ export function TimetablePage() {
   }, [view]);
   const monday = mondayOf(date);
   const week = useApi(
-    () => (view === "week" ? api.timetableRange(monday, shiftIsoDate(monday, 4)) : Promise.resolve(null)),
+    () => (view === "week" ? api.timetableRange(monday, shiftIsoDate(monday, 6)) : Promise.resolve(null)),
     [view, monday],
     view === "week" ? `timetable:week:${monday}` : undefined,
   );
@@ -81,6 +81,11 @@ export function TimetablePage() {
     for (const d of week.data.days) map[d.date] = d.lessons;
     return map;
   }, [week.data]);
+  // The bar names the days the matrix shows: Mon–Fri, or through the weekend
+  // day that has lessons.
+  const weekEnd = weekDays
+    ? (weekDays[shiftIsoDate(monday, 6)]?.length ? 6 : weekDays[shiftIsoDate(monday, 5)]?.length ? 5 : 4)
+    : 4;
   // The address bar names the day shown, after every change (r8): a copied
   // link means what the page shows, an impossible ?date= is replaced.
   useEffect(() => {
@@ -177,7 +182,7 @@ export function TimetablePage() {
             <button
               type="button"
               className="daynav__datebtn"
-              aria-label={view === "week" ? `Pick a week (${formatWeekRange(monday)})` : `Pick a date (${formatDayTitle(date)})`}
+              aria-label={view === "week" ? `Pick a week (${formatWeekRange(monday, weekEnd)})` : `Pick a date (${formatDayTitle(date)})`}
               onClick={() => {
                 const el = pickerRef.current;
                 if (!el) return;
@@ -188,9 +193,9 @@ export function TimetablePage() {
                 }
               }}
             >
-              <span className="daynav__date-long">{view === "week" ? formatWeekRange(monday) : formatDayTitle(date)}</span>
+              <span className="daynav__date-long">{view === "week" ? formatWeekRange(monday, weekEnd) : formatDayTitle(date)}</span>
               <span className="daynav__date-short" aria-hidden="true">
-                {view === "week" ? formatWeekRange(monday) : formatStepperDate(date)}
+                {view === "week" ? formatWeekRange(monday, weekEnd) : formatStepperDate(date)}
               </span>
               <svg className="daynav__caret" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
                 <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

@@ -173,6 +173,16 @@ export function SettingsPage() {
           </Link>
         </section>
 
+        <section className="rowlist" aria-label="About">
+          <h2 className="overline">About</h2>
+          <div className="row">
+            <span className="row__main">
+              <span className="row__title">Build {__BUILD__}</span>
+              <span className="row__sub">The app reloads itself when a newer build is live.</span>
+            </span>
+          </div>
+        </section>
+
         {me.isAdmin && (
           <section className="rowlist" aria-label="Admin">
             <h2 className="overline">Admin</h2>

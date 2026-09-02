@@ -11,7 +11,8 @@ import { BANDS, PERIODS, minuteLabel, minuteOfDay, overlapsSlot } from "../../li
 import { formatDayTitle, formatTime, shiftIsoDate } from "../../lib/format";
 import { Skeleton } from "../../lib/motion";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const COLUMN_PX = 66; // the regular column; more columns scroll sideways, never squeeze
 
 export interface WeekViewProps {
   /** The Monday of the week shown. */
@@ -42,7 +43,11 @@ function usePhoneColumns(): boolean {
 export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onSelect, today, now }: WeekViewProps) {
   const phone = usePhoneColumns();
   const cellName = (subject: string) => (phone ? shortSubjectName(subject) : compactSubjectName(subject));
-  const dates = WEEKDAYS.map((_, i) => shiftIsoDate(monday, i));
+  // Mon–Fri always; Saturday/Sunday only when the imported week has a lesson
+  // there (Gary 2026-09-02) — then the matrix scrolls sideways.
+  const all = WEEKDAYS.map((_, i) => shiftIsoDate(monday, i));
+  const dates = all.filter((d, i) => i < 5 || ((days?.[d]?.length ?? 0) > 0));
+  const dayIndex = (d: string) => all.indexOf(d);
   const unplaced: { date: string; lesson: Lesson }[] = [];
   const grid = new Map<string, Lesson[]>(); // `${date}|${bandId}` → lessons
   if (days) {
@@ -71,16 +76,20 @@ export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onS
           </button>
         </div>
       )}
-      <table className="week__table" aria-busy={loading || undefined}>
+      <table
+        className="week__table"
+        aria-busy={loading || undefined}
+        style={dates.length > 5 ? { minWidth: 32 + dates.length * COLUMN_PX } : undefined}
+      >
         <thead>
           <tr>
             <th scope="col" className="week__gutter">
               <span className="sr-only">Period</span>
             </th>
-            {dates.map((date, i) => (
+            {dates.map((date) => (
               <th key={date} scope="col" className={date === today ? "week__day week__day--today" : "week__day"}>
                 <button type="button" className="week__daybtn" onClick={() => onOpenDay(date)} aria-label={`Open ${formatDayTitle(date)}`}>
-                  <span className="week__dayname">{WEEKDAYS[i]}</span>
+                  <span className="week__dayname">{WEEKDAYS[dayIndex(date)]}</span>
                   <span className="week__daynum">{Number(date.slice(8, 10))}</span>
                 </button>
               </th>
@@ -91,7 +100,7 @@ export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onS
           {BANDS.map((band) =>
             band.kind === "break" ? (
               <tr key={band.id} className="week__break">
-                <th scope="row" colSpan={6}>
+                <th scope="row" colSpan={dates.length + 1}>
                   <span>
                     {band.label?.replace(" Break", "")} · {minuteLabel(band.start)}–{minuteLabel(band.end)}
                   </span>

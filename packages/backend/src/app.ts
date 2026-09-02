@@ -104,7 +104,7 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
         // assets are immutable by construction, everything else revalidates.
         // (The public edge — hostd gateway / Cloudflare, outside this repo —
         // currently rewrites sw.js to max-age=14400.)
-        if (path.endsWith("/sw.js")) res.setHeader("cache-control", "no-cache");
+        if (path.endsWith("/sw.js") || path.endsWith("/version.json")) res.setHeader("cache-control", "no-cache");
         else if (path.includes("/assets/")) res.setHeader("cache-control", "public, max-age=31536000, immutable");
         else res.setHeader("cache-control", "public, max-age=0, must-revalidate");
       },

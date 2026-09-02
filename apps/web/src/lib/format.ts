@@ -120,10 +120,10 @@ export function mondayOf(iso: string): string {
   return shiftIsoDate(iso, -offset);
 }
 
-/** "31 Aug – 4 Sept" for the Mon–Fri week starting at `monday`. */
-export function formatWeekRange(monday: string): string {
+/** "31 Aug – 4 Sept" for the week starting at `monday` (through `endOffset` days). */
+export function formatWeekRange(monday: string, endOffset = 4): string {
   const a = parseIsoDate(monday);
-  const b = parseIsoDate(shiftIsoDate(monday, 4));
+  const b = parseIsoDate(shiftIsoDate(monday, endOffset));
   const day = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric" });
   const dayMonth = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   return a.getMonth() === b.getMonth() ? `${day(a)} – ${dayMonth(b)}` : `${dayMonth(a)} – ${dayMonth(b)}`;
