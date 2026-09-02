@@ -56,11 +56,18 @@ export function TimetablePage() {
   // Landing contract: the FIRST settle (success or error) of a date — cold
   // load, re-entry or a date step — lands once; every later arrival for the
   // same date (a retry, a refresh) must not scroll.
+  // The render right after a date change still carries the previous
+  // date's loading=false, so "settled" is only trusted once this date has
+  // been seen loading (or it is the date the screen mounted with).
   const settledDates = useRef(new Set<string>());
-  const coldLanding = !loading && !settledDates.current.has(date);
+  const loadingSeenFor = useRef<string | null>(null);
+  const mountDate = useRef(date);
+  if (loading) loadingSeenFor.current = date;
+  const trusted = loadingSeenFor.current === date || mountDate.current === date;
+  const coldLanding = !loading && trusted && !settledDates.current.has(date);
   useEffect(() => {
-    if (!loading) settledDates.current.add(date);
-  }, [loading, date]);
+    if (!loading && trusted) settledDates.current.add(date);
+  }, [loading, date, trusted]);
 
   async function runSync() {
     setSyncBusy(true);
