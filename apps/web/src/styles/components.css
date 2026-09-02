@@ -666,7 +666,7 @@ a.btn:hover {
   .main {
     margin-left: 0;
     padding: calc(var(--sp-4) + var(--inset-top)) var(--sp-4)
-      calc(84px + var(--inset-bottom)); /* 84px = nav 64 + its 10px offset + one 10px gap (documented exception) */
+      calc(80px + var(--inset-bottom)); /* 80px = nav 64 + its 10px offset + a 6px gap (documented exception) */
   }
   .mobile-nav {
     position: fixed;

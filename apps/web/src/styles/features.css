@@ -257,9 +257,9 @@
   .daynav {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--sp-2);
-    margin: 0 calc(-1 * var(--sp-4)) var(--sp-3);
-    padding: calc(var(--inset-top) + var(--sp-2)) var(--sp-4) var(--sp-2);
+    gap: var(--sp-1);
+    margin: 0 calc(-1 * var(--sp-4)) var(--sp-2);
+    padding: calc(var(--inset-top) + var(--sp-2)) var(--sp-4) var(--sp-1);
   }
   .daynav__stepper {
     flex: 0 0 auto;

@@ -202,17 +202,12 @@ export function TimetablePage() {
           </button>
         </div>
       ) : (
-        <>
-          <div>
-            <DayTimeline
-              date={date}
-              lessons={data?.lessons ?? []}
-              land={coldLanding}
-              onSelect={(lesson) => setSelected(lesson)}
-            />
-          </div>
-
-        </>
+        <DayTimeline
+          date={date}
+          lessons={data?.lessons ?? []}
+          land={coldLanding}
+          onSelect={(lesson) => setSelected(lesson)}
+        />
       )}
 
       </div>
@@ -234,8 +229,15 @@ export function TimetablePage() {
 // hour gridlines and the red now-line. Lessons are positioned by wall time.
 // ---------------------------------------------------------------------------
 
-const DAY_START = 9 * 60;
-const DAY_END = 20 * 60;
+// The canvas covers the school day, 09:00–20:00, and widens to the hour
+// whenever a lesson falls outside it (2026-09-02: 08:30 lessons exist in
+// real data; a clipped block is not an option).
+const DEFAULT_START = 9 * 60;
+const DEFAULT_END = 20 * 60;
+interface DayRange {
+  start: number;
+  end: number;
+}
 
 interface TimelineBand {
   id: string;
@@ -260,29 +262,34 @@ const BANDS: TimelineBand[] = [
 ];
 
 const PERIODS = BANDS.filter((b) => b.kind === "period");
-const HOUR_MARKS = Array.from({ length: 12 }, (_, i) => (9 + i) * 60);
 
 function minuteOfDay(timestamp: number): number {
   const d = new Date(timestamp);
   return d.getHours() * 60 + d.getMinutes();
 }
 
-function clampMinute(minute: number): number {
-  return Math.min(Math.max(minute, DAY_START), DAY_END);
+function rangeFor(lessons: Lesson[]): DayRange {
+  let start = DEFAULT_START;
+  let end = DEFAULT_END;
+  for (const l of lessons) {
+    start = Math.min(start, Math.floor(minuteOfDay(l.startsAt) / 60) * 60);
+    end = Math.max(end, Math.ceil(minuteOfDay(l.endsAt) / 60) * 60);
+  }
+  return { start, end };
 }
 
-function dayFraction(minute: number): number {
-  return (clampMinute(minute) - DAY_START) / (DAY_END - DAY_START);
-}
-
-/** y for a minute on the canvas. */
-function topFor(minute: number, extraPx = 0): string {
-  return `calc(100% * ${dayFraction(minute).toFixed(4)} + ${extraPx}px)`;
-}
-
-function heightBetween(startMinute: number, endMinute: number): string {
-  const f = Math.max(0, dayFraction(endMinute) - dayFraction(startMinute));
-  return `calc(100% * ${f.toFixed(4)})`;
+/** Canvas geometry for one day range: y positions are fractions of the
+ *  canvas height, so the canvas may be any height. */
+function geometryFor(range: DayRange) {
+  const clamp = (minute: number) => Math.min(Math.max(minute, range.start), range.end);
+  const fraction = (minute: number) => (clamp(minute) - range.start) / (range.end - range.start);
+  const topFor = (minute: number, extraPx = 0) =>
+    `calc(100% * ${fraction(minute).toFixed(4)} + ${extraPx}px)`;
+  const heightBetween = (startMinute: number, endMinute: number) =>
+    `calc(100% * ${Math.max(0, fraction(endMinute) - fraction(startMinute)).toFixed(4)})`;
+  const hourMarks: number[] = [];
+  for (let m = range.start; m <= range.end; m += 60) hourMarks.push(m);
+  return { clamp, topFor, heightBetween, hourMarks };
 }
 
 function overlapsSlot(slot: TimelineBand, start: number, end: number): boolean {
@@ -307,6 +314,8 @@ function DayTimeline({
   onSelect: (lesson: Lesson) => void;
 }) {
   const isToday = date === todayIsoDate();
+  const range = rangeFor(lessons);
+  const geo = geometryFor(range);
   const [nowMinute, setNowMinute] = useState(() => minuteOfDay(Date.now()));
   useEffect(() => {
     if (!isToday) return;
@@ -315,13 +324,13 @@ function DayTimeline({
   }, [isToday]);
 
   const visible = lessons.filter(
-    (l) => clampMinute(minuteOfDay(l.endsAt)) > clampMinute(minuteOfDay(l.startsAt)),
+    (l) => geo.clamp(minuteOfDay(l.endsAt)) > geo.clamp(minuteOfDay(l.startsAt)),
   );
   const freeSlots = PERIODS.filter(
     (slot) =>
       !lessons.some((l) => overlapsSlot(slot, minuteOfDay(l.startsAt), minuteOfDay(l.endsAt))),
   );
-  const showNow = isToday && nowMinute >= DAY_START && nowMinute <= DAY_END;
+  const showNow = isToday && nowMinute >= range.start && nowMinute <= range.end;
   // Compact heights (≤620px): the 620px canvas cannot fit above the fixed
   // nav, so land with the first lesson still ahead at the top of the scroll
   // owner instead of the 09:00 line. Proportions stay; the scroll starts
@@ -354,11 +363,11 @@ function DayTimeline({
       )}
     <div className="timeline">
       <div className="timeline__hours" aria-hidden="true">
-        {HOUR_MARKS.map((minute) => (
+        {geo.hourMarks.map((minute) => (
           <span
             key={minute}
             className="timeline__hour"
-            style={{ top: topFor(minute, -6) }}
+            style={{ top: geo.topFor(minute, -6) }}
           >
             {String(Math.floor(minute / 60)).padStart(2, "0")}:00
           </span>
@@ -379,16 +388,16 @@ function DayTimeline({
                   ? "timeline__band timeline__band--even"
                   : "timeline__band timeline__band--odd"
             }
-            style={{ top: topFor(band.start), height: heightBetween(band.start, band.end) }}
+            style={{ top: geo.topFor(band.start), height: geo.heightBetween(band.start, band.end) }}
           />
         ))}
 
-        {HOUR_MARKS.map((minute) => (
-          <div key={minute} className="timeline__gridline" style={{ top: topFor(minute) }} />
+        {geo.hourMarks.map((minute) => (
+          <div key={minute} className="timeline__gridline" style={{ top: geo.topFor(minute) }} />
         ))}
 
         {freeSlots.map((slot) => (
-          <div key={slot.id} className="timeline__ghost" style={{ top: topFor(slot.start, 7) }}>
+          <div key={slot.id} className="timeline__ghost" style={{ top: geo.topFor(slot.start, 7) }}>
             <span className="timeline__ghost-period">P{slot.period}</span>
             <span className="timeline__ghost-free">Free</span>
           </div>
@@ -398,7 +407,7 @@ function DayTimeline({
           <div
             key={band.id}
             className="timeline__ghost timeline__ghost--break"
-            style={{ top: topFor(band.start, 7) }}
+            style={{ top: geo.topFor(band.start, 7) }}
           >
             <LeafGlyph />
             <span className="timeline__ghost-break">{band.label}</span>
@@ -415,7 +424,7 @@ function DayTimeline({
               key={lesson.id}
               data-lesson={lesson.id}
               className={compact ? "lesson-block lesson-block--compact" : "lesson-block"}
-              style={{ top: topFor(start), height: heightBetween(start, end) }}
+              style={{ top: geo.topFor(start), height: geo.heightBetween(start, end) }}
               onClick={() => onSelect(lesson)}
             >
               <span className="lesson-block__body">
@@ -439,7 +448,7 @@ function DayTimeline({
         })}
 
 
-        {showNow && <div className="timeline__now" style={{ top: topFor(nowMinute, -4) }} />}
+        {showNow && <div className="timeline__now" style={{ top: geo.topFor(nowMinute, -4) }} />}
       </div>
     </div>
     </>
