@@ -1,19 +1,23 @@
-// The Week overview (spec §18.5): a school-period matrix in a native Grid —
-// Mon–Fri (plus a weekend day only when it has lessons), rows P1–P6 with
-// Lunch/Dinner as spanning separators, subject + room per cell, today
-// column tinted, the running lesson emphasised, unplaced lessons listed
-// separately. At accessibility sizes the matrix becomes a day-by-day list.
+// The Week overview (WeekView.tsx + features.css `.week*`; fidelity spec v2
+// §12.4): a period matrix — Mon–Fri (plus a weekend day only when it has
+// lessons, then it scrolls sideways), rows P1–P6 with Lunch/Dinner as
+// spanning separators, subject + room per cell, today's column in the
+// scheme's tint, the running lesson ink-filled, unplaced lessons listed
+// beneath. At accessibility sizes the matrix becomes a day-by-day list.
 
 import SwiftUI
 import HOneyCore
 
 struct WeekTimetableView: View {
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
+    @Environment(\.dynamicTypeSize) private var typeSize
     let model: TimetableViewModel
     let onOpenDay: (String) -> Void
-    @Environment(\.dynamicTypeSize) private var typeSize
 
     private let columnWidth: CGFloat = 66
-    private let gutterWidth: CGFloat = 40
+    private let gutterWidth: CGFloat = 32
+    private let cellHeight: CGFloat = 66
 
     var body: some View {
         let matrix = WeekMatrix(monday: model.monday, days: model.weekDays)
@@ -27,50 +31,61 @@ struct WeekTimetableView: View {
                     accessibleList(matrix)
                 } else if matrix.dates.count > 5 {
                     ScrollView(.horizontal, showsIndicators: false) {
-                        grid(matrix, fixedColumns: true).pageInset()
+                        grid(matrix, fixedColumns: true).padding(.horizontal, 10)
                     }
                 } else {
-                    grid(matrix, fixedColumns: false).pageInset()
+                    grid(matrix, fixedColumns: false).padding(.horizontal, 10)
                 }
                 if !matrix.unplaced.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("Outside the school periods").eyebrow()
-                        ForEach(matrix.unplaced) { item in
+                        Text("Outside the school periods").sectionLabel().padding(.bottom, HSpace.x2)
+                        ForEach(Array(matrix.unplaced.enumerated()), id: \.element.id) { index, item in
+                            if index > 0 { HairlineDivider() }
                             Button { model.selectedLesson = item.lesson } label: {
-                                LessonRow(lesson: item.lesson, leading: Formatters.dayTitle(item.date))
+                                EntityRow(
+                                    title: item.lesson.subjectName,
+                                    caption: [Formatters.dayTitle(item.date), Formatters.timeRange(item.lesson.startsAt, item.lesson.endsAt), DisplayNames.roomLabel(item.lesson.roomName)]
+                                        .filter { !$0.isEmpty }.joined(separator: " · "),
+                                    showsDisclosure: false
+                                )
                             }
                             .buttonStyle(.plain)
-                            HairlineDivider()
                         }
                     }
+                    .padding(.horizontal, 10)
                     .pageInset()
                 }
             }
-            .padding(.bottom, HSpace.x7)
+            .padding(.bottom, HSpace.x4)
         }
         .refreshable { await model.load(reload: true) }
     }
 
+    /// `.week__table`: 2 pt column spacing, no row spacing; the gutter stays.
     private func grid(_ matrix: WeekMatrix, fixedColumns: Bool) -> some View {
         let today = Formatters.todayIsoDate()
         let now = HOneyClock.now().epochMillis
-        return Grid(alignment: .topLeading, horizontalSpacing: 3, verticalSpacing: 3) {
+        return Grid(alignment: .topLeading, horizontalSpacing: 2, verticalSpacing: 0) {
             GridRow {
                 Color.clear.frame(width: gutterWidth, height: 1)
                 ForEach(matrix.dates, id: \.self) { date in
                     Button { onOpenDay(date) } label: {
                         VStack(spacing: 1) {
-                            Text(Formatters.weekdayShort(date)).font(HType.micro).foregroundStyle(Color.honeySecondary)
+                            Text(Formatters.weekdayShort(date))
+                                .font(ramp.font(.microSemibold))
+                                .foregroundStyle(date == today ? theme.accent : theme.ink2)
                             Text("\(Formatters.dayNumber(date))")
-                                .font(HType.secondary.weight(.semibold).monospacedDigit())
-                                .foregroundStyle(date == today ? Color.honeyOnAccent : Color.honeyInk)
-                                .frame(width: 28, height: 28)
-                                .background(date == today ? Color.honeyAccent : Color.clear, in: Circle())
+                                .font(ramp.font(TypeRole(size: 16, weight: 650, textStyle: .body, tracking: 0, lineHeight: 1)))
+                                .monospacedDigit()
+                                .foregroundStyle(date == today ? theme.accent : theme.ink)
                         }
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .frame(maxWidth: .infinity, minHeight: HSize.control)
+                        .background(date == today ? theme.accentTint : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Open \(Formatters.dayTitle(date))")
+                    .padding(.bottom, HSpace.x1)
                     .gridCellUnsizedAxes(fixedColumns ? [] : .horizontal)
                     .frame(width: fixedColumns ? columnWidth : nil)
                 }
@@ -78,15 +93,19 @@ struct WeekTimetableView: View {
             ForEach(PeriodCatalog.bands) { band in
                 if band.isPeriod {
                     GridRow {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("P\(band.periodNumber ?? 0)").font(HType.micro.weight(.semibold)).foregroundStyle(Color.honeySecondary)
-                            Text(PeriodCatalog.minuteLabel(band.start)).font(.system(size: 10).monospacedDigit()).foregroundStyle(Color.honeyTertiary)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("P\(band.periodNumber ?? 0)").font(ramp.font(.captionBold)).foregroundStyle(theme.accent)
+                            Text(PeriodCatalog.minuteLabel(band.start))
+                                .font(ramp.font(TypeRole(size: 11, weight: 400, textStyle: .caption2, tracking: 0, lineHeight: 1)))
+                                .monospacedDigit()
+                                .foregroundStyle(theme.muted)
                         }
-                        .frame(width: gutterWidth, alignment: .leading)
+                        .padding(.top, HSpace.x2)
+                        .frame(width: gutterWidth, height: cellHeight, alignment: .topLeading)
                         .accessibilityHidden(true)
                         ForEach(matrix.dates, id: \.self) { date in
                             let cell = matrix.cell(date: date, band: band)
-                            WeekCell(cell: cell, isToday: date == today, isNow: cell.first.map { WeekMatrix.isNow($0, now: now) } ?? false, loading: model.weekDays == nil && model.loading) {
+                            WeekCell(cell: cell, isToday: date == today, isNow: cell.first.map { WeekMatrix.isNow($0, now: now) } ?? false, loading: model.weekDays == nil && model.loading, height: cellHeight) {
                                 if let first = cell.first { model.selectedLesson = first }
                             }
                             .frame(width: fixedColumns ? columnWidth : nil)
@@ -95,11 +114,11 @@ struct WeekTimetableView: View {
                 } else {
                     GridRow {
                         Text("\(band.breakLabel?.replacingOccurrences(of: " Break", with: "") ?? "") · \(PeriodCatalog.minuteLabel(band.start))–\(PeriodCatalog.minuteLabel(band.end))")
-                            .font(HType.micro)
-                            .foregroundStyle(Color.honeySuccess)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 3)
-                            .background(Color.honeyBreak, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                            .font(ramp.font(.microSemibold))
+                            .foregroundStyle(theme.muted)
+                            .frame(maxWidth: .infinity, minHeight: 26, alignment: .center)
+                            .background(theme.tint(theme.palette.accent, 0.06))
+                            .overlay(alignment: .top) { Rectangle().fill(theme.line).frame(height: 1) }
                             .gridCellColumns(matrix.dates.count + 1)
                     }
                 }
@@ -113,8 +132,13 @@ struct WeekTimetableView: View {
             ForEach(matrix.dates, id: \.self) { date in
                 VStack(alignment: .leading, spacing: 0) {
                     Button { onOpenDay(date) } label: {
-                        HStack { Text(Formatters.dayTitle(date)).font(HType.body.weight(.semibold)); Spacer(); Image(systemName: "chevron.right").font(.footnote) }
-                            .frame(minHeight: 44)
+                        HStack {
+                            Text(Formatters.dayTitle(date)).font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
+                            Spacer()
+                            ChevronGlyph()
+                        }
+                        .frame(minHeight: HSize.control)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     ForEach(PeriodCatalog.periods) { band in
@@ -134,46 +158,61 @@ struct WeekTimetableView: View {
     }
 }
 
+/// `.week__cell` + `.week__lesson`: a ruled cell, today's column tinted; a
+/// lesson is a bordered cell-ground box (subject 13/600, room micro), the
+/// running one ink-filled.
 struct WeekCell: View {
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
     let cell: WeekMatrix.Cell
     let isToday: Bool
     let isNow: Bool
     let loading: Bool
+    var height: CGFloat = 66
     let tap: () -> Void
 
     var body: some View {
-        Group {
+        ZStack(alignment: .top) {
+            Rectangle()
+                .fill(isToday ? theme.todayColumn : Color.clear)
+                .overlay(alignment: .top) { Rectangle().fill(theme.line).frame(height: 1) }
             if let first = cell.first {
                 Button(action: tap) {
-                    VStack(alignment: .leading, spacing: 1) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(DisplayNames.shortSubjectName(first.subjectName))
-                            .font(HType.micro.weight(.semibold))
-                            .foregroundStyle(Color.honeyInk)
+                            .font(ramp.font(.captionSemibold))
+                            .foregroundStyle(isNow ? theme.surface : theme.ink)
                             .lineLimit(2)
-                            .minimumScaleFactor(0.85)
+                            .multilineTextAlignment(.leading)
                         if let room = first.roomName, !room.isEmpty {
-                            Text(room).font(.system(size: 10).monospacedDigit()).foregroundStyle(Color.honeySecondary).lineLimit(1)
+                            Text(room)
+                                .font(ramp.font(.micro))
+                                .monospacedDigit()
+                                .foregroundStyle(isNow ? theme.surface.opacity(0.8) : theme.muted)
+                                .lineLimit(1)
                         }
                         if cell.extraCount > 0 {
-                            Text("+\(cell.extraCount)").font(.system(size: 10)).foregroundStyle(Color.honeyTertiary)
+                            Text("+\(cell.extraCount)").font(ramp.font(.microBold)).foregroundStyle(isNow ? theme.surface : theme.accent)
                         }
                     }
-                    .padding(5)
-                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
-                    .background(isToday ? Color.honeyAccentTint.opacity(0.35) : Color.honeyCell, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(isNow ? Color.honeyInk : Color.honeyFrame, lineWidth: isNow ? 1.5 : 1))
-                    .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, HSpace.x2)
+                    .frame(maxWidth: .infinity, minHeight: height - 4, alignment: .topLeading)
+                    .background(isNow ? theme.ink : theme.cell, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(isNow ? theme.ink : theme.line, lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
+                .padding(.vertical, 2)
                 .accessibilityLabel(label(first))
+            } else if loading {
+                Capsule().fill(theme.soft).frame(height: 14).padding(.horizontal, 5).padding(.top, HSpace.x2)
             } else {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(isToday ? Color.honeyAccentTint.opacity(0.5) : Color.honeySoft)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .overlay { if loading { ProgressView().controlSize(.mini) } }
-                    .accessibilityLabel("\(Formatters.dayTitle(cell.date)), Period \(cell.band.periodNumber ?? 0), free.")
+                Color.clear.accessibilityLabel("\(Formatters.dayTitle(cell.date)), Period \(cell.band.periodNumber ?? 0), free.")
             }
         }
+        .frame(maxWidth: .infinity, minHeight: height)
     }
 
     private func label(_ first: Lesson) -> String {

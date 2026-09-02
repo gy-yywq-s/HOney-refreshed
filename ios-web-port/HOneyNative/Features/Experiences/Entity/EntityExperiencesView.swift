@@ -1,6 +1,8 @@
-// Entity pages (spec §13): a compact header, one contextual sentence with
-// descriptive counts (never a score), raw chronological posts through the
-// same post row, and Share only when the entry is listed.
+// Entity pages (EntityPage.tsx; fidelity spec v2 §9): the kind as a
+// section label over the page title, "Share your experience" as a
+// full-width primary button when the entry is listed, one muted sentence of
+// context with descriptive counts (never a score), then the raw stream
+// through the same post row.
 
 import SwiftUI
 import HOneyCore
@@ -8,6 +10,7 @@ import HOneyCore
 struct EntityExperiencesView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(Navigator.self) private var nav
+    @Environment(\.theme) private var theme
     let type: EntityType
     let id: String
 
@@ -46,6 +49,10 @@ struct EntityExperiencesView: View {
         names.loaded && !listed && names.entity[entityKey] == nil && names.teacher[id] == nil && names.room[id] == nil && names.course[id] == nil
     }
 
+    private var survivor: EntityRef? {
+        names.entities.first { $0.type == type && $0.entityKey != entityKey && DisplayNames.entityTitle(type: type, name: $0.name) == name }
+    }
+
     private var intro: String {
         switch type {
         case .teacher: return "What students have experienced in classes with \(name)."
@@ -59,35 +66,27 @@ struct EntityExperiencesView: View {
         Group {
             if neverListed {
                 VStack(alignment: .leading, spacing: HSpace.x4) {
-                    Text("Nothing is listed at this address.").font(HType.pageTitle).foregroundStyle(Color.honeyInk)
-                    Button(L10n.t("Find someone or something")) { nav.push(.explore) }.buttonStyle(.borderedProminent)
+                    PageTitle(text: "Nothing is listed at this address.")
+                    Button(L10n.t("Find someone or something")) { nav.push(.explore) }.buttonStyle(.webPrimary)
                 }
                 .pageInset()
+                .padding(.top, HSpace.x2)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else if let feed {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
+                    LazyVStack(alignment: .leading, spacing: HSpace.x4) {
                         header
                         posts(feed)
                     }
-                    .padding(.bottom, HSpace.x7)
+                    .padding(.top, HSpace.x2)
+                    .padding(.bottom, HSpace.x4)
                 }
                 .refreshable { await feed.refresh(); await loadNames(reload: true) }
             } else {
                 LoadingPlaceholder(lines: 4).pageInset()
             }
         }
-        .background(Color.honeyCanvas.ignoresSafeArea())
-        .navigationTitle(name)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if listed {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { nav.push(.compose(.entity(key: entityKey))) } label: { Image(systemName: "square.and.pencil") }
-                        .accessibilityLabel("Share your experience")
-                }
-            }
-        }
+        .webScreen(title: name)
         .task {
             if feed == nil {
                 var key = FeedKey(scope: .school)
@@ -118,22 +117,36 @@ struct EntityExperiencesView: View {
         }
     }
 
+    /// `.page-head` (wrapping on phones): the label, the title, the button.
     private var header: some View {
-        VStack(alignment: .leading, spacing: HSpace.x2) {
-            Text(kindTitle).eyebrow()
-            Text(name).font(HType.pageTitle).foregroundStyle(Color.honeyInk)
+        VStack(alignment: .leading, spacing: HSpace.x4) {
+            VStack(alignment: .leading, spacing: HSpace.x2) {
+                Text(kindTitle).sectionLabel()
+                PageTitle(text: name)
+            }
+            if listed {
+                Button("Share your experience") { nav.push(.compose(.entity(key: entityKey))) }
+                    .buttonStyle(.webBlockPrimary)
+            }
             if names.loaded, !listed {
-                Text("This entry is no longer listed.").font(HType.secondary).foregroundStyle(Color.honeySecondary)
+                VStack(alignment: .leading, spacing: HSpace.x1) {
+                    Text("This entry is no longer listed.").hfont(.body).foregroundStyle(theme.muted)
+                    if let survivor {
+                        Button("Open the current entry for \(DisplayNames.entityTitle(type: type, name: survivor.name))") {
+                            if let route = ExperienceDisplay.route(for: survivor) { nav.push(route) }
+                        }
+                        .buttonStyle(.webLinkBody)
+                    }
+                }
             }
             if names.loaded {
-                Text(introWithCounts).font(HType.secondary).foregroundStyle(Color.honeySecondary)
+                Text(introWithCounts).hfont(.body).foregroundStyle(theme.muted)
             }
             if let namesError {
                 InlineStatusBanner(text: namesError, tone: .danger, action: (L10n.t("Try again"), { Task { await loadNames(reload: true) } }))
             }
         }
         .pageInset()
-        .padding(.bottom, HSpace.x4)
     }
 
     private var introWithCounts: String {
@@ -157,25 +170,28 @@ struct EntityExperiencesView: View {
         } else if let error = feed.error, feed.items.isEmpty {
             InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await feed.refresh() } })).pageInset()
         } else if feed.items.isEmpty {
-            EmptyStateView(
-                title: listed ? "No one has shared an experience here yet." : "No experiences here.",
-                action: listed ? ("Share your experience", { nav.push(.compose(.entity(key: entityKey))) }) : nil
-            ).pageInset()
+            Text(listed ? "No one has shared an experience here yet." : "No experiences here.")
+                .hfont(.body)
+                .foregroundStyle(theme.muted)
+                .frame(maxWidth: .infinity)
+                .padding(HSpace.x6)
         } else {
-            HairlineDivider().pageInset()
-            ForEach(Array(feed.items.enumerated()), id: \.element.id) { index, exp in
-                if index > 0 { HairlineDivider().pageInset() }
-                ExperiencePostRow(
-                    exp: exp,
-                    reaction: feed.reactions[exp.id] ?? ReactionState(exp),
-                    onReact: { value in Task { await feed.react(exp, value: value) } },
-                    onReport: { category in await feed.report(exp, category: category) },
-                    openEntity: { route in nav.push(route) }
-                )
-                .pageInset()
-                .onAppear { Task { await feed.loadMoreIfNeeded(current: exp) } }
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(feed.items) { exp in
+                    ExperiencePostRow(
+                        exp: exp,
+                        reaction: feed.reactions[exp.id] ?? ReactionState(exp),
+                        onReact: { value in Task { await feed.react(exp, value: value) } },
+                        onReport: { category in await feed.report(exp, category: category) },
+                        openEntity: { route in nav.push(route) }
+                    )
+                    .pageInset()
+                    .onAppear { Task { await feed.loadMoreIfNeeded(current: exp) } }
+                }
+                if feed.loadingMore {
+                    Text("…").hfont(.body).foregroundStyle(theme.muted).frame(maxWidth: .infinity).padding(.vertical, HSpace.x4)
+                }
             }
-            if feed.loadingMore { ProgressView().frame(maxWidth: .infinity).padding(.vertical, HSpace.x4) }
         }
     }
 }

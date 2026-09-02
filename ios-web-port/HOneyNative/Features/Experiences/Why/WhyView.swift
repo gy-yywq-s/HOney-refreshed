@@ -1,11 +1,15 @@
-// Why this space exists (spec §21): the Web's reading page as native prose.
-// It never claims teachers cannot see posts and never promises absolute
-// anonymity — copy stays inside what the implementation guarantees.
+// Why this space exists (WhyPage.tsx + features.css `.doc`; fidelity spec
+// v2 §15): the page title, then sections — a 17 pt heading and 15 pt
+// reading paragraphs at 1.6 — as an open document, no cards. It never
+// claims teachers cannot see posts and never promises absolute anonymity.
 
 import SwiftUI
 import HOneyCore
 
 struct WhyView: View {
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
+
     private let sections: [(String, String)] = [
         ("For students, between students.",
          "School is partly understood through what people who share it tell one another. Experiences is a place for that student-to-student understanding. Teachers may be discussed here, but this is not a feedback inbox addressed to them, and no post is a final judgment of a person. Saying something to a peer, giving a teacher direct feedback, and reporting formally to the school are three different acts — this space carries the first one."),
@@ -35,34 +39,59 @@ struct WhyView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: HSpace.x6) {
-                Text("Written by students, for students.")
-                    .font(HType.pageTitle)
-                    .foregroundStyle(Color.honeyInk)
+            VStack(alignment: .leading, spacing: HSpace.x2) {
+                PageTitle(text: "Why this space exists")
+                    .padding(.bottom, HSpace.x2)
                 ForEach(sections, id: \.0) { title, body in
-                    VStack(alignment: .leading, spacing: HSpace.x2) {
-                        Text(title).font(HType.body.weight(.semibold)).foregroundStyle(Color.honeyInk)
-                        Text(body).font(HType.body).foregroundStyle(Color.honeyInk).lineSpacing(3)
+                    DocSection(title: title) {
+                        Text(body).hfont(.docBody).foregroundStyle(theme.ink)
                     }
                 }
-                VStack(alignment: .leading, spacing: HSpace.x2) {
-                    Text("How to read Experiences.").font(HType.body.weight(.semibold)).foregroundStyle(Color.honeyInk)
-                    ForEach(howToRead, id: \.self) { line in
-                        HStack(alignment: .firstTextBaseline, spacing: HSpace.x2) {
-                            Text("•")
-                            Text(line)
+                DocSection(title: "How to read Experiences.") {
+                    VStack(alignment: .leading, spacing: HSpace.x1) {
+                        ForEach(howToRead, id: \.self) { line in
+                            HStack(alignment: .firstTextBaseline, spacing: HSpace.x2) {
+                                Text("•")
+                                Text(line)
+                            }
+                            .hfont(.docBody)
+                            .foregroundStyle(theme.ink)
                         }
-                        .font(HType.body)
-                        .foregroundStyle(Color.honeyInk)
                     }
+                    .padding(.leading, HSpace.x4)
                 }
             }
             .pageInset()
-            .padding(.vertical, HSpace.x4)
-            .frame(maxWidth: 640, alignment: .leading)
+            .padding(.top, HSpace.x2)
+            .padding(.bottom, HSpace.x4)
+            .frame(maxWidth: 640 + 2 * HSpace.pageX, alignment: .leading)
         }
-        .background(Color.honeyCanvas.ignoresSafeArea())
-        .navigationTitle(L10n.t("Why this space exists"))
-        .navigationBarTitleDisplayMode(.inline)
+        .webScreen(title: L10n.t("Why this space exists"))
     }
+}
+
+/// `.doc section`: an h2 at the reading size, then the prose.
+struct DocSection<Content: View>: View {
+    @Environment(\.theme) private var theme
+    let title: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: HSpace.x2) {
+            Text(title)
+                .hfont(.docHeading)
+                .foregroundStyle(theme.ink)
+                .padding(.top, HSpace.x4)
+                .accessibilityAddTraits(.isHeader)
+            content().fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.bottom, HSpace.x3)
+    }
+}
+
+extension TypeRole {
+    /// `.doc h2`: the reading size in the browser's heading weight.
+    static let docHeading = TypeRole(size: 17, weight: 700, textStyle: .body, tracking: 0, lineHeight: 1.3)
+    /// `.doc p, .doc li`: 15 pt at 1.6.
+    static let docBody = TypeRole(size: 15, weight: 400, textStyle: .subheadline, tracking: 0, lineHeight: 1.6)
 }

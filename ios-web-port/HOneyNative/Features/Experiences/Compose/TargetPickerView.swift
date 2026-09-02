@@ -1,6 +1,7 @@
-// The target is chosen before composing (spec §14): recent lessons one tap
-// away, full History in selection mode, Explore for teachers / courses /
-// places / food. Plain rows, no hero buttons.
+// The target is chosen before composing (ComposePage.tsx `.picker`;
+// fidelity spec v2 §10.1): the page title "What is this about?", one
+// caption of guidance, Recent lessons as open entity rows, See full
+// History, then Other school context → Explore. No hero buttons.
 
 import SwiftUI
 import HOneyCore
@@ -8,61 +9,57 @@ import HOneyCore
 struct TargetPickerView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(Navigator.self) private var nav
+    @Environment(\.theme) private var theme
     @State private var lessons: [Lesson] = []
     @State private var loading = true
     @State private var error: String?
-    @Environment(\.dynamicTypeSize) private var typeSize
-
-    /// Six rows normally; fewer as the type grows so History stays in reach.
-    private var visibleCount: Int { typeSize.isAccessibilitySize ? 3 : typeSize >= .xLarge ? 4 : 6 }
 
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: HSpace.x2) {
+                PageTitle(text: L10n.t("What is this about?"))
+                    .padding(.bottom, HSpace.x2)
                 Text(L10n.t("One of your own lessons, or a teacher, course, place or dish."))
-                    .font(HType.secondary)
-                    .foregroundStyle(Color.honeySecondary)
-                    .listRowBackground(Color.clear)
-            }
-            Section {
+                    .hfont(.caption)
+                    .foregroundStyle(theme.muted)
+                    .padding(.bottom, HSpace.x3)
+                Text(L10n.t("Recent lessons")).sectionLabel().padding(.top, HSpace.x3)
                 if loading {
-                    LoadingPlaceholder(lines: 4).listRowBackground(Color.clear)
+                    LoadingPlaceholder(lines: 4)
                 } else if let error {
-                    InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await load() } })).listRowBackground(Color.clear)
+                    InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await load() } }))
                 } else if lessons.isEmpty {
-                    Text(L10n.t("No lessons in your history yet.")).font(HType.meta).foregroundStyle(Color.honeySecondary).listRowBackground(Color.clear)
+                    Text(L10n.t("No lessons in your history yet.")).hfont(.caption).foregroundStyle(theme.muted)
                 } else {
-                    ForEach(lessons.prefix(visibleCount)) { lesson in
-                        Button { nav.push(.compose(.lesson(id: lesson.id, date: Formatters.toIsoDate(Date(epochMillis: lesson.startsAt))))) } label: {
-                            LessonRow(lesson: lesson, leading: Formatters.relativeDay(lesson.startsAt), trailingTime: false)
+                    VStack(spacing: 0) {
+                        ForEach(Array(lessons.prefix(6).enumerated()), id: \.element.id) { index, lesson in
+                            if index > 0 { HairlineDivider() }
+                            Button { nav.push(.compose(.lesson(id: lesson.id, date: Formatters.toIsoDate(Date(epochMillis: lesson.startsAt))))) } label: {
+                                EntityRow(
+                                    title: lesson.subjectName,
+                                    caption: [Formatters.relativeDay(lesson.startsAt), lesson.teacherName, DisplayNames.roomLabel(lesson.roomName)]
+                                        .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
-                        .listRowBackground(Color.clear)
                     }
                 }
                 Button { nav.push(.history(select: true)) } label: {
                     EntityRow(title: L10n.t("See full History"))
                 }
                 .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-            } header: {
-                Text(L10n.t("Recent lessons")).eyebrow()
-            }
-            Section {
+                Text(L10n.t("Other school context")).sectionLabel().padding(.top, HSpace.x3)
                 Button { nav.push(.explore) } label: {
                     EntityRow(title: L10n.t("Teachers, courses, places and food"))
                 }
                 .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-            } header: {
-                Text(L10n.t("Other school context")).eyebrow()
             }
+            .pageInset()
+            .padding(.top, HSpace.x2)
+            .padding(.bottom, HSpace.x4)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color.honeyCanvas.ignoresSafeArea())
-        .navigationTitle(L10n.t("What is this about?"))
-        .navigationBarTitleDisplayMode(.inline)
+        .webScreen(title: L10n.t("Share an experience"))
         .task { await load() }
     }
 

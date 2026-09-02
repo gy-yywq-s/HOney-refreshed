@@ -1,14 +1,14 @@
-// Experiences opens to the Stream (spec §11): native title, toolbar
-// doorways (Explore · Your notes & posts · Share), the culture line with
-// Why one tap away, Your classes | Around school, then raw chronological
-// posts parted by hairlines. New posts are a banner, never a yank. The
-// reader's position is the top visible post (scrollPosition), restored on
-// return and when Home hands over a specific post.
+// Experiences opens to the Stream (FeedPage.tsx + features.css `.feed-*`,
+// `.post`; fidelity spec v2 §7): the page title with the three 44 pt icon
+// doorways beside it (Compose ink-filled), the culture line, the scope
+// switch, then raw chronological posts parted by hairlines. New posts are a
+// quiet pill, never a yank. The reader's position is the top visible post,
+// restored on return and when Home hands over a specific post.
 
 import SwiftUI
 import HOneyCore
 
-/// Invitation cadence (spec §11.7): first after `every` posts, at most `max`
+/// Invitation cadence (§7.8): first after `every` posts, at most `max`
 /// per reading session, none on a short feed.
 enum FeedInvitations {
     static let every = 8
@@ -21,6 +21,8 @@ enum FeedInvitations {
 struct ExperiencesFeedView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(Navigator.self) private var nav
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
     @State private var model: FeedViewModel?
     @State private var scope: FeedScope = .myClasses
     @State private var scrolledID: String?
@@ -33,18 +35,9 @@ struct ExperiencesFeedView: View {
                 LoadingPlaceholder(lines: 6).pageInset()
             }
         }
-        .background(Color.honeyCanvas.ignoresSafeArea())
+        .surfaceBackground()
+        .toolbar(.hidden, for: .navigationBar)
         .navigationTitle("Experiences")
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button { nav.push(.explore) } label: { Image(systemName: "magnifyingglass") }
-                    .accessibilityLabel(L10n.t("Find someone or something"))
-                Button { nav.push(.mine) } label: { Image(systemName: "text.book.closed") }
-                    .accessibilityLabel(L10n.t("Your notes & posts"))
-                Button { nav.push(.compose(nil)) } label: { Image(systemName: "square.and.pencil") }
-                    .accessibilityLabel(L10n.t("Share an experience"))
-            }
-        }
         .task {
             if model == nil {
                 scope = env.prefs.feedScope
@@ -74,23 +67,7 @@ struct ExperiencesFeedView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 header(model)
-                if model.newAvailable {
-                    Button {
-                        Task {
-                            await model.jumpToNew()
-                            scrolledID = model.items.first?.id
-                        }
-                    } label: {
-                        Text(L10n.t("New experiences are available"))
-                            .font(HType.secondary.weight(.medium))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, HSpace.x2)
-                            .background(Color.honeyAccentTint, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .pageInset()
-                    .padding(.bottom, HSpace.x2)
-                }
+                    .padding(.bottom, HSpace.x4)
 
                 if model.loading, model.items.isEmpty {
                     LoadingPlaceholder(lines: 6).pageInset()
@@ -101,10 +78,8 @@ struct ExperiencesFeedView: View {
                     emptyState(model)
                 } else {
                     ForEach(Array(model.items.enumerated()), id: \.element.id) { index, exp in
-                        if index > 0 { HairlineDivider().pageInset() }
                         if FeedInvitations.shows(at: index, count: model.items.count) {
                             invitation
-                            HairlineDivider().pageInset()
                         }
                         ExperiencePostRow(
                             exp: exp,
@@ -118,20 +93,47 @@ struct ExperiencesFeedView: View {
                         .onAppear { Task { await model.loadMoreIfNeeded(current: exp) } }
                     }
                     if model.loadingMore {
-                        ProgressView().frame(maxWidth: .infinity).padding(.vertical, HSpace.x4)
+                        Text("…")
+                            .hfont(.body)
+                            .foregroundStyle(theme.muted)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, HSpace.x4)
                     } else if model.end {
                         Text(L10n.t("You’re all caught up."))
-                            .font(HType.meta)
-                            .foregroundStyle(Color.honeyTertiary)
+                            .hfont(.caption)
+                            .foregroundStyle(theme.muted)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, HSpace.x5)
+                            .padding(.vertical, HSpace.x4)
                     }
                 }
             }
             .scrollTargetLayout()
-            .padding(.bottom, HSpace.x7)
+            .padding(.top, HSpace.x4)
+            .padding(.bottom, HSpace.x4)
         }
         .scrollPosition(id: $scrolledID)
+        .overlay(alignment: .top) {
+            if model.newAvailable {
+                // `.feed-new`: a sticky pill 8 pt under the top, never a scroll yank.
+                Button {
+                    Task {
+                        await model.jumpToNew()
+                        scrolledID = model.items.first?.id
+                    }
+                } label: {
+                    Text(L10n.t("New experiences are available"))
+                        .font(ramp.font(.caption))
+                        .foregroundStyle(theme.accent)
+                        .padding(.horizontal, HSpace.x4)
+                        .padding(.vertical, HSpace.x2)
+                        .background(theme.surfaceSolid, in: Capsule())
+                        .overlay(Capsule().strokeBorder(theme.line, lineWidth: 1))
+                        .shadow(color: .black.opacity(0.08), radius: 7, y: 4)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, HSpace.x2)
+            }
+        }
         .refreshable { await model.refresh() }
         .onChange(of: scrolledID) { _, id in
             if let id, model.items.contains(where: { $0.id == id }) { model.restoreAnchorId = id }
@@ -149,36 +151,59 @@ struct ExperiencesFeedView: View {
         }
     }
 
+    /// `.feed-head`: title row with the tools, the culture line, the scope switch.
     private func header(_ model: FeedViewModel) -> some View {
-        VStack(alignment: .leading, spacing: HSpace.x3) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 4) { cultureLine }
-                VStack(alignment: .leading, spacing: 2) { cultureLine }
-            }
-            Picker("Feed scope", selection: Binding(
-                get: { scope },
-                set: { next in
-                    scope = next
-                    Task { await model.switchScope(next) }
+        let showHeaderShare = model.loading || (model.error == nil && !model.items.isEmpty)
+        return VStack(alignment: .leading, spacing: HSpace.x3) {
+            HStack(alignment: .center, spacing: HSpace.x3) {
+                PageTitle(text: "Experiences")
+                HStack(spacing: HSpace.x2) {
+                    Button { nav.push(.explore) } label: { Image(systemName: "magnifyingglass") }
+                        .buttonStyle(.webIcon)
+                        .accessibilityLabel(L10n.t("Find someone or something"))
+                    Button { nav.push(.mine) } label: { Image(systemName: "bookmark") }
+                        .buttonStyle(.webIcon)
+                        .accessibilityLabel(L10n.t("Your notes & posts"))
+                    if showHeaderShare {
+                        Button { nav.push(.compose(nil)) } label: { Image(systemName: "pencil.line") }
+                            .buttonStyle(.webIconPrimary)
+                            .accessibilityLabel(L10n.t("Share an experience"))
+                    }
                 }
-            )) {
-                Text("Your classes").tag(FeedScope.myClasses)
-                Text("Around school").tag(FeedScope.school)
             }
-            .pickerStyle(.segmented)
+            cultureLine
+            ScopeSwitch(
+                options: [(FeedScope.myClasses, "Your classes"), (FeedScope.school, "Around school")],
+                selection: Binding(
+                    get: { scope },
+                    set: { next in
+                        scope = next
+                        Task { await model.switchScope(next) }
+                    }
+                )
+            )
+            .accessibilityLabel("Feed scope")
         }
         .pageInset()
-        .padding(.bottom, HSpace.x3)
         .id("feed-top")
     }
 
-    @ViewBuilder
+    /// `.feed-identity`: "**Written by students, for students.** Why this space exists".
     private var cultureLine: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) { cultureParts }
+            VStack(alignment: .leading, spacing: 2) { cultureParts }
+        }
+    }
+
+    @ViewBuilder
+    private var cultureParts: some View {
         Text("Written by students, for students.")
-            .font(HType.secondary.weight(.semibold))
-            .foregroundStyle(Color.honeyInk)
+            .font(ramp.font(.secondarySemibold))
+            .foregroundStyle(theme.ink)
         Button(L10n.t("Why this space exists")) { nav.push(.why) }
-            .font(HType.secondary)
+            .buttonStyle(WebLinkStyle(role: .secondary))
+            .frame(minHeight: 0)
     }
 
     private func emptyState(_ model: FeedViewModel) -> some View {
@@ -192,16 +217,21 @@ struct ExperiencesFeedView: View {
         .pageInset()
     }
 
+    /// `.feed-invite`: a sentence and a small ghost button, ruled beneath.
     private var invitation: some View {
-        HStack(alignment: .firstTextBaseline, spacing: HSpace.x3) {
-            Text(L10n.t("Anything from school you want to put into words?"))
-                .font(HType.secondary)
-                .foregroundStyle(Color.honeySecondary)
-            Spacer()
-            Button(L10n.t("Share an experience")) { nav.push(.compose(nil)) }
-                .font(HType.secondary.weight(.medium))
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: HSpace.x3) {
+                Text(L10n.t("Anything from school you want to put into words?"))
+                    .font(ramp.font(.secondary))
+                    .foregroundStyle(theme.ink2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button(L10n.t("Share an experience")) { nav.push(.compose(nil)) }
+                    .buttonStyle(.webSmallGhost)
+            }
+            .padding(.vertical, HSpace.x4)
+            HairlineDivider()
         }
-        .padding(.vertical, HSpace.x3)
+        .padding(.vertical, HSpace.x1)
         .pageInset()
     }
 }

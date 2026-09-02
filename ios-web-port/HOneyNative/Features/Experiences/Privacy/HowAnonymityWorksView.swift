@@ -1,7 +1,8 @@
-// How anonymity works (spec §22): only claims the current server protocol
-// supports, with the native storage story (Keychain, protected files)
-// instead of browser caveats, and the control-key management row with
-// export / import for device transfer.
+// How anonymity works (SettingsPage.tsx privacy section; fidelity spec v2
+// §15): the muted lead paragraph, the five claims as a bulleted list with a
+// bold first sentence, then the "Post controls on this device" row group
+// with small ghost Export / Import. Only claims the current server protocol
+// supports, with the native storage story instead of browser caveats.
 
 import SwiftUI
 import UniformTypeIdentifiers
@@ -9,6 +10,8 @@ import HOneyCore
 
 struct HowAnonymityWorksView: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
     @State private var keyCount = 0
     @State private var exportURL: URL?
     @State private var importing = false
@@ -28,54 +31,63 @@ struct HowAnonymityWorksView: View {
     ]
 
     var body: some View {
-        List {
-            Section {
-                Text("The plain version: HOney checks you actually have the relevant experience, published posts are not attached to your school account, and this iPhone holds the control needed to remove your own post. The detail, honestly:")
-                    .font(HType.body)
-                    .foregroundStyle(Color.honeyInk)
-                    .listRowBackground(Color.clear)
-                ForEach(claims, id: \.0) { title, body in
-                    VStack(alignment: .leading, spacing: HSpace.x1) {
-                        Text(title).font(HType.body.weight(.semibold)).foregroundStyle(Color.honeyInk)
-                        Text(body).font(HType.secondary).foregroundStyle(Color.honeySecondary)
-                    }
-                    .padding(.vertical, HSpace.x1)
-                    .listRowBackground(Color.clear)
-                }
-            }
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: HSpace.x4) {
+                PageTitle(text: L10n.t("How anonymity works"))
                 if let feedback {
-                    InlineStatusBanner(text: feedback.text, tone: feedback.tone).listRowBackground(Color.clear)
+                    InlineStatusBanner(text: feedback.text, tone: feedback.tone)
                 }
+                Text("The plain version: HOney checks you actually have the relevant experience, published posts are not attached to your school account, and this iPhone holds the control needed to remove your own post. The detail, honestly:")
+                    .hfont(.body)
+                    .foregroundStyle(theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
                 VStack(alignment: .leading, spacing: HSpace.x2) {
-                    Text("Control keys on this iPhone").font(HType.body).foregroundStyle(Color.honeyInk)
-                    Text(keyCount == 0
-                         ? "None yet — keys appear here when you publish an experience."
-                         : "\(keyCount) key\(keyCount > 1 ? "s" : ""). Export a backup before deleting the app or moving to a new phone.")
-                        .font(HType.meta).foregroundStyle(Color.honeySecondary)
-                    HStack(spacing: HSpace.x3) {
-                        if let exportURL {
-                            ShareLink(item: exportURL) { Label("Export", systemImage: "square.and.arrow.up") }
-                                .buttonStyle(.bordered)
-                                .disabled(keyCount == 0)
+                    ForEach(claims, id: \.0) { title, body in
+                        HStack(alignment: .firstTextBaseline, spacing: HSpace.x2) {
+                            Text("•")
+                            (Text(title).fontWeight(.semibold) + Text(" " + body))
                         }
-                        Button { importing = true } label: { Label("Import…", systemImage: "square.and.arrow.down") }
-                            .buttonStyle(.bordered)
+                        .hfont(.body)
+                        .foregroundStyle(theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
-                    .controlSize(.small)
-                    Text("Import accepts a HOney key export from the Web app or a device bundle with notes and keys.")
-                        .font(HType.micro).foregroundStyle(Color.honeyTertiary)
                 }
-                .listRowBackground(Color.clear)
-            } header: {
-                Text(L10n.t("Post controls on this iPhone")).eyebrow()
+                .padding(.leading, HSpace.x4)
+                .padding(.bottom, HSpace.x3)
+
+                RowList(label: L10n.t("Post controls on this iPhone"), first: false) {
+                    VStack(alignment: .leading, spacing: HSpace.x3) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Control keys on this iPhone").font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
+                            Text(keyCount == 0
+                                 ? "None yet — keys appear here when you publish an experience."
+                                 : "\(keyCount) key\(keyCount > 1 ? "s" : ""). Export a backup before deleting the app or moving to a new phone.")
+                                .font(ramp.font(.caption))
+                                .lineSpacing(ramp.lineSpacing(.caption))
+                                .foregroundStyle(theme.muted)
+                        }
+                        HStack(spacing: HSpace.x2) {
+                            if let exportURL {
+                                ShareLink(item: exportURL) { Text("Export") }
+                                    .buttonStyle(.webSmallGhost)
+                                    .disabled(keyCount == 0)
+                            } else {
+                                Button("Export") {}.buttonStyle(.webSmallGhost).disabled(true)
+                            }
+                            Button("Import…") { importing = true }.buttonStyle(.webSmallGhost)
+                        }
+                        Text("Import accepts a HOney key export from the Web app or a device bundle with notes and keys.")
+                            .font(ramp.font(.caption))
+                            .foregroundStyle(theme.muted)
+                    }
+                    .padding(.vertical, HSpace.x3)
+                }
             }
+            .pageInset()
+            .padding(.top, HSpace.x2)
+            .padding(.bottom, HSpace.x4)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color.honeyCanvas.ignoresSafeArea())
-        .navigationTitle(L10n.t("How anonymity works"))
-        .navigationBarTitleDisplayMode(.inline)
+        .webScreen(title: L10n.t("How anonymity works"))
         .task { refresh() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json, .plainText]) { result in
             Task { await importFile(result) }

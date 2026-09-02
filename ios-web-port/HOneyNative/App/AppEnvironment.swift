@@ -113,34 +113,27 @@ final class AppEnvironment {
     var loginNotice: String?
     /// Shown on the login screen after a deletion that could not clear everything.
     var signedOutNotice: String?
-    var appearance: AppearanceChoice {
-        didSet { prefs.appearance = appearance }
-    }
-    var language: AppLanguage {
-        didSet {
-            prefs.language = language
-            L10n.language = language
-        }
-    }
+    /// Background · Accent · Text size · Language (Settings › Appearance).
+    let themeStore: ThemeStore
 
-    init(config: AppConfig, secrets: SecretStore, storageDirectory: URL, prefs: Preferences, writeOptions: Data.WritingOptions) {
+    /// `transport` / `portalTransport` default to URLSession; the visual
+    /// fixture tests inject a transport that answers from the contract fixtures.
+    init(config: AppConfig, secrets: SecretStore, storageDirectory: URL, prefs: Preferences, writeOptions: Data.WritingOptions, transport: HTTPTransport? = nil, portalTransport: HTTPTransport? = nil) {
         self.config = config
         self.prefs = prefs
-        self.appearance = prefs.appearance
-        self.language = prefs.language
-        L10n.language = prefs.language
+        self.themeStore = ThemeStore(prefs: prefs, systemPrefersDark: UITraitCollection.current.userInterfaceStyle == .dark)
         let sessionStore = SecretSessionStore(store: secrets)
-        let api = APIClient(baseURL: config.honeyBaseURL, transport: URLSessionTransport(), sessionStore: sessionStore)
+        let api = APIClient(baseURL: config.honeyBaseURL, transport: transport ?? URLSessionTransport(), sessionStore: sessionStore)
         let portalVault = SecretPortalVault(store: secrets)
         let portalConfig = URLSessionConfiguration.default
         portalConfig.timeoutIntervalForRequest = 20
         portalConfig.timeoutIntervalForResource = 30
         portalConfig.waitsForConnectivity = false
         portalConfig.requestCachePolicy = .reloadIgnoringLocalCacheData
-        let portalAPI = PortalAPI(baseURL: config.portalBaseURL, transport: URLSessionTransport(configuration: portalConfig))
+        let portalAPI = PortalAPI(baseURL: config.portalBaseURL, transport: portalTransport ?? URLSessionTransport(configuration: portalConfig))
         let portalCoordinator = PortalSessionCoordinator(api: portalAPI, sessions: portalVault, credentials: portalVault, binding: portalVault)
         self.api = api
-        self.publication = PublicationAPIClient(baseURL: config.honeyBaseURL, transport: URLSessionTransport.identityFree())
+        self.publication = PublicationAPIClient(baseURL: config.honeyBaseURL, transport: transport ?? URLSessionTransport.identityFree())
         self.portalVault = portalVault
         self.portalAPI = portalAPI
         self.portalCoordinator = portalCoordinator

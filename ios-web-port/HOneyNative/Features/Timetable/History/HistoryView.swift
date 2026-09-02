@@ -1,6 +1,9 @@
-// History (spec §19): lessons grouped by day in a List with `.searchable`
-// and a compact Filters sheet (teacher / course). Whole rows act: browse
-// opens Lesson detail, selection mode hands the lesson to the composer.
+// History (HistoryPage.tsx + features.css `.filters`, `.day-group`,
+// `.history-row`): the page title, the search field with the two filter
+// selects on one row beneath, then lessons grouped by day — the day as a
+// ruled heading, each row subject + teacher · room with the start time at
+// the right. Whole rows act: browse opens the lesson sheet, selection mode
+// hands the lesson to the composer.
 
 import SwiftUI
 import HOneyCore
@@ -8,6 +11,8 @@ import HOneyCore
 struct HistoryView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(Navigator.self) private var nav
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
     let selectMode: Bool
 
     @State private var query = ""
@@ -18,63 +23,90 @@ struct HistoryView: View {
     @State private var groups: [HistoryDayGroup] = []
     @State private var loading = true
     @State private var error: String?
-    @State private var showFilters = false
     @State private var selected: Lesson?
     @State private var searchTask: Task<Void, Never>?
     @State private var loadTask: Task<Void, Never>?
 
-    private var filterCount: Int { (teacherId.isEmpty ? 0 : 1) + (courseId.isEmpty ? 0 : 1) }
-
     var body: some View {
-        List {
-            if selectMode {
-                InlineStatusBanner(text: "Pick the lesson your experience is about.", tone: .info).listRowBackground(Color.clear)
-            }
-            if loading, groups.isEmpty {
-                LoadingPlaceholder(lines: 5).listRowBackground(Color.clear)
-            } else if let error {
-                InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { reload() })).listRowBackground(Color.clear)
-            } else if groups.isEmpty {
-                Text("No lessons match.").foregroundStyle(Color.honeySecondary).listRowBackground(Color.clear)
-            } else {
-                ForEach(groups) { group in
-                    Section {
-                        ForEach(group.lessons) { lesson in
-                            Button {
-                                if selectMode {
-                                    nav.push(.compose(.lesson(id: lesson.id, date: group.date)))
-                                } else {
-                                    selected = lesson
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                PageTitle(text: "History").padding(.bottom, HSpace.x4)
+                if selectMode {
+                    InlineStatusBanner(text: "Pick the lesson your experience is about.", tone: .success)
+                        .padding(.bottom, HSpace.x4)
+                }
+                Section {
+                    if loading, groups.isEmpty {
+                        LoadingPlaceholder(lines: 5)
+                    } else if let error {
+                        InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { reload() }))
+                    } else if groups.isEmpty {
+                        Text("No lessons match.")
+                            .hfont(.body)
+                            .foregroundStyle(theme.muted)
+                            .frame(maxWidth: .infinity)
+                            .padding(HSpace.x6)
+                            .webCard()
+                    } else {
+                        ForEach(groups) { group in
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(group.label)
+                                    .font(ramp.font(TypeRole(size: 15, weight: 650, textStyle: .subheadline, tracking: 0, lineHeight: 1.4)))
+                                    .foregroundStyle(theme.ink)
+                                    .padding(.bottom, HSpace.x2)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .overlay(alignment: .bottom) { HairlineDivider() }
+                                    .accessibilityAddTraits(.isHeader)
+                                ForEach(Array(group.lessons.enumerated()), id: \.element.id) { index, lesson in
+                                    if index > 0 { HairlineDivider() }
+                                    Button {
+                                        if selectMode {
+                                            nav.push(.compose(.lesson(id: lesson.id, date: group.date)))
+                                        } else {
+                                            selected = lesson
+                                        }
+                                    } label: {
+                                        HStack(alignment: .center, spacing: HSpace.x3) {
+                                            VStack(alignment: .leading, spacing: HSpace.x1) {
+                                                Text(lesson.subjectName).font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
+                                                let who = [lesson.teacherName, DisplayNames.roomLabel(lesson.roomName)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+                                                if !who.isEmpty {
+                                                    Text(who).font(ramp.font(.caption)).foregroundStyle(theme.muted)
+                                                }
+                                            }
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            Text(Formatters.time(lesson.startsAt))
+                                                .font(ramp.font(.secondarySemibold))
+                                                .monospacedDigit()
+                                                .foregroundStyle(theme.ink2)
+                                            if selectMode {
+                                                Text(L10n.t("Select"))
+                                                    .font(ramp.font(.captionSemibold))
+                                                    .foregroundStyle(theme.ink)
+                                                    .padding(.horizontal, HSpace.x3)
+                                                    .frame(minHeight: HSize.control)
+                                                    .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.line, lineWidth: 1))
+                                            }
+                                        }
+                                        .padding(.vertical, HSpace.x3)
+                                        .frame(minHeight: HSize.row)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                            } label: {
-                                LessonRow(lesson: lesson)
                             }
-                            .buttonStyle(.plain)
-                            .listRowBackground(Color.clear)
+                            .padding(.bottom, HSpace.x5)
                         }
-                    } header: {
-                        Text(group.label).eyebrow()
                     }
+                } header: {
+                    filters
                 }
             }
+            .pageInset()
+            .padding(.top, HSpace.x2)
+            .padding(.bottom, HSpace.x4)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color.honeyCanvas.ignoresSafeArea())
-        .navigationTitle("History")
-        .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: L10n.t("Search lessons…"))
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { showFilters = true } label: {
-                    Label(L10n.t("Filters"), systemImage: filterCount > 0 ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                }
-                .accessibilityLabel(filterCount > 0 ? "\(L10n.t("Filters")), \(filterCount) active" : L10n.t("Filters"))
-            }
-        }
-        .sheet(isPresented: $showFilters) {
-            HistoryFiltersSheet(directory: directory, teacherId: $teacherId, courseId: $courseId)
-        }
+        .webScreen(title: "History")
         .sheet(item: $selected) { lesson in
             LessonDetailSheet(lesson: lesson, showsOpenDay: true) { action in
                 selected = nil
@@ -105,6 +137,22 @@ struct HistoryView: View {
         .refreshable { await load(reload: true) }
     }
 
+    /// `.filters` on phones: the search full width, the two selects sharing a row.
+    private var filters: some View {
+        VStack(spacing: HSpace.x2) {
+            TextField("", text: $query, prompt: Text(L10n.t("Search lessons…")).foregroundStyle(theme.muted))
+                .textFieldStyle(.web)
+                .autocorrectionDisabled()
+                .accessibilityLabel(L10n.t("Search lessons…"))
+            HStack(spacing: HSpace.x2) {
+                SelectField(label: "Filter by teacher", allLabel: "All teachers", selection: $teacherId, options: (directory?.teachers ?? []).map { ($0.id, $0.name) })
+                SelectField(label: "Filter by course", allLabel: "All courses", selection: $courseId, options: (directory?.courses ?? []).map { ($0.id, $0.name) })
+            }
+        }
+        .padding(.bottom, HSpace.x5)
+        .background(theme.surface)
+    }
+
     private func reload() {
         loadTask?.cancel()
         loadTask = Task { await load(reload: false) }
@@ -128,31 +176,39 @@ struct HistoryView: View {
     }
 }
 
-struct HistoryFiltersSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let directory: DirectoryResponse?
-    @Binding var teacherId: String
-    @Binding var courseId: String
+/// A `<select class="input">`: the field's frame with the chosen option
+/// and a caret; every option in one native menu.
+struct SelectField: View {
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
+    let label: String
+    let allLabel: String
+    @Binding var selection: String
+    let options: [(String, String)]
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Picker("Teacher", selection: $teacherId) {
-                    Text("All teachers").tag("")
-                    ForEach(directory?.teachers ?? []) { Text($0.name).tag($0.id) }
-                }
-                Picker("Course", selection: $courseId) {
-                    Text("All courses").tag("")
-                    ForEach(directory?.courses ?? []) { Text(DisplayNames.parseCourseName($0.name).title).tag($0.id) }
-                }
-                if !teacherId.isEmpty || !courseId.isEmpty {
-                    Button("Clear filters") { teacherId = ""; courseId = "" }
-                }
+        Menu {
+            Picker(label, selection: $selection) {
+                Text(allLabel).tag("")
+                ForEach(options, id: \.0) { id, name in Text(name).tag(id) }
             }
-            .navigationTitle(L10n.t("Filters"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(L10n.t("Done")) { dismiss() } } }
+        } label: {
+            HStack(spacing: HSpace.x2) {
+                Text(options.first { $0.0 == selection }?.1 ?? allLabel)
+                    .font(ramp.font(.body))
+                    .foregroundStyle(theme.ink)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(theme.muted)
+            }
+            .padding(.horizontal, HSpace.x3)
+            .frame(minHeight: HSize.control)
+            .background(theme.surfaceSolid, in: RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.line, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
         }
-        .presentationDetents([.medium])
+        .accessibilityLabel(label)
     }
 }

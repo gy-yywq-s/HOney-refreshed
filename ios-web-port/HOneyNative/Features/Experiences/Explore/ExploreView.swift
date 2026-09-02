@@ -1,7 +1,10 @@
-// Explore (spec §12): the deliberate lookup mode. Native `.searchable`, a
-// four-category control, Recent contexts, the COMPLETE list for the chosen
-// category (never "search for the rest"), and — from two characters — the
-// published words that mention the query.
+// Explore (ExplorePage.tsx + features.css `.explore-*`, `.chip-tab`,
+// `.entity-row`; fidelity spec v2 §8): the page title and its support line,
+// the Web search field, the four category chips (every one visible), Recent
+// or the COMPLETE list for the chosen category (never "search for the
+// rest"), and — from two characters — the experiences that mention the
+// words, through the same post row as the Stream. The field and chips stay
+// in the frame while the results scroll.
 
 import SwiftUI
 import HOneyCore
@@ -9,7 +12,8 @@ import HOneyCore
 struct ExploreView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(Navigator.self) private var nav
-    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
     @State private var query = ""
     @State private var category: EntityType = .teacher
     @State private var entities: [EntityRef] = []
@@ -26,51 +30,57 @@ struct ExploreView: View {
     private let groupThreshold = 18
 
     private var needle: String { query.trimmingCharacters(in: .whitespaces).lowercased() }
+    private var searchQ: String {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        return q.count >= 2 ? q : ""
+    }
 
     var body: some View {
-        List {
-            if needle.isEmpty {
-                if typeSize.isAccessibilitySize {
-                    Picker("Category", selection: $category) {
-                        ForEach(categories, id: \.0) { Text(L10n.t($0.1)).tag($0.0) }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: HSpace.x4, pinnedViews: [.sectionHeaders]) {
+                VStack(alignment: .leading, spacing: HSpace.x1) {
+                    PageTitle(text: "Explore")
+                    Text(L10n.t("Teachers, courses, places and food."))
+                        .hfont(.body)
+                        .foregroundStyle(theme.muted)
+                }
+                .pageInset()
+                .padding(.top, HSpace.x2)
+
+                Section {
+                    if let error {
+                        InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await load(reload: true) } }))
+                            .pageInset()
                     }
-                    .pickerStyle(.menu)
-                } else {
-                    Picker("Category", selection: $category) {
-                        ForEach(categories, id: \.0) { Text(L10n.t($0.1)).tag($0.0) }
+                    VStack(alignment: .leading, spacing: HSpace.x4) {
+                        if loading, entities.isEmpty {
+                            LoadingPlaceholder(lines: 6)
+                        } else if error == nil, needle.isEmpty {
+                            recentSection
+                            categorySection(category, items: byType(category), count: "\(total(category))")
+                        } else if error == nil {
+                            let matching = categories.filter { !byType($0.0).isEmpty }
+                            if matching.isEmpty {
+                                Text(L10n.t("Nothing by that name."))
+                                    .hfont(.body)
+                                    .foregroundStyle(theme.muted)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(HSpace.x6)
+                            }
+                            ForEach(matching, id: \.0) { type, _ in
+                                categorySection(type, items: byType(type), count: "\(byType(type).count) of \(total(type))")
+                            }
+                        }
+                        if !searchQ.isEmpty { mentionsSection }
                     }
-                    .pickerStyle(.segmented)
-                    .listRowInsets(EdgeInsets(top: HSpace.x2, leading: HSpace.pageX, bottom: HSpace.x2, trailing: HSpace.pageX))
-                    .listRowBackground(Color.clear)
+                    .pageInset()
+                } header: {
+                    frame
                 }
             }
-            if let error {
-                InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await load(reload: true) } }))
-                    .listRowBackground(Color.clear)
-            }
-            if loading, entities.isEmpty {
-                LoadingPlaceholder(lines: 6).listRowBackground(Color.clear)
-            } else if needle.isEmpty {
-                recentSection
-                categorySection(category, items: byType(category), count: "\(byType(category).count)")
-            } else {
-                let matching = categories.filter { !byType($0.0).isEmpty }
-                if matching.isEmpty {
-                    Text(L10n.t("Nothing by that name.")).foregroundStyle(Color.honeySecondary).listRowBackground(Color.clear)
-                }
-                ForEach(matching, id: \.0) { type, _ in
-                    categorySection(type, items: byType(type), count: "\(byType(type).count) of \(total(type))")
-                }
-                mentionsSection
-            }
+            .padding(.bottom, HSpace.x4)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color.honeyCanvas.ignoresSafeArea())
-        .navigationTitle("Explore")
-        .navigationBarTitleDisplayMode(.large)
-        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: L10n.t("Search names and experiences"))
-        .autocorrectionDisabled()
+        .webScreen(title: "Explore")
         .task {
             category = env.prefs.exploreCategory
             await load()
@@ -78,6 +88,25 @@ struct ExploreView: View {
         .onChange(of: category) { _, next in env.prefs.exploreCategory = next }
         .onChange(of: query) { _, _ in scheduleSearch() }
         .refreshable { await load(reload: true) }
+    }
+
+    /// `.explore-frame`: the field, then the chips while nothing is typed.
+    private var frame: some View {
+        VStack(alignment: .leading, spacing: HSpace.x3) {
+            SearchField(text: $query, prompt: L10n.t("Search names and experiences"))
+            if needle.isEmpty {
+                FlowLayout(spacing: HSpace.x2) {
+                    ForEach(categories, id: \.0) { type, label in
+                        ChipTab(label: L10n.t(label), selected: category == type) { category = type }
+                    }
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Category")
+            }
+        }
+        .pageInset()
+        .padding(.bottom, HSpace.x2)
+        .background(theme.surface)
     }
 
     // MARK: Data
@@ -142,39 +171,59 @@ struct ExploreView: View {
     private var recentSection: some View {
         let recent = env.prefs.recentContexts
         if !recent.isEmpty {
-            Section {
-                ForEach(recent) { ctx in
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L10n.t("Recently opened")).sectionLabel().padding(.bottom, HSpace.x2)
+                ForEach(Array(recent.enumerated()), id: \.element.id) { index, ctx in
+                    if index > 0 { HairlineDivider() }
                     Button { nav.push(.entity(ctx.type, ctx.entityId)) } label: {
                         EntityRow(title: ctx.name)
                     }
                     .buttonStyle(.plain)
-                    .listRowBackground(Color.clear)
                 }
-            } header: {
-                Text(L10n.t("Recently opened")).eyebrow()
             }
         }
     }
 
+    /// `ExploreSection`: label + count, then the complete list, letter
+    /// landmarks once it is long enough (and mostly Latin).
     @ViewBuilder
     private func categorySection(_ type: EntityType, items: [EntityRef], count: String) -> some View {
         let label = categories.first { $0.0 == type }?.1 ?? ""
         let markable = items.contains { mine.contains($0.entityKey) } && items.contains { !mine.contains($0.entityKey) }
-        Section {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: HSpace.x1) {
+                Text(L10n.t(label)).sectionLabel()
+                Text(count).hfont(.caption).foregroundStyle(theme.muted)
+            }
+            .padding(.bottom, HSpace.x2)
             if items.isEmpty {
-                Text(L10n.t("Nothing here yet.")).foregroundStyle(Color.honeySecondary).listRowBackground(Color.clear)
+                Text(L10n.t("Nothing here yet."))
+                    .hfont(.body)
+                    .foregroundStyle(theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(HSpace.x6)
             } else if items.count >= groupThreshold, Self.mostlyLatin(items) {
                 ForEach(letterGroups(items), id: \.0) { letter, list in
-                    Text(letter).eyebrow().listRowBackground(Color.clear).listRowSeparator(.hidden)
-                    ForEach(list) { entity in row(entity, mark: markable && mine.contains(entity.entityKey)) }
+                    HStack(alignment: .top, spacing: HSpace.x2) {
+                        Text(letter)
+                            .hfont(.captionBold)
+                            .foregroundStyle(theme.ink3)
+                            .frame(width: 28, alignment: .leading)
+                            .padding(.top, HSpace.x3)
+                        VStack(spacing: 0) {
+                            ForEach(Array(list.enumerated()), id: \.element.id) { index, entity in
+                                if index > 0 { HairlineDivider() }
+                                row(entity, mark: markable && mine.contains(entity.entityKey))
+                            }
+                        }
+                    }
+                    .padding(.bottom, HSpace.x1)
                 }
             } else {
-                ForEach(items) { entity in row(entity, mark: markable && mine.contains(entity.entityKey)) }
-            }
-        } header: {
-            HStack {
-                Text(L10n.t(label)).eyebrow()
-                Text(count).font(HType.micro).foregroundStyle(Color.honeyTertiary)
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, entity in
+                    if index > 0 { HairlineDivider() }
+                    row(entity, mark: markable && mine.contains(entity.entityKey))
+                }
             }
         }
     }
@@ -189,7 +238,7 @@ struct ExploreView: View {
     private func letterGroups(_ items: [EntityRef]) -> [(String, [EntityRef])] {
         var map: [String: [EntityRef]] = [:]
         for e in items {
-            let first = e.name.first.map { String($0).uppercased() } ?? "#"
+            let first = e.name.first.map { String($0).uppercased() } ?? "#" // case-allowed: a letter landmark is content, not a label style
             let key = first.range(of: "^[A-Z]$", options: .regularExpression) != nil ? first : "#"
             map[key, default: []].append(e)
         }
@@ -211,34 +260,30 @@ struct ExploreView: View {
             EntityRow(title: title, caption: caption)
         }
         .buttonStyle(.plain)
-        .listRowBackground(Color.clear)
     }
 
+    /// `.explore-mentions`: the label, then the same post rows as the Stream.
     @ViewBuilder
     private var mentionsSection: some View {
-        let q = query.trimmingCharacters(in: .whitespaces)
-        if q.count >= 2 {
-            Section {
-                if searching, search == nil {
-                    LoadingPlaceholder(lines: 3).listRowBackground(Color.clear)
-                } else if let searchError {
-                    InlineStatusBanner(text: searchError, tone: .danger, action: (L10n.t("Try again"), { scheduleSearch() })).listRowBackground(Color.clear)
-                } else if let search, !search.experiences.isEmpty {
-                    ForEach(search.experiences) { exp in
-                        ExperiencePostRow(
-                            exp: exp,
-                            reaction: feed?.reactions[exp.id] ?? ReactionState(exp),
-                            onReact: { value in Task { await feedModel().react(exp, value: value) } },
-                            onReport: { category in await feedModel().report(exp, category: category) },
-                            openEntity: { route in nav.push(route) }
-                        )
-                        .listRowBackground(Color.clear)
-                    }
-                } else {
-                    Text("No experiences mention “\(q)”.").font(HType.meta).foregroundStyle(Color.honeySecondary).listRowBackground(Color.clear)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Experiences that mention “\(searchQ)”").sectionLabel().padding(.bottom, HSpace.x2)
+            if searching, search == nil {
+                LoadingPlaceholder(lines: 4)
+            } else if let searchError {
+                InlineStatusBanner(text: searchError, tone: .danger, action: (L10n.t("Try again"), { scheduleSearch() }))
+            } else if let search, !search.experiences.isEmpty {
+                ForEach(search.experiences) { exp in
+                    ExperiencePostRow(
+                        exp: exp,
+                        reaction: feed?.reactions[exp.id] ?? ReactionState(exp),
+                        onReact: { value in Task { await feedModel().react(exp, value: value) } },
+                        onReport: { category in await feedModel().report(exp, category: category) },
+                        openEntity: { route in nav.push(route) }
+                    )
                 }
-            } header: {
-                Text("Experiences that mention “\(q)”").eyebrow()
+                .padding(.top, -HSpace.x2)
+            } else {
+                Text("No experiences mention “\(searchQ)”.").hfont(.caption).foregroundStyle(theme.muted)
             }
         }
     }

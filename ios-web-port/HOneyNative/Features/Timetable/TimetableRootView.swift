@@ -1,8 +1,10 @@
-// Timetable (spec §18.2): a compact custom top frame — Day | Week, the
-// overflow menu (Today / History / Sync with school), the date stepper —
-// then the Day timeline or the Week matrix. `.refreshable` re-reads HOney;
-// Sync with school is the explicit upstream action. Day is the cold-launch
-// default; Week is remembered only while the app lives (review §3.4).
+// Timetable (TimetablePage.tsx + features.css `.daynav`; fidelity spec v2
+// §12.2): the phone frame — the Day | Week pill centred, the stepper across
+// the width with the date as the heading (a tap opens the platform
+// calendar), "Back to today" when you left it — then the Day timeline or
+// the Week matrix. Pull to refresh re-reads HOney; History and Sync with
+// school sit in one overflow control (the phone Web answers them with
+// gestures). Day is the cold-launch default.
 
 import SwiftUI
 import HOneyCore
@@ -10,6 +12,8 @@ import HOneyCore
 struct TimetableRootView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(Navigator.self) private var nav
+    @Environment(\.theme) private var theme
+    @Environment(\.hType) private var ramp
     @State private var model: TimetableViewModel?
     @State private var showDatePicker = false
     @State private var showReconnect = false
@@ -22,8 +26,9 @@ struct TimetableRootView: View {
                 LoadingPlaceholder(lines: 4).pageInset()
             }
         }
-        .background(Color.honeyCanvas.ignoresSafeArea())
+        .surfaceBackground()
         .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle("Timetable")
         .task {
             if model == nil { model = TimetableViewModel(env: env) }
             if !consumeIntent() { await model?.load() }
@@ -92,61 +97,93 @@ struct TimetableRootView: View {
         }
     }
 
+    /// `.daynav` on phones: modes centred (with the overflow at the right),
+    /// the stepper row, Back to today; 8 pt above, 4 pt below, 8 pt after.
     private func header(_ model: TimetableViewModel) -> some View {
-        VStack(spacing: HSpace.x2) {
-            HStack {
-                Picker("Timetable view", selection: Binding(get: { model.view }, set: { model.setView($0) })) {
-                    Text(L10n.t("Day")).tag(TimetableViewMode.day)
-                    Text(L10n.t("Week")).tag(TimetableViewMode.week)
-                }
-                .pickerStyle(.segmented)
-                .frame(maxWidth: 200)
-                Spacer()
-                if model.view == .week ? !model.isThisWeek : !model.isToday {
-                    Button(model.view == .week ? L10n.t("This week") : L10n.t("Back to today")) { model.goToday() }
-                        .font(HType.secondary)
-                }
-                Menu {
-                    Button(model.view == .week ? L10n.t("This week") : L10n.t("Today"), systemImage: "calendar") { model.goToday() }
-                    Button("History", systemImage: "clock.arrow.circlepath") { nav.push(.history(select: false)) }
-                    Button(model.syncBusy ? L10n.t("Syncing with school…") : L10n.t("Sync with school"), systemImage: "arrow.triangle.2.circlepath") {
-                        Task { await model.syncWithSchool() }
+        VStack(spacing: HSpace.x1) {
+            ZStack {
+                ModePill(
+                    options: [(TimetableViewMode.day, L10n.t("Day")), (TimetableViewMode.week, L10n.t("Week"))],
+                    selection: Binding(get: { model.view }, set: { model.setView($0) })
+                )
+                .accessibilityLabel("Timetable view")
+                HStack {
+                    Spacer()
+                    Menu {
+                        Button(model.view == .week ? L10n.t("This week") : L10n.t("Today"), systemImage: "calendar") { model.goToday() }
+                        Button("History", systemImage: "clock.arrow.circlepath") { nav.push(.history(select: false)) }
+                        Button(model.syncBusy ? L10n.t("Syncing with school…") : L10n.t("Sync with school"), systemImage: "arrow.triangle.2.circlepath") {
+                            Task { await model.syncWithSchool() }
+                        }
+                        .disabled(model.syncBusy)
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: HSize.icon, weight: .regular))
+                            .foregroundStyle(theme.ink)
+                            .frame(width: HSize.control, height: HSize.control)
+                            .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.line, lineWidth: 1))
+                            .contentShape(Rectangle())
                     }
-                    .disabled(model.syncBusy)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.title3)
-                        .frame(width: 44, height: 44)
+                    .accessibilityLabel("More")
                 }
-                .accessibilityLabel("More")
             }
-            HStack {
-                Button { model.step(-1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
-                    .accessibilityLabel(model.view == .week ? L10n.t("Previous week") : L10n.t("Previous day"))
-                Spacer()
+            .padding(.bottom, HSpace.x1)
+
+            // `.daynav__stepper`: ‹ | the date | › in one pill across the width.
+            HStack(spacing: 0) {
+                Button { model.step(-1) } label: {
+                    Text("‹").font(ramp.font(.sectionTitle)).foregroundStyle(theme.ink2)
+                        .frame(width: HSize.control, minHeight: HSize.control)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(model.view == .week ? L10n.t("Previous week") : L10n.t("Previous day"))
                 Button { showDatePicker = true } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: HSpace.x2) {
                         Text(model.view == .week
                              ? Formatters.weekRange(monday: model.monday, endOffset: weekEndOffset(model))
                              : Formatters.dayTitle(model.date))
-                            .font(HType.pageTitle)
-                            .foregroundStyle(Color.honeyInk)
+                            .font(ramp.font(.sectionTitle))
+                            .tracking(ramp.tracking(.sectionTitle))
+                            .monospacedDigit()
+                            .foregroundStyle(theme.ink)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
-                        Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(Color.honeyTertiary)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(theme.ink2)
                     }
+                    .padding(.horizontal, HSpace.x3)
+                    .frame(maxWidth: .infinity, minHeight: HSize.control)
+                    .overlay(alignment: .leading) { Rectangle().fill(theme.line).frame(width: 1) }
+                    .overlay(alignment: .trailing) { Rectangle().fill(theme.line).frame(width: 1) }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Pick a date")
                 .accessibilityAddTraits(.isHeader)
-                Spacer()
-                Button { model.step(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
-                    .accessibilityLabel(model.view == .week ? L10n.t("Next week") : L10n.t("Next day"))
+                Button { model.step(1) } label: {
+                    Text("›").font(ramp.font(.sectionTitle)).foregroundStyle(theme.ink2)
+                        .frame(width: HSize.control, minHeight: HSize.control)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(model.view == .week ? L10n.t("Next week") : L10n.t("Next day"))
+            }
+            .background(theme.surfaceSolid, in: Capsule())
+            .overlay(Capsule().strokeBorder(theme.line, lineWidth: 1))
+            .clipShape(Capsule())
+
+            if model.view == .week ? !model.isThisWeek : !model.isToday {
+                Button(model.view == .week ? L10n.t("This week") : L10n.t("Back to today")) { model.goToday() }
+                    .buttonStyle(.webSmallGhost)
             }
         }
         .pageInset()
         .padding(.top, HSpace.x2)
+        .padding(.bottom, HSpace.x1)
         .padding(.bottom, HSpace.x2)
+        .background(theme.surface)
     }
 
     private func weekEndOffset(_ model: TimetableViewModel) -> Int {
@@ -166,29 +203,32 @@ struct TimetableRootView: View {
     }
 }
 
-/// The Day mode: the timeline in a ScrollView with a smart cold landing.
+/// The Day mode: the canvas fills the frame (floor 560 pt) and scrolls
+/// beneath the frame on short screens, with a smart cold landing.
 struct DayTimetableScreen: View {
     let model: TimetableViewModel
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    if let day = model.day {
-                        DayTimelineView(date: day.date, lessons: day.lessons) { lesson in model.selectedLesson = lesson }
-                            .pageInset()
-                            .onAppear { land(day, proxy: proxy) }
-                            .onChange(of: day.date) { _, _ in land(day, proxy: proxy) }
-                    } else if let error = model.dayError {
-                        InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await model.load(reload: true) } })).pageInset()
-                    } else {
-                        // The selected date's data is not here yet: never another day's.
-                        LoadingPlaceholder(lines: 4).pageInset()
+        GeometryReader { geo in
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if let day = model.day {
+                            DayTimelineView(date: day.date, lessons: day.lessons, canvasHeight: max(560, geo.size.height - HSpace.x4)) { lesson in model.selectedLesson = lesson }
+                                .pageInset()
+                                .onAppear { land(day, proxy: proxy) }
+                                .onChange(of: day.date) { _, _ in land(day, proxy: proxy) }
+                        } else if let error = model.dayError {
+                            InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await model.load(reload: true) } })).pageInset()
+                        } else {
+                            // The selected date's data is not here yet: never another day's.
+                            LoadingPlaceholder(lines: 4).pageInset()
+                        }
                     }
+                    .padding(.bottom, HSpace.x4)
                 }
-                .padding(.bottom, HSpace.x7)
+                .refreshable { await model.load(reload: true) }
             }
-            .refreshable { await model.load(reload: true) }
         }
     }
 
@@ -209,8 +249,10 @@ struct DayTimetableScreen: View {
     }
 }
 
+/// The platform's own calendar (the Web taps into `<input type="date">`).
 struct DatePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.theme) private var theme
     let iso: String
     let pick: (String) -> Void
     @State private var date: Date
@@ -222,19 +264,16 @@ struct DatePickerSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        WebSheet(title: "Pick a date", onClose: { dismiss() }) {
             DatePicker("Date", selection: $date, displayedComponents: .date)
                 .datePickerStyle(.graphical)
                 .environment(\.calendar, Calendar.schoolLocal)
                 .environment(\.timeZone, HOneyClock.timeZone)
-                .padding()
-                .navigationTitle("Pick a date")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button(L10n.t("Cancel")) { dismiss() } }
-                    ToolbarItem(placement: .confirmationAction) { Button(L10n.t("Done")) { pick(Formatters.toIsoDate(date)); dismiss() } }
-                }
+                .tint(theme.accent)
+            SheetActions {
+                Button(L10n.t("Done")) { pick(Formatters.toIsoDate(date)); dismiss() }.buttonStyle(.webBlockPrimary)
+            }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.large])
     }
 }
