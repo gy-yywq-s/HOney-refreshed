@@ -1,7 +1,8 @@
 // Timetable (spec §18.2): a compact custom top frame — Day | Week, the
 // overflow menu (Today / History / Sync with school), the date stepper —
 // then the Day timeline or the Week matrix. `.refreshable` re-reads HOney;
-// Sync with school is the explicit upstream action.
+// Sync with school is the explicit upstream action. Day is the cold-launch
+// default; Week is remembered only while the app lives (review §3.4).
 
 import SwiftUI
 import HOneyCore
@@ -9,7 +10,6 @@ import HOneyCore
 struct TimetableRootView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(Navigator.self) private var nav
-    @SceneStorage("honey.timetable.view") private var storedView: String = "day"
     @State private var model: TimetableViewModel?
     @State private var showDatePicker = false
     @State private var showReconnect = false
@@ -25,31 +25,30 @@ struct TimetableRootView: View {
         .background(Color.honeyCanvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .task {
-            if model == nil {
-                let m = TimetableViewModel(env: env)
-                m.view = TimetableViewMode(rawValue: storedView) ?? .day
-                model = m
-            }
-            consumeIntent()
-            await model?.load()
+            if model == nil { model = TimetableViewModel(env: env) }
+            if !consumeIntent() { await model?.load() }
         }
-        .onChange(of: nav.timetableIntent) { _, _ in
-            consumeIntent()
-            Task { await model?.load() }
-        }
+        .onChange(of: nav.timetableIntent) { _, _ in _ = consumeIntent() }
         .sheet(isPresented: $showReconnect) {
             SchoolLoginSheet(purpose: .reconnect) { Task { await model?.syncWithSchool() } }
         }
     }
 
-    private func consumeIntent() {
-        guard let model, let intent = nav.timetableIntent else { return }
-        if let date = intent.date { model.setDate(date) }
-        if let view = intent.view {
-            model.view = view
-            storedView = view.rawValue
-        }
+    /// Applies a deep link; returns true when it scheduled a load itself.
+    @discardableResult
+    private func consumeIntent() -> Bool {
+        guard let model, let intent = nav.timetableIntent else { return false }
         nav.timetableIntent = nil
+        var scheduled = false
+        if let view = intent.view, view != model.view {
+            model.setView(view)
+            scheduled = true
+        }
+        if let date = intent.date, date != model.date {
+            model.setDate(date)
+            scheduled = true
+        }
+        return scheduled
     }
 
     @ViewBuilder
@@ -64,14 +63,10 @@ struct TimetableRootView: View {
             }
             Group {
                 if model.view == .week {
-                    WeekTimetableView(
-                        model: model,
-                        onOpenDay: { date in
-                            model.view = .day
-                            storedView = "day"
-                            model.setDate(date)
-                        }
-                    )
+                    WeekTimetableView(model: model) { date in
+                        model.setView(.day)
+                        model.setDate(date)
+                    }
                 } else {
                     DayTimetableScreen(model: model)
                 }
@@ -83,30 +78,24 @@ struct TimetableRootView: View {
                 model.selectedLesson = nil
                 switch action {
                 case .openDay(let date):
-                    model.view = .day
-                    storedView = "day"
+                    model.setView(.day)
                     model.setDate(date)
                 case .compose(let target):
-                    nav.push(.compose(target))
+                    nav.go(.experiences, [.compose(target)])
                 case .entity(let type, let id):
-                    nav.push(.entity(type, id))
+                    nav.go(.experiences, [.entity(type, id)])
                 }
             }
         }
         .sheet(isPresented: $showDatePicker) {
             DatePickerSheet(iso: model.date) { picked in model.setDate(picked) }
         }
-        .onChange(of: model.view) { _, next in
-            storedView = next.rawValue
-            Task { await model.load() }
-        }
     }
 
     private func header(_ model: TimetableViewModel) -> some View {
-        @Bindable var model = model
-        return VStack(spacing: HSpace.x2) {
+        VStack(spacing: HSpace.x2) {
             HStack {
-                Picker("Timetable view", selection: $model.view) {
+                Picker("Timetable view", selection: Binding(get: { model.view }, set: { model.setView($0) })) {
                     Text(L10n.t("Day")).tag(TimetableViewMode.day)
                     Text(L10n.t("Week")).tag(TimetableViewMode.week)
                 }
@@ -185,15 +174,16 @@ struct DayTimetableScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if model.dayLoading, model.day == nil {
-                        LoadingPlaceholder(lines: 4).pageInset()
-                    } else if let error = model.dayError, model.day == nil {
-                        InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await model.load(reload: true) } })).pageInset()
-                    } else if let day = model.day {
+                    if let day = model.day {
                         DayTimelineView(date: day.date, lessons: day.lessons) { lesson in model.selectedLesson = lesson }
                             .pageInset()
                             .onAppear { land(day, proxy: proxy) }
                             .onChange(of: day.date) { _, _ in land(day, proxy: proxy) }
+                    } else if let error = model.dayError {
+                        InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await model.load(reload: true) } })).pageInset()
+                    } else {
+                        // The selected date's data is not here yet: never another day's.
+                        LoadingPlaceholder(lines: 4).pageInset()
                     }
                 }
                 .padding(.bottom, HSpace.x7)
@@ -203,15 +193,18 @@ struct DayTimetableScreen: View {
     }
 
     /// The running lesson, else the next one still ahead today, else the
-    /// first — once per date, never after a retry.
+    /// first — once per date, and only counted once the scroll target exists.
     private func land(_ day: TimetableResponse, proxy: ScrollViewProxy) {
         guard !model.landedDates.contains(day.date) else { return }
-        model.markLanded(day.date)
         let layout = DayLayout(lessons: day.lessons)
         let nowMinute = PeriodCatalog.minuteOfDay(HOneyClock.now().epochMillis)
-        guard let target = layout.landingLesson(nowMinute: nowMinute, isToday: day.date == Formatters.todayIsoDate()) else { return }
+        guard let target = layout.landingLesson(nowMinute: nowMinute, isToday: day.date == Formatters.todayIsoDate()) else {
+            model.markLanded(day.date)
+            return
+        }
         DispatchQueue.main.async {
             proxy.scrollTo("lesson-\(target.id)", anchor: UnitPoint(x: 0, y: 0.18))
+            model.markLanded(day.date)
         }
     }
 }

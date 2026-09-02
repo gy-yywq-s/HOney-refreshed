@@ -22,6 +22,7 @@ struct WeekTimetableView: View {
                 if let error = model.weekError, model.weekDays == nil {
                     InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await model.load(reload: true) } })).pageInset()
                 }
+                // The selected week's data or a loading matrix — never another week's.
                 if typeSize.isAccessibilitySize {
                     accessibleList(matrix)
                 } else if matrix.dates.count > 5 {
@@ -85,7 +86,7 @@ struct WeekTimetableView: View {
                         .accessibilityHidden(true)
                         ForEach(matrix.dates, id: \.self) { date in
                             let cell = matrix.cell(date: date, band: band)
-                            WeekCell(cell: cell, isToday: date == today, isNow: cell.first.map { WeekMatrix.isNow($0, now: now) } ?? false, loading: model.weekDays == nil && model.weekLoading) {
+                            WeekCell(cell: cell, isToday: date == today, isNow: cell.first.map { WeekMatrix.isNow($0, now: now) } ?? false, loading: model.weekDays == nil && model.loading) {
                                 if let first = cell.first { model.selectedLesson = first }
                             }
                             .frame(width: fixedColumns ? columnWidth : nil)
@@ -159,7 +160,7 @@ struct WeekCell: View {
                     }
                     .padding(5)
                     .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
-                    .background(Color.honeyCell, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .background(isToday ? Color.honeyAccentTint.opacity(0.35) : Color.honeyCell, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(isNow ? Color.honeyInk : Color.honeyFrame, lineWidth: isNow ? 1.5 : 1))
                     .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
