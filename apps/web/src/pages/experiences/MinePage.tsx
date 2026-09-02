@@ -306,19 +306,19 @@ function PrivateNoteRow({
       <div className="mine-item__foot">
         {cooling ? (
           <span className="mine-item__status mine-item__status--cooling">
-            Cooling · can be shared in {formatRemaining(remaining)}
+            Cooling · you can share this in {formatRemaining(remaining)}
           </span>
         ) : paused ? (
-          <span className="mine-item__status mine-item__status--ok">Pause over · ready to share again</span>
+          <span className="mine-item__status mine-item__status--ok">Pause over · ready to share</span>
         ) : (
           <span className="mine-item__status mine-item__status--muted">Private · only on this device</span>
         )}
         <span className="mine-item__actions">
           <Link
-            className="btn btn--ghost btn--small"
+            className={paused ? "btn btn--primary btn--small" : "btn btn--ghost btn--small"}
             to={`/experiences/compose?noteId=${encodeURIComponent(note.id)}`}
           >
-            Edit / share
+            {paused ? "Share now" : cooling ? "Edit" : "Edit / share"}
           </Link>
           <button type="button" className="btn btn--ghost btn--small" onClick={() => setConfirming(true)}>
             Delete

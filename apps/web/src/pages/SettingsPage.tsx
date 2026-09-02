@@ -94,15 +94,10 @@ export function SettingsPage() {
           <Link className="row" to="/settings/account">
             <span className="row__main">
               <span className="row__title">{me.displayName}</span>
-              <span className="row__sub">HOney account</span>
+              <span className="row__sub">HOney ID {me.honeyId}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
-          <div className="row row--actions">
-            <button type="button" className="btn btn--danger-outline" onClick={() => void signOut()}>
-              Sign out
-            </button>
-          </div>
         </section>
 
         <section className="rowlist" aria-label="School connection">
@@ -224,9 +219,7 @@ export function SettingsPage() {
                   HOney ID {me.honeyId} — your name inside HOney; never shown on published experiences.
                 </span>
               </span>
-            </div>
-            <div className="row row--actions">
-              <button type="button" className="btn btn--danger-outline" onClick={() => void signOut()}>
+              <button type="button" className="btn btn--danger-outline btn--small" onClick={() => void signOut()}>
                 Sign out
               </button>
             </div>

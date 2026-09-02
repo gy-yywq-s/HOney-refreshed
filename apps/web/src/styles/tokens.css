@@ -20,6 +20,7 @@
   --inset-bottom: env(safe-area-inset-bottom, 0px);
   --surface: #f4f6f7;
   --surface-solid: #fbfcfc;
+  --cell: #ffffff; /* lesson cards on the Day canvas and the Week matrix */
   --card: rgba(255, 255, 255, 0.72);
   --soft: rgba(35, 43, 49, 0.05);
 
@@ -113,6 +114,7 @@
   color-scheme: dark;
   --surface: #14171a;
   --surface-solid: #1d2125;
+  --cell: #1d2125;
   --card: rgba(255, 255, 255, 0.045);
   --soft: rgba(255, 255, 255, 0.06);
   --ink: #e9edef;

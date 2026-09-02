@@ -25,13 +25,21 @@ function tabIndex(path: string, tabs: { to: string }[]): number {
   return root ? tabs.findIndex((tab) => tab.to === root) : -1;
 }
 
-// In-app history, one entry per visited screen, so the back bar can POP
-// when the parent is the previous entry (the native feel) and otherwise
-// go up by REPLACING — never pushing a loop of parent/child/parent.
-const stack: string[] = [];
-
-const EDGE_PX = 28; // a swipe that starts this close to the left edge
-const SWIPE_PX = 72; // and travels this far right, mostly horizontally
+// In-app history: one entry per visited screen with its title and scroll
+// position (Gary 2026-09-02: "the same as a native app"). The back bar and
+// the OS back gesture then AGREE — both pop to where you came from — and a
+// popped screen comes back where it was, without the entrance animation.
+// The route tree (lib/navigation.ts) only names the way up on a cold deep
+// link, where there is nothing to pop to.
+interface StackEntry {
+  path: string;
+  title: string;
+  scroll: number;
+}
+const stack: StackEntry[] = [];
+function titleNow(): string {
+  return document.title.replace(/ · HOney$/, "");
+}
 
 function AppLayout() {
   const { me, loading, error, refreshMe } = useAuth();
@@ -44,71 +52,82 @@ function AppLayout() {
   const parentRef = useRef(parent);
   parentRef.current = parent;
 
+  const [back, setBack] = useState<StackEntry | null>(null);
   useEffect(() => {
     const here = location.pathname;
-    if (navType === "PUSH") stack.push(here);
-    else if (navType === "REPLACE") stack[Math.max(0, stack.length - 1)] = here;
-    else if (stack.length >= 2 && stack[stack.length - 2] === here) stack.pop();
-    else if (stack[stack.length - 1] !== here) stack.push(here);
+    const owner = document.querySelector<HTMLElement>("[data-scroll-owner]");
+    let restore = 0;
+    let popped = false;
+    if (navType === "PUSH") stack.push({ path: here, title: "", scroll: 0 });
+    else if (navType === "REPLACE") stack[Math.max(0, stack.length - 1)] = { path: here, title: "", scroll: 0 };
+    else if (stack.length >= 2 && stack[stack.length - 2]!.path === here) {
+      stack.pop();
+      popped = true;
+      restore = stack[stack.length - 1]!.scroll;
+    } else if (stack[stack.length - 1]?.path !== here) stack.push({ path: here, title: "", scroll: 0 });
+    else {
+      popped = true;
+      restore = stack[stack.length - 1]!.scroll;
+    }
+    // A popped screen returns where it was and does not re-enter; a pushed
+    // one starts at the top and settles in.
+    document.documentElement.dataset.nav = popped ? "pop" : "push";
+    if (owner) {
+      owner.style.scrollBehavior = "auto";
+      owner.scrollTop = 0;
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          if (popped) owner.scrollTop = restore;
+          owner.style.scrollBehavior = "";
+        }),
+      );
+    }
+    const name = titleOf(here);
+    if (name) document.title = `${name} · HOney`;
+    setBack(stack.length >= 2 ? stack[stack.length - 2]! : null);
   }, [location.key, location.pathname, navType]);
 
-  const goUp = useCallback(() => {
-    const up = parentRef.current;
-    if (!up) return;
-    if (stack.length >= 2 && stack[stack.length - 2] === up.to) navigate(-1);
-    else navigate(up.to, { replace: true });
-  }, [navigate]);
-
-  // Left-edge swipe = up one level (standalone iOS has no browser gesture;
-  // in a browser the OS consumes the edge before we see it).
+  // Each entry remembers the title the screen ended up with (entity pages
+  // set theirs after loading) and where it was scrolled to.
   useEffect(() => {
-    let startX = 0;
-    let startY = 0;
-    let armed = false;
-    let fired = false;
-    const onStart = (e: TouchEvent) => {
-      const t = e.touches[0]!;
-      const target = e.target as Element | null;
-      armed = t.clientX <= EDGE_PX && !!parentRef.current && !target?.closest(".modal-overlay");
-      fired = false;
-      startX = t.clientX;
-      startY = t.clientY;
+    const el = document.querySelector("title");
+    const sync = () => {
+      const top = stack[stack.length - 1];
+      if (top) top.title = titleNow();
     };
-    const onMove = (e: TouchEvent) => {
-      if (!armed || fired) return;
-      const t = e.touches[0]!;
-      const dx = t.clientX - startX;
-      const dy = Math.abs(t.clientY - startY);
-      if (dy > 48 && dy > dx) armed = false;
-      else if (dx >= SWIPE_PX && dx > dy * 1.5) {
-        fired = true;
-        goUp();
-      }
+    sync();
+    if (!el) return;
+    const mo = new MutationObserver(sync);
+    mo.observe(el, { childList: true, characterData: true, subtree: true });
+    return () => mo.disconnect();
+  }, [location.key]);
+  useEffect(() => {
+    const owner = document.querySelector<HTMLElement>("[data-scroll-owner]");
+    if (!owner) return;
+    const onScroll = () => {
+      const top = stack[stack.length - 1];
+      if (top) top.scroll = owner.scrollTop;
     };
-    const onEnd = () => {
-      armed = false;
-    };
-    document.addEventListener("touchstart", onStart, { passive: true });
-    document.addEventListener("touchmove", onMove, { passive: true });
-    document.addEventListener("touchend", onEnd, { passive: true });
-    document.addEventListener("touchcancel", onEnd, { passive: true });
-    return () => {
-      document.removeEventListener("touchstart", onStart);
-      document.removeEventListener("touchmove", onMove);
-      document.removeEventListener("touchend", onEnd);
-      document.removeEventListener("touchcancel", onEnd);
-    };
-  }, [goUp]);
+    owner.addEventListener("scroll", onScroll, { passive: true });
+    return () => owner.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Up: pop when there is somewhere to pop to (the OS gesture does the same);
+  // otherwise the tree's parent, replacing — never a parent/child loop.
+  const goUp = useCallback(() => {
+    if (stack.length >= 2) {
+      navigate(-1);
+      return;
+    }
+    const up = parentRef.current;
+    if (up) navigate(up.to, { replace: true });
+  }, [navigate]);
+  const backLabel = back ? back.title || titleOf(back.path) || "Back" : parent?.title ?? "";
+  const backTo = back ? back.path : (parent?.to ?? "/home");
 
   // The scroll owner persists across routes now (§16.14.3), so each route
   // change resets it to the top (review M3). Instant, not smooth: pages that
   // restore their own position (the feed) re-scroll in a later frame.
-  useEffect(() => {
-    const el = document.querySelector<HTMLElement>("[data-scroll-owner]");
-    el?.scrollTo({ top: 0, behavior: "instant" });
-    const name = titleOf(location.pathname);
-    if (name) document.title = `${name} · HOney`;
-  }, [location.pathname]);
 
   // The account request failing must not replace the app (r10): the shell
   // stays — nav, skip link, scroll owner — with one alert and a landing retry.
@@ -197,7 +216,7 @@ function AppLayout() {
             <nav className="pagebar" aria-label="Up one level">
               <Link
                 className="pagebar__back"
-                to={parent.to}
+                to={backTo}
                 onClick={(e) => {
                   e.preventDefault();
                   goUp();
@@ -206,7 +225,8 @@ function AppLayout() {
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M15 5l-7 7 7 7" />
                 </svg>
-                <span>{parent.title}</span>
+                <span className="sr-only">Back to </span>
+                <span>{backLabel}</span>
               </Link>
             </nav>
           )}

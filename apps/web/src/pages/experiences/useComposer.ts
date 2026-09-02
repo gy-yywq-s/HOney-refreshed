@@ -74,7 +74,6 @@ export function useComposer(target: ComposerTarget | null, seed?: ComposerSeed) 
     const c = seed?.cooldown;
     if (!c) return;
     cooldownTicket.current = { ticket: c.ticket, body: c.body.trim(), rating: c.rating };
-    if (c.until > Date.now()) setStatus({ kind: "cooldown", retryAt: c.until, reasons: [] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seededTicket]);
 

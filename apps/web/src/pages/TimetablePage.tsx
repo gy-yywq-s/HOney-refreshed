@@ -513,11 +513,12 @@ function DayTimeline({
           const end = minuteOfDay(lesson.endsAt);
           const compact = end - start < 45;
           const period = periodLabelFor(start, end);
+          const live = isToday && nowMinute >= start && nowMinute < end;
           return (
             <button
               key={lesson.id}
               data-lesson={lesson.id}
-              className={compact ? "lesson-block lesson-block--compact" : "lesson-block"}
+              className={["lesson-block", compact ? "lesson-block--compact" : "", live ? "lesson-block--now" : ""].filter(Boolean).join(" ")}
               style={{ top: geo.topFor(start), height: geo.heightBetween(start, end) }}
               onClick={() => onSelect(lesson)}
             >

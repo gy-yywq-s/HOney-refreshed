@@ -7,7 +7,7 @@
 // published (audit §3.3) — nothing is ever auto-published.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, Lesson } from "../../api/types";
 import { useApi } from "../../lib/useApi";
@@ -31,6 +31,7 @@ const COMPOSE_HELPER = "A moment, a pattern, or just a feeling. Specific context
 
 export function ExperiencesComposePage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const lessonId = searchParams.get("lessonId");
   const entityKeyParam = searchParams.get("entityKey");
   const noteId = searchParams.get("noteId");
@@ -220,7 +221,11 @@ export function ExperiencesComposePage() {
   }
 
   const busy = status.kind === "checking";
-  const canAct = body.trim().length > 0 && !busy;
+  // A kept note still in its pause: the same words cannot be shared before
+  // the time is up (the button says when); edited words check afresh.
+  const pauseUntil = note?.cooldown && composer.heldCooldown() ? note.cooldown.until : 0;
+  const pausing = pauseUntil > Date.now();
+  const canAct = body.trim().length > 0 && !busy && !pausing;
   // A key the registry no longer lists (deduped room, placeholder, typo URL):
   // say so, like the entity page does — never an editor the server refuses.
   const unlisted =
@@ -457,6 +462,14 @@ export function ExperiencesComposePage() {
             </div>
           )}
 
+          {pausing && !notice && (
+            <div className="banner banner--warning" role="status">
+              <span>
+                Cooling · you can share these words in {formatRemaining(pauseUntil - Date.now())}. Edit them
+                to say it differently and check again now.
+              </span>
+            </div>
+          )}
           {notice && (
             <div className={`banner banner--${notice.tone === "danger" ? "danger" : "warning"}`}>
               <div>
@@ -486,10 +499,7 @@ export function ExperiencesComposePage() {
               onKeepPrivate={() => void savePrivately()}
             />
           ) : status.kind === "cooldown" ? (
-            <CooldownPanel
-              retryAt={status.retryAt}
-              onRecheck={() => void composer.recheckAfterCooldown()}
-            />
+            <CooldownPanel retryAt={status.retryAt} onOk={() => navigate("/experiences/mine", { replace: true })} />
           ) : (
             <div className="card-actions compose-actions">
               <button
@@ -497,7 +507,13 @@ export function ExperiencesComposePage() {
                 disabled={!canAct}
                 onClick={() => void composer.publish()}
               >
-                {busy ? "Checking…" : "Continue to share"}
+                {busy
+                  ? "Checking…"
+                  : pausing
+                    ? `Share in ${formatRemaining(pauseUntil - Date.now())}`
+                    : note?.cooldown
+                      ? "Share now"
+                      : "Continue to share"}
               </button>
               <button
                 className="btn btn--ghost"
@@ -563,32 +579,22 @@ function NudgePreflight({
   );
 }
 
-function CooldownPanel({ retryAt, onRecheck }: { retryAt: number; onRecheck: () => void }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(t);
-  }, []);
-  const remaining = retryAt - now;
-  const ready = remaining <= 0;
+function CooldownPanel({ retryAt, onOk }: { retryAt: number; onOk: () => void }) {
+  const remaining = Math.max(0, retryAt - Date.now());
   return (
     <section className="card nudge" aria-label="Cooling off">
       <span className="eyebrow">Publishing can wait</span>
       <p style={{ marginTop: 0 }}>
-        {ready
-          ? "The pause is over. This can still be your Experience — decide again whenever you like."
-          : `This can still be your Experience. It has been kept private on this device for now; you can share it again in ${formatRemaining(remaining)}.`}
+        Your words are kept in your private notes on this device. You can share them in{" "}
+        {formatRemaining(remaining)} — or edit them to say it differently and check again sooner.
       </p>
       <p className="text-3" style={{ marginTop: 0 }}>
         This is a pause, not a judgment about your experience.
       </p>
       <div className="card-actions compose-actions">
-        <button className="btn btn--primary" disabled={!ready} onClick={onRecheck}>
-          {ready ? "Run the check again" : `Check again in ${formatRemaining(remaining)}`}
+        <button className="btn btn--primary" onClick={onOk}>
+          OK
         </button>
-        <Link className="btn btn--ghost" to="/experiences/mine">
-          Your notes &amp; posts
-        </Link>
       </div>
     </section>
   );
