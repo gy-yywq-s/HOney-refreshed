@@ -160,9 +160,6 @@ export function ExperiencesComposePage() {
             <Link className="btn btn--primary" to="/experiences/mine">
               Your notes &amp; posts
             </Link>
-            <Link className="btn btn--ghost" to="/experiences">
-              Back to Experiences
-            </Link>
           </div>
         </section>
       </div>
@@ -185,9 +182,6 @@ export function ExperiencesComposePage() {
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/mine">
               Your notes &amp; posts
-            </Link>
-            <Link className="btn btn--ghost" to="/experiences">
-              Back to Experiences
             </Link>
           </div>
         </section>

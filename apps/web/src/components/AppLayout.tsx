@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { Link, Navigate, NavLink, Outlet, matchPath, useLocation } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from "react-router-dom";
+import { isKnownRoute, parentOf, rootOf, titleOf } from "../lib/navigation";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { Me } from "../api/types";
@@ -16,27 +17,86 @@ export function RequireAuth() {
   return <AppLayout />;
 }
 
-/** Topbar context per route — chrome only, no behavior. */
-
-// Every real route pattern; a path matching none is the 404 and marks no tab.
-const KNOWN_ROUTES = [
-  "/home", "/timetable", "/history", "/history/lesson/:id", "/experiences", "/experiences/explore",
-  "/experiences/why", "/experiences/mine", "/experiences/compose", "/experiences/teacher/:id",
-  "/experiences/course/:id", "/experiences/room/:id", "/experiences/dish/:id",
-  "/experiences/place/:id", "/experiences/food/:id", "/settings", "/dash",
-];
-function isKnownRoute(path: string): boolean {
-  return KNOWN_ROUTES.some((p) => matchPath({ path: p, end: true }, path) !== null);
-}
+/** The tab of the screen's ROOT ancestor (History lights Timetable). */
 function tabIndex(path: string, tabs: { to: string }[]): number {
-  if (!isKnownRoute(path)) return -1;
-  return tabs.findIndex((tab) => path === tab.to || path.startsWith(`${tab.to}/`));
+  const root = rootOf(path);
+  return root ? tabs.findIndex((tab) => tab.to === root) : -1;
 }
+
+// In-app history, one entry per visited screen, so the back bar can POP
+// when the parent is the previous entry (the native feel) and otherwise
+// go up by REPLACING — never pushing a loop of parent/child/parent.
+const stack: string[] = [];
+
+const EDGE_PX = 28; // a swipe that starts this close to the left edge
+const SWIPE_PX = 72; // and travels this far right, mostly horizontally
 
 function AppLayout() {
   const { me, loading, error, refreshMe } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const navType = useNavigationType();
   const [themeOpen, setThemeOpen] = useState(false);
+
+  const parent = parentOf(location.pathname, location.search);
+  const parentRef = useRef(parent);
+  parentRef.current = parent;
+
+  useEffect(() => {
+    const here = location.pathname;
+    if (navType === "PUSH") stack.push(here);
+    else if (navType === "REPLACE") stack[Math.max(0, stack.length - 1)] = here;
+    else if (stack.length >= 2 && stack[stack.length - 2] === here) stack.pop();
+    else if (stack[stack.length - 1] !== here) stack.push(here);
+  }, [location.key, location.pathname, navType]);
+
+  const goUp = useCallback(() => {
+    const up = parentRef.current;
+    if (!up) return;
+    if (stack.length >= 2 && stack[stack.length - 2] === up.to) navigate(-1);
+    else navigate(up.to, { replace: true });
+  }, [navigate]);
+
+  // Left-edge swipe = up one level (standalone iOS has no browser gesture;
+  // in a browser the OS consumes the edge before we see it).
+  useEffect(() => {
+    let startX = 0;
+    let startY = 0;
+    let armed = false;
+    let fired = false;
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0]!;
+      const target = e.target as Element | null;
+      armed = t.clientX <= EDGE_PX && !!parentRef.current && !target?.closest(".modal-overlay");
+      fired = false;
+      startX = t.clientX;
+      startY = t.clientY;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!armed || fired) return;
+      const t = e.touches[0]!;
+      const dx = t.clientX - startX;
+      const dy = Math.abs(t.clientY - startY);
+      if (dy > 48 && dy > dx) armed = false;
+      else if (dx >= SWIPE_PX && dx > dy * 1.5) {
+        fired = true;
+        goUp();
+      }
+    };
+    const onEnd = () => {
+      armed = false;
+    };
+    document.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: true });
+    document.addEventListener("touchend", onEnd, { passive: true });
+    document.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+    };
+  }, [goUp]);
 
   // The scroll owner persists across routes now (§16.14.3), so each route
   // change resets it to the top (review M3). Instant, not smooth: pages that
@@ -44,20 +104,8 @@ function AppLayout() {
   useEffect(() => {
     const el = document.querySelector<HTMLElement>("[data-scroll-owner]");
     el?.scrollTo({ top: 0, behavior: "instant" });
-    const p = location.pathname;
-    const name =
-      p === "/home" ? "Home"
-      : p === "/timetable" ? "Timetable"
-      : p === "/history" ? "History"
-      : p === "/settings" ? "Settings"
-      : p === "/dash" ? "Dash"
-      : p.startsWith("/experiences/compose") ? "Share an experience"
-      : p.startsWith("/experiences/explore") ? "Find someone or something"
-      : p.startsWith("/experiences/mine") ? "Your notes & posts"
-      : p.startsWith("/experiences/why") ? "Why this space exists"
-      : p.startsWith("/experiences") ? "Experiences"
-      : null;
-    document.title = name ? `${name} · HOney` : "HOney";
+    const name = titleOf(location.pathname);
+    if (name) document.title = `${name} · HOney`;
   }, [location.pathname]);
 
   if (!me) {
@@ -100,6 +148,7 @@ function AppLayout() {
             <NavLink
               key={tab.to}
               to={tab.to}
+              replace
               className={({ isActive }) => (isActive && known ? "nav-item is-active" : "nav-item")}
               aria-current={undefined}
             >
@@ -133,6 +182,23 @@ function AppLayout() {
       <main className="main" id="main" data-scroll-owner tabIndex={-1}>
         <PullToRefresh />
         <div className="view" key={location.pathname}>
+          {parent && (
+            <nav className="pagebar" aria-label="Up one level">
+              <Link
+                className="pagebar__back"
+                to={parent.to}
+                onClick={(e) => {
+                  e.preventDefault();
+                  goUp();
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M15 5l-7 7 7 7" />
+                </svg>
+                <span>{parent.title}</span>
+              </Link>
+            </nav>
+          )}
           <Outlet />
         </div>
       </main>
@@ -149,6 +215,7 @@ function AppLayout() {
           <NavLink
             key={tab.to}
             to={tab.to}
+            replace
             className={({ isActive }) =>
               isActive && known ? "mobile-nav__item is-active" : "mobile-nav__item"
             }

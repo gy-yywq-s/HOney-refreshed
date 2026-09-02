@@ -3,7 +3,6 @@
 // This page never claims teachers can't see posts, and never promises
 // absolute anonymity — copy stays inside what the implementation guarantees.
 
-import { Link } from "react-router-dom";
 
 export function ExperiencesWhyPage() {
   return (
@@ -97,9 +96,6 @@ export function ExperiencesWhyPage() {
         </ul>
       </section>
 
-      <footer className="doc__footer">
-        <Link className="btn btn--ghost" to="/experiences">Back to Experiences</Link>
-      </footer>
     </article>
   );
 }

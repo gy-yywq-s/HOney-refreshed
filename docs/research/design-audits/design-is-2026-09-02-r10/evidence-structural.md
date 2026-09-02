@@ -658,3 +658,323 @@ Screenshots (53): `r10-struct-404_*.png`, `r10-struct-landing-{320x568,360x620,3
 `r10-struct-compose-{chooser,lesson-delay,lesson-abort,nav-320x568,nav-390x844,nav-430x932}.png`,
 `r10-struct-chooser-historyfail.png`, `r10-struct-entity-{counts,stats-18-3,stats-1-1,stats-18-0}.png`,
 `r10-struct-me-{fail,succeed}.png`, `r10-struct-mine-{empty,seeded}.png`, `r10-struct-ptr.png`.
+
+---
+
+## 7. Timetable on `bc3b7c9` (appended after the orchestrator's follow-up)
+
+Served bundle `index-4oNbE07m.js` / `index-C9l5CGbD.css`, confirmed by `curl` before each probe.
+`git diff --stat 41a01fe..bc3b7c9 -- apps/web/src` touches `Modal.tsx`, `PullToHistory.tsx`
+(new), `PullToRefresh.tsx`, `lib/format.ts`, `lib/refresh.ts`, `pages/TimetablePage.tsx`,
+`styles/{components,features,tokens}.css` — everything else is still byte-identical to
+`41a01fe`, so §0–§6 stand unchanged for every non-Timetable surface. Asia/Shanghai, wall clock
+12:10–12:30 CST (P1 ended). **Safety: `POST /api/sync` was intercepted and fulfilled locally by
+the probe, so the school portal was never contacted; exactly one sync release was performed.**
+Amended constitution read from `git show bc3b7c9 -- docs/product/product-and-style-constitution.md`.
+
+### (a) The top bar
+
+### [S-R10-23] Structure and geometry
+`header.daynav` (was a `div`), `background rgb(244,246,247)` (opaque), `z-index 12`,
+`padding-top 8px` + `var(--inset-top)`, **height 58 px on every phone** (62 px at 1280).
+
+| viewport | `position` | bar top | bar height | h1 y |
+|---|---|---|---|---|
+| 320×568 | **static** | 0 | 58 | +9 |
+| 360×620 | **static** | 0 | 58 | +9 |
+| 390×620 | **static** | 0 | 58 | +9 |
+| 375×667 | sticky | 0 | 58 | +9 |
+| 390×844 | sticky | 0 | 58 | +9 |
+| 430×932 | sticky | 0 | 58 | +9 |
+| 1280×800 | sticky | 32 | 62 | +41 |
+
+The date **is** the `h1`: `h1.daynav__date` holds `span.daynav__date-long`,
+`span.daynav__date-short[aria-hidden]`, an `svg.daynav__caret` and
+`input.daynav__picker[type=date]`. The input is `position:absolute`, `opacity:0`, and its box
+covers the h1 exactly (`coversH1: true` on 7/7 viewports); `elementFromPoint` at the h1's centre
+returns `INPUT.daynav__picker` on 7/7 — a tap on the heading opens the platform calendar, as the
+constitution states. At ≤359 px the long span becomes sr-only
+(`position:absolute; clip:rect(0,0,0,0)`, `features.css:301-306`) and the short span shows, so
+the accessible name stays "Wednesday, 2 September" while the sighted label reads "Wed 2 Sept" —
+no duplication (`r10-struct-h1.log`). Probe `r10-struct-bar.log`, screenshots
+`r10-struct-bar-*.png`, `r10-struct-h1-*.png`.
+
+### [S-R10-24] What the bar holds, what was removed, and what is now unreachable by sight
+Six controls exist in the bar; on phones **three are visible**:
+
+| control | 320–430 phones | 1280 desktop |
+|---|---|---|
+| `button "Previous day"` | visible 44×44 | visible 44×44 |
+| `input.daynav__picker "Pick a date (…)"` | invisible (opacity 0) but hit-testable, 196–306×44 | same |
+| `button "Next day"` | visible 44×44 | visible 44×44 |
+| `a "History"` (in `.daynav__row`) | **`display:none`** (0×0) | visible 67×36 |
+| `button "Sync now"` (in `.daynav__row`) | **`display:none`** (0×0) | visible 79×36 |
+| `a.daynav__history-sr "History"` | 1×1, `clip:rect(0,0,0,0)` — **revealed only on `:focus-visible`** (72×32) | `display:none` |
+
+Removed from the phone screen (all confirmed absent from the DOM/text):
+`p.timetable-note` (**gone**), the "P1–P6 are the school's six lesson periods." clause
+(**absent**), the "Last synced …" caption (**absent**), and every visible `.caption`
+(`captions: []` on 6/6 phone cells). `span.daynav__state` still holds "Synced 11 min ago" but
+lives inside the hidden `.daynav__row`, so **on phones there is no visible indication of how
+fresh the timetable is** — the only surviving sync signal is the pull gesture's own label.
+
+Reachability on phones (all visible interactive elements on `/timetable`, 6/6 phone cells):
+`Previous day`, `Next day`, `Pick a date` (invisible but hit-testable), and the three
+`.lesson-block`s. **No visible control reaches History; no control of any kind reaches Sync now.**
+History has a keyboard path (the focus-revealed sr link, Tab stop 8 at 390×844 —
+`r10-struct-taborder.log`); **Sync now has no keyboard path at all** — the two gesture handlers
+are `touchstart/touchmove/touchend` only (`PullToRefresh.tsx:123-126`,
+`PullToHistory.tsx:82-85`). Probe `r10-struct-bar.log`, `r10-struct-taborder.log`.
+
+### [S-R10-25] NEW — a no-touch window narrower than 700 px loses both actions completely
+`.daynav__row { display: none }` sits in `@media (max-width: 700px)`
+(`features.css:253,280-281`) — a **width** query, not a pointer query — while both gestures are
+touch-only. In a desktop context with `hasTouch:false`:
+
+| window | `.daynav__row` | History visible | Sync now visible | sr link |
+|---|---|---|---|---|
+| 600×800 | **none** | **false** | **false** | not focused → invisible |
+| 699×800 | **none** | **false** | **false** | — |
+| 701×800 | flex | true | true | `display:none` |
+| 900/960/1280×800 | flex | true | true | `display:none` |
+
+A mouse user in a window ≤700 px wide (a resized browser, a split-screen tablet, a small
+Chromebook) has **no way to sync the timetable** and reaches History only by tabbing to a
+1×1 clipped link or by typing the URL. Probe `r10-struct-narrowdesk.log`.
+
+### [S-R10-26] NEW — the native date input costs four consecutive Tab stops
+Tab order on `/timetable`, 390×844 (and identically at 320×568, offset by the skip link):
+
+```
+1. a.skip-link "Skip to content" [134x48]
+2. button.daynav__arrow "Previous day" [44x44]
+3. input.daynav__picker "Pick a date (Wednesday, 2 …)" [266x44]
+4. input.daynav__picker  (same element)
+5. input.daynav__picker  (same element)
+6. input.daynav__picker  (same element)
+7. button.daynav__arrow "Next day" [44x44]
+8. a.daynav__history-sr "History" [72x32]        <- revealed by focus
+9-11. button.lesson-block ×3
+12. a.mobile-nav__item "Home"
+```
+
+`<input type="date">` exposes its day / month / year segments as separate sequential-focus
+positions, so crossing the heading takes **four** presses. The r8/r9 daynav comment
+("One visible affordance, one Tab stop") no longer describes the built screen. The
+focus-revealed History link measures **72×32** — below the app's 44 px control floor, though it
+is keyboard-only. Probe `r10-struct-taborder.log`.
+
+### (b) The two gestures
+
+### [S-R10-27] Pull-to-refresh — the labels do read in order
+Thresholds `REFRESH_AT = 64`, `SYNC_AT = 132` damped px, damping **0.45**
+(`PullToRefresh.tsx:15-16,95`), so a finger must travel **142 px** to reach "refresh" and
+**293 px** to reach "sync". Measured with real CDP touch events at 390×844, sampling the label
+every 20 px of finger travel:
+
+| finger px | damped px | label |
+|---|---|---|
+| 0–20 | 0–9 | `""` |
+| 40–140 | 18–63 | **"Pull to refresh"** |
+| 160–280 | 72–126 | **"Release to refresh · pull further to sync"** |
+| 300–340 | 135–153 | **"Release to sync with school"** |
+
+`ownerScrollTop` stayed **0 at every sample** — the pull never scrolls the owner. Releases:
+
+| release at | label after release | network |
+|---|---|---|
+| 27 damped (cancel) | none ever shown | **0 requests** |
+| 72 damped (refresh) | "Refreshing…" | `GET /api/timetable?date=2026-09-02` — **no `POST /api/sync`** |
+| 153 damped (sync) | "Syncing with school…" | **exactly one** `POST /api/sync` (intercepted) + `GET /api/timetable` |
+
+The indicator resets to `opacity 0` / empty label after `MIN_SPIN_MS = 650`. The second stage
+appears only when a sync handler is registered (`syncAvailable()`, `refresh.ts:27`), which the
+Timetable does via `useSyncHandler` (`TimetablePage.tsx:103-106`). Probe
+`r10-struct-gestures.log`; screenshot `r10-struct-ptr-sync.png`.
+
+### [S-R10-28] Pull-up for History — the three guards all hold
+`SHOW_AT 24`, `OPEN_AT 110` damped, `MIN_MS 220`, damping 0.45
+(`PullToHistory.tsx:13-17`) → **244 px of finger** and a gesture longer than a flick.
+
+| case | measured | result |
+|---|---|---|
+| finger 160 px (72 damped), slow | label stays "Pull up for History", `data-ready` absent, `opacity 0` | **no navigation**, path `/timetable` |
+| finger 260 px (117 damped), >220 ms | label flips to **"Release to open History"**, `data-ready` set, mark lifted `translateY(-117px)`, `opacity 1` | **navigates to `/history`** |
+| finger 260 px as a **flick** (<220 ms) | label reached "Release to open History" | **no navigation** — path stays `/timetable` |
+| owner **not** at its end (scrollTop 0 of max 86) | the drag scrolls the owner to 86 normally | **no navigation** |
+
+`ownerScrollTop` unchanged (0) throughout the armed cases; the mark is `aria-hidden="true"` and
+carries no focusable node, so the gesture has no keyboard or AT equivalent. Note that on the
+phones where the canvas fits (`vScroll = 0`, 7/13 devices) `atEnd()` is true **at scrollTop 0**,
+so at rest the same finger position arms pull-down-to-refresh and pull-up-for-History with no
+visible affordance for either. Desktop keeps both buttons and mounts `.ptr` / `.pullup` inertly
+(touch-only listeners). Probe `r10-struct-gestures.log`; screenshots `r10-struct-pullup-*.png`.
+
+### (c) Canvas fit vs the amended constitution
+
+### [S-R10-29] The floor and the fit hold as amended; six viewports still scroll
+Amended decision (`bc3b7c9`, constitution §2): "the canvas fills the phone's frame and never
+compresses below 560 px (desktop 656 px). Every notched iPhone in standalone mode fits with zero
+page scroll; taller phones get a taller canvas. Compact heights degrade by documented notches
+(540 px, 450 px on SE-class widths)."
+
+| device | computed `min-height` | rendered height | blank below | gap to nav | page scroll |
+|---|---|---|---|---|---|
+| iPhone SE1 320×568 | 450 (documented notch) | 450 | 52 | **−22** | 38 |
+| iPhone SE2/8 375×667 | 560 | 560 | 41 | **−33** | 49 |
+| Android narrow 360×800 | 560 | 654 | 80 | +6 | **0** |
+| Pixel 412×915 | 560 | 769 | 80 | +6 | **0** |
+| iPhone 13/14 Pro 390×844 | 560 | 698 | 80 | +6 | **0** |
+| iPhone 15/16 Pro 393×852 | 560 | 706 | 80 | +6 | **0** |
+| iPhone 17 Pro 402×874 | 560 | 728 | 80 | +6 | **0** |
+| 13–16 Pro Max 430×932 | 560 | 786 | 80 | +6 | **0** |
+| 16/17 Pro Max 440×956 | 560 | 810 | 80 | +6 | **0** |
+| compact 320×600 | 450 (notch) | 450 | 84 | +10 | 6 |
+| compact 360×620 | 450 (notch) | 464 | 90 | +16 | **0** |
+| compact 390×620 | 540 (notch) | 540 | 14 | **−60** | 76 |
+| desktop 1280×800 | 656 | 656 | 34 | n/a | 76 |
+
+**Standalone emulation** (`--inset-top` / `--inset-bottom` injected as the real safe areas):
+
+| notched iPhone | insets | rendered canvas | page scroll |
+|---|---|---|---|
+| 390×844 | 47/34 | 617 | **0** ✅ |
+| 393×852 | 59/34 | 613 | **0** ✅ |
+| 402×874 | 59/34 | 635 | **0** ✅ |
+| 430×932 | 59/34 | 693 | **0** ✅ |
+| 440×956 | 59/34 | 717 | **0** ✅ |
+| Pixel 412×915 | 24/24 | 721 | **0** ✅ |
+| SE2/8 375×667 (not notched) | 20/0 | 560 | **69** |
+| SE1 320×568 (not notched) | 20/0 | 450 | **58** |
+
+So the amended claim is **CONFIRMED exactly as worded**: every *notched* iPhone fits with zero
+page scroll in standalone mode, the canvas never renders below its documented floor, and taller
+phones get a taller canvas (654 → 810 px). The 560/540/450/656 notches are all honoured. The
+residue the wording leaves open: **6 of 13 viewports still scroll** (320×568 38 px, 375×667
+49 px, 320×600 6 px, 390×620 76 px, desktop 76 px, and 375×667 rises to 69 px in standalone),
+and on 3 of them the canvas bottom sits **below the fixed nav's top** (−22, −33, −60 px), i.e.
+the last hour of the day is under the nav until the student scrolls. Horizontal overflow **0 on
+21/21 cells**; 0 lesson blocks clipped out of the canvas on 21/21. Probe
+`r10-struct-canvas.log`; screenshots `r10-struct-canvas-standalone-*.png`.
+
+### [S-R10-30] The day range widens to the hour — confirmed
+`rangeFor()` (`TimetablePage.tsx:283-292`) expands the default 09:00–20:00 to the floor/ceil hour
+of the earliest/latest lesson. With `/api/timetable` fulfilled with a 07:20–08:10 lesson and a
+20:30–21:40 lesson at 390×844:
+
+```
+hour marks: 07:00 08:00 09:00 10:00 11:00 12:00 13:00 14:00 15:00 16:00 17:00 18:00 19:00 20:00 21:00 22:00
+blocks:     "Early Study 07:20–08:10"  top 16px,  h 39px
+            "Evening Study 20:30–…"    top 627px, h 54px      canvas 698px
+clipped out of the canvas: 0
+```
+
+Both out-of-range lessons render fully inside the canvas — "a clipped block is not an option"
+holds. Probe `r10-struct-canvas.log`; screenshot `r10-struct-canvas-widened.png`.
+
+### (d) Landing, Tab 1 and h1-in-view on `bc3b7c9`
+
+### [S-R10-31] The lesson-day heading is now clipped too; the sparse day still clamps; Tab 1 still misses the skip link
+Cold loads, `scrollIntoView` monkey-patched. The bar is `static` at ≤620 heights, so it scrolls
+away with the landing.
+
+| viewport | date | scrollTop / max | h1 y / bottom | bar y | block 1 y | `scrollIntoView` | Tab 1 | Tab 2 |
+|---|---|---|---|---|---|---|---|---|
+| 320×568 | today | 0 / 38 | **+9** / 53 | 0 | 67 | 1 | daynav arrow | date input |
+| 320×568 | 08-24 | 17 / 86 | **−8** / 36 | −17 | 98 | 1 | daynav arrow | date input |
+| 320×568 | 08-25 sparse | **86 / 86** | **−77** / −33 | −86 | 211 | 1 | daynav arrow | date input |
+| 360×620 | today | 0 / 0 | **+9** / 53 | 0 | 67 | 1 | daynav arrow | date input |
+| 360×620 | 08-24 | 20 / 34 | **−11** / 33 | −20 | 95 | 1 | daynav arrow | date input |
+| 360×620 | 08-25 sparse | **34 / 34** | **−25** / 19 | −34 | 263 | 1 | daynav arrow | date input |
+| 390×620 | today | 0 / 76 | **+9** / 53 | 0 | 67 | 1 | daynav arrow | date input |
+| 390×620 | 08-24 | 19 / 124 | **−10** / 34 | −19 | 96 | 1 | daynav arrow | date input |
+| 390×620 | 08-25 sparse | **124 / 124** | **−115** / −71 | −124 | 210 | 1 | daynav arrow | date input |
+| 375×667 | all three | 0 / 49–97 | **+9** / 53 | 0 | 67–343 | **0** | **skip link** | daynav arrow |
+| 390×844 | all three | 0 / 0 | **+9** / 53 | 0 | 67–380 | **0** | **skip link** | daynav arrow |
+
+Facts: (i) **today's landing is now a no-op** at compact heights — scrollTop 0 with the heading
+at +9, because today's first lesson already sits at y 67; (ii) on an ordinary 3-lesson day
+(2026-08-24) the landing scrolls 17–20 px and the h1's **top edge leaves the viewport on 3/3
+compact viewports** (27–36 px of a 44 px heading remain); (iii) the **sparse day still clamps to
+maximum scroll** on 3/3 compact viewports with the heading fully or nearly gone (−77 / −25 /
+−115) — `[S-R10-9]` unchanged across three rewrites; (iv) **Tab 1 is the daynav arrow on 9/9
+compact cells**, the skip link is still stepped over (`[S-R10-10]` unchanged), and Tab 2 is now
+the date input rather than a second daynav control; (v) at 375×667 and 390×844 the landing is
+gated out entirely, `scrollIntoView` = 0, and Tab 1 is the skip link 6/6.
+Probe `r10-struct-bar.log` (LANDING rows).
+
+### (e) Retry landing on `bc3b7c9`
+
+### [S-R10-32] CONFIRMED, both outcomes
+`/api/timetable` aborted forever, then once; "Try again" activated with Enter at 390×844:
+
+```
+fail-again : scrollTop 0 -> 0 · activeElement div.focus-landing[aria-label="Day timeline"][data-landed] · outline rgb(51,102,124) solid 3px
+succeed    : scrollTop 0 -> 0 · activeElement div.focus-landing[aria-label="Day timeline"][data-landed] · outline rgb(51,102,124) solid 3px
+```
+
+The landing region still wraps both branches (`TimetablePage.tsx:205-215`). Probe
+`r10-struct-bar.log` (RETRY rows).
+
+### (f) The `Modal.tsx` change
+
+### [S-R10-33] Dialog exits still restore the opener 21/21
+`Modal.tsx` now reads `onClose` through a ref and its effect deps are `[]`
+(`Modal.tsx:18-20,31,57`). Re-running the full dialog sweep on `bc3b7c9` — 7 dialogs ×
+{Esc, ×, overlay} plus Cancel on the two `ConfirmDialog`s — reproduces §[S-R10-3] exactly:
+**21/21** exits leave `activeElement` on the opener with `#root` no longer `inert`; the two
+Cancel cells also restore; the five dialogs without a Cancel are unchanged. The Report dialog
+still returns to `button.react-btn--more "More options"`. Probe
+`r10-struct-dialogs-bc3b7c9.log` (28 cells).
+
+### (g) Census delta for `/timetable`
+
+### [S-R10-34] Back to the `41a01fe` totals, one node shallower
+`visible/total`, in-viewport rule as in §1.1:
+
+| surface | r9 `eede644` | `41a01fe` | `9c3b23f` | **`bc3b7c9`** |
+|---|---|---|---|---|
+| Timetable today (390×844) | –/20 | –/20 | 12/19 | **11/20** |
+| Timetable 2026-08-24 | –/21 | –/21 | 13/20 | **12/21** |
+| Timetable empty (08-22) | –/18 | –/18 | 10/17 | **9/18** |
+
+The control that returned is `a.daynav__history-sr` (added in `bd54519`); the one that left in
+`9c3b23f` was the old "Pick a date" button, replaced by the input. Depth from `main#main` to the
+first `.lesson-block` **6** (r9 6, `9c3b23f` 7); max document depth **13** (r9 14);
+`[data-scroll-owner]` **1**; `activeElement` on arrival **body** 6/6;
+`aria-live` **0**; `role="status"` 1 (2 on the empty day). Identical at 320×568.
+Probe `r10-struct-bar.log` (CENSUS rows).
+
+### (h) Served CSS, dangling comments, reverse sweep on `bc3b7c9`
+
+### [S-R10-35] `tokens.css` grew two tokens; nothing dead was added
+Served sheet `index-C9l5CGbD.css`, **43,020 B** (`41a01fe` 41,080), **410 rules** (390),
+**30 at-rules** (28), **232 distinct classes** (225), **6 `@keyframes`**, **7 `@font-face`**,
+**0 orphan declarations**, **0 within-context duplicate selectors** (the 7 `@font-face` heads
+aside). `check-css.mjs` **exit 0** on the served sheet and on `dist/assets`.
+
+- **Dangling trailing comments: 9** — unchanged in count and identity, only renumbered:
+  `components.css:527, 728, 887, 936`; `features.css:84, 1282, 1388, 1408, 1414`.
+  `features.css:84` (the orphaned `.nextlesson__wash` transition comment) is still there.
+- **Consumer-less served classes: 7 raw / 0 adjusted** — the same runtime-composed
+  `chip--{ok,danger,muted}` and `swatch--{stone,white,mist,night}`.
+- **TSX→CSS reverse sweep: 7 raw / 4 real** — `login__card`, `post__dot`, `home`, `home-head`;
+  every new class (`daynav__date-long`, `daynav__date-short`, `daynav__caret`, `daynav__row`,
+  `daynav__state`, `daynav__history-sr`, `daynav__today`, `pullup`, `pullup__mark`) has a served
+  rule, and `schedule-header` / `timetable-note` left both source and sheet cleanly.
+- `tsc --noEmit --noUnusedLocals --noUnusedParameters` → **exit 0, 0 lines**.
+- Repeated families unchanged: 11 armed "Try again" + 1 unarmed shell "Retry";
+  `useRetryFocus` 8 call sites; `.focus-landing` 10; `role="alert"` 17; `<Skeleton>` 12.
+
+Probes `r10-struct-static-bc3b7c9.log`, `r10-struct-css.log`; sheet `r10-served-bc3b7c9.css`.
+
+### Probe inventory for §7
+
+`r10-struct-bar.js` / `.log` (bar geometry, landing, retry, census) · `r10-struct-h1.js` / `.log`
+(the two date spans) · `r10-struct-gestures.js` / `.log` (PTR ladder + pull-up, sync intercepted)
+· `r10-struct-canvas.js` / `.log` (13-device canvas fit, standalone insets, widened day range) ·
+`r10-struct-taborder.js` / `.log` · `r10-struct-narrowdesk.js` / `.log` ·
+`r10-struct-dialogs-bc3b7c9.log` · `r10-struct-static-bc3b7c9.log` · `r10-served-bc3b7c9.css`.
+Screenshots: `r10-struct-bar-{320x568,360x620,390x620,375x667,390x844,430x932,1280x800}.png`,
+`r10-struct-h1-*.png`, `r10-struct-ptr-sync.png`, `r10-struct-pullup-{below,above,above}.png`,
+`r10-struct-canvas-standalone-*.png`, `r10-struct-canvas-widened.png`.

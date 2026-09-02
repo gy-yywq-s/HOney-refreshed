@@ -598,6 +598,44 @@ a.btn:hover {
   }
 }
 
+/* ── Back bar: "‹ Parent" on every screen below a root (2026-09-02) ──── */
+.pagebar {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0 0 var(--sp-2);
+}
+.pagebar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: 44px;
+  margin-left: calc(-1 * var(--sp-2));
+  padding: 0 var(--sp-3) 0 var(--sp-1);
+  border-radius: 99px;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.pagebar__back:hover {
+  background: var(--soft);
+}
+@media (max-width: 960px) {
+  /* Phones: the bar is the screen's top edge — flush under the status bar,
+     edge to edge, sticky while the screen scrolls beneath it. */
+  .main:has(> .view > .pagebar) {
+    padding-top: 0;
+  }
+  .pagebar {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    background: var(--surface);
+    margin: 0 calc(-1 * var(--sp-4)) var(--sp-2);
+    padding: calc(var(--inset-top) + var(--sp-1)) var(--sp-3) var(--sp-1);
+  }
+}
+
 /* ── Pull up for History (timetable, phones) ─────────────────────────── */
 .pullup {
   position: fixed;

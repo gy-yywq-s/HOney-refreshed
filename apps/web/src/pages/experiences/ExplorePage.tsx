@@ -75,9 +75,6 @@ export function ExperiencesExplorePage() {
             Teachers, courses, places and food are all listed below — typing only narrows the list.
           </p>
         </div>
-        <Link className="btn btn--ghost" to="/experiences">
-          Back to Experiences
-        </Link>
       </header>
 
       <input
