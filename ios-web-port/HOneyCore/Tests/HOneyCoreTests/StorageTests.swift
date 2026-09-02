@@ -126,7 +126,7 @@ final class LocalStoresTests: XCTestCase {
         XCTAssertFalse(prefs.stayConnectedWanted)
         XCTAssertEqual(prefs.feedScope, .myClasses)
         XCTAssertEqual(prefs.language, .system)
-        XCTAssertEqual(prefs.appearance, .system)
+        XCTAssertNil(prefs.background)
         prefs.rememberContext(RecentContext(name: "朱昂明", type: .teacher, entityId: "t1"))
         prefs.rememberContext(RecentContext(name: "309", type: .room, entityId: "r1"))
         prefs.rememberContext(RecentContext(name: "朱昂明", type: .teacher, entityId: "t1"))

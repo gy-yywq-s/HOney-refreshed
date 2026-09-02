@@ -86,10 +86,6 @@ public enum AccountFiles {
 
 // MARK: - Preferences
 
-public enum AppearanceChoice: String, Sendable, Codable, CaseIterable, Equatable {
-    case system, light, dark
-}
-
 public struct RecentContext: Codable, Sendable, Equatable, Hashable, Identifiable {
     public var name: String
     public var type: EntityType
@@ -126,7 +122,11 @@ public final class Preferences: @unchecked Sendable {
     private enum Key {
         static let stayOff = "honey.school.stayOff"
         static let language = "honey.lang"
-        static let appearance = "honey.appearance"
+        // The Web's own keys (lib/theme.ts, lib/textSize.ts), so a future
+        // device bundle can carry the choice across.
+        static let background = "honey.theme.surface"
+        static let accent = "honey.theme.accent"
+        static let textSize = "honey.textsize"
         static let scope = "honey.exp.scope"
         static let recent = "honey.exp.recent"
         static let exploreCategory = "honey.explore.category"
@@ -153,9 +153,29 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue.rawValue, forKey: Key.language) }
     }
 
-    public var appearance: AppearanceChoice {
-        get { AppearanceChoice(rawValue: defaults.string(forKey: Key.appearance) ?? "") ?? .system }
-        set { defaults.set(newValue.rawValue, forKey: Key.appearance) }
+    /// The chosen Background, or nil until the student chooses one (the Web
+    /// boot script then follows the system's dark preference: Night or Stone).
+    public var background: HOneyBackground? {
+        get { defaults.string(forKey: Key.background).flatMap(HOneyBackground.init(rawValue:)) }
+        set {
+            if let newValue { defaults.set(newValue.rawValue, forKey: Key.background) } else { defaults.removeObject(forKey: Key.background) }
+        }
+    }
+
+    public var accent: HOneyAccent {
+        get { HOneyAccent(rawValue: defaults.string(forKey: Key.accent) ?? "") ?? .harbour }
+        set { defaults.set(newValue.rawValue, forKey: Key.accent) }
+    }
+
+    public var textSize: HOneyTextSize {
+        get { HOneyTextSize(rawValue: defaults.string(forKey: Key.textSize) ?? "") ?? .default }
+        set { defaults.set(newValue.rawValue, forKey: Key.textSize) }
+    }
+
+    /// The Web boot rule: a saved choice wins; otherwise the system's dark
+    /// preference picks Night, and Stone is the default.
+    public func effectiveBackground(systemPrefersDark: Bool) -> HOneyBackground {
+        background ?? (systemPrefersDark ? .night : .stone)
     }
 
     // Account-scoped

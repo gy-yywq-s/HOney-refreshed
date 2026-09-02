@@ -52,14 +52,14 @@ final class AccountScopeTests: XCTestCase {
         prefs.firstPublishDisclosureSeen = true
         prefs.feedScope = .school
         prefs.exploreCategory = .dish
-        prefs.appearance = .dark
+        prefs.background = .night
 
         prefs.setAccount("h_b")
         XCTAssertEqual(prefs.recentContexts, [])
         XCTAssertFalse(prefs.firstPublishDisclosureSeen, "the disclosure is per account")
         XCTAssertEqual(prefs.feedScope, .myClasses)
         XCTAssertEqual(prefs.exploreCategory, .teacher)
-        XCTAssertEqual(prefs.appearance, .dark, "appearance is device-level")
+        XCTAssertEqual(prefs.background, .night, "appearance is device-level")
 
         prefs.setAccount("h_a")
         XCTAssertEqual(prefs.recentContexts.map(\.name), ["朱昂明"])

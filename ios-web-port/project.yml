@@ -34,6 +34,13 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: HOneyNative
+        excludes:
+          - "Resources/Fonts/**"
+      # Source Sans 3 (variable, OFL) — the Web's one typeface, bundled.
+      - path: HOneyNative/Resources/Fonts
+        buildPhase: resources
+        excludes:
+          - "*.md"
     dependencies:
       - package: HOneyCore
     settings:
@@ -66,6 +73,9 @@ targets:
         HOneyEnvironment: $(HONEY_ENVIRONMENT)
         HOneyBaseURL: $(HONEY_BASE_URL)
         HOneyPortalBaseURL: $(HONEY_PORTAL_BASE_URL)
+        UIAppFonts:
+          - SourceSans3VF-Upright.ttf
+          - SourceSans3VF-Italic.ttf
         CFBundleURLTypes:
           - CFBundleURLName: com.gaelisus.honey.native
             CFBundleURLSchemes: [honey]
