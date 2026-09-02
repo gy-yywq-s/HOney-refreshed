@@ -69,6 +69,7 @@ struct SettingsRootView: View {
                     }
                 }
             }
+            .refreshAnchor()
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)
@@ -76,10 +77,10 @@ struct SettingsRootView: View {
         .surfaceBackground()
         .toolbar(.hidden, for: .navigationBar)
         .navigationTitle("Settings")
-        .task { stayConnected = env.prefs.stayConnectedWanted }
-        .refreshable { await env.refreshMe() }
+        .task { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin }
+        .honeyRefreshable { await env.refreshMe() }
         .sheet(isPresented: $showSaveLogin) {
-            SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted }
+            SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin }
         }
     }
 }
@@ -96,10 +97,14 @@ struct StayConnectedRow: View {
             Toggle(isOn: Binding(
                 get: { stayConnected },
                 set: { next in
-                    stayConnected = next
                     Task {
                         await env.setStayConnected(next)
-                        if next, !env.hasSavedSchoolLogin { showSaveLogin = true }
+                        if next, !env.hasSavedSchoolLogin {
+                            stayConnected = false // on only once the login is really kept
+                            showSaveLogin = true
+                        } else {
+                            stayConnected = next
+                        }
                     }
                 }
             )) { Text(L10n.t("Stay connected on this device")) }
@@ -221,14 +226,15 @@ struct SchoolConnectionView: View {
                     Button(L10n.t("Delete imported data…")) { confirmDeleteData = true }.buttonStyle(.webDanger).disabled(busy != nil)
                 }
             }
+            .refreshAnchor()
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)
         }
         .webScreen(title: L10n.t("School connection"))
-        .task { stayConnected = env.prefs.stayConnectedWanted }
-        .refreshable { await env.refreshMe() }
-        .sheet(isPresented: $showSaveLogin) { SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted } }
+        .task { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin }
+        .honeyRefreshable { await env.refreshMe() }
+        .sheet(isPresented: $showSaveLogin) { SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin } }
         .sheet(isPresented: $showReconnect) { SchoolLoginSheet(purpose: .reconnect) { sync() } }
         .sheet(isPresented: $confirmDisconnect) {
             ConfirmSheet(title: "Disconnect school account?", message: "HOney will stop syncing until you reconnect. Imported data is kept.", confirmLabel: L10n.t("Disconnect"), busy: busy == "disconnect", onCancel: { confirmDisconnect = false }) {

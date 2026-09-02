@@ -25,6 +25,7 @@ struct AccessView: View {
     @State private var quickApplyPrompt = false
     @State private var withdrawing: ExitPermit?
     @State private var showSchoolLogin = false
+    @State private var refreshTrigger = RefreshTrigger()
 
     private let collapsedPermits = 3
 
@@ -68,9 +69,7 @@ struct AccessView: View {
             VStack(alignment: .leading, spacing: HSpace.x4) {
                 HStack(alignment: .center, spacing: HSpace.x3) {
                     PageTitle(text: "Access")
-                    Button { Task { await model.refresh() } } label: {
-                        if model.loading { ProgressView().controlSize(.small) } else { Image(systemName: "arrow.clockwise") }
-                    }
+                    Button { refreshTrigger.fire() } label: { Image(systemName: "arrow.clockwise") }
                     .buttonStyle(.webIcon)
                     .disabled(model.loading)
                     .accessibilityLabel("Refresh Access")
@@ -91,11 +90,12 @@ struct AccessView: View {
                 permitsSection(model)
                 accessDock(model)
             }
+            .refreshAnchor()
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)
         }
-        .refreshable { await model.refresh(keepBanner: true) }
+        .honeyRefreshable(trigger: refreshTrigger) { await model.refresh(keepBanner: true) }
         .sheet(item: $editing) { field in
             PermitDraftEditor(field: field, draft: $model.draft)
         }

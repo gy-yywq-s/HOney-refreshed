@@ -107,4 +107,43 @@ final class PortalController {
     func invalidateEntry() {
         entry = nil
     }
+
+    /// The portal answered the entry with its login page: HOney's token is
+    /// dead whatever its clock says (the student signed in on the official
+    /// site and the school invalidated it). Renew with the saved school
+    /// login on this device, hand the new token to HOney, fetch the entry
+    /// again. Returns the signed-in URL or nil when this device cannot renew.
+    func recoverAfterLoginPage() async -> URL? {
+        entry = nil
+        let gen = generation
+        do {
+            let token = try await coordinator.renew()
+            try await api.pushPortalToken(token)
+            let response = try await api.portalEntry()
+            guard gen == generation else { return nil }
+            if case .ok(let url, let expiresAt) = response, let parsed = URL(string: url) {
+                entry = (parsed, Date(epochMillis: expiresAt))
+                needsSchoolAction = false
+                lastError = nil
+                return parsed
+            }
+            return nil
+        } catch let error as PortalError {
+            guard gen == generation else { return nil }
+            switch error {
+            case .credentialsRejected, .userActionRequired, .identityMismatch:
+                needsSchoolAction = true
+                lastError = AccessCopy.describe(error)
+            case .noCredentials:
+                lastError = "The portal session ended and this iPhone has no school login to renew it. Enter it once in Settings › School connection."
+            default:
+                lastError = AccessCopy.describe(error)
+            }
+            return nil
+        } catch {
+            guard gen == generation else { return nil }
+            lastError = APIErrorCopy.describe(error)
+            return nil
+        }
+    }
 }

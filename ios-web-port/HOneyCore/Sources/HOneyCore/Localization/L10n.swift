@@ -46,6 +46,10 @@ public enum L10n {
         // shell
         "Back": "返回",
         "Try again": "重试",
+        "Pull to refresh": "下拉刷新",
+        "Release to refresh": "松开刷新",
+        "Refreshing…": "正在刷新…",
+        "Updated": "已更新",
         "Could not reach the HOney server. Check your connection and try again.": "连不上 HOney 服务器，请检查网络后重试。",
         "Could not load your account.": "无法加载你的账户。",
         "Done": "完成",

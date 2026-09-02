@@ -102,6 +102,7 @@ struct HistoryView: View {
                     filters
                 }
             }
+            .refreshAnchor()
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)
@@ -134,7 +135,7 @@ struct HistoryView: View {
         .onChange(of: debounced) { _, _ in reload() }
         .onChange(of: teacherId) { _, _ in reload() }
         .onChange(of: courseId) { _, _ in reload() }
-        .refreshable { await load(reload: true) }
+        .honeyRefreshable { await load(reload: true) }
     }
 
     /// `.filters` on phones: the search full width, the two selects sharing a row.

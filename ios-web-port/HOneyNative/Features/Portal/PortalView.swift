@@ -225,9 +225,9 @@ struct PortalView: View {
         .task {
             await env.portal.prewarm()
             web.open(entry: env.portal.signedInEntry, home: env.config.portalHome, allowedHosts: env.config.portalHosts) {
-                env.portal.invalidateEntry()
-                await env.portal.prewarm(force: true)
-                return env.portal.signedInEntry
+                // Landing on the portal's login page means the token HOney
+                // holds is dead: renew from the school with the saved login.
+                await env.portal.recoverAfterLoginPage()
             }
         }
     }

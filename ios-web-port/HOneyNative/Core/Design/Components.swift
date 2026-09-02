@@ -293,7 +293,6 @@ extension View {
         self.navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) } }
-            .toolbar(.hidden, for: .tabBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .surfaceBackground()
     }

@@ -225,9 +225,10 @@ struct DayTimetableScreen: View {
                             LoadingPlaceholder(lines: 4).pageInset()
                         }
                     }
+                    .refreshAnchor()
                     .padding(.bottom, HSpace.x4)
                 }
-                .refreshable { await model.load(reload: true) }
+                .honeyRefreshable { await model.load(reload: true) }
             }
         }
     }

@@ -173,11 +173,12 @@ struct NotesAndPostsView: View {
                     }
                 }
             }
+            .refreshAnchor()
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)
         }
-        .refreshable { await model.load(reload: true) }
+        .honeyRefreshable { await model.load(reload: true) }
         .sheet(isPresented: Binding(get: { revoking != nil }, set: { if !$0 { revoking = nil } })) {
             ConfirmSheet(
                 title: "Remove this post?",

@@ -121,8 +121,17 @@ final class PortalSessionCoordinatorTests: XCTestCase {
     }
 
     func testIdentityMismatchNeverBecomesASession() async {
+        // The binding is the student id seen for this account, never the
+        // display name (names are formatted differently on either side).
         let (c, auth, vault) = make(expectedName: "沈高远")
+        auth.identityName = "沈高远"
+        auth.studentId = "1001"
+        await c.restore()
+        XCTAssertTrue(vault.hasCredentials)
+        await c.accountChanged()
+        try? vault.deleteSession()
         auth.identityName = "王某某"
+        auth.studentId = "2002"
         let state = await c.restore()
         XCTAssertEqual(state, .userActionRequired(.unknown))
         XCTAssertFalse(vault.hasCredentials, "a login for someone else is purged")
@@ -169,10 +178,27 @@ final class PortalSessionCoordinatorTests: XCTestCase {
     func testVerifyProvesWithoutKeeping() async throws {
         let (c, auth, vault) = make(creds: false, expectedName: "沈高远")
         auth.identityName = "沈高远"
+        auth.studentId = "1001"
         try await c.verify(PortalCredentials(username: "u", password: "p"))
         XCTAssertFalse(vault.hasCredentials)
-        auth.identityName = "someone else"
+        auth.identityName = "Shen Gaoyuan" // a different rendering of the same student is fine
+        try await c.verify(PortalCredentials(username: "u", password: "p"))
+        auth.studentId = "2002"
         await XCTAssertThrowsPortal(.identityMismatch) { try await c.verify(PortalCredentials(username: "u", password: "p")) }
+    }
+
+    func testLegacyUnnamespacedEntriesMigrateToTheFirstAccount() throws {
+        // Builds before the review kept the login under plain keys.
+        let store = InMemorySecretStore()
+        try store.write("honey.school.credentials", JSONEncoder().encode(PortalCredentials(username: "u", password: "p")))
+        try store.write("honey.portal.studentId", Data("1001".utf8))
+        let vault = SecretPortalVault(store: store)
+        vault.setAccount("h_1", expectedName: nil)
+        XCTAssertTrue(vault.hasCredentials, "the saved login survives the update")
+        XCTAssertNil(try store.read("honey.school.credentials"), "moved, not copied")
+        XCTAssertNoThrow(try vault.verify(PortalIdentity(studentId: "1001", name: "x", isDayStudent: nil, tokenExpiresAt: Date())))
+        vault.setAccount("h_2", expectedName: nil)
+        XCTAssertFalse(vault.hasCredentials, "a second account gets nothing")
     }
 
     func testRestoreUsesFreshSavedSessionWithoutLogin() async {

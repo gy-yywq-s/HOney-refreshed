@@ -78,6 +78,7 @@ struct ExploreView: View {
                     frame
                 }
             }
+            .refreshAnchor()
             .padding(.bottom, HSpace.x4)
         }
         .webScreen(title: "Explore")
@@ -87,7 +88,7 @@ struct ExploreView: View {
         }
         .onChange(of: category) { _, next in env.prefs.exploreCategory = next }
         .onChange(of: query) { _, _ in scheduleSearch() }
-        .refreshable { await load(reload: true) }
+        .honeyRefreshable { await load(reload: true) }
     }
 
     /// `.explore-frame`: the field, then the chips while nothing is typed.

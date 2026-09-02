@@ -108,6 +108,7 @@ struct ExperiencesFeedView: View {
                 }
             }
             .scrollTargetLayout()
+            .refreshAnchor()
             .padding(.top, HSpace.x4)
             .padding(.bottom, HSpace.x4)
         }
@@ -134,7 +135,7 @@ struct ExperiencesFeedView: View {
                 .padding(.top, HSpace.x2)
             }
         }
-        .refreshable { await model.refresh() }
+        .honeyRefreshable { await model.refresh() }
         .onChange(of: scrolledID) { _, id in
             if let id, model.items.contains(where: { $0.id == id }) { model.restoreAnchorId = id }
         }

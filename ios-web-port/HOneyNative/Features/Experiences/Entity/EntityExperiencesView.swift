@@ -78,10 +78,11 @@ struct EntityExperiencesView: View {
                         header
                         posts(feed)
                     }
+                    .refreshAnchor()
                     .padding(.top, HSpace.x2)
                     .padding(.bottom, HSpace.x4)
                 }
-                .refreshable { await feed.refresh(); await loadNames(reload: true) }
+                .honeyRefreshable { await feed.refresh(); await loadNames(reload: true) }
             } else {
                 LoadingPlaceholder(lines: 4).pageInset()
             }

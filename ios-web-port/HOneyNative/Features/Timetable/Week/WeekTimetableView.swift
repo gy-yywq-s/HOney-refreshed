@@ -56,9 +56,10 @@ struct WeekTimetableView: View {
                     .pageInset()
                 }
             }
+            .refreshAnchor()
             .padding(.bottom, HSpace.x4)
         }
-        .refreshable { await model.load(reload: true) }
+        .honeyRefreshable { await model.load(reload: true) }
     }
 
     /// `.week__table`: 2 pt column spacing, no row spacing; the gutter stays.

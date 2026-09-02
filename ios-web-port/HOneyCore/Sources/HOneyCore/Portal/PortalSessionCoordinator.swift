@@ -204,6 +204,15 @@ public actor PortalSessionCoordinator {
         try await currentOrRecoveredSession().token
     }
 
+    /// The portal itself rejected the token HOney holds (the student signed
+    /// in elsewhere and the school invalidated it) although its clock says
+    /// valid: drop what is cached and log in again with the saved login.
+    public func renew() async throws -> String {
+        session = nil
+        try? sessions.deleteSession()
+        return try await reauthenticateSingleFlight().token
+    }
+
     /// Retry handing the current token to HOney after a failed push.
     public func pushPendingToken() async -> Bool {
         guard tokenPushPending, let session, let onFreshToken else { return !tokenPushPending }
@@ -336,9 +345,24 @@ public final class SecretPortalVault: PortalSessionVault, SchoolCredentialVault,
     }
 
     public func setAccount(_ honeyId: String?, expectedName: String?) {
-        lock.lock(); defer { lock.unlock() }
+        lock.lock()
         account = honeyId
         self.expectedName = expectedName
+        lock.unlock()
+        if honeyId != nil { migrateLegacyEntries() }
+    }
+
+    /// Builds before the review kept the school login and the portal session
+    /// under un-namespaced keys. The first account that binds after the update
+    /// takes them over, so "Stay connected" stays true to what the student
+    /// chose (2026-09-02: the Keychain still held the login, Access said it
+    /// did not).
+    private func migrateLegacyEntries() {
+        for base in ["honey.school.credentials", "honey.portal.session", "honey.portal.studentId"] {
+            guard let scoped = try? key(base) else { return }
+            guard (try? store.read(scoped)) == nil, let legacy = try? store.read(base) else { continue }
+            if (try? store.write(scoped, legacy)) != nil { try? store.delete(base) }
+        }
     }
 
     private func key(_ base: String) throws -> String {
@@ -378,27 +402,18 @@ public final class SecretPortalVault: PortalSessionVault, SchoolCredentialVault,
 
     public var hasCredentials: Bool { (try? loadCredentials()) != nil }
 
-    /// The binding: the portal's name must match the HOney display name
-    /// (which HOney took from the same portal), and once a student id has
-    /// been seen for this account it must not change.
+    /// The binding: once a student id has been seen for this HOney account
+    /// it must not change — a saved login that answers as someone else is
+    /// never used. The portal's display name is NOT compared: names are
+    /// formatted differently on either side and a false mismatch threw the
+    /// student's login away (Gary 2026-09-02: Stay connected was on, Access
+    /// still asked for the login). `expectedName` is kept for diagnostics.
     public func verify(_ identity: PortalIdentity) throws {
-        let expected: String?
-        lock.lock()
-        expected = expectedName
-        lock.unlock()
-        if let expected, !expected.isEmpty, !identity.name.isEmpty,
-           Self.normalized(expected) != Self.normalized(identity.name) {
-            throw PortalError.identityMismatch
-        }
         let k = try key("honey.portal.studentId")
         if let data = try store.read(k), let seen = String(data: data, encoding: .utf8), !seen.isEmpty {
             if seen != identity.studentId { throw PortalError.identityMismatch }
         } else {
             try store.write(k, Data(identity.studentId.utf8))
         }
-    }
-
-    private static func normalized(_ s: String) -> String {
-        s.replacingOccurrences(of: " ", with: "").lowercased()
     }
 }

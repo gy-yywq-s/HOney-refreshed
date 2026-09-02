@@ -21,18 +21,25 @@ struct HomeView: View {
             let compact = geo.size.height <= 700
             ScrollView {
                 VStack(alignment: .leading, spacing: HSpace.x4) {
-                    HOneyBrandHeader()
                     if let me = env.me {
-                        VStack(alignment: .leading, spacing: HSpace.x1) {
-                            Text(L10n.greeting(me.displayName))
-                                .hfont(.greeting)
-                                .foregroundStyle(theme.ink)
-                                .accessibilityAddTraits(.isHeader)
-                            Text(Formatters.dayTitle(Formatters.todayIsoDate()))
-                                .hfont(.secondary)
-                                .foregroundStyle(theme.ink2)
+                        // The wordmark sits on the greeting line, at the
+                        // right and smaller (Gary 2026-09-02) — no brand bar.
+                        HStack(alignment: .top, spacing: HSpace.x3) {
+                            VStack(alignment: .leading, spacing: HSpace.x1) {
+                                Text(L10n.greeting(me.displayName))
+                                    .hfont(.greeting)
+                                    .foregroundStyle(theme.ink)
+                                    .accessibilityAddTraits(.isHeader)
+                                Text(Formatters.dayTitle(Formatters.todayIsoDate()))
+                                    .hfont(.secondary)
+                                    .foregroundStyle(theme.ink2)
+                            }
+                            Spacer(minLength: HSpace.x2)
+                            WordmarkView(height: 22)
+                                .padding(.top, 3)
                         }
                         .pageInset()
+                        .padding(.top, HSpace.x2)
                     }
 
                     if let model {
@@ -52,9 +59,10 @@ struct HomeView: View {
                     }
                     .pageInset()
                 }
+                .refreshAnchor()
                 .padding(.bottom, HSpace.x4)
             }
-            .refreshable { await model?.load(reload: true) }
+            .honeyRefreshable { await model?.load(reload: true) }
         }
         .surfaceBackground()
         .toolbar(.hidden, for: .navigationBar)
@@ -119,22 +127,6 @@ struct HomeView: View {
                 .padding(.top, HSpace.x3)
         }
         .frame(minHeight: 132, alignment: .top)
-    }
-}
-
-/// `.home-brand`: the wordmark centred, 12 pt above and below, then a rule
-/// that runs edge to edge in the lesson-card frame stroke (1.5 pt, ink 28%).
-struct HOneyBrandHeader: View {
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        VStack(spacing: 0) {
-            WordmarkView(height: 30)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, HSpace.x3)
-            Rectangle().fill(theme.frame).frame(height: 1.5)
-        }
-        .accessibilityAddTraits(.isHeader)
     }
 }
 

@@ -56,20 +56,21 @@ stays `Owner decision: pending` until Gary approves the pair.
 
 | Web source | Native destination | Class | Current difference | Platform constraint | Evidence | Owner decision |
 |---|---|---|---|---|---|---|
-| `.mobile-nav`: 12 pt inset, 10 pt up, 54 tall, 22 radius, 4 inner, accent-tint pill, labels, blur | `App/TabBarView.swift` (path B over a native TabView) | MATCHED | five slots (Access added); pill slides on the Web curve | — | every snapshot | pending |
+| `.mobile-nav`: 12 pt inset, 10 pt up, 54 tall, 22 radius, 4 inner, accent-tint pill, labels, blur | the system tab bar, themed through `UITabBarAppearance` (surface ground, muted items, accent selection, Source Sans labels) | APPROVED_DELTA | the Web's floating pill bar was built first (`557a6f9`), then replaced on the owner's word | — | snapshots after `557a6f9` | approved (Gary 2026-09-02: navigation 用 iOS 原生的) |
 | `.pagebar` "‹ Parent" | system navigation bar, back label = parent title, no inline title (`webScreen`) | NATIVE_EQUIVALENT | the system back chevron/label replace the Web's 20 px glyph + 600 label | interactive back gesture | pushed-screen snapshots | pending |
 | desktop rail | — | WEB_ONLY | ≥961 px only | phones never show it | — | n/a |
-| pull-to-refresh two-stage, pull-up for History | `.refreshable`; History in the Timetable overflow | APPROVED_DELTA (port spec v1 §24) | — | — | — | approved (Gary, port spec) |
+| pull-to-refresh: `.ptr__pill` on the frame, the region's own rubber band is the pull, nothing moves by hand | `Core/Design/PullToRefresh.swift` (`honeyRefreshable`, `refreshAnchor`): the same pill — Pull / Release (haptic) / Refreshing… / Updated — floating over the native bounce on every screen; Access's refresh button fires it too | MATCHED | the Web's second stage (hold to sync) is not ported (port spec v1 §24); the system `.refreshable` spinner, which shifted the content, is gone (Gary 2026-09-02: 刷新要有反馈，不要一跳一跳) | — | device check | pending |
+| pull-up for History | History in the Timetable overflow | APPROVED_DELTA (port spec v1 §24) | — | — | — | approved (Gary, port spec) |
 
 ## Screens
 
 | Web source | Native destination | Class | Current difference | Platform constraint | Evidence | Owner decision |
 |---|---|---|---|---|---|---|
-| HomePage.tsx: brand bar, greeting, Now/Next hero, From your classes, composer prompt, Portal row | `Features/Home/HomeView.swift` | MATCHED | 1–2 previews (1 on ≤700 pt); progress wash = `accent2` at 22 %; **no "See all" — the Web at 9cbedf6 has none (spec §6.5 mentions one)** | — | home-*.png (5) | pending |
+| HomePage.tsx: brand bar, greeting, Now/Next hero, From your classes, composer prompt, Portal row | `Features/Home/HomeView.swift` | APPROVED_DELTA (brand bar) / MATCHED (rest) | the centred brand bar with its rule was built first (`557a6f9`); on the owner's word the wordmark now sits on the greeting line, at the right, 22 pt. 1–2 previews (1 on ≤700 pt); progress wash = `accent2` at 22 %; **no "See all" — the Web at 9cbedf6 has none (spec §6.5 mentions one)** | — | home-*.png (5) | approved (Gary 2026-09-02: wordmark 挪到 Hi 那一行靠右，小一点) |
 | FeedPage.tsx + ExperiencePost.tsx | `Feed/ExperiencesFeedView.swift`, `Feed/ExperiencePostRow.swift` | MATCHED | context names inherit ink-2 (features.css `.post__context a { color: inherit }`), **not the accent spec §7.5 describes**; the ··· opens a native menu; the report sheet keeps the Web copy | — | experiences-*.png | pending — flagged |
 | ExplorePage.tsx | `Explore/ExploreView.swift` | MATCHED | the frame (field + chips) pins while results scroll | — | explore-*.png | pending |
 | EntityPage.tsx | `Entity/EntityExperiencesView.swift` | MATCHED | — | — | (entity pages need a fixture id; device check) | pending |
-| ComposePage.tsx picker + editor + outcomes + nudge/cooldown | `Compose/TargetPickerView.swift`, `ComposerView.swift` | MATCHED | outcomes replace the screen as on the Web; nudge/cooling rise as sheets in the `.nudge` surface; the first-share disclosure is a native addition (port spec v1 §22.3) | — | compose-picker-*.png | pending |
+| ComposePage.tsx picker + editor + outcomes + nudge/cooldown | `Compose/TargetPickerView.swift`, `ComposerView.swift` | MATCHED | outcomes replace the screen as on the Web; nudge/cooling rise as sheets in the `.nudge` surface; the native first-share disclosure sheet was removed (Gary 2026-09-02: 不要让任何 consent 作为 friction) — the Web has none either | — | compose-picker-*.png | pending |
 | MinePage.tsx | `Mine/NotesAndPostsView.swift` | MATCHED | — | — | mine-*.png | pending |
 | TimetablePage.tsx daynav + DayTimeline + LessonDetail | `Timetable/TimetableRootView.swift`, `Day/DayTimelineView.swift`, `LessonDetail/LessonDetailSheet.swift` | MATCHED | History / Sync with school in one 44 pt outlined ··· control (phone Web uses gestures); the date picker is the platform calendar in a Web sheet | — | timetable-day-*.png | pending |
 | WeekView.tsx | `Week/WeekTimetableView.swift` | MATCHED | — | — | timetable-week-*.png | pending |

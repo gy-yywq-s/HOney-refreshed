@@ -105,6 +105,23 @@ enum ThemeChrome {
         UINavigationBar.appearance().scrollEdgeAppearance = nav
         UINavigationBar.appearance().compactAppearance = nav
         UINavigationBar.appearance().tintColor = theme.uiAccent
+        // The system tab bar (Gary: navigation 用 iOS 原生的) on the chosen
+        // surface: muted items, the accent for the selected one, Source Sans labels.
+        let tab = UITabBarAppearance()
+        tab.configureWithOpaqueBackground()
+        tab.backgroundColor = theme.uiSurface
+        tab.shadowColor = theme.palette.line.uiColor
+        let label = HOneyFont.uiFont(role: .microSemibold, scale: theme.scale)
+        for item in [tab.stackedLayoutAppearance, tab.inlineLayoutAppearance, tab.compactInlineLayoutAppearance] {
+            item.normal.iconColor = theme.uiMuted
+            item.normal.titleTextAttributes = [.foregroundColor: theme.uiMuted, .font: label]
+            item.selected.iconColor = theme.uiAccent
+            item.selected.titleTextAttributes = [.foregroundColor: theme.uiAccent, .font: label]
+        }
+        UITabBar.appearance().standardAppearance = tab
+        UITabBar.appearance().scrollEdgeAppearance = tab
+        UITabBar.appearance().tintColor = theme.uiAccent
+        UITabBar.appearance().unselectedItemTintColor = theme.uiMuted
         // Live bars adopt the proxy only on their next layout; nudge the windows.
         for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
             for window in scene.windows {

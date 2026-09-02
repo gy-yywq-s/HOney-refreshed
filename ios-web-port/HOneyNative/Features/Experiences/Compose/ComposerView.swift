@@ -20,7 +20,6 @@ struct ComposerView: View {
 
     @State private var model: ComposerViewModel?
     @State private var pauseRemaining: Int64?
-    @State private var showDisclosure = false
     @State private var showNudge = false
     @State private var showCooldown = false
     @FocusState private var editing: Bool
@@ -234,12 +233,6 @@ struct ComposerView: View {
             default: break
             }
         }
-        .sheet(isPresented: $showDisclosure) {
-            FirstPublicationDisclosureSheet {
-                env.prefs.firstPublishDisclosureSeen = true
-                Task { await model.continueToShare() }
-            }
-        }
         .sheet(isPresented: $showNudge) { nudgeSheet(model) }
         .sheet(isPresented: $showCooldown) { cooldownSheet(model) }
     }
@@ -307,11 +300,7 @@ struct ComposerView: View {
         PrimaryBottomActionBar(
             primary: (primaryLabel(model), {
                 editing = false
-                if !env.prefs.firstPublishDisclosureSeen {
-                    showDisclosure = true
-                } else {
-                    Task { await model.continueToShare() }
-                }
+                Task { await model.continueToShare() }
             }),
             primaryEnabled: model.canAct && pauseRemaining == nil,
             secondary: (model.busySavingNote ? L10n.t("Saving…") : L10n.t("Keep private"), {
@@ -415,33 +404,6 @@ struct NudgeSheet<Content: View, Actions: View>: View {
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(HRadius.modal)
         .presentationBackground(theme.surfaceSolid)
-    }
-}
-
-/// One short sheet before the first public share (native addition, port
-/// spec v1 §22.3): the five facts, then Continue to share / Cancel.
-struct FirstPublicationDisclosureSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.theme) private var theme
-    let proceed: () -> Void
-
-    var body: some View {
-        WebSheet(title: "Before your first share", onClose: { dismiss() }) {
-            VStack(alignment: .leading, spacing: HSpace.x2) {
-                Text("1. HOney verifies you had the relevant class or place.")
-                Text("2. Your text gets a check before it can be published — obvious rule problems on HOney's server, otherwise once through an external text-moderation model, without your identity.")
-                Text("3. The public post stores no ordinary author field.")
-                Text("4. This iPhone keeps a control key so you can remove it later.")
-                Text("5. What you write may still identify the situation to people who know it.")
-            }
-            .hfont(.body)
-            .foregroundStyle(theme.ink)
-            SheetActions {
-                Button(L10n.t("Continue to share")) { dismiss(); proceed() }.buttonStyle(.webBlockPrimary)
-                Button(L10n.t("Cancel")) { dismiss() }.buttonStyle(.webBlockGhost)
-            }
-        }
-        .presentationDetents([.large])
     }
 }
 
