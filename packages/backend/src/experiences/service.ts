@@ -15,6 +15,8 @@ import type {
   FeedScope,
   PublicExperience,
   ReportCategory,
+  SearchResponse,
+  EntityStats,
 } from "@honey/shared/api";
 
 // The Experiences core (App A). Publication is a TWO-CALL flow (audit §3.7/§3.8):
@@ -908,6 +910,51 @@ export class ExperienceService {
    * directory to render a post. Coarse day bucket only (S5); the raw lesson
    * token appears only inside EntitySummary ids (already opaque, C1).
    */
+  /**
+   * Find mode (review §8.1): entity names first (registry, case-folded
+   * substring), then published experiences whose words contain the query.
+   * Raw chronology, capped; the viewer's reactions restored like the feed.
+   */
+  search(honeyId: string, q: string): SearchResponse {
+    const query = q.trim().slice(0, 60);
+    if (!query) return { q: "", entities: [], experiences: [] };
+    const entities = this.registry.list(undefined, query).slice(0, 30);
+    let experiences: PublicExperience[] = [];
+    if (!this.settings.killSwitch("HIDE_PUBLIC_EXPERIENCES")) {
+      const rows = this.db
+        .prepare(
+          `SELECT * FROM experiences WHERE status = 'published' AND body LIKE ? ESCAPE '\\'
+           ORDER BY published_at DESC, id DESC LIMIT 20`,
+        )
+        .all(`%${query.replace(/[\\%_]/g, (m) => "\\" + m)}%`) as unknown as SelectRow[];
+      experiences = rows.map((r) => this.toPublic(r, honeyId));
+    }
+    return { q: query, entities, experiences };
+  }
+
+  /** Descriptive counts for an entity page (review §8.3): never a score. */
+  entityStats(entityKey: string): EntityStats {
+    const [type, id] = entityKey.split(":");
+    if (!type || !id) return { experiences: 0, courses: 0, teachers: 0 };
+    const ids = this.db
+      .prepare(
+        `SELECT DISTINCT e.id FROM experiences e
+         LEFT JOIN experience_associations a ON a.experience_id = e.id
+         WHERE e.status = 'published' AND (e.entity_key = ? OR (a.entity_type = ? AND a.entity_id = ?))`,
+      )
+      .all(entityKey, type, id) as unknown as { id: string }[];
+    if (ids.length === 0) return { experiences: 0, courses: 0, teachers: 0 };
+    const marks = ids.map(() => "?").join(",");
+    const count = (kind: string) =>
+      (this.db
+        .prepare(
+          `SELECT COUNT(DISTINCT entity_id) AS n FROM experience_associations
+           WHERE entity_type = ? AND experience_id IN (${marks})`,
+        )
+        .get(kind, ...ids.map((r) => r.id)) as { n: number }).n;
+    return { experiences: ids.length, courses: count("course"), teachers: count("teacher") };
+  }
+
   private toPublic(r: SelectRow, viewer?: string): PublicExperience {
     const c = this.db
       .prepare("SELECT SUM(value = 1) AS likes, SUM(value = -1) AS dislikes FROM reactions WHERE experience_id = ?")

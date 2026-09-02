@@ -25,6 +25,8 @@ product approval. Approval is a separate, owner-given state per platform
 
 ## Document hierarchy (which file wins)
 
+0. `docs/product/product-and-style-constitution.md` — the single authority (2026-09-02).
+
 1. `docs/product/*` — why / what the product is. Owner-approved product truth.
 2. `docs/design/shared-product-design-invariants.md` — non-visual truths both
    platforms must respect.

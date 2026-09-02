@@ -34,7 +34,8 @@ export function LoginPage() {
           <WordmarkHOney height={54} />
         </h1>
 
-        <p className="login__tagline text-3">Sign in with your school account.</p>
+        <p className="login__tagline">Your school day, without the portal friction.</p>
+        <p className="text-3 login__support">Use your school account. HOney creates no separate password.</p>
         <div className="login__fields">
           <SchoolLoginForm
             mode="login"

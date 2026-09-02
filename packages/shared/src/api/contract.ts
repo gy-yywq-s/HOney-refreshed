@@ -221,6 +221,21 @@ export interface FeedParams {
   roomId?: string;
 }
 
+/** Find mode (product review §8.1): entities grouped by type, then matching
+ *  published experiences. Additive; iOS may ignore. */
+export interface SearchResponse {
+  q: string;
+  entities: EntityRef[];
+  experiences: PublicExperience[];
+}
+
+/** Descriptive counts for an entity page (review §8.3) — never a score. */
+export interface EntityStats {
+  experiences: number;
+  courses: number;
+  teachers: number;
+}
+
 export interface FeedPage {
   items: PublicExperience[];
   /** null = end of stream. Pass back verbatim to continue. */

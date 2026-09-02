@@ -52,9 +52,12 @@ export function ExperiencesFeedPage() {
             </Link>
           </div>
         </div>
-        {/* Always-visible community identity (§9.4A) — two lines, never a hero. */}
+        {/* Positioning (product review §5.4): the headline names the social
+            unit — people who were there — and the support line names both
+            acts. Never a hero; two short lines above the stream. */}
+        <p className="feed-headline">What school feels like, from people who were there.</p>
         <p className="feed-identity">
-          For students, between students — not a teacher feedback channel.{" "}
+          Read what others experienced. Share what it was like for you.{" "}
           <Link to="/experiences/why">Why this space exists</Link>
         </p>
         <div
@@ -134,10 +137,7 @@ export function ExperiencesFeedPage() {
               <p>
                 <strong>Nothing from your classes yet.</strong>
               </p>
-              <p className="muted">
-                When someone shares an experience connected to a class you’ve taken, it will appear
-                here.
-              </p>
+              <p className="muted">A small honest note is enough.</p>
               <Link className="btn btn--primary" to="/experiences/compose">
                 Share the first one
               </Link>

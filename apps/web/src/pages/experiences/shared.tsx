@@ -47,7 +47,7 @@ const CHECK_REASON_COPY: Record<string, string> = {
   "expression:injection_attempt":
     "Part of the text reads as instructions to the system rather than an experience.",
   "expression:uncertain":
-    "HOney could not confidently understand part of this wording. Say it more directly.",
+    "We couldn’t understand part of this well enough to publish it. Say it more directly.",
   "timing:high_arousal":
     "This can still be your experience. Publishing it can wait until you'd share it the same way tomorrow.",
   "composition:low_information":

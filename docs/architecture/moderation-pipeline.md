@@ -59,6 +59,23 @@ Key properties:
 - **§21 strikes are recorded at check time** (check is authenticated and is where
   `blocked_serious` verdicts occur); repeated prohibited attempts suspend new publications.
 
+## Ordered enforcement (policy v7)
+
+Classification is one LLM call; enforcement is **ordered**, and the student sees only the
+frontmost boundary they have not passed (review v3 §13):
+
+1. **Standing** — is this the student's own experience? (`standing:hearsay` → revise)
+2. **Expression** — can HOney carry this exact wording? Fixable insult / profanity / private
+   detail → revise (`expression:*`); slur / dehumanizing / doxxing pattern → prohibited;
+   opaque or uncertain wording → say it more directly.
+3. **Scope** — ordinary peer knowledge, or a matter that needs institutional casework?
+   (`scope:serious_allegation` → not public HOney; never forwarded to the school)
+4. **Timing** — publishable now, or after a pause? (`timing:high_arousal` → cooldown)
+
+Reason codes are gate-prefixed; wire lane names are unchanged for iOS compatibility. The
+corpus asserts the **first user-visible intervention** for combined cases (insult + ordinary
+discomfort → expression first; insult + serious allegation → expression first, then scope).
+
 ## Layer 1 — Normalization (deterministic)
 
 Four forms are derived from the submitted text (`normalize.ts`); the original is untouched —
@@ -165,13 +182,17 @@ request itself carries no account identity.
 ## Reports re-use the same pipeline
 
 A report (rule-based category, never a disagreement vote — §22) triggers automatic
-re-evaluation through the *same* `computeDecision()` under the current policy. Any
-non-publishable outcome — **including LLM outage** — hides the post (reported content does not
-stay public just because the classifier is down).
+re-evaluation through the *same* `computeDecision()` under the current policy. Re-evaluation
+is **tri-state** (policy v7, review v3 §12.8): a confident violation hides the post; a confident
+allowed result (including a cooldown verdict) keeps it; an unavailable or uncertain result keeps
+it public, marks it `reevaluation_pending` and retries on a 10-minute server sweep. A
+classifier outage never unpublishes content that already passed the boundary. Reporters are
+deduplicated by an unlinkable HMAC mark, rate-limited per account, and a `DISABLE_REPORTS`
+kill switch exists.
 
 ## Versioning & the launch gates
 
-`POLICY_VERSION` (currently 5) stamps every decision and pass. Any prompt/lexicon/engine change
+`POLICY_VERSION` (currently **7**) stamps every decision and pass. Any prompt/lexicon/engine change
 bumps it and re-runs the regression corpus. The §26.2 gates are asserted as **zero misses in
 that versioned corpus** — no serious/out-of-scope row publishes, no injection row obtains a
 pass, 100 % schema-valid or fail-closed, no systematic blocking of ordinary negativity, pass

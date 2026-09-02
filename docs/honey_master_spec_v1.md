@@ -1,7 +1,7 @@
 # HOney
 ## Ground-Up Product & System Specification
 
-**Version:** 1.3  
+**Version:** 1.3 (frozen; product decisions since 2026-09-01 live in `docs/product/product-and-style-constitution.md`; Experiences logic of record is policy v7 in `packages/backend/src/experiences/policy.ts`)  
 **Date:** 2026-09-01  
 **Status:** Product and architecture baseline for a full rebuild  
 **Platforms:** iOS + Web  

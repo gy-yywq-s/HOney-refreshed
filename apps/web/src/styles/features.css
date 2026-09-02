@@ -33,6 +33,9 @@
   color: var(--ink);
   margin: 0 0 var(--sp-3);
 }
+.login__support {
+  margin: var(--sp-2) 0 0;
+}
 .login__tagline {
   font-size: var(--fs-reading);
   line-height: 1.45;
@@ -862,6 +865,12 @@ p.caption.timetable-note {
   display: flex;
   gap: var(--sp-2);
   flex-wrap: wrap;
+}
+.feed-headline {
+  margin: 0;
+  font-size: var(--fs-reading);
+  line-height: 1.4;
+  color: var(--ink);
 }
 .feed-identity {
   margin: 0;

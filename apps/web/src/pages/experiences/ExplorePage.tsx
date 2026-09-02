@@ -10,6 +10,8 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, EntityType } from "../../api/types";
 import { useApi } from "../../lib/useApi";
+import { ExperiencePost } from "../../features/experiences/ExperiencePost";
+import { recentContexts } from "../../lib/recentContexts";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
 import { entityPath } from "./shared";
@@ -28,6 +30,15 @@ export function ExperiencesExplorePage() {
   const [q, setQ] = useState("");
   const entities = useApi(() => api.entities(), [], "entities");
   const directory = useApi(() => api.directory(), [], "directory");
+  // Find mode (review §8.1): with two or more characters the server also
+  // searches the words of published experiences; entity rows still filter
+  // locally so the complete listing never leaves the screen.
+  const searchQ = q.trim().length >= 2 ? q.trim() : "";
+  const search = useApi(
+    () => (searchQ ? api.search(searchQ) : Promise.resolve(null)),
+    [searchQ],
+  );
+  const recent = recentContexts.list();
   const landing = useRetryFocus<HTMLDivElement>(entities.loading);
 
   const byType = useMemo(() => {
@@ -92,6 +103,20 @@ export function ExperiencesExplorePage() {
           </button>
         </div>
       )}
+      {!q && recent.length > 0 && (
+        <section aria-label="Recent">
+          <h2 className="overline">Recent</h2>
+          <ul className="entity-list">
+            {recent.map((r) => (
+              <li key={r.path}>
+                <Link className="entity-row" to={r.path}>
+                  <span>{r.name}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="group" aria-label="Everything listed">
       {entities.loading ? (
         <Skeleton lines={6} />
@@ -105,6 +130,16 @@ export function ExperiencesExplorePage() {
             mine={fromHistory}
           />
         ))
+      )}
+      {searchQ && !search.loading && search.data && search.data.experiences.length > 0 && (
+        <section aria-label="Experiences that mention this">
+          <h2 className="overline">Experiences that mention “{searchQ}”</h2>
+          <div className="feed-stream">
+            {search.data.experiences.map((exp) => (
+              <ExperiencePost key={exp.id} exp={exp} />
+            ))}
+          </div>
+        </section>
       )}
       </div>
     </div>
@@ -170,7 +205,11 @@ function ExploreSection({
 function ExploreRow({ entity, mine }: { entity: EntityRef; mine: boolean }) {
   return (
     <li>
-      <Link className="entity-row" to={entityPath(entity)}>
+      <Link
+        className="entity-row"
+        to={entityPath(entity)}
+        onClick={() => recentContexts.remember({ name: entity.name, path: entityPath(entity) })}
+      >
         <span>{entity.name}</span>
         {mine && (
           <span className="caption">

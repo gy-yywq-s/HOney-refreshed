@@ -84,6 +84,24 @@ export function registerExperienceRoutes(app: FastifyInstance, ctx: AppContext):
     },
   );
 
+  app.get<{ Querystring: { q?: string } }>(
+    "/api/experiences/search",
+    { preHandler: ctx.requireAuth },
+    async (req) => {
+      const user = ctx.userOf(req);
+      return ctx.experiences.search(user.honey_id, req.query.q ?? "");
+    },
+  );
+
+  app.get<{ Querystring: { entityKey?: string } }>(
+    "/api/experiences/stats",
+    { preHandler: ctx.requireAuth },
+    async (req, reply) => {
+      if (!req.query.entityKey) return reply.code(400).send({ error: "entityKey required" });
+      return ctx.experiences.entityStats(req.query.entityKey);
+    },
+  );
+
   app.get<{ Querystring: { type?: string; q?: string } }>(
     "/api/entities",
     { preHandler: ctx.requireAuth },

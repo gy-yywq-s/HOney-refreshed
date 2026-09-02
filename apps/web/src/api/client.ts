@@ -39,6 +39,8 @@ import type {
   StandaloneMode,
   SyncResponse,
   TimetableResponse,
+  SearchResponse,
+  EntityStats,
 } from "./types";
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -183,6 +185,16 @@ export class ApiClient {
   }
 
   /** Cursor-paged social stream (review v3 §12.6). Cursors are opaque — pass back verbatim. */
+  /** Find mode: entities + published experiences matching the words. */
+  search(q: string): Promise<SearchResponse> {
+    return this.request("GET", `/api/experiences/search?q=${encodeURIComponent(q)}`);
+  }
+
+  /** Descriptive counts for an entity page — never a score. */
+  entityStats(entityKey: string): Promise<EntityStats> {
+    return this.request("GET", `/api/experiences/stats?entityKey=${encodeURIComponent(entityKey)}`);
+  }
+
   feedPage(params: FeedParams): Promise<FeedPage> {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {

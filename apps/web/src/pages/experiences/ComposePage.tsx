@@ -23,8 +23,8 @@ import type { ComposerTarget } from "./useComposer";
 // ONE stable prompt (review v3 §10.4): the composer is a quiet place to put
 // an experience into words, not a rotating morality display. Boundaries
 // appear only when a specific gate asks for something.
-const COMPOSE_PROMPT = "What do you want to share about this experience?";
-const COMPOSE_HELPER = "Specific context can help, but it is okay if what you have is only a feeling.";
+const COMPOSE_PROMPT = "What was it like for you?";
+const COMPOSE_HELPER = "Specific details can help someone understand. A feeling can matter too.";
 
 export function ExperiencesComposePage() {
   const [searchParams] = useSearchParams();
@@ -97,6 +97,13 @@ export function ExperiencesComposePage() {
     return null;
   }, [effectiveLessonId, effectiveEntityKey, history.data, entities.data]);
 
+  // Chooser (review §9.2): the target is picked before the editor — the
+  // student's last few lessons are the likeliest, so they are one tap away.
+  const recentLessons = useApi(
+    () => (target ? Promise.resolve(null) : api.history({ limit: 5, order: "desc" })),
+    [target === null],
+    target ? undefined : "history:recent",
+  );
   const composer = useComposer(target);
   const { names } = useNames(!!effectiveEntityKey);
   const landing = useRetryFocus<HTMLElement>(entities.loading);
@@ -289,8 +296,29 @@ export function ExperiencesComposePage() {
       ) : (
         <section className="card" aria-label="Pick a target">
           <p className="text-3">
-            An experience is about one of your own lessons, or a teacher, place or dish.
+            An experience is about one of your own lessons, or a teacher, course, place or dish.
           </p>
+          {recentLessons.data && recentLessons.data.lessons.length > 0 && (
+            <>
+              <h2 className="overline">Your recent lessons</h2>
+              <ul className="entity-list">
+                {recentLessons.data.lessons.slice(0, 5).map((l) => (
+                  <li key={l.id}>
+                    <Link
+                      className="entity-row"
+                      to={`/experiences/compose?lessonId=${encodeURIComponent(l.id)}`}
+                    >
+                      <span>{l.subjectName}</span>
+                      <span className="caption">
+                        {formatShortDate(l.startsAt)}
+                        {l.teacherName ? ` · ${l.teacherName}` : ""}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <div className="card-actions">
             <Link className="btn btn--primary" to="/history?select=1">
               Pick a lesson from History
@@ -377,7 +405,7 @@ export function ExperiencesComposePage() {
                 disabled={saveBusy || body.trim().length === 0 || busy}
                 onClick={() => void savePrivately()}
               >
-                {saveBusy ? "Saving…" : "Keep private"}
+                {saveBusy ? "Saving…" : "Keep this for yourself"}
               </button>
               <button className="btn btn--ghost" disabled={busy} onClick={() => navigate(-1)}>
                 Cancel
@@ -414,8 +442,8 @@ function NudgePreflight({
     <section className="card nudge" aria-label="Before you publish">
       <span className="eyebrow">Before you share</span>
       <p style={{ marginTop: 0 }}>
-        Would you like to add what led you to feel this way? A little context can help others
-        understand. You can still share it as written.
+        This can be shared as it is. Is there anything that would help someone understand what you
+        mean?
       </p>
       {describeCheckReasons(reasons).length > 0 && (
         <ul className="compose-reasons">
@@ -429,10 +457,10 @@ function NudgePreflight({
           {busy ? "Sharing…" : "Share as written"}
         </button>
         <button className="btn btn--ghost" disabled={busy} onClick={onAddContext}>
-          Add context
+          Add a little context
         </button>
         <button className="btn btn--ghost" disabled={busy || saveBusy} onClick={onKeepPrivate}>
-          Keep private
+          Keep this for yourself
         </button>
       </div>
     </section>
@@ -461,15 +489,17 @@ function CooldownPanel({
     <section className="card nudge" aria-label="Cooling off">
       <span className="eyebrow">Publishing can wait</span>
       <p style={{ marginTop: 0 }}>
-        This can still be your experience. Nothing was stored and your draft is safe — after the
-        cooling period you can decide again, with the same words if you still mean them.
+        Your words are saved. Come back after the pause if you still want to share them.
+      </p>
+      <p className="text-3" style={{ marginTop: 0 }}>
+        This is a pause, not a judgment about your experience.
       </p>
       <div className="card-actions compose-actions">
         <button className="btn btn--primary" disabled={!ready} onClick={onRecheck}>
           {ready ? "Run the check again" : `Check again in ${formatRemaining(remaining)}`}
         </button>
         <button className="btn btn--ghost" disabled={saveBusy} onClick={onKeepPrivate}>
-          Keep private meanwhile
+          Keep this for yourself
         </button>
       </div>
     </section>

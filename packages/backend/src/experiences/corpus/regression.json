@@ -438,6 +438,76 @@
       },
       "expect": "rephrase_required",
       "reason": "a vague rumour is corrected, not merely nudged"
+    },
+    {
+      "id": "combined-insult-ordinary",
+      "features": {
+        "targeted_profanity": true
+      },
+      "expect": "rephrase_required",
+      "reason": "insult + ordinary discomfort: expression revision is the first visible intervention"
+    },
+    {
+      "id": "combined-insult-serious",
+      "features": {
+        "targeted_profanity": true,
+        "serious_allegation": true
+      },
+      "expect": "rephrase_required",
+      "reason": "insult + serious allegation: expression first; scope only after the wording is clean"
+    },
+    {
+      "id": "combined-hearsay-slur",
+      "features": {
+        "hearsay": true,
+        "slur_or_dehumanizing": true
+      },
+      "expect": "rephrase_required",
+      "reason": "standing precedes expression: speak from your own experience first"
+    },
+    {
+      "id": "combined-privacy-serious",
+      "features": {
+        "privacy_invasion": true,
+        "serious_allegation": true
+      },
+      "expect": "rephrase_required",
+      "reason": "private detail is an expression revision, not out-of-scope"
+    },
+    {
+      "id": "combined-arousal-ordinary",
+      "features": {
+        "high_arousal": true
+      },
+      "expect": "cooldown_24h",
+      "reason": "high arousal + ordinary criticism: timing only"
+    },
+    {
+      "id": "combined-arousal-serious",
+      "features": {
+        "high_arousal": true,
+        "serious_allegation": true
+      },
+      "expect": "blocked_out_of_scope",
+      "reason": "scope precedes timing: no cooldown for casework matters"
+    },
+    {
+      "id": "combined-uncertain-serious",
+      "features": {
+        "uncertain": true,
+        "serious_allegation": true
+      },
+      "expect": "rephrase_required",
+      "reason": "opaque wording is an expression boundary before scope"
+    },
+    {
+      "id": "combined-arousal-lowinfo",
+      "features": {
+        "high_arousal": true,
+        "low_information": true
+      },
+      "expect": "cooldown_24h",
+      "reason": "timing precedes composition"
     }
   ],
   "live": [
