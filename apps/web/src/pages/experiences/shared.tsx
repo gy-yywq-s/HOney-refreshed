@@ -14,7 +14,7 @@ import { useApi } from "../../lib/useApi";
 /** Spec §7.3: provenance is labeled honestly — never "verified use" for dishes. */
 const PROVENANCE_LABELS: Record<string, string> = {
   verified_lesson: "Verified lesson experience",
-  verified_retrospective: "Verified — has taken this over time",
+  verified_retrospective: "From someone who has taken this over time",
   verified_member: "Verified school member",
 };
 

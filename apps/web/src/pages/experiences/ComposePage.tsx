@@ -216,7 +216,7 @@ export function ExperiencesComposePage() {
           ref={landing.ref}
           tabIndex={-1}
           role="region"
-          aria-label="Editor"
+          aria-label="Couldn’t load"
         >
           <div role="alert" className="banner banner--danger">
             <span>{entities.error}</span>

@@ -66,8 +66,12 @@ export function useApi<T>(
     };
     run().then(
       (data) => {
+        // A superseded request (refresh, key change) must never write the
+        // cache after the one that replaced it (r8): only the live effect's
+        // request may store its body.
+        if (cancelled) return;
         if (key !== undefined) cache.set(key, data);
-        if (!cancelled) setState({ data, error: null, loading: false });
+        setState({ data, error: null, loading: false });
       },
       (err: unknown) => {
         if (!cancelled)

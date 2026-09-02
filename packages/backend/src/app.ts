@@ -100,9 +100,10 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
       root: webDist,
       cacheControl: false, // we set it ourselves below, per file class
       setHeaders(res, path) {
-        // The service worker must be re-checked on every load (r5–r7 relay);
-        // hashed assets are immutable by construction; everything else
-        // revalidates.
+        // Origin intent: the service worker re-checks on every load, hashed
+        // assets are immutable by construction, everything else revalidates.
+        // (The public edge — hostd gateway / Cloudflare, outside this repo —
+        // currently rewrites sw.js to max-age=14400.)
         if (path.endsWith("/sw.js")) res.setHeader("cache-control", "no-cache");
         else if (path.includes("/assets/")) res.setHeader("cache-control", "public, max-age=31536000, immutable");
         else res.setHeader("cache-control", "public, max-age=0, must-revalidate");

@@ -93,7 +93,7 @@ export function SettingsPage() {
           <div className="setting-row__main">
             <span>Delete account</span>
             <span className="caption">
-              Removes your HOney account and everything imported with it. Published experiences
+              Removes your HOney account and your imported lessons (shared teacher, course, room and lesson entries stay). Published experiences
               stay — they carry no author ID and are controlled only by the keys on your devices.
             </span>
           </div>
@@ -168,7 +168,7 @@ export function SettingsPage() {
             <span>Stay connected on this device</span>
             <span className="caption">
               {stayConnected
-                ? "On — routine portal time-outs reconnect on their own. Your login is encrypted and kept only on this device (a browser is less protected than a phone’s secure storage)."
+                ? "On — routine portal time-outs reconnect on their own. Your login is encrypted and kept only on this device; the key that unlocks it is here too (a browser is less protected than a phone’s secure storage)."
                 : "Off — you'll re-enter your school password when the portal session ends. Saving it asks for your login once."}
             </span>
           </div>
@@ -208,7 +208,7 @@ export function SettingsPage() {
           <div className="setting-row__main">
             <span>Delete imported data</span>
             <span className="caption">
-              Removes your imported lessons — your timetable and history. Shared teacher, course and room entries stay.
+              Removes your imported lessons — your timetable and history. Shared teacher, course, room and lesson entries stay.
             </span>
           </div>
           <button className="btn btn--danger" onClick={() => setConfirm("delete-data")}>
@@ -285,7 +285,7 @@ export function SettingsPage() {
       {confirm === "delete-data" && (
         <ConfirmDialog
           title="Delete imported data?"
-          body="Your imported lessons — timetable and history — are removed from HOney. Shared teacher, course and room entries stay. You can import again with Sync now."
+          body="Your imported lessons — timetable and history — are removed from HOney. Shared teacher, course, room and lesson entries stay. You can import again with Sync now."
           confirmLabel="Delete imported data"
           danger
           busy={busyKey === "delete-data"}
@@ -306,7 +306,7 @@ export function SettingsPage() {
       {confirm === "delete-account" && (
         <ConfirmDialog
           title="Delete your HOney account?"
-          body="This permanently removes your account and imported data. This cannot be undone."
+          body="This permanently removes your account and your imported lessons; shared teacher, course, room and lesson entries stay. This cannot be undone."
           confirmLabel="Delete account"
           danger
           busy={busyKey === "delete-account"}

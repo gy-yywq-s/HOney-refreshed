@@ -157,7 +157,13 @@ export function ExperiencesFeedPage() {
           null
         )}
         <p className="sr-only" role="status">
-          {feed.loading ? "" : feed.error ? "Could not load" : `${feed.items.length} experiences`}
+          {feed.loading || feed.error
+            ? ""
+            : feed.items.length === 0
+              ? "Nothing has been shared yet"
+              : feed.items.length === 1
+                ? "1 experience"
+                : `${feed.items.length} experiences`}
         </p>
         <div>
           {feed.items.length > 0 && !feed.loading && !feed.error && (

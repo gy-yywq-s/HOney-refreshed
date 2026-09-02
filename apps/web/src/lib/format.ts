@@ -32,7 +32,7 @@ export function formatTime(timestamp: number | string): string {
 }
 
 export function formatDayHeading(iso: string): string {
-  return parseIsoDate(iso).toLocaleDateString(undefined, {
+  return parseIsoDate(iso).toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -41,7 +41,7 @@ export function formatDayHeading(iso: string): string {
 }
 
 export function formatShortDate(timestamp: number | string): string {
-  return new Date(timestamp).toLocaleDateString(undefined, {
+  return new Date(timestamp).toLocaleDateString("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -49,7 +49,7 @@ export function formatShortDate(timestamp: number | string): string {
 }
 
 export function monthLabel(timestamp: number | string): string {
-  return new Date(timestamp).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  return new Date(timestamp).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 }
 
 export function timeAgo(timestamp: string): string {
@@ -58,7 +58,7 @@ export function timeAgo(timestamp: string): string {
   if (min < 60) return `${min} min ago`;
   const h = Math.round(min / 60);
   if (h < 24) return `${h} h ago`;
-  return new Date(timestamp).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return new Date(timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
 export function isStale(timestamp: string | null, maxMinutes = 60): boolean {
@@ -71,7 +71,7 @@ export function isStale(timestamp: string | null, maxMinutes = 60): boolean {
  * granularity Experiences has; exact timestamps never exist publicly).
  */
 export function formatDayBucket(day: number): string {
-  return new Date(day * 86_400_000).toLocaleDateString(undefined, {
+  return new Date(day * 86_400_000).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -80,7 +80,7 @@ export function formatDayBucket(day: number): string {
 
 /** Coarse (date-only) rendering of an epoch-ms timestamp. */
 export function formatCoarseDate(ms: number): string {
-  return new Date(ms).toLocaleDateString(undefined, {
+  return new Date(ms).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",

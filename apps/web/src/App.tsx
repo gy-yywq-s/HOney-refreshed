@@ -56,12 +56,12 @@ export function App() {
                 element={
                   <Suspense fallback={<div className="fullscreen-note">Loading…</div>}>
                     <DashPage />
+              <Route path="*" element={<NotFoundPage />} />
                   </Suspense>
                 }
               />
             </Route>
             <Route path="/" element={<Navigate to="/home" replace />} />
-            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AuthProvider>
       </ErrorBoundary>

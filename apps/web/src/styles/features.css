@@ -352,7 +352,7 @@ p.caption.timetable-note {
 }
 /* Lesson blocks: ink cards on the canvas. */
 .lesson-block {
-  scroll-margin-top: var(--sp-2);
+  scroll-margin-top: 72px; /* compact landing: the day heading + note stay in view above block 1 (documented exception) */
   position: absolute;
   left: 10px;
   right: 8px;
@@ -1318,7 +1318,12 @@ p.caption.timetable-note {
 }
 /* Skip-link landing: a visible inset ring on the scroll owner. */
 .main:focus {
+  outline: none;
+}
+.main:focus > .view {
+  /* The skip landing paints in the shell's padding gutter, off content. */
   outline: 3px solid var(--accent);
-  outline-offset: -3px;
+  outline-offset: 3px;
+  border-radius: 12px;
 }
 

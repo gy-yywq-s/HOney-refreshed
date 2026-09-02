@@ -28,8 +28,8 @@ export function ReconnectDialog({
   const title = purpose === "save" ? "Save school login" : "Reconnect school account";
   const body =
     purpose === "save"
-      ? "Enter your school login once; it stays encrypted on this device (a browser is less protected than a phone’s secure storage) so routine portal time-outs reconnect on their own."
-      : "The portal session ended. Sign in again to restore it — your HOney data stays as it is. If you keep the login on this device it stays encrypted here (a browser is less protected than a phone’s secure storage).";
+      ? "Enter your school login once; it stays encrypted on this device, with the key that unlocks it (a browser is less protected than a phone’s secure storage), so routine portal time-outs reconnect on their own."
+      : "The portal session ended. Sign in again to restore it — your HOney data stays as it is. If you keep the login on this device it stays encrypted here, with the key that unlocks it (a browser is less protected than a phone’s secure storage).";
   return (
     <Modal title={title} onClose={onClose} describedBy="school-dialog-body">
       <p className="muted" id="school-dialog-body">
@@ -37,7 +37,7 @@ export function ReconnectDialog({
       </p>
       <SchoolLoginForm
         mode="reconnect"
-        submitLabel={purpose === "save" ? "Save login" : "Reconnect"}
+        submitLabel={purpose === "save" ? (stayConnected ? "Save login" : "Continue without saving") : "Reconnect"}
         beforeSubmit={
           <label className="stay-connected">
               <input

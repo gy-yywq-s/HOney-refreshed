@@ -32,7 +32,7 @@ const KIND_INTRO: Record<EntityPageKind, (name: string) => string> = {
 
 export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
   const { id = "" } = useParams();
-  const { names, entities, error: namesError, reload: reloadNames } = useNames();
+  const { names, entities, error: namesError, loading: namesLoading, reload: reloadNames } = useNames();
 
   const entityKey = `${kind}:${id}`;
   const filters: FeedFilters = {};
@@ -45,13 +45,14 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
   const feed = useFeedController("school", filters);
   const sentinel = useLoadMoreSentinel(feed.loadMore);
 
-  const landing = useRetryFocus<HTMLDivElement>(feed.loading);
+  const landing = useRetryFocus<HTMLDivElement>(feed.loading || namesLoading);
   // Delisted entries (deduped rooms, placeholders) stay reachable by URL
   // but must not offer a composer that the server will refuse (r2). A
   // deduped duplicate points at the surviving entry of the same name (r3).
   // An id known to NEITHER the registry nor the directory never existed:
   // that is "nothing at this address", not "no longer listed" (r4).
-  const listed = !entities || entities.some((e) => e.entity_key === entityKey);
+  const listed = !!entities && entities.some((e) => e.entity_key === entityKey);
+  const registryUnknown = !entities; // still loading or failed: no composer, no claims
   const knownName =
     (kind === "teacher" && names.teacher.get(id)) ||
     (kind === "room" && names.room.get(id)) ||
@@ -101,7 +102,7 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
           </Link>
         )}
       </header>
-      {!listed && (
+      {!listed && !registryUnknown && (
         <p className="muted entity-intro">
           This entry is no longer listed.
           {(() => {
@@ -123,18 +124,21 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
         </p>
       )}
 
-      <p className="muted entity-intro">
-        {KIND_INTRO[kind](name)} No single Experience is the whole picture.
-      </p>
+      {!registryUnknown && (
+        <p className="muted entity-intro">
+          {KIND_INTRO[kind](name)} No single Experience is the whole picture.
+        </p>
+      )}
 
-      {namesError ? (
+      {namesError && (
         <div role="alert" className="banner banner--danger">
           <span>{namesError}</span>
           <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); reloadNames(); }}>
             Try again
           </button>
         </div>
-      ) : feed.loading ? (
+      )}
+      {feed.loading ? (
         <Skeleton lines={4} />
       ) : feed.error ? (
         <div role="alert" className="banner banner--danger">

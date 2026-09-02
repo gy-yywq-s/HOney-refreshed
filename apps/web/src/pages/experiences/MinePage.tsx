@@ -46,7 +46,7 @@ export function ExperiencesMinePage() {
   const [feedback, setFeedback] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null); // ownership key
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const { names } = useNames();
+  const { names, error: namesError, reload: reloadNames } = useNames();
 
   const keyList = useMemo(() => keys.map((k) => k.key), [keys]);
   const mine = useApi(
@@ -146,6 +146,14 @@ export function ExperiencesMinePage() {
         </div>
       )}
       {feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>}
+      {namesError && (
+        <div role="alert" className="banner banner--danger">
+          <span>{namesError}</span>
+          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); reloadNames(); }}>
+            Try again
+          </button>
+        </div>
+      )}
 
       {empty ? (
         <section className="card">

@@ -249,6 +249,7 @@ a.btn:hover {
   color: var(--ink);
 }
 .react-btn[aria-disabled="true"] {
+  pointer-events: none; /* the second tap has nothing to do until the POST settles */
   /* Pending: the POST is in flight — visibly quieter, and a second tap
      is swallowed by the handler, so the pill must say so to sight too. */
   opacity: 0.7;

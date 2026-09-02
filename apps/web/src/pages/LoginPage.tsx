@@ -50,12 +50,17 @@ export function LoginPage() {
                 <input
                   type="checkbox"
                   checked={stayConnected}
+                  aria-label="Stay connected on this device"
+                  aria-describedby="stay-connected-note"
                   onChange={(e) => setStayConnected(e.target.checked)}
                 />
                 <span>
-                  <strong>Stay connected on this device.</strong> Portal time-outs reconnect on
-                  their own. Your login is encrypted and kept only here (a browser is less
-                  protected than a phone’s secure storage). Turn it off in Settings.
+                  <strong>Stay connected on this device.</strong>{" "}
+                  <span id="stay-connected-note">
+                    Portal time-outs reconnect on their own. Your login is encrypted and kept
+                    only here, with the key that unlocks it (a browser is less protected than a
+                    phone’s secure storage). Turn it off in Settings.
+                  </span>
                 </span>
               </label>
             }

@@ -92,6 +92,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
   const [myValue, setMyValue] = useState<1 | -1 | 0>(exp.myReaction ?? 0);
   const [counts, setCounts] = useState(exp.reactions);
   const [busy, setBusy] = useState(false);
+  const [pendingValue, setPendingValue] = useState<1 | -1 | 0>(0);
   const [note, setNote] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -164,6 +165,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
     const prevCounts = counts;
     const next: 1 | -1 | 0 = myValue === value ? 0 : value;
     setBusy(true);
+    setPendingValue(value);
     setNote(null);
     setMyValue(next);
     try {
@@ -182,6 +184,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
       }
     } finally {
       setBusy(false);
+      setPendingValue(0);
     }
   }
 
@@ -223,7 +226,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           title={REACTION_EXPLAINER}
           aria-pressed={myValue === 1}
           aria-label="Matches my experience"
-          aria-disabled={busy || undefined}
+          aria-disabled={pendingValue === 1 || undefined}
           onClick={() => void react(1)}
         >
           <ThumbUpIcon />
@@ -235,7 +238,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           title={REACTION_EXPLAINER}
           aria-pressed={myValue === -1}
           aria-label="Doesn’t match my experience"
-          aria-disabled={busy || undefined}
+          aria-disabled={pendingValue === -1 || undefined}
           onClick={() => void react(-1)}
         >
           <ThumbDownIcon />
@@ -255,7 +258,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
             ···
           </button>
           {menuOpen && (
-            <div className="post__menu" role="menu" id={menuId}>
+            <div className="post__menu" role="menu" id={menuId} aria-label="Post options">
               <button
                 type="button"
                 role="menuitem"
@@ -318,7 +321,7 @@ function PostReportDialog({ experienceId, onClose }: { experienceId: string; onC
   }
 
   return (
-    <Modal title="Report this experience" onClose={onClose} describedBy="report-dialog-body">
+    <Modal title="Report this experience" onClose={onClose} describedBy={done ? undefined : "report-dialog-body"}>
       {done ? (
         <>
           <p>

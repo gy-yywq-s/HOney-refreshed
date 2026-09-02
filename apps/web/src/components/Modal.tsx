@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 
 const FOCUSABLE =
@@ -9,7 +10,7 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   /** id of the element that describes the dialog (its first sentence). */
-  describedBy?: string;
+  describedBy?: string | undefined;
 }
 
 export function Modal({ title, onClose, children, describedBy }: ModalProps) {
@@ -41,13 +42,17 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
       }
     };
     document.addEventListener("keydown", onKey);
+    // The app behind the dialog is inert (r8): no tab, click or AT access.
+    const root = document.getElementById("root");
+    root?.setAttribute("inert", "");
     return () => {
       document.removeEventListener("keydown", onKey);
+      root?.removeAttribute("inert");
       opener?.focus?.();
     };
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal"
@@ -67,7 +72,8 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

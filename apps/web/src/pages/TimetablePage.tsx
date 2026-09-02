@@ -23,7 +23,7 @@ type SyncFeedback = { kind: "result"; result: SyncResponse } | { kind: "error"; 
 function formatStepperDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-").map(Number);
   const day = new Date(y!, (m ?? 1) - 1, d ?? 1);
-  return day.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  return day.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
 export function TimetablePage() {
@@ -38,13 +38,13 @@ export function TimetablePage() {
     }
     return todayIsoDate();
   });
-  // An impossible ?date= must not stay in the address bar over a page that
-  // shows today (r7): replace it so a copied link means what the page shows.
+  // The address bar names the day shown, after every change (r8): a copied
+  // link means what the page shows, an impossible ?date= is replaced.
   useEffect(() => {
     const q = searchParams.get("date");
-    if (q && q !== date) window.history.replaceState(null, "", `/timetable?date=${date}`);
+    if (q !== date) window.history.replaceState(null, "", `/timetable?date=${date}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [date]);
   const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
   const [selected, setSelected] = useState<Lesson | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
@@ -53,8 +53,9 @@ export function TimetablePage() {
   const pickerRef = useRef<HTMLInputElement>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
   const landing = useRetryFocus<HTMLDivElement>(loading);
-  // The first settle (success OR error) of a date is its cold landing; any
-  // later data arrival for the same date is a retry and must not scroll.
+  // Landing contract: the FIRST settle (success or error) of a date — cold
+  // load, re-entry or a date step — lands once; every later arrival for the
+  // same date (a retry, a refresh) must not scroll.
   const settledDates = useRef(new Set<string>());
   const coldLanding = !loading && !settledDates.current.has(date);
   useEffect(() => {
@@ -168,8 +169,12 @@ export function TimetablePage() {
       )}
       <h1 className="schedule-header">{formatDayHeading(date)}</h1>
       <p className="caption timetable-note">
-        {(data?.lessons.length ?? 0) > 0 || loading ? "P1–P6 are the school’s six lesson periods." : ""}
-        {data?.lastSyncedAt ? ` Last synced ${timeAgo(data.lastSyncedAt)}.` : ""}
+        {[
+          (data?.lessons.length ?? 0) > 0 || loading ? "P1–P6 are the school’s six lesson periods." : null,
+          data?.lastSyncedAt ? `Last synced ${timeAgo(data.lastSyncedAt)}.` : null,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       </p>
 
       {syncFeedback?.kind === "error" && (
@@ -333,7 +338,7 @@ function DayTimeline({
       el?.scrollIntoView({ block: "start", behavior: "instant" });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, visible.length]);
+  }, [date, visible.length, land]);
 
   return (
     <>
@@ -466,7 +471,17 @@ function CalendarGlyph() {
 function LessonDetail({ lesson, onClose }: { lesson: Lesson; onClose: () => void }) {
   return (
     <Modal title={lesson.subjectName} onClose={onClose} describedBy="lesson-dialog-body">
-      <dl className="kv" id="lesson-dialog-body">
+      <p className="sr-only" id="lesson-dialog-body">
+        {[
+          `${formatTime(lesson.startsAt)} to ${formatTime(lesson.endsAt)}`,
+          lesson.teacherName ? `with ${lesson.teacherName}` : null,
+          lesson.roomName ? `in room ${lesson.roomName}` : null,
+        ]
+          .filter(Boolean)
+          .join(", ")}
+        .
+      </p>
+      <dl className="kv">
         <dt>Time</dt>
         <dd>
           {formatTime(lesson.startsAt)}–{formatTime(lesson.endsAt)}

@@ -77,10 +77,17 @@ export function ExperiencesExplorePage() {
         onChange={(e) => setQ(e.target.value)}
       />
 
-      {entities.error && (
+      {(entities.error || directory.error) && (
         <div role="alert" className="banner banner--danger">
-          <span>{entities.error}</span>
-          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); entities.reload(); }}>
+          <span>{entities.error ?? directory.error}</span>
+          <button
+            className="btn btn--ghost btn--small"
+            onClick={() => {
+              landing.arm();
+              entities.reload();
+              directory.reload();
+            }}
+          >
             Try again
           </button>
         </div>
