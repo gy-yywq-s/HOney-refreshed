@@ -1,12 +1,14 @@
-// The native tab bar (spec §6.3): Home · Experiences · Timetable · Access ·
-// Settings, simple line symbols, accent tint, labels visible. Every tab
-// owns an independent NavigationStack; switching tabs preserves each.
+// The shell (fidelity spec v2 §5): Home · Experiences · Timetable · Access ·
+// Settings. Every tab owns an independent NavigationStack; switching tabs
+// preserves each. The system tab bar is hidden and the Web's floating
+// five-slot bar (TabBarView.swift) sits in the bottom safe-area inset.
 
 import SwiftUI
 import HOneyCore
 
 struct RootTabView: View {
     @Environment(Navigator.self) private var nav
+    @Environment(\.theme) private var theme
 
     var body: some View {
         @Bindable var nav = nav
@@ -17,17 +19,23 @@ struct RootTabView: View {
             tab(.access) { AccessView() }
             tab(.settings) { SettingsRootView() }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HOneyTabBar(selected: $nav.selected)
+        }
+        .background(theme.surface.ignoresSafeArea())
     }
 
     @ViewBuilder
     private func tab<Root: View>(_ tab: AppTab, @ViewBuilder root: () -> Root) -> some View {
         NavigationStack(path: nav.path(for: tab)) {
             root()
+                .toolbar(.hidden, for: .tabBar)
                 .navigationDestination(for: AppRoute.self) { route in
                     RouteView(route: route)
+                        .toolbar(.hidden, for: .tabBar)
                 }
         }
-        .tabItem { Label(tab.title, systemImage: tab.symbol) }
+        .toolbar(.hidden, for: .tabBar)
         .tag(tab)
     }
 }
