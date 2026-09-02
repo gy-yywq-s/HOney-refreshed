@@ -52,10 +52,40 @@ export async function blindSign(issuerPrivateKey: CryptoKey, blindedMessage: Uin
   return suite().blindSign(issuerPrivateKey, plain(blindedMessage), plain(infoBytes(info)));
 }
 
-/** Client, step 2: unblind and verify; the result is the redeemable token. */
+function bytesToBigInt(bytes: Uint8Array): bigint {
+  let n = 0n;
+  for (const b of bytes) n = (n << 8n) | BigInt(b);
+  return n;
+}
+
+function bigIntToBytes(n: bigint, length: number): Uint8Array {
+  const out = new Uint8Array(length);
+  let v = n;
+  for (let i = length - 1; i >= 0; i--) {
+    out[i] = Number(v & 0xffn);
+    v >>= 8n;
+  }
+  if (v !== 0n) throw new Error("integer too large");
+  return out;
+}
+
+/**
+ * Client, step 2: unblind. sig = blindSig · r⁻¹ mod n — one modular
+ * multiplication (the protocol's finalize step, RFC 9474 §5.1.4 step 3), done
+ * with the platform's native big integers. The library's own finalize verifies
+ * the result by importing the DERIVED public key (n, e′) into WebCrypto, and
+ * browsers built on BoringSSL refuse the large derived exponent — so the
+ * client does not verify here; Community verifies every token offline
+ * (Node/OpenSSL accepts e′), and an unusable token is refused there.
+ */
 export async function finalizeToken(issuerPublicKey: CryptoKey, keyId: string, blinded: BlindedToken, info: EligibilityInfo, blindSignature: Uint8Array): Promise<EligibilityToken> {
-  const sig = await suite().finalize(issuerPublicKey, plain(blinded.message), plain(infoBytes(info)), plain(blindSignature), plain(blinded.inverse));
-  return { keyId, info, message: toBase64Url(blinded.message), signature: toBase64Url(sig) };
+  const jwk = (await subtle().exportKey("jwk", issuerPublicKey)) as { n?: string };
+  if (!jwk.n) throw new Error("issuer key has no modulus");
+  const n = bytesToBigInt(fromBase64Url(jwk.n));
+  const kLen = fromBase64Url(jwk.n).length;
+  if (blindSignature.length !== kLen || blinded.inverse.length !== kLen) throw new Error("unexpected input size");
+  const s = (bytesToBigInt(blindSignature) * bytesToBigInt(blinded.inverse)) % n;
+  return { keyId, info, message: toBase64Url(blinded.message), signature: toBase64Url(bigIntToBytes(s, kLen)) };
 }
 
 /** Verifier (Community): offline, with the issuer public key only. */
