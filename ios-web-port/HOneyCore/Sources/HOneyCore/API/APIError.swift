@@ -16,6 +16,7 @@ public struct APIError: Error, Sendable, Equatable, CustomStringConvertible {
     }
 
     public static let networkError = APIError(status: 0, code: "network_error")
+    public static let timeout = APIError(status: 0, code: "timeout")
     public static let notAuthenticated = APIError(status: 401, code: "not_authenticated")
     public static let sessionExpired = APIError(status: 401, code: "session_expired")
 

@@ -17,6 +17,8 @@ public enum APIErrorCopy {
                 return "The school portal is unreachable right now. Please try again in a few minutes."
             case "network_error":
                 return "Could not reach the HOney server. Check your connection and try again."
+            case "timeout":
+                return "The HOney server took too long to answer. Please try again."
             case "session_expired", "not_authenticated":
                 return "Your session has expired. Please sign in again."
             default:

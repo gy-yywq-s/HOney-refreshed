@@ -77,6 +77,13 @@ public final class URLSessionTransport: HTTPTransport, @unchecked Sendable {
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await session.data(for: urlRequest)
+        } catch let error as URLError where error.code == .cancelled {
+            // A cancelled request is not a network failure the student should see.
+            throw CancellationError()
+        } catch let error as URLError where error.code == .timedOut {
+            throw APIError.timeout
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             throw APIError.networkError
         }

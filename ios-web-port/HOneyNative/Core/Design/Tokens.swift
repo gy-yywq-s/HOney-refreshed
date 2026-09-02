@@ -94,7 +94,7 @@ enum HType {
     static let greeting = Font.system(.largeTitle, design: .default).weight(.medium)
     static let pageTitle = Font.system(.title, design: .default).weight(.semibold)
     static let lessonSubject = Font.system(.title2, design: .default).weight(.semibold)
-    static let sectionLabel = Font.system(.caption, design: .default).weight(.semibold)
+    static let sectionLabel = Font.system(.subheadline, design: .default).weight(.semibold)
     static let body = Font.body
     static let reading = Font.body
     static let feature = Font.title3
@@ -104,11 +104,10 @@ enum HType {
 }
 
 extension View {
-    /// An uppercase eyebrow the way the Web sets section labels.
+    /// A native section label: sentence case, semibold, secondary ink — not
+    /// the Web's uppercase eyebrow grammar (review 11d42e3 §4.10).
     func eyebrow() -> some View {
         self.font(HType.sectionLabel)
-            .textCase(.uppercase)
-            .kerning(0.6)
             .foregroundStyle(Color.honeySecondary)
     }
 }

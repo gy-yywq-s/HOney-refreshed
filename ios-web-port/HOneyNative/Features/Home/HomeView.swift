@@ -1,7 +1,10 @@
 // Home (spec §10): brand bar → greeting/date → the separate Now/Next card
 // → 1–3 raw previews from your classes with the composer prompt inside the
 // voices zone → the School Portal row, with no School heading. No avatars,
-// no last-updated, no refresh toolbar — pull to refresh.
+// no last-updated, no refresh toolbar — pull to refresh. A preview opens
+// the Stream at that post; the prompt opens the composer in the
+// Experiences tab (review 11d42e3 §4.8); the preview count follows the
+// container, not the screen (§4.9).
 
 import SwiftUI
 import HOneyCore
@@ -9,54 +12,49 @@ import HOneyCore
 struct HomeView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(Navigator.self) private var nav
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var model: HomeViewModel?
     @State private var showPortal = false
 
-    /// 2 previews on ordinary/tall phones, 3 on genuinely tall ones, 1 on compact.
-    private var previewCount: Int {
-        let h = UIScreen.main.bounds.height
-        if h >= 900 { return 3 }
-        if h >= 700 { return 2 }
-        return 1
-    }
-
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                HOneyBrandHeader()
-                if let me = env.me {
-                    VStack(alignment: .leading, spacing: HSpace.x1) {
-                        Text(L10n.greeting(me.displayName))
-                            .font(HType.greeting)
-                            .foregroundStyle(Color.honeyInk)
-                        Text(Formatters.dayTitle(Formatters.todayIsoDate()))
-                            .font(HType.secondary)
-                            .foregroundStyle(Color.honeySecondary)
-                    }
-                    .pageInset()
-                    .padding(.top, HSpace.x5)
-                    .padding(.bottom, HSpace.x5)
-                }
-
-                if let model {
-                    lessonRegion(model)
+        GeometryReader { geo in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    HOneyBrandHeader()
+                    if let me = env.me {
+                        VStack(alignment: .leading, spacing: HSpace.x1) {
+                            Text(L10n.greeting(me.displayName))
+                                .font(HType.greeting)
+                                .foregroundStyle(Color.honeyInk)
+                            Text(Formatters.dayTitle(Formatters.todayIsoDate()))
+                                .font(HType.secondary)
+                                .foregroundStyle(Color.honeySecondary)
+                        }
                         .pageInset()
-                    voicesRegion(model)
-                        .padding(.top, HSpace.x6)
-                } else {
-                    LoadingPlaceholder(lines: 2).pageInset()
-                }
+                        .padding(.top, HSpace.x5)
+                        .padding(.bottom, HSpace.x5)
+                    }
 
-                HairlineDivider().padding(.top, HSpace.x5)
-                PortalRow { showPortal = true }
-                    .pageInset()
-                    .padding(.vertical, HSpace.x2)
+                    if let model {
+                        lessonRegion(model)
+                            .pageInset()
+                        voicesRegion(model, previewCount: previewCount(for: geo.size.height))
+                            .padding(.top, HSpace.x6)
+                    } else {
+                        LoadingPlaceholder(lines: 2).pageInset()
+                    }
+
+                    HairlineDivider().padding(.top, HSpace.x5)
+                    PortalRow { showPortal = true }
+                        .pageInset()
+                        .padding(.vertical, HSpace.x2)
+                }
+                .padding(.bottom, HSpace.x7)
             }
-            .padding(.bottom, HSpace.x7)
+            .refreshable { await model?.load(reload: true) }
         }
         .background(Color.honeyCanvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .refreshable { await model?.load(reload: true) }
         .task {
             if model == nil { model = HomeViewModel(env: env) }
             await model?.load()
@@ -64,12 +62,21 @@ struct HomeView: View {
         .fullScreenCover(isPresented: $showPortal) { PortalView() }
     }
 
+    /// 2 previews on an ordinary phone, 3 when the container is genuinely
+    /// tall, 1 when it is compact or the type is at accessibility sizes.
+    private func previewCount(for height: CGFloat) -> Int {
+        if typeSize.isAccessibilitySize { return 1 }
+        if height >= 780 { return 3 }
+        if height >= 620 { return 2 }
+        return 1
+    }
+
     @ViewBuilder
     private func lessonRegion(_ model: HomeViewModel) -> some View {
         if model.lessonLoading, model.nextLesson == nil {
             NowNextLessonCard.placeholder
         } else if let error = model.lessonError, model.nextLesson == nil {
-            InlineStatusBanner(text: error, tone: .danger, action: ("Try again", { Task { await model.load(reload: true) } }))
+            InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await model.load(reload: true) } }))
         } else if let next = model.nextLesson?.nextLesson {
             NowNextLessonCard(next: next) {
                 nav.timetableIntent = TimetableIntent(date: Formatters.toIsoDate(Date(epochMillis: next.lesson.startsAt)), view: .day)
@@ -81,11 +88,11 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func voicesRegion(_ model: HomeViewModel) -> some View {
+    private func voicesRegion(_ model: HomeViewModel, previewCount: Int) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HairlineDivider()
             HStack {
-                Text("From your classes").eyebrow()
+                Text(L10n.t("From your classes")).eyebrow()
                 Spacer()
                 Button(L10n.t("See all")) { nav.go(.experiences) }
                     .font(HType.meta)
@@ -96,6 +103,10 @@ struct HomeView: View {
 
             if model.previewsLoading, model.previews.isEmpty {
                 LoadingPlaceholder(lines: 2).pageInset()
+            } else if let error = model.previewsError, model.previews.isEmpty {
+                // A failed request is not an empty community.
+                InlineStatusBanner(text: error, tone: .warning, action: (L10n.t("Try again"), { Task { await model.load(reload: true) } }))
+                    .pageInset()
             } else if model.previews.isEmpty {
                 Text(L10n.t("When someone shares an experience connected to your classes, it will appear here."))
                     .font(HType.secondary)
@@ -106,13 +117,14 @@ struct HomeView: View {
                 ForEach(Array(model.previews.prefix(previewCount).enumerated()), id: \.element.id) { index, exp in
                     if index > 0 { HairlineDivider().pageInset() }
                     ExperiencePreviewRow(exp: exp, lineLimit: previewCount >= 3 ? 2 : 3) {
+                        nav.experiencesIntent = ExperiencesIntent(scope: .myClasses, anchorId: exp.id)
                         nav.go(.experiences)
                     }
                     .pageInset()
                 }
             }
 
-            ComposerPromptRow { nav.push(.compose(nil)) }
+            ComposerPromptRow { nav.go(.experiences, [.compose(nil)]) }
                 .pageInset()
                 .padding(.top, HSpace.x3)
         }
@@ -151,9 +163,7 @@ struct NowNextLessonCard: View {
                         Text(p.stateLabel).eyebrow()
                         Spacer()
                         Text(p.when)
-                            .font(HType.micro.weight(.semibold).monospacedDigit())
-                            .textCase(.uppercase)
-                            .kerning(0.4)
+                            .font(HType.meta.weight(.semibold).monospacedDigit())
                             .foregroundStyle(p.soon ? Color.honeyAccent : Color.honeySecondary)
                     }
                     HStack(alignment: .center) {
@@ -211,7 +221,7 @@ struct NowNextLessonCard: View {
     /// Geometry-preserving placeholder while the first load runs.
     static var placeholder: some View {
         VStack(alignment: .leading, spacing: HSpace.x3) {
-            Text("Next lesson").eyebrow()
+            Text(L10n.t("Next lesson")).eyebrow()
             LoadingPlaceholder(lines: 2)
         }
         .padding(HSpace.x4)
@@ -258,7 +268,7 @@ struct ExperiencePreviewRow: View {
                     .multilineTextAlignment(.leading)
                 let caption = ExperienceDisplay.previewCaption(exp)
                 if !caption.isEmpty {
-                    Text(caption).font(HType.meta).foregroundStyle(Color.honeySecondary).lineLimit(1)
+                    Text(caption).font(HType.meta).foregroundStyle(Color.honeySecondary).lineLimit(2)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

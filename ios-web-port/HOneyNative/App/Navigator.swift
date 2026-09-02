@@ -39,6 +39,13 @@ struct TimetableIntent: Equatable {
     var view: TimetableViewMode?
 }
 
+/// Where the Experiences stream should land: a scope and, if feasible,
+/// the post a Home preview was tapped on (spec §10.5, review §4.8).
+struct ExperiencesIntent: Equatable {
+    var scope: FeedScope?
+    var anchorId: String?
+}
+
 @MainActor
 @Observable
 final class Navigator {
@@ -50,6 +57,8 @@ final class Navigator {
     var settingsPath: [AppRoute] = []
     /// Consumed by TimetableRootView when set.
     var timetableIntent: TimetableIntent?
+    /// Consumed by ExperiencesFeedView when set.
+    var experiencesIntent: ExperiencesIntent?
 
     func path(for tab: AppTab) -> Binding<[AppRoute]> {
         Binding(
@@ -101,6 +110,7 @@ final class Navigator {
         accessPath = []
         settingsPath = []
         timetableIntent = nil
+        experiencesIntent = nil
     }
 
     /// honey://… (spec §6.5) → tab + stack. Mirrors the Web paths.

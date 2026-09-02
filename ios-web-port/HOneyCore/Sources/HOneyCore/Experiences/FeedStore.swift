@@ -1,8 +1,12 @@
 // The Experiences stream's paging state (Web: useFeedController.ts), kept
-// per key (scope + entity filters) for the life of the app so leaving and
-// returning lands the reader where they were. Every write is tagged with
-// the key and generation it belongs to: a scope switch or invalidation
-// mid-flight drops the stale page instead of mixing cursors.
+// per key (scope + entity filters) for the life of the account so leaving
+// and returning lands the reader where they were. Every write is tagged
+// with the key and generation it belongs to: a scope switch or
+// invalidation mid-flight drops the stale page instead of mixing cursors.
+// In-flight registry entries carry the task's own identity, so a stale
+// completion can never evict a newer request (review 11d42e3 §4.4), and a
+// successfully loaded EMPTY feed is a result that restores for a while
+// instead of refetching on every visit (§4.5).
 
 import Foundation
 
@@ -24,6 +28,12 @@ public struct FeedKey: Sendable, Hashable, Equatable {
     public func params(cursor: String? = nil, limit: Int? = nil) -> FeedParams {
         FeedParams(scope: scope, cursor: cursor, limit: limit, entityKey: entityKey, teacherId: teacherId, courseId: courseId, roomId: roomId)
     }
+
+    /// The main Stream (no entity filters): the only key the new-posts
+    /// probe applies to, since /feed/updates knows scope + head only.
+    public var isStream: Bool {
+        entityKey == nil && teacherId == nil && courseId == nil && roomId == nil
+    }
 }
 
 public struct FeedState: Sendable, Equatable {
@@ -32,13 +42,14 @@ public struct FeedState: Sendable, Equatable {
     public var headCursor: String?
     /// True once page one applied — only then is the state worth restoring.
     public var loaded = false
+    public var loadedAt: Date?
     public var end: Bool { loaded && nextCursor == nil }
     /// The post the reader was at when they left (scroll restoration anchor).
     public var anchorId: String?
 
     public init() {}
 
-    mutating func apply(_ page: FeedPage, mode: ApplyMode) {
+    mutating func apply(_ page: FeedPage, mode: ApplyMode, now: Date) {
         var base = mode == .replace ? [] : items
         var seen = Set(base.map(\.id))
         for item in page.items where !seen.contains(item.id) {
@@ -49,21 +60,36 @@ public struct FeedState: Sendable, Equatable {
         nextCursor = page.nextCursor
         if let head = page.headCursor { headCursor = head }
         loaded = true
+        if mode == .replace { loadedAt = now }
     }
 
     enum ApplyMode { case replace, append }
 }
 
 public actor FeedStore {
+    private struct Inflight {
+        let id: UUID
+        let task: Task<FeedState, Error>
+    }
+
     private var states: [FeedKey: FeedState] = [:]
     private var generations: [FeedKey: Int] = [:]
-    private var inflightFirst: [FeedKey: Task<FeedState, Error>] = [:]
+    private var inflightFirst: [FeedKey: Inflight] = [:]
     private var loadingMore: Set<FeedKey> = []
+    /// How long a loaded-empty feed counts as a result before refetching.
+    public static let emptyRestoreWindow: TimeInterval = 60
+    private let now: @Sendable () -> Date
 
-    public init() {}
+    public init(now: @escaping @Sendable () -> Date = { HOneyClock.now() }) {
+        self.now = now
+    }
 
+    /// The restorable state: loaded with items, or loaded empty recently.
     public func state(for key: FeedKey) -> FeedState? {
-        guard let s = states[key], s.loaded, !s.items.isEmpty else { return nil }
+        guard let s = states[key], s.loaded else { return nil }
+        if s.items.isEmpty {
+            guard let at = s.loadedAt, now().timeIntervalSince(at) < Self.emptyRestoreWindow else { return nil }
+        }
         return s
     }
 
@@ -74,21 +100,25 @@ public actor FeedStore {
 
     /// Page one. Concurrent callers for the same key share one request.
     public func loadFirst(_ key: FeedKey, using fetch: @escaping @Sendable (FeedParams) async throws -> FeedPage) async throws -> FeedState {
-        if let task = inflightFirst[key] { return try await task.value }
+        if let existing = inflightFirst[key] { return try await existing.task.value }
         let generation = bump(key)
+        let id = UUID()
         let task = Task<FeedState, Error> {
             let page = try await fetch(key.params())
             return try await self.applyFirst(page, key: key, generation: generation)
         }
-        inflightFirst[key] = task
-        defer { inflightFirst[key] = nil }
+        inflightFirst[key] = Inflight(id: id, task: task)
+        defer {
+            // Only this request removes its own entry — never a newer one's.
+            if inflightFirst[key]?.id == id { inflightFirst[key] = nil }
+        }
         return try await task.value
     }
 
     private func applyFirst(_ page: FeedPage, key: FeedKey, generation: Int) throws -> FeedState {
         guard generations[key] == generation else { throw CancellationError() }
         var state = FeedState()
-        state.apply(page, mode: .replace)
+        state.apply(page, mode: .replace, now: now())
         states[key] = state
         return state
     }
@@ -102,7 +132,7 @@ public actor FeedStore {
         defer { loadingMore.remove(key) }
         let page = try await fetch(key.params(cursor: cursor))
         guard generations[key] == generation, var state = states[key] else { throw CancellationError() }
-        state.apply(page, mode: .append)
+        state.apply(page, mode: .append, now: now())
         states[key] = state
         return state
     }
@@ -126,11 +156,11 @@ public actor FeedStore {
         }
     }
 
-    /// After a publish or revoke: every stream refetches on next visit.
+    /// After a publish, a revoke or an account change: every stream
+    /// refetches on next visit, and in-flight pages are dropped.
     public func invalidateAll() {
-        // Every key that ever loaded OR is loading right now moves on, so an
-        // in-flight first page from before the invalidation is dropped too.
         for key in Set(generations.keys).union(inflightFirst.keys) { _ = bump(key) }
+        for (_, entry) in inflightFirst { entry.task.cancel() }
         states.removeAll()
         inflightFirst.removeAll()
         loadingMore.removeAll()

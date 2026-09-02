@@ -50,10 +50,60 @@ final class FeedStoreTests: XCTestCase {
         let school = await store.state(for: FeedKey(scope: .school))
         XCTAssertEqual(school?.items.count, 3)
         let mine = await store.state(for: FeedKey(scope: .myClasses))
-        XCTAssertNil(mine, "an empty loaded feed is not restored — it refetches")
+        XCTAssertNotNil(mine, "a recently loaded empty feed is a result and restores")
+        XCTAssertEqual(mine?.items.count, 0)
         await store.applyReaction(experienceId: "exp_long", value: 1, counts: ReactionCounts(likes: 1, dislikes: 0))
         let reacted = await store.state(for: FeedKey(scope: .school))
         XCTAssertEqual(reacted?.items[1].myReaction, 1)
+    }
+}
+
+final class FeedStoreHardeningTests: XCTestCase {
+    func testEmptyFeedRestoresOnlyWithinTheWindow() async throws {
+        let clock = ComposerControllerTests.Box(Date(timeIntervalSince1970: 1_000))
+        let store = FeedStore(now: { clock.value })
+        let key = FeedKey(scope: .myClasses)
+        _ = try await store.loadFirst(key) { _ in FeedPage(items: [], nextCursor: nil, headCursor: nil) }
+        let soon = await store.state(for: key)
+        XCTAssertNotNil(soon)
+        clock.value = Date(timeIntervalSince1970: 1_000 + FeedStore.emptyRestoreWindow + 1)
+        let later = await store.state(for: key)
+        XCTAssertNil(later, "after the window an empty feed refetches")
+    }
+
+    func testStaleCompletionDoesNotEvictANewerInFlightRequest() async throws {
+        let store = FeedStore()
+        let key = FeedKey(scope: .school)
+        let page = try Fixtures.decode(FeedPage.self, "feed-page")
+        let calls = ComposerControllerTests.Box(0)
+        let slow = Task { try await store.loadFirst(key) { _ in
+            calls.value += 1
+            try await Task.sleep(nanoseconds: 120_000_000)
+            return page
+        } }
+        try await Task.sleep(nanoseconds: 10_000_000)
+        await store.invalidateAll()
+        // A new first-page request starts while the old one is still winding down.
+        let fresh = Task { try await store.loadFirst(key) { _ in
+            calls.value += 1
+            try await Task.sleep(nanoseconds: 200_000_000)
+            return page
+        } }
+        _ = try? await slow.value
+        // A third caller during the fresh request must coalesce onto it, not start another.
+        try await Task.sleep(nanoseconds: 20_000_000)
+        let third = try await store.loadFirst(key) { _ in
+            calls.value += 1
+            return page
+        }
+        let freshState = try await fresh.value
+        XCTAssertEqual(third.items.count, freshState.items.count)
+        XCTAssertEqual(calls.value, 2, "the stale completion did not clear the fresh registry entry")
+    }
+
+    func testStreamKeyIsTheOnlyProbeTarget() {
+        XCTAssertTrue(FeedKey(scope: .school).isStream)
+        XCTAssertFalse(FeedKey(scope: .school, teacherId: "t").isStream)
     }
 }
 

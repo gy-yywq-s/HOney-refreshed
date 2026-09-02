@@ -20,3 +20,36 @@ touch the native app (spec §1.2). Nothing is copied because it is newer.
 - Appearance: System / Light / Dark + language; no surface or text-size selector (spec §20.5).
 - Composer outcomes are native sheets; publish uses the dedicated identity-free client
   (spec §15–16).
+
+## Review 11d42e3 (2026-09-02) — what changed on the branch afterwards
+
+Everything in the review was applied except one item Gary struck: Settings
+stays a fifth tab (review §3.6 / §6.7 not applied; the Settings screens
+themselves were kept as reviewed). Applied, in order:
+
+1. account scope — every account-scoped store bound before the signed-in
+   shell, unbound before Login; per-account drafts, preferences, journal;
+   repository generations cancel late writes;
+2. portal account binding — vault namespaced by account, school identity
+   verified against the HOney display name and the first student id seen;
+   WebView page/history/website data reset on account change;
+3. one reauthentication path — Portal entry and sync renew through the
+   device coordinator and hand the token to HOney; no routine HOney login;
+4. composer truth — verified drafts, journal before clear, cooldown/kept
+   copy that matches what happened, ModerationDecision adapter;
+5. timetable keyed snapshots — never another day's lessons under a new
+   header; single load path; landing recorded after the scroll;
+6. Access freshness authority — stale permits visible, never actionable;
+   authority withdrawn after every open until a fresh read;
+7. navigation/product — Home previews open the Stream at that post; the
+   composer belongs to the Experiences tab; sentence-case section labels;
+   preview count from the container; Home preview errors shown as errors;
+8. feed/portal hardening — top-visible anchor via scrollPosition, FeedStore
+   task identity + empty-feed restore, probe only on the Stream, haptics on
+   deliberate taps, Latin-only letter groups, cancellation ≠ network error,
+   timeouts named, strict concurrency `complete`, per-configuration servers;
+9. signed runtime proof — `RELEASE_CHECKLIST.md`; CI publishes warning
+   counts with the errors.
+
+Per-post control keys (review §5.2) stay behind `OwnershipKeyStoring`
+(versioned export); a master-secret model waits for a server protocol.

@@ -43,6 +43,12 @@ public actor APIClient {
         return result
     }
 
+    // Replay policy (review 11d42e3 §4.13): a 401 is answered by the backend
+    // BEFORE the route runs (`requireAuth` preHandler), so replaying any
+    // request — including a mutation — after a successful refresh cannot
+    // apply it twice. Logout is the one call that must not replay (the old
+    // session is gone either way), and publish never goes through here.
+
     /// Best effort server-side sign-out; the local session is dropped regardless.
     public func logout() async {
         if hasSession() {

@@ -11,8 +11,10 @@ struct TargetPickerView: View {
     @State private var lessons: [Lesson] = []
     @State private var loading = true
     @State private var error: String?
+    @Environment(\.dynamicTypeSize) private var typeSize
 
-    private var visibleCount: Int { UIScreen.main.bounds.height >= 800 ? 6 : 4 }
+    /// Six rows normally; fewer as the type grows so History stays in reach.
+    private var visibleCount: Int { typeSize.isAccessibilitySize ? 3 : typeSize >= .xLarge ? 4 : 6 }
 
     var body: some View {
         List {

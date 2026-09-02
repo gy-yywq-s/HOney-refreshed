@@ -15,6 +15,9 @@ struct ExperiencePostRow: View {
     @State private var expanded = false
     @State private var reporting = false
     @State private var reportNote: String?
+    /// Counts deliberate reaction taps: the haptic follows these, never a
+    /// rollback or a server update.
+    @State private var reactionTaps = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: HSpace.x2) {
@@ -106,6 +109,7 @@ struct ExperiencePostRow: View {
     private func reactionButton(value: Int, symbol: String, label: String, count: Int?) -> some View {
         let on = reaction.myValue == value
         return Button {
+            reactionTaps += 1
             onReact(value)
         } label: {
             HStack(spacing: 6) {
@@ -124,7 +128,7 @@ struct ExperiencePostRow: View {
         .accessibilityLabel(label)
         .accessibilityAddTraits(on ? .isSelected : [])
         .accessibilityHint(ExperienceDisplay.reactionExplainer)
-        .sensoryFeedback(.selection, trigger: reaction.myValue)
+        .sensoryFeedback(.selection, trigger: reactionTaps)
     }
 
     private func send(_ category: ReportCategory) {

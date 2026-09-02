@@ -126,6 +126,7 @@ struct ExploreView: View {
                 let result = try await env.api.search(q: q)
                 guard !Task.isCancelled, q == query.trimmingCharacters(in: .whitespaces) else { return }
                 search = result
+                feedModel().seed(result.experiences)
                 searchError = nil
             } catch {
                 guard !Task.isCancelled else { return }
@@ -162,7 +163,7 @@ struct ExploreView: View {
         Section {
             if items.isEmpty {
                 Text(L10n.t("Nothing here yet.")).foregroundStyle(Color.honeySecondary).listRowBackground(Color.clear)
-            } else if items.count >= groupThreshold {
+            } else if items.count >= groupThreshold, Self.mostlyLatin(items) {
                 ForEach(letterGroups(items), id: \.0) { letter, list in
                     Text(letter).eyebrow().listRowBackground(Color.clear).listRowSeparator(.hidden)
                     ForEach(list) { entity in row(entity, mark: markable && mine.contains(entity.entityKey)) }
@@ -176,6 +177,13 @@ struct ExploreView: View {
                 Text(count).font(HType.micro).foregroundStyle(Color.honeyTertiary)
             }
         }
+    }
+
+    /// Letter landmarks only help when the names start with letters; a
+    /// Chinese directory would collapse into one "#" group (review §4.12).
+    static func mostlyLatin(_ items: [EntityRef]) -> Bool {
+        let latin = items.filter { ($0.name.first?.isLetter ?? false) && ($0.name.first?.isASCII ?? false) }.count
+        return Double(latin) >= Double(items.count) * 0.8
     }
 
     private func letterGroups(_ items: [EntityRef]) -> [(String, [EntityRef])] {

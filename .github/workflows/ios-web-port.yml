@@ -74,14 +74,17 @@ jobs:
           for line in log.splitlines():
               if keep.search(line) and line not in seen:
                   seen.append(line)
-          text = '\n'.join(seen)[:60000] or 'no error lines matched'
+          warnings = sorted({l for l in log.splitlines() if 'warning:' in l and '/ios-web-port/' in l})
+          text = '\n'.join(seen)[:50000] or 'no error lines matched'
+          if warnings:
+              text += '\n\n# warnings (' + str(len(warnings)) + ')\n' + '\n'.join(warnings)[:10000]
           ok = '** TEST SUCCEEDED **' in log
           body = {
               "name": "xcodebuild errors",
               "head_sha": os.environ["GITHUB_SHA"],
               "status": "completed",
               "conclusion": "success" if ok else "neutral",
-              "output": {"title": "xcodebuild " + ("succeeded" if ok else "errors"), "summary": f"{len(seen)} matching lines", "text": "```\n" + text + "\n```"},
+              "output": {"title": "xcodebuild " + ("succeeded" if ok else "errors"), "summary": f"{len(seen)} matching lines, {len(warnings)} warnings in ios-web-port", "text": "```\n" + text + "\n```"},
           }
           open('check.json', 'w').write(json.dumps(body))
           EOF

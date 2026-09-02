@@ -1,7 +1,8 @@
 // The stream's behaviour (spec §11): cursor pagination, per-scope state
-// restoration, the quiet new-posts probe, reactions with optimistic +
-// authoritative + rollback, category-only reports. Shared by the Stream,
-// entity pages and search results through FeedKey.
+// restoration, the quiet new-posts probe (main Stream only — the update
+// endpoint knows scope + head, not entity filters), reactions with
+// optimistic + authoritative + rollback, category-only reports. Shared by
+// the Stream, entity pages and search results through FeedKey.
 
 import Foundation
 import Observation
@@ -19,6 +20,7 @@ final class FeedViewModel {
     private(set) var end = false
     private(set) var newAvailable = false
     private(set) var reactions: [String: ReactionState] = [:]
+    /// The top-most visible post, kept for restoration (set by the view).
     var restoreAnchorId: String?
     private var probe: Task<Void, Never>?
     private var generation = 0
@@ -65,6 +67,14 @@ final class FeedViewModel {
         generation += 1
         newAvailable = false
         await loadFirst(generation: generation)
+    }
+
+    /// Posts that arrived by another route (search results): register
+    /// their reaction state so the same row renders and reacts correctly.
+    func seed(_ posts: [PublicExperience]) {
+        for post in posts where reactions[post.id] == nil {
+            reactions[post.id] = ReactionState(post)
+        }
     }
 
     private func loadFirst(generation gen: Int) async {
@@ -121,6 +131,7 @@ final class FeedViewModel {
 
     private func startProbe() {
         probe?.cancel()
+        guard key.isStream else { return }
         let api = env.api
         let store = env.feedStore
         let key = key
