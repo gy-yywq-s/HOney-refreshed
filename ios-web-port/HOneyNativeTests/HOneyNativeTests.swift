@@ -7,8 +7,21 @@ import HOneyCore
 @testable import HOneyNative
 
 final class KeychainSecretStoreTests: XCTestCase {
-    func testRoundTripAndPrefixEnumeration() throws {
+    /// An unsigned simulator test host (CI, CODE_SIGNING_ALLOWED=NO) has no
+    /// Keychain entitlement; these tests then skip and run on a signed build.
+    private func keychainStore() throws -> KeychainSecretStore {
         let store = KeychainSecretStore(service: "com.gaelisus.honey.native.tests.\(UUID().uuidString)")
+        do {
+            try store.write("probe", Data("1".utf8))
+            try store.delete("probe")
+        } catch {
+            throw XCTSkip("Keychain unavailable in this test host: \(error)")
+        }
+        return store
+    }
+
+    func testRoundTripAndPrefixEnumeration() throws {
+        let store = try keychainStore()
         XCTAssertNil(try store.read("a"))
         try store.write("honey.keys.h1.e1", Data("k1".utf8))
         try store.write("honey.keys.h1.e2", Data("k2".utf8))
@@ -24,7 +37,7 @@ final class KeychainSecretStoreTests: XCTestCase {
     }
 
     func testOwnershipKeysOnTheKeychainExportAndImport() throws {
-        let store = KeychainSecretStore(service: "com.gaelisus.honey.native.tests.\(UUID().uuidString)")
+        let store = try keychainStore()
         let keys = SecretOwnershipKeyStore(store: store, account: "h_test")
         try keys.add(key: "own-1", experienceId: "e-1")
         XCTAssertEqual(keys.count(), 1)
