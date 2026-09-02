@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useNavigationType } from "react-router-dom";
-import { isKnownRoute, parentOf, rootOf, titleOf } from "../lib/navigation";
+import { parentOf, rootOf, titleOf } from "../lib/navigation";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { Me } from "../api/types";
@@ -122,7 +122,6 @@ function AppLayout() {
     );
   }
 
-  const known = isKnownRoute(location.pathname);
   const railIndex = tabIndex(location.pathname, DESKTOP_TABS);
   const mobileIndex = tabIndex(location.pathname, MOBILE_TABS);
 
@@ -144,13 +143,13 @@ function AppLayout() {
             style={{ "--active": Math.max(railIndex, 0) } as CSSProperties}
             aria-hidden="true"
           />
-          {DESKTOP_TABS.map((tab) => (
+          {DESKTOP_TABS.map((tab, i) => (
             <NavLink
               key={tab.to}
               to={tab.to}
               replace
-              className={({ isActive }) => (isActive && known ? "nav-item is-active" : "nav-item")}
-              aria-current={undefined}
+              className={i === railIndex ? "nav-item is-active" : "nav-item"}
+              aria-current={i === railIndex ? "page" : undefined}
             >
               {tab.label}
             </NavLink>
@@ -211,14 +210,13 @@ function AppLayout() {
           style={{ "--active": Math.max(mobileIndex, 0) } as CSSProperties}
           aria-hidden="true"
         />
-        {MOBILE_TABS.map((tab) => (
+        {MOBILE_TABS.map((tab, i) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             replace
-            className={({ isActive }) =>
-              isActive && known ? "mobile-nav__item is-active" : "mobile-nav__item"
-            }
+            className={i === mobileIndex ? "mobile-nav__item is-active" : "mobile-nav__item"}
+            aria-current={i === mobileIndex ? "page" : undefined}
           >
             {tab.icon}
             <span>{tab.label}</span>
