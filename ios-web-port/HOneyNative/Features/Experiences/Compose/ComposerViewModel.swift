@@ -3,6 +3,11 @@
 // what the editor shows. The publication sequence itself lives in
 // HOneyCore.ComposerController; the identity-free publish goes through the
 // dedicated PublicationAPIClient.
+//
+// Every claim the editor makes about storage is backed by a verified write
+// (review 11d42e3 §3.3): "Saved" only after the bytes are on the device,
+// the cooldown sheet only says the words were kept when the note really
+// was, and "kept private" says whether the text went through the check.
 
 import Foundation
 import Observation
@@ -40,9 +45,15 @@ final class ComposerViewModel {
     private(set) var status: ComposerStatus = .editing
     private(set) var notice: ComposerNotice?
     private(set) var saveState: SaveState = .idle
+    /// The last check ran without a durable draft (shown above the editor).
+    private(set) var draftUnsavedBeforeCheck = false
     private(set) var keptPrivate = false
+    /// The kept note went through the check path first (copy differs).
+    private(set) var keptAfterCheck = false
     private(set) var privateSaveError: String?
     private(set) var busySavingNote = false
+    /// The cooldown outcome could not keep the note on this iPhone.
+    private(set) var cooldownSaveFailed = false
 
     private var controller: ComposerController?
     private var autosaveTask: Task<Void, Never>?
@@ -88,7 +99,6 @@ final class ComposerViewModel {
                 lessonDate = n.target.lessonDate
                 entityKey = n.target.entityKey
                 if n.target.lessonId == nil, n.target.entityKey == nil {
-                    // A note with no publishable target (should not happen): edit only.
                     label = n.target.label
                     scope = nil
                 }
@@ -174,6 +184,7 @@ final class ComposerViewModel {
         let publication = env.publication
         let keys = env.keys
         let drafts = env.drafts
+        let journal = env.journal
         let feedStore = env.feedStore
         let timetable = env.timetable
         return ComposerController(scope: scope, deps: ComposerDependencies(
@@ -181,8 +192,11 @@ final class ComposerViewModel {
             check: { try await api.checkExperience($0) },
             publish: { try await publication.publish($0) },
             storeKey: { id, key in try keys.add(key: key, experienceId: id) },
-            saveDraft: { key, body, rating in try? drafts.save(targetKey: key, body: body, rating: rating) },
-            clearDraft: { key in try? drafts.clear(key) },
+            keyIsStored: { id in ((try? keys.list()) ?? []).contains { $0.experienceId == id } },
+            saveDraft: { key, body, rating in try drafts.save(targetKey: key, body: body, rating: rating) },
+            clearDraft: { key in try drafts.clear(key) },
+            journalWrite: { record in try await journal.write(record) },
+            journalRemove: { id in try await journal.remove(experienceId: id) },
             didPublish: {
                 await feedStore.invalidateAll()
                 await timetable.invalidateEntities()
@@ -199,8 +213,13 @@ final class ComposerViewModel {
         autosaveTask = Task {
             try? await Task.sleep(nanoseconds: 400_000_000)
             guard !Task.isCancelled else { return }
-            await controller.autosave(body: body, rating: rating)
-            if !Task.isCancelled { saveState = body.isEmpty && rating == nil ? .idle : .saved }
+            let ok = await controller.autosave(body: body, rating: rating)
+            guard !Task.isCancelled else { return }
+            if body.isEmpty, rating == nil {
+                saveState = .idle
+            } else {
+                saveState = ok ? .saved : .failed(ModerationCopy.draftNotSaved)
+            }
         }
     }
 
@@ -236,11 +255,14 @@ final class ComposerViewModel {
     private func apply(_ outcome: ComposerOutcome) async {
         status = outcome.status
         notice = outcome.notice
+        draftUnsavedBeforeCheck = !outcome.draftPersisted
+        if !outcome.draftPersisted { saveState = .failed(ModerationCopy.draftNotSaved) }
         if case .cooldown(let retryAt, _) = outcome.status, let controller,
            let held = await controller.heldCooldown(body: body, rating: rating), keptForTicket != held.ticket {
-            // A cooling-off outcome keeps the words private on this iPhone at once.
+            // A cooling-off outcome keeps the words private on this iPhone at
+            // once — and says so only when that really happened.
             keptForTicket = held.ticket
-            _ = await saveNote(cooldown: .some(NoteCooldown(until: retryAt, ticket: held.ticket)), quiet: true)
+            cooldownSaveFailed = !(await saveNote(cooldown: .some(NoteCooldown(until: retryAt, ticket: held.ticket)), quiet: true))
         }
     }
 
@@ -253,7 +275,11 @@ final class ComposerViewModel {
         } else if let existing = note?.cooldown, let controller, await controller.heldCooldown(body: body, rating: rating) != nil {
             cooldown = .some(existing)
         }
-        if await saveNote(cooldown: cooldown, quiet: false) { keptPrivate = true }
+        keptAfterCheck = await controller?.wasChecked(body: body, rating: rating) ?? false
+        if await saveNote(cooldown: cooldown, quiet: false) {
+            cooldownSaveFailed = false
+            keptPrivate = true
+        }
     }
 
     @discardableResult

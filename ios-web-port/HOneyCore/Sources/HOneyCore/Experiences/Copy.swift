@@ -37,6 +37,11 @@ public enum ModerationCopy {
     public static let outOfScope = "This sounds like something that needs real support or action, not a public post. HOney won’t publish it or send it to the school. You can keep it for yourself instead."
     public static let blocked = "This can't be published under the community rules. Nothing was stored — your draft is still here if you want to reshape it."
     public static let failedClosed = "HOney could not check this reliably. Nothing was published, and your words remain on this iPhone."
+    public static let failedClosedUnsaved = "HOney could not check this reliably. Nothing was published — and this iPhone could not save the draft either, so copy your words before leaving."
+    public static let draftNotSaved = "This iPhone could not save the draft. Your words are only in this editor until it can."
+    public static let keptPrivateNeverSent = "This note stayed on this iPhone — it was never sent anywhere. You can edit, delete or share it later from Your notes & posts."
+    public static let keptPrivateAfterCheck = "It was not published. The text was processed once for the pre-publication check, then kept as a private note on this iPhone. You can edit, delete or share it later from Your notes & posts."
+    public static let cooldownSaveFailed = "Publishing can wait, but this iPhone could not save the note. Copy your words, or fix the storage problem and try Keep private again."
 
     public static let nudgeQuestion = "This can be shared as it is. Is there anything that would help someone understand what you mean?"
     public static let cooldownTitle = "Publishing can wait"
@@ -44,7 +49,7 @@ public enum ModerationCopy {
     public static let sharedTitle = "Shared."
     public static let sharedBody = "Your school identity is not shown with this public Experience. This iPhone keeps its control key so you can manage it later."
     public static let keptPrivateTitle = "Kept private"
-    public static let keptPrivateBody = "The note stays only on this iPhone — it was never sent anywhere. You can edit, delete or share it later from Your notes & posts."
+    public static let keptPrivateBody = keptPrivateNeverSent
     public static let privacyLine = "Public sharing runs a text check. Published Experiences are stored without an ordinary author field."
     public static let keyUnsavedBody = "The post is already public, but this iPhone could not store its control key. Copy the key now — without it the post cannot be managed or removed later."
 

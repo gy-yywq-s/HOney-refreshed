@@ -112,6 +112,9 @@ struct ComposerView: View {
                         StarInput(value: $model.rating)
                     }
                 }
+                if model.draftUnsavedBeforeCheck {
+                    InlineStatusBanner(text: ModerationCopy.draftNotSaved, tone: .warning)
+                }
                 if let remaining = pauseRemaining, model.notice == nil {
                     InlineStatusBanner(text: "\(L10n.t("Cooling · you can share these words in")) \(Formatters.remaining(remaining)). \(L10n.t("Edit them to say it differently and check again now."))", tone: .warning)
                 }
@@ -141,7 +144,9 @@ struct ComposerView: View {
             switch status {
             case .nudge: showNudge = true
             case .cooldown: showCooldown = true
-            case .published: showPublished = true
+            case .published:
+                showKeyUnsaved = false
+                showPublished = true
             case .publishedKeyUnsaved: showKeyUnsaved = true
             default: break
             }
@@ -245,15 +250,26 @@ struct ComposerView: View {
     private func cooldownSheet(_ model: ComposerViewModel) -> some View {
         OutcomeSheet(title: L10n.t(ModerationCopy.cooldownTitle)) {
             if case .cooldown(let retryAt, _) = model.status {
-                Text("Your words are kept in your private notes on this iPhone. You can share them in \(Formatters.remaining(retryAt - HOneyClock.now().epochMillis)) — or edit them to say it differently and check again sooner.").font(HType.body)
+                if model.cooldownSaveFailed {
+                    Text(ModerationCopy.cooldownSaveFailed).font(HType.body)
+                    Text("You can share these words in \(Formatters.remaining(retryAt - HOneyClock.now().epochMillis)).").font(HType.secondary).foregroundStyle(Color.honeySecondary)
+                } else {
+                    Text("Your words are kept in your private notes on this iPhone. You can share them in \(Formatters.remaining(retryAt - HOneyClock.now().epochMillis)) — or edit them to say it differently and check again sooner.").font(HType.body)
+                }
             }
             Text(L10n.t(ModerationCopy.cooldownNote)).font(HType.secondary).foregroundStyle(Color.honeySecondary)
         } actions: {
-            Button(L10n.t("OK")) {
-                showCooldown = false
-                nav.pop()
-                nav.push(.mine)
-            }.buttonStyle(.borderedProminent)
+            if model.cooldownSaveFailed {
+                Button("Copy my words") { UIPasteboard.general.string = model.body }.buttonStyle(.bordered)
+                Button("Try keeping it again") { showCooldown = false; Task { await model.keepPrivate() } }.buttonStyle(.borderedProminent)
+                Button("Stay in the editor") { showCooldown = false }.buttonStyle(.plain).foregroundStyle(Color.honeySecondary)
+            } else {
+                Button(L10n.t("OK")) {
+                    showCooldown = false
+                    nav.pop()
+                    nav.push(.mine)
+                }.buttonStyle(.borderedProminent)
+            }
         }
         .interactiveDismissDisabled()
     }
@@ -270,8 +286,12 @@ struct ComposerView: View {
 
     private func keyUnsavedSheet(_ model: ComposerViewModel) -> some View {
         OutcomeSheet(title: "Shared, but the control key was not stored") {
-            Text(ModerationCopy.keyUnsavedBody).font(HType.body)
-            if case .publishedKeyUnsaved(_, let key) = model.status {
+            if case .publishedKeyUnsaved(_, _, let journaled) = model.status, journaled {
+                Text("The post is already public. This iPhone could not put its control key in the Keychain yet, but the key is kept in HOney's protected recovery file and will be stored again on the next launch. Copy it too, to be safe.").font(HType.body)
+            } else {
+                Text(ModerationCopy.keyUnsavedBody).font(HType.body)
+            }
+            if case .publishedKeyUnsaved(_, let key, _) = model.status {
                 Text(key)
                     .font(.system(.footnote, design: .monospaced))
                     .textSelection(.enabled)
@@ -289,7 +309,7 @@ struct ComposerView: View {
 
     private var keptPrivateSheet: some View {
         OutcomeSheet(title: L10n.t(ModerationCopy.keptPrivateTitle)) {
-            Text(ModerationCopy.keptPrivateBody).font(HType.body)
+            Text(model?.keptAfterCheck == true ? ModerationCopy.keptPrivateAfterCheck : ModerationCopy.keptPrivateNeverSent).font(HType.body)
             Text("It lives in protected app storage on this iPhone. Deleting the app removes it unless you export first.").font(HType.secondary).foregroundStyle(Color.honeySecondary)
         } actions: {
             Button(L10n.t("Your notes & posts")) { showKeptPrivate = false; nav.pop(); nav.push(.mine) }.buttonStyle(.bordered)
@@ -332,7 +352,7 @@ struct FirstPublicationDisclosureSheet: View {
         OutcomeSheet(title: "Before your first share") {
             VStack(alignment: .leading, spacing: HSpace.x2) {
                 Text("1. HOney verifies you had the relevant class or place.")
-                Text("2. Your text gets a check before it can be published.")
+                Text("2. Your text gets a check before it can be published — obvious rule problems on HOney's server, otherwise once through an external text-moderation model, without your identity.")
                 Text("3. The public post stores no ordinary author field.")
                 Text("4. This iPhone keeps a control key so you can remove it later.")
                 Text("5. What you write may still identify the situation to people who know it.")

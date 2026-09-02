@@ -81,27 +81,31 @@ final class ReactionStateTests: XCTestCase {
 }
 
 final class ComposerControllerTests: XCTestCase {
-    struct Harness {
-        var checks: [CheckExperienceResponse]
-        var publishError: APIError?
-        var keyFails = false
-        let drafts = InMemoryDrafts()
-        var storedKeys: [(String, String)] = []
-        var publishCalls = 0
-    }
-
-    final class InMemoryDrafts: @unchecked Sendable {
-        var saved: [(String, String, Int?)] = []
-        var cleared: [String] = []
-    }
-
     final class Box<T>: @unchecked Sendable { var value: T; init(_ v: T) { value = v } }
 
-    func makeController(scope: ComposerScope = ComposerScope(lessonId: "L1"), checks: [CheckExperienceResponse], publishError: APIError? = nil, keyFails: Bool = false) -> (ComposerController, Box<[String]>, Box<[(String, String, Int?)]>, Box<Int>) {
+    struct Harness {
+        let controller: ComposerController
+        let events: Box<[String]>
+        let drafts: Box<[(String, String, Int?)]>
+        let publishes: Box<Int>
+        let journal: Box<[String: PublicationRecord]>
+        let keychain: Box<[String: String]>
+    }
+
+    func makeController(
+        scope: ComposerScope = ComposerScope(lessonId: "L1"),
+        checks: [CheckExperienceResponse],
+        publishError: APIError? = nil,
+        keyFails: Bool = false,
+        draftFails: Bool = false,
+        journalFails: Bool = false
+    ) -> Harness {
         let events = Box<[String]>([])
         let drafts = Box<[(String, String, Int?)]>([])
         let publishes = Box(0)
         let queue = Box(checks)
+        let journal = Box<[String: PublicationRecord]>([:])
+        let keychain = Box<[String: String]>([:])
         let deps = ComposerDependencies(
             eligibility: { input in
                 events.value.append("eligibility:\(input.lessonId ?? input.entityKey ?? "")")
@@ -119,102 +123,181 @@ final class ComposerControllerTests: XCTestCase {
             },
             storeKey: { id, key in
                 if keyFails { throw SecretStoreError.writeFailed }
+                keychain.value[id] = key
                 events.value.append("key:\(id):\(key)")
             },
-            saveDraft: { key, body, rating in drafts.value.append((key, body, rating)) },
-            clearDraft: { key in events.value.append("clear:\(key)") }
+            keyIsStored: { id in keychain.value[id] != nil },
+            saveDraft: { key, body, rating in
+                if draftFails { throw ComposerDraftStoreError.notWritten }
+                drafts.value.append((key, body, rating))
+            },
+            clearDraft: { key in events.value.append("clear:\(key)") },
+            journalWrite: { record in
+                if journalFails { throw PublicationJournalError.notWritten }
+                journal.value[record.experienceId] = record
+                events.value.append("journal:\(record.experienceId)")
+            },
+            journalRemove: { id in
+                journal.value[id] = nil
+                events.value.append("unjournal:\(id)")
+            }
         )
-        return (ComposerController(scope: scope, deps: deps), events, drafts, publishes)
+        return Harness(controller: ComposerController(scope: scope, deps: deps), events: events, drafts: drafts, publishes: publishes, journal: journal, keychain: keychain)
     }
 
-    func testPublishLaneStoresKeyAndClearsDraft() async throws {
-        let (c, events, drafts, _) = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")])
-        let outcome = await c.continueToShare(body: "  words  ", rating: 4)
+    func testPublishLaneJournalsBeforeKeyAndClearsDraftLast() async throws {
+        let h = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")])
+        let outcome = await h.controller.continueToShare(body: "  words  ", rating: 4)
         XCTAssertEqual(outcome.status, .published(experienceId: "exp_new", ownershipKey: "own"))
-        XCTAssertEqual(drafts.value.first?.1, "  words  ", "draft persisted before the network")
-        XCTAssertEqual(events.value, ["eligibility:L1", "check:words:-", "publish:elig:pass_fixture:words", "clear:lesson:L1", "key:exp_new:own"])
+        XCTAssertTrue(outcome.draftPersisted)
+        XCTAssertEqual(h.drafts.value.first?.1, "  words  ", "draft persisted before the network")
+        XCTAssertEqual(h.events.value, ["eligibility:L1", "check:words:-", "publish:elig:pass_fixture:words", "journal:exp_new", "key:exp_new:own", "unjournal:exp_new", "clear:lesson:L1"])
+        XCTAssertTrue(h.journal.value.isEmpty)
+    }
+
+    func testDraftWriteFailureIsReportedNotHidden() async throws {
+        let h = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-failed-closed")], draftFails: true)
+        let outcome = await h.controller.continueToShare(body: "x", rating: nil)
+        XCTAssertFalse(outcome.draftPersisted)
+        XCTAssertEqual(outcome.notice?.text, ModerationCopy.failedClosedUnsaved, "never 'your words remain on this iPhone' when they do not")
+        let saved = await h.controller.autosave(body: "x", rating: nil)
+        XCTAssertFalse(saved)
     }
 
     func testNudgeWaitsForAnExplicitChoice() async throws {
-        let (c, events, _, publishes) = makeController(checks: [
+        let h = makeController(checks: [
             try Fixtures.decode(CheckExperienceResponse.self, "check-nudge"),
             try Fixtures.decode(CheckExperienceResponse.self, "check-edit-required"),
         ])
-        let outcome = await c.continueToShare(body: "short", rating: nil)
+        let outcome = await h.controller.continueToShare(body: "short", rating: nil)
         XCTAssertEqual(outcome.status, .nudge(reasons: ["composition:low_information"]))
-        XCTAssertEqual(publishes.value, 0, "a nudge never publishes by itself")
-        let back = await c.backToEditing()
+        XCTAssertEqual(h.publishes.value, 0, "a nudge never publishes by itself")
+        let back = await h.controller.backToEditing()
         XCTAssertEqual(back.status, .editing)
-        let shared = await c.shareAsWritten(body: "short", rating: nil)
+        let shared = await h.controller.shareAsWritten(body: "short", rating: nil)
         XCTAssertEqual(shared.status, .editing, "after leaving the preflight the pass is gone → a fresh check ran (and refused)")
-        XCTAssertEqual(events.value.filter { $0.hasPrefix("check") }.count, 2)
-        XCTAssertEqual(publishes.value, 0)
+        XCTAssertEqual(h.events.value.filter { $0.hasPrefix("check") }.count, 2)
+        XCTAssertEqual(h.publishes.value, 0)
     }
 
     func testShareAsWrittenUsesHeldPass() async throws {
-        let (c, events, _, publishes) = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-nudge")])
-        _ = await c.continueToShare(body: "short", rating: nil)
-        let shared = await c.shareAsWritten(body: "short", rating: nil)
+        let h = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-nudge")])
+        _ = await h.controller.continueToShare(body: "short", rating: nil)
+        let shared = await h.controller.shareAsWritten(body: "short", rating: nil)
         XCTAssertEqual(shared.status, .published(experienceId: "exp_new", ownershipKey: "own"))
-        XCTAssertEqual(publishes.value, 1)
-        XCTAssertEqual(events.value.filter { $0.hasPrefix("check") }.count, 1, "no second check")
+        XCTAssertEqual(h.publishes.value, 1)
+        XCTAssertEqual(h.events.value.filter { $0.hasPrefix("check") }.count, 1, "no second check")
     }
 
     func testCooldownTicketReusedOnlyForUnchangedText() async throws {
         let cooldown = try Fixtures.decode(CheckExperienceResponse.self, "check-cooldown")
-        let (c, events, _, _) = makeController(checks: [cooldown, try Fixtures.decode(CheckExperienceResponse.self, "check-publish"), cooldown])
-        let outcome = await c.continueToShare(body: "angry words", rating: nil)
+        let h = makeController(checks: [cooldown, try Fixtures.decode(CheckExperienceResponse.self, "check-publish"), cooldown])
+        let outcome = await h.controller.continueToShare(body: "angry words", rating: nil)
         guard case .cooldown(let retryAt, _) = outcome.status else { return XCTFail() }
         XCTAssertEqual(retryAt, cooldown.cooldown?.retryAt)
-        let held = await c.heldCooldown(body: "angry words ", rating: nil)
+        let held = await h.controller.heldCooldown(body: "angry words ", rating: nil)
         XCTAssertNotNil(held)
-        let notHeld = await c.heldCooldown(body: "calmer words", rating: nil)
+        let notHeld = await h.controller.heldCooldown(body: "calmer words", rating: nil)
         XCTAssertNil(notHeld)
-        _ = await c.continueToShare(body: "angry words", rating: nil)
-        XCTAssertEqual(events.value.last { $0.hasPrefix("check") }, "check:angry words:cool_fixture")
-        _ = await c.continueToShare(body: "calmer words", rating: nil)
-        XCTAssertEqual(events.value.last { $0.hasPrefix("check") }, "check:calmer words:-", "edited text checks fresh")
+        let checked = await h.controller.wasChecked(body: "angry words", rating: nil)
+        XCTAssertTrue(checked)
+        let unchecked = await h.controller.wasChecked(body: "calmer words", rating: nil)
+        XCTAssertFalse(unchecked)
+        _ = await h.controller.continueToShare(body: "angry words", rating: nil)
+        XCTAssertEqual(h.events.value.last { $0.hasPrefix("check") }, "check:angry words:cool_fixture")
+        _ = await h.controller.continueToShare(body: "calmer words", rating: nil)
+        XCTAssertEqual(h.events.value.last { $0.hasPrefix("check") }, "check:calmer words:-", "edited text checks fresh")
     }
 
     func testRefusalLanesKeepTheDraftWithCopy() async throws {
-        let (c, _, drafts, publishes) = makeController(checks: [
+        let h = makeController(checks: [
             try Fixtures.decode(CheckExperienceResponse.self, "check-edit-required"),
             try Fixtures.decode(CheckExperienceResponse.self, "check-out-of-scope"),
             try Fixtures.decode(CheckExperienceResponse.self, "check-failed-closed"),
         ])
-        let edit = await c.continueToShare(body: "x", rating: nil)
+        let edit = await h.controller.continueToShare(body: "x", rating: nil)
         XCTAssertEqual(edit.status, .editing)
         XCTAssertEqual(edit.notice?.text, ModerationCopy.editRequired)
         XCTAssertEqual(edit.notice?.reasons, ["expression:targets_student"])
-        let scope = await c.continueToShare(body: "x", rating: nil)
+        let scope = await h.controller.continueToShare(body: "x", rating: nil)
         XCTAssertEqual(scope.notice?.suggestKeepPrivate, true)
-        let failed = await c.continueToShare(body: "x", rating: nil)
+        let failed = await h.controller.continueToShare(body: "x", rating: nil)
         XCTAssertEqual(failed.notice?.tone, .danger)
         XCTAssertEqual(failed.notice?.text, ModerationCopy.failedClosed)
-        XCTAssertEqual(publishes.value, 0)
-        XCTAssertEqual(drafts.value.count, 3, "every attempt persisted the draft first")
+        XCTAssertEqual(h.publishes.value, 0)
+        XCTAssertEqual(h.drafts.value.count, 3, "every attempt persisted the draft first")
     }
 
-    func testPublishedButKeyUnsavedIsHonest() async throws {
-        let (c, _, _, _) = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")], keyFails: true)
-        let outcome = await c.continueToShare(body: "x", rating: nil)
-        XCTAssertEqual(outcome.status, .publishedKeyUnsaved(experienceId: "exp_new", ownershipKey: "own"))
-        let retried = await c.retryStoringKey()
-        XCTAssertEqual(retried.status, .publishedKeyUnsaved(experienceId: "exp_new", ownershipKey: "own"))
+    func testKeychainFailureKeepsTheJournalAndRetryCompletes() async throws {
+        let h = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")], keyFails: true)
+        let outcome = await h.controller.continueToShare(body: "x", rating: nil)
+        XCTAssertEqual(outcome.status, .publishedKeyUnsaved(experienceId: "exp_new", ownershipKey: "own", journaled: true))
+        XCTAssertEqual(h.journal.value["exp_new"]?.ownershipKey, "own", "the key survives process death in the journal")
+        XCTAssertTrue(h.events.value.contains("clear:lesson:L1"), "the draft is cleared once the key is journaled")
+        // Later the Keychain works again (simulate by storing directly then retrying readback path)
+        h.keychain.value["exp_new"] = "own"
+        let retried = await h.controller.retryStoringKey()
+        // storeKey still throws in this harness, but the key is present: settle must verify readback,
+        // and since storeKey threw before readback the outcome stays unsaved.
+        XCTAssertEqual(retried.status, .publishedKeyUnsaved(experienceId: "exp_new", ownershipKey: "own", journaled: true))
+    }
+
+    func testJournalAndKeychainBothFailingKeepsTheDraft() async throws {
+        let h = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")], keyFails: true, journalFails: true)
+        let outcome = await h.controller.continueToShare(body: "x", rating: nil)
+        XCTAssertEqual(outcome.status, .publishedKeyUnsaved(experienceId: "exp_new", ownershipKey: "own", journaled: false))
+        XCTAssertFalse(h.events.value.contains("clear:lesson:L1"), "nothing durable holds the key: the draft stays too")
+    }
+
+    func testRetryAfterKeychainRecovers() async throws {
+        let keyFails = Box(true)
+        let events = Box<[String]>([])
+        let keychain = Box<[String: String]>([:])
+        let journal = Box<[String: PublicationRecord]>([:])
+        let queue = Box([try Fixtures.decode(CheckExperienceResponse.self, "check-publish")])
+        let deps = ComposerDependencies(
+            eligibility: { _ in ExperienceEligibilityResponse(ok: true, eligibilityToken: "e", expiresAt: 0) },
+            check: { _ in queue.value.removeFirst() },
+            publish: { _ in PublishExperienceResponse(ok: true, experienceId: "exp", ownershipKey: "own") },
+            storeKey: { id, key in
+                if keyFails.value { throw SecretStoreError.writeFailed }
+                keychain.value[id] = key
+            },
+            keyIsStored: { keychain.value[$0] != nil },
+            saveDraft: { _, _, _ in },
+            clearDraft: { events.value.append("clear:\($0)") },
+            journalWrite: { journal.value[$0.experienceId] = $0 },
+            journalRemove: { journal.value[$0] = nil; events.value.append("unjournal:\($0)") }
+        )
+        let c = ComposerController(scope: ComposerScope(lessonId: "L1"), deps: deps)
+        let first = await c.continueToShare(body: "x", rating: nil)
+        XCTAssertEqual(first.status, .publishedKeyUnsaved(experienceId: "exp", ownershipKey: "own", journaled: true))
+        keyFails.value = false
+        let second = await c.retryStoringKey()
+        XCTAssertEqual(second.status, .published(experienceId: "exp", ownershipKey: "own"))
+        XCTAssertTrue(journal.value.isEmpty, "the journal entry goes once the Keychain has the key")
+        XCTAssertEqual(keychain.value["exp"], "own")
     }
 
     func testPublishErrorCopy() async throws {
-        let (c, _, _, _) = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")], publishError: APIError(status: 422, code: "publications_disabled"))
-        let outcome = await c.continueToShare(body: "x", rating: nil)
+        let h = makeController(checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")], publishError: APIError(status: 422, code: "publications_disabled"))
+        let outcome = await h.controller.continueToShare(body: "x", rating: nil)
         XCTAssertEqual(outcome.status, .editing)
         XCTAssertEqual(outcome.notice?.text, SubmitErrorCopy.byCode["publications_disabled"])
     }
 
     func testDishRatingOnlyTravelsForDishes() async throws {
-        let (c, events, _, _) = makeController(scope: ComposerScope(entityKey: "teacher:t1", isDish: false), checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")])
-        _ = await c.continueToShare(body: "x", rating: 5)
-        XCTAssertTrue(events.value.contains("eligibility:teacher:t1"))
-        // rating is dropped for a non-dish target: the publish body has no rating
-        XCTAssertEqual(events.value.last { $0.hasPrefix("publish") }, "publish:elig:pass_fixture:x")
+        let h = makeController(scope: ComposerScope(entityKey: "teacher:t1", isDish: false), checks: [try Fixtures.decode(CheckExperienceResponse.self, "check-publish")])
+        _ = await h.controller.continueToShare(body: "x", rating: 5)
+        XCTAssertTrue(h.events.value.contains("eligibility:teacher:t1"))
+        XCTAssertEqual(h.events.value.last { $0.hasPrefix("publish") }, "publish:elig:pass_fixture:x")
+    }
+
+    func testModerationDecisionAdapterCoversEveryLane() throws {
+        XCTAssertEqual(ModerationDecision(try Fixtures.decode(CheckExperienceResponse.self, "check-publish")), .publishable(pass: "pass_fixture"))
+        XCTAssertEqual(ModerationDecision(try Fixtures.decode(CheckExperienceResponse.self, "check-nudge")), .nudge(pass: "pass_fixture", reasons: ["composition:low_information"]))
+        XCTAssertEqual(ModerationDecision(try Fixtures.decode(CheckExperienceResponse.self, "check-out-of-scope")), .outOfScope(reasons: []))
+        XCTAssertEqual(ModerationDecision(CheckExperienceResponse(lane: .publish, reasons: [], policyVersion: 7, pass: nil)), .unavailable, "a publish lane without a pass is unusable, never a publish")
+        XCTAssertEqual(ModerationDecision(CheckExperienceResponse(lane: .unknown("future"), reasons: [], policyVersion: 9)), .unavailable)
     }
 }
