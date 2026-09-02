@@ -186,11 +186,6 @@
   transform: translateY(-50%);
   color: var(--ink-3, var(--ink-2));
 }
-.nextlesson__stale {
-  margin-top: var(--sp-3);
-  font-size: var(--fs-caption);
-  color: var(--ink-3, var(--ink-2));
-}
 .nextlesson--empty .nextlesson__subject {
   font-size: var(--fs-reading);
   font-weight: 500;
@@ -269,10 +264,6 @@
 }
 .daynav__spacer {
   flex: 1;
-}
-.daynav__state {
-  margin: 0;
-  white-space: nowrap;
 }
 .daynav__history-sr {
   /* Phones answer History with a gesture; a keyboard still gets a link,
@@ -1418,15 +1409,52 @@
 .home-voices__empty {
   margin: var(--sp-2) 0 0;
 }
+.home-zone {
+  /* Home's zones part with a hairline (Gary 2026-09-02): the lesson, the
+     voices from your classes, the portal. */
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-4);
+}
 .home-foot {
   display: flex;
   align-items: center;
   gap: var(--sp-4);
   flex-wrap: wrap;
 }
+.composer-prompt {
+  /* The home-page publish entry: a quiet field-shaped prompt at the foot
+     of the voices ("What's new?" in social homes), not a lone button. */
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--cell);
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: var(--fs-secondary);
+}
+.composer-prompt__glyph {
+  display: inline-flex;
+  color: var(--accent);
+}
+.composer-prompt__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .composer-prompt:hover {
+    border-color: var(--accent);
+  }
+}
 .portal-row {
-  /* Full-width row on every size: sharing and the portal are different
-     kinds of act — side-by-side they crowd and the labels wrap badly. */
+  /* Full-width row on every size, alone in its zone: the portal is a
+     different kind of act from anything above it. */
   flex: 1 1 100%;
   display: flex;
   align-items: center;

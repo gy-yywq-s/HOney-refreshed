@@ -1,17 +1,25 @@
 // Home has ONE job (review v3 §6.2): know what's now / next in three seconds,
 // and lightly feel that other students are speaking. Composition (§6.3):
 // compact greeting + date → focal Now/Next object → 1–2 raw experience
-// previews → Share something + a quiet School Portal row. No stat strips, no
-// numbered action grid, no feature copy. Scroll model: COMPACT_OVERFLOW.
+// previews → the composer prompt → a quiet School Portal row. No stat
+// strips, no numbered action grid, no feature copy.
+// Scroll model: COMPACT_OVERFLOW.
+//
+// Zones (Gary, 2026-09-02): three, each parted by a hairline — the lesson,
+// the voices from your classes (with the way to add yours inside it), the
+// portal. Sharing is not a lone button: it is a composer prompt at the foot
+// of the voices — the home-page publish entry social apps share ("What's
+// new?" / "Start a post") — so it reads as joining what is above it. No
+// "last updated … ago" on a Home card; Settings carries that.
 
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
-import { formatDayBucket, formatDayTitle, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
+import { formatDayBucket, formatDayTitle, formatRemaining, formatTime } from "../lib/format";
 import { roomLabel } from "../lib/displayNames";
-import { ChevronRightIcon } from "../components/icons";
+import { ChevronRightIcon, PenIcon } from "../components/icons";
 import { useLang, useT } from "../lib/i18n";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
@@ -28,7 +36,6 @@ export function HomePage() {
   if (!me) return null;
 
   const next = data?.nextLesson ?? null;
-  const lastSyncedAt = data?.lastSyncedAt ?? null;
   // Legacy behavior kept: a running lesson fills the focal object with an
   // accent wash, left-to-right, proportional to elapsed time — motion that
   // explains state (review v3 §5.5.3 keeps exactly this kind).
@@ -53,7 +60,6 @@ export function HomePage() {
   })();
   const soon = !!next && !isNow && sameDay && next.startsAt - now < 10 * 60_000;
   const stateLabel = isNow ? t("Now") : t("Next lesson");
-  const stale = lastSyncedAt !== null && isStale(lastSyncedAt);
   const cardName = next
     ? [
         `${stateLabel}: ${next.subjectName}`,
@@ -134,7 +140,6 @@ export function HomePage() {
                 </span>
               )}
             </div>
-            {stale && <div className="nextlesson__stale">{t("Last updated")} {timeAgo(lastSyncedAt!)}</div>}
             <span className="nextlesson__chev">
               <ChevronRightIcon size={18} />
             </span>
@@ -145,7 +150,6 @@ export function HomePage() {
               <span className="nextlesson__label">{t("Nothing coming up")}</span>
             </div>
             <div className="nextlesson__subject">{t("No upcoming lessons in your timetable.")}</div>
-            {stale && <div className="nextlesson__stale">{t("Last updated")} {timeAgo(lastSyncedAt!)}</div>}
             <span className="nextlesson__chev">
               <ChevronRightIcon size={18} />
             </span>
@@ -153,7 +157,7 @@ export function HomePage() {
         )}
       </section>
 
-      <section className="home-voices" aria-label="From your classes">
+      <section className="home-voices home-zone" aria-label="From your classes">
         <div className="home-voices__head">
           <span className="eyebrow">{t("From your classes")}</span>
         </div>
@@ -185,12 +189,17 @@ export function HomePage() {
             ))}
           </ul>
         )}
+        {/* The composer prompt: the way to add your own voice lives with the
+            voices, styled as a quiet field rather than a button. */}
+        <Link className="composer-prompt" to="/experiences/compose" aria-label={t("Share an experience")}>
+          <span className="composer-prompt__glyph" aria-hidden="true">
+            <PenIcon size={16} />
+          </span>
+          <span className="composer-prompt__text">{t("Share what a lesson was like…")}</span>
+        </Link>
       </section>
 
-      <div className="home-foot">
-        <Link className="btn btn--primary" to="/experiences/compose">
-          {t("Share something")}
-        </Link>
+      <div className="home-foot home-zone">
         <a
           className="portal-row"
           href="https://www.huayaopudong.com/student/notification"

@@ -179,7 +179,8 @@ const ZH: Record<string, string> = {
   // settings
   "Account": "账户",
   "School connection": "学校连接",
-  "Sync, reconnect, saved login": "同步、重新连接、已保存的登录",
+  "Sync, saved login, imported data": "同步、已保存的登录、导入的数据",
+  "Share what a lesson was like…": "分享一节课的感受…",
   "Stay connected on this device": "在本设备保持连接",
   "Reconnects automatically after routine portal time-outs.": "学校门户例行超时后自动重新连接。",
   "Imported data": "导入的数据",

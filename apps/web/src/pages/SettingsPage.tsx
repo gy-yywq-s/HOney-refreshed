@@ -1,11 +1,12 @@
 // Scroll model: FRAMED_SCROLL (§16.14.2).
 // Settings (review v1.1 §17): a root of concise rows that drill into one
-// detail screen each — Account, School connection, Imported data, How
-// anonymity works, Appearance — so no policy paragraph sits beside a
+// detail screen each — Account, School connection (sync, saved login AND
+// the imported data it produces: one subject, one screen — Gary 2026-09-02),
+// How anonymity works, Appearance — so no policy paragraph sits beside a
 // routine control. The hierarchy bar carries the way back.
 
 import { useRef, useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { apiCache } from "../lib/useApi";
 import { api, describeApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -21,11 +22,10 @@ import { setLang, t, useLang } from "../lib/i18n";
 import { TEXT_SIZES, setTextSize, useTextSize } from "../lib/textSize";
 
 type PendingConfirm = "disconnect" | "delete-data" | "delete-account" | null;
-type Section = "account" | "connection" | "data" | "privacy" | "appearance";
+type Section = "account" | "connection" | "privacy" | "appearance";
 const SECTIONS: Record<Section, string> = {
   account: "Account",
   connection: "School connection",
-  data: "Imported data",
   privacy: "How anonymity works",
   appearance: "Appearance",
 };
@@ -63,6 +63,8 @@ export function SettingsPage() {
   const [stayConnected, setStayConnected] = useState(portalCredentials.isAuthorized());
 
   if (!me) return null;
+  // The old Imported-data screen folded into School connection.
+  if (sectionParam === "data") return <Navigate to="/settings/connection" replace />;
 
   async function run(key: string, fn: () => Promise<void>, successText?: string) {
     setBusyKey(key);
@@ -110,7 +112,7 @@ export function SettingsPage() {
           <Link className="row" to="/settings/connection">
             <span className="row__main">
               <span className="row__title">{connectionLine}</span>
-              <span className="row__sub">{t("Sync, reconnect, saved login")}</span>
+              <span className="row__sub">{t("Sync, saved login, imported data")}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
@@ -131,19 +133,6 @@ export function SettingsPage() {
               }}
             />
           </div>
-        </section>
-
-        <section className="rowlist" aria-label="Imported data">
-          <h2 className="overline">{t("Imported data")}</h2>
-          <Link className="row" to="/settings/data">
-            <span className="row__main">
-              <span className="row__title">{t("Timetable & lesson history")}</span>
-              <span className="row__sub">
-                {connection.lastSyncedAt ? `${t("Last import")} ${timeAgo(connection.lastSyncedAt)}` : t("Not imported yet")}
-              </span>
-            </span>
-            <ChevronRightIcon size={18} />
-          </Link>
         </section>
 
         <section className="rowlist" aria-label="Experiences and privacy">
@@ -324,19 +313,16 @@ export function SettingsPage() {
               </p>
             </details>
           </section>
-        </>
-      )}
-
-      {section === "data" && (
-        <>
+          {/* What the connection brings in lives here too — one subject, one
+              screen; the status row above already says when it last synced. */}
           <section className="rowlist" aria-label="Imported data">
+            <h2 className="overline">{t("Imported data")}</h2>
             <div className="row">
               <span className="row__main">
                 <span className="row__title">{t("Timetable & lesson history")}</span>
                 <span className="row__sub">
                   Imported from the school portal when your account is created, and again whenever
                   you sync — Sync now, or pulling the timetable down to sync.
-                  {connection.lastSyncedAt ? ` Last import ${timeAgo(connection.lastSyncedAt)}.` : ""}
                 </span>
               </span>
             </div>

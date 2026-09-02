@@ -18,7 +18,6 @@ import {
   formatDayTitle,
   formatTime,
   shiftIsoDate,
-  timeAgo,
   todayIsoDate,
   formatShortDate,
   mondayOf,
@@ -242,9 +241,7 @@ export function TimetablePage() {
             twice (refresh, then sync), pull up at the end for History. A
             keyboard on a phone still reaches History through the sr link. */}
         <div className="daynav__row">
-          <span className="caption daynav__state">
-            {data?.lastSyncedAt ? `Synced ${timeAgo(data.lastSyncedAt)}` : ""}
-          </span>
+          {/* No "synced … ago" here — Settings › School connection carries it (Gary 2026-09-02). */}
           <span className="daynav__spacer" />
           <Link className="btn btn--ghost btn--small" to="/history">
             History

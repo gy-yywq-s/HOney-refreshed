@@ -37,7 +37,6 @@ const NODES: RouteNode[] = [
   { pattern: "/settings", title: "Settings", parent: null },
   { pattern: "/settings/account", title: "Account", parent: "/settings" },
   { pattern: "/settings/connection", title: "School connection", parent: "/settings" },
-  { pattern: "/settings/data", title: "Imported data", parent: "/settings" },
   { pattern: "/settings/privacy", title: "How anonymity works", parent: "/settings" },
   { pattern: "/settings/appearance", title: "Appearance", parent: "/settings" },
   { pattern: "/dash", title: "Dash", parent: "/settings" },
