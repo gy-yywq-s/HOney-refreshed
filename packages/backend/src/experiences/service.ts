@@ -80,12 +80,14 @@ export interface ExperienceRow {
   published_at: number | null;
 }
 
-interface Target {
+export interface Target {
   entityKey: string;
   entityType: string;
   provenance: string;
   ctx: { teacher: string | null; course: string | null; room: string | null };
   mark: string;
+  /** The raw lesson instance id for lesson targets (never leaves Core). */
+  lessonInstanceId?: string;
 }
 
 interface SelectRow {
@@ -160,7 +162,7 @@ export class ExperienceService {
    * it joins directly to user_lesson_exposures and would identify the author's
    * class roster. This HMAC gives a stable grouping/dedup handle instead.
    */
-  private lessonToken(lessonInstanceId: string): string {
+  lessonToken(lessonInstanceId: string): string {
     return createHmac("sha256", this.lessonScopeKey).update(lessonInstanceId).digest("hex").slice(0, 24);
   }
 
@@ -172,7 +174,7 @@ export class ExperienceService {
   // ---------- shared gates & target resolution ----------
 
   /** Kill switches + §21 suspension. Applies to eligibility and check alike. */
-  private gate(honeyId: string): string | null {
+  gate(honeyId: string): string | null {
     if (this.settings.killSwitch("DISABLE_NEW_PUBLICATIONS") || this.settings.killSwitch("PRIVATE_NOTES_ONLY_MODE")) {
       return "publications_disabled";
     }
@@ -188,7 +190,7 @@ export class ExperienceService {
   }
 
   /** Resolve + authorize the review target for this account (lesson or standalone). */
-  private resolveTarget(honeyId: string, lessonId?: string, entityKey?: string): { ok: true; target: Target } | { ok: false; error: string } {
+  resolveTarget(honeyId: string, lessonId?: string, entityKey?: string): { ok: true; target: Target } | { ok: false; error: string } {
     let target: Target;
     if (lessonId) {
       // Lesson-linked: unconditional right to review one's OWN lessons, once each.
@@ -210,6 +212,7 @@ export class ExperienceService {
         provenance: "verified_lesson",
         ctx: { teacher: lesson.teacher_id, course: lesson.course_id, room: lesson.room_id },
         mark: markHash(this.markKey, honeyId, key),
+        lessonInstanceId: lesson.id,
       };
     } else if (entityKey) {
       const entity = this.directory.get(entityKey);

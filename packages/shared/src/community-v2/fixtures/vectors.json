@@ -1,0 +1,54 @@
+{
+  "note": "Known-answer vectors for Anonymous Control v2 (spec §42.1). Bytes are base64url. Regenerate with `pnpm --filter @honey/shared vectors:write`.",
+  "labels": {
+    "schoolEpochSaltPrefix": "honey/v2/school-epoch\u0000",
+    "postingSigning": "honey/v2/posting-signing",
+    "postControlPrefix": "honey/v2/post-control\u0000",
+    "authorTagPrefix": "honey/v2/author-tag\u0000",
+    "reactionSigning": "honey/v2/reaction-signing",
+    "vaultPrfWrap": "honey/v2/vault-prf-wrap",
+    "vaultPhraseWrap": "honey/v2/vault-phrase-wrap",
+    "vaultPrfInputPrefix": "honey/v2/vault-prf-input\u0000"
+  },
+  "root": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+  "epoch": {
+    "schoolId": "huayaopudong",
+    "academicYear": "2026-27"
+  },
+  "schoolSalt": "MFi8mX0sQ1LHN3NdKm0q404i1jgYYpEH0zvEOId2lL4",
+  "postingPublicKey": "BQZL0HQ4N972dKgA31iq-lOmQFdUKWxR2_-ZZfG1Z1Q",
+  "authorTag": "f7134144f04b33326c3ef7ccbc43b68e585d5d53ae14fa477116d7721b982a44",
+  "postNonce": "oKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr8",
+  "controlPublicKey": "TmDOXP_H06UskXylYiMchd0IVIFNA-QJYp8Bwy_AAvI",
+  "reactionPublicKey": "ebKLvivkIvmFyVfZQNUEUDFcLFmHTR2ygM7hmDxI7Oc",
+  "statement": {
+    "purpose": "honey/v2/mine",
+    "schoolId": "huayaopudong",
+    "academicYear": "2026-27",
+    "challenge": "c-0123",
+    "expiresAt": 1790000000000
+  },
+  "statementCanonical": "{\"academicYear\":\"2026-27\",\"challenge\":\"c-0123\",\"expiresAt\":1790000000000,\"purpose\":\"honey/v2/mine\",\"schoolId\":\"huayaopudong\"}",
+  "statementSignature": "dJ1o-6Tr2D74hecRpvkxK3Dme8xURwqHSbzQ6FP4mK9Y3W6GDjGeVQfSmt4nkRIzh8JazIHzOY6GlRd6JoPsBw",
+  "vaultId": "vault-kat",
+  "vaultAadRevision3": "{\"revision\":3,\"vaultId\":\"vault-kat\",\"version\":2}",
+  "prfInput": "sr-ib5WyVWJUGu7KZ3OOqxrmEb5pKK1s_qb1DXJwUF4",
+  "prfOutput": "VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU",
+  "prfWrapKey": "zIxfbAnJ4U8-LXK63e4LFHDOZ8v7ac15aUAb15gx4l4",
+  "recoverySecret": "Dx4tPEtaaXiHlqW0w9Lh8A",
+  "recoveryWords": [
+    "audit",
+    "vapor",
+    "excuse",
+    "note",
+    "pledge",
+    "rough",
+    "bundle",
+    "start",
+    "regular",
+    "burden",
+    "reveal",
+    "they"
+  ],
+  "phraseWrapKey": "dLWIrPJAe1Km3loVPD91yZeBJtYwxijt3OFqOzaPs_8"
+}

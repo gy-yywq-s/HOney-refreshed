@@ -5,6 +5,17 @@
 
 import { portalCredentials } from "../lib/portalCredentials";
 import type {
+  CommunityScope,
+  EligibilityIssued,
+  EligibilityRequest,
+  IssuerDescriptor,
+  PairingDelivery,
+  PairingOffer,
+  VaultPutRequest,
+  VaultPutResponse,
+  VaultRecord,
+} from "@honey/shared/community-v2";
+import type {
   AdminImportResult,
   AdminLlmTestResponse,
   AdminOverview,
@@ -63,12 +74,15 @@ const SESSION_KEY = "HOney.session";
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** The parsed error body, when the server sent one (e.g. a vault conflict's current record). */
+  readonly body: unknown;
 
-  constructor(status: number, code: string, message?: string) {
+  constructor(status: number, code: string, message?: string, body?: unknown) {
     super(message ?? code);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.body = body;
   }
 }
 
@@ -335,6 +349,68 @@ export class ApiClient {
     return this.request("POST", "/api/admin/cooldown-hours", { hours });
   }
 
+  // ---- Anonymous Control v2: issuer, scope, Control Vault, pairing relay ----
+
+  communityIssuer(): Promise<IssuerDescriptor> {
+    return this.request("GET", "/api/community/issuer", undefined, { auth: false });
+  }
+
+  communityScope(): Promise<CommunityScope> {
+    return this.request("GET", "/api/community/scope");
+  }
+
+  /** Blind issuance: the server signs a blinded message it never sees unblinded. */
+  communityEligibility(input: EligibilityRequest & { schoolMember?: boolean }): Promise<EligibilityIssued> {
+    return this.request("POST", "/api/community/eligibility", input);
+  }
+
+  /** 404 → ApiError(404, "no_vault"). */
+  vault(): Promise<VaultRecord> {
+    return this.request("GET", "/api/vault");
+  }
+
+  /** CAS write; a 409 comes back as a value, not an error, so callers can merge. */
+  async vaultPut(input: VaultPutRequest): Promise<VaultPutResponse> {
+    try {
+      return await this.request<VaultPutResponse>("PUT", "/api/vault", input);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409 && err.body && typeof err.body === "object" && "current" in err.body) {
+        return err.body as VaultPutResponse;
+      }
+      throw err;
+    }
+  }
+
+  vaultDelete(): Promise<{ ok: boolean }> {
+    return this.request("DELETE", "/api/vault");
+  }
+
+  vaultPairingOffer(recipientPublicKey: string): Promise<PairingOffer> {
+    return this.request("POST", "/api/vault/pairing", { recipientPublicKey });
+  }
+
+  vaultPairingRead(pairingId: string): Promise<PairingOffer> {
+    return this.request("GET", `/api/vault/pairing/${encodeURIComponent(pairingId)}`);
+  }
+
+  vaultPairingDeliver(pairingId: string, enc: string, ciphertext: string): Promise<{ ok: boolean }> {
+    return this.request("POST", `/api/vault/pairing/${encodeURIComponent(pairingId)}/deliver`, { enc, ciphertext });
+  }
+
+  /** null while the signed-in device has not delivered yet. */
+  async vaultPairingClaim(pairingId: string): Promise<PairingDelivery | null> {
+    try {
+      return await this.request<PairingDelivery>("GET", `/api/vault/pairing/${encodeURIComponent(pairingId)}/delivery`);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    }
+  }
+
+  vaultHandoff(recipientPublicKey: string, enc: string, ciphertext: string): Promise<PairingOffer> {
+    return this.request("POST", "/api/vault/handoff", { recipientPublicKey, enc, ciphertext });
+  }
+
   disconnectSchool(): Promise<void> {
     return this.request("POST", "/api/school/disconnect");
   }
@@ -443,8 +519,10 @@ export class ApiClient {
 
 async function toApiError(res: Response): Promise<ApiError> {
   let code = `http_${res.status}`;
+  let body: unknown;
   try {
     const data = (await res.json()) as { error?: unknown };
+    body = data;
     if (typeof data.error === "string") code = data.error;
   } catch {
     // Non-JSON error body; fall back to the status code.
@@ -452,7 +530,7 @@ async function toApiError(res: Response): Promise<ApiError> {
   if ((res.status === 502 || res.status === 503) && code === `http_${res.status}`) {
     code = "portal_unavailable";
   }
-  return new ApiError(res.status, code);
+  return new ApiError(res.status, code, undefined, body);
 }
 
 /** Maps API failures to user-facing copy. */

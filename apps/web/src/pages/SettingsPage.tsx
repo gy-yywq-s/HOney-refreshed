@@ -147,7 +147,14 @@ export function SettingsPage() {
           <h2 className="overline">{t("Experiences & privacy")}</h2>
           <Link className="row" to="/experiences/mine">
             <span className="row__main">
-              <span className="row__title">{t("Your notes & post controls")}</span>
+              <span className="row__title">{t("Your notes & posts")}</span>
+            </span>
+            <ChevronRightIcon size={18} />
+          </Link>
+          <Link className="row" to="/settings/post-controls">
+            <span className="row__main">
+              <span className="row__title">{t("Post controls")}</span>
+              <span className="row__sub">{t("Passkey, recovery words, another device")}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>

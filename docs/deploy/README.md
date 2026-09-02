@@ -13,6 +13,8 @@ HOney runs as **one Node service** (API + built web SPA) **directly under the li
 | Persistent data (SQLite) | `/home/honey/data/honey.db` |
 | Secrets env | `/home/honey/.secrets/honey.env` (0600: HONEY_SECRET, OPENROUTER_API_KEY, admin id, PORT=8871) |
 | Service | systemd `honey.service`, `User=honey`, binds `127.0.0.1:8871` |
+| Service keys | `/home/honey/data/keys/` (0700): `issuer.jwk.json` (blind-eligibility issuer, 0600, never in git; `pnpm --filter @honey/backend issuer:keygen` with the service env loaded) + the public descriptors written for peer processes |
+| Control Vault | `/home/honey/data/vault.db` (ciphertext only; a separate file from `honey.db` by design) |
 | Ingress | `honey.gaelisus.com` → tunnel rule in `/etc/cloudflared/config.base.yml` |
 
 ## Update to a new version
@@ -32,8 +34,9 @@ from an earlier epoch makes the service refuse to start (`SchemaEpochError`). Re
 
 ```bash
 sudo systemctl stop honey
-sudo -u honey bash -lc 'cd /home/honey/app && npx --yes pnpm@11.24.0 --filter @honey/backend db:reset:dev -- --yes'
-sudo systemctl start honey && sleep 1 && curl -s https://honey.gaelisus.com/api/health
+# The service env carries HONEY_DB_PATH — without it the script would reset ./honey.db in the checkout.
+sudo -u honey bash -lc 'set -a; . /home/honey/.secrets/honey.env; set +a; cd /home/honey/app && npx --yes pnpm@11.24.0 --filter @honey/backend db:reset:dev -- --yes'
+sudo systemctl start honey && sleep 3 && curl -s https://honey.gaelisus.com/api/health
 ```
 
 The script deletes the SQLite files, recreates the schema, imports the real fixture into a

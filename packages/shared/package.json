@@ -13,13 +13,25 @@
     "./api": {
       "types": "./dist/api/contract.d.ts",
       "default": "./dist/api/contract.js"
+    },
+    "./community-v2": {
+      "types": "./dist/community-v2/index.d.ts",
+      "default": "./dist/community-v2/index.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "vectors:write": "node scripts/write-community-v2-vectors.mjs"
+  },
+  "dependencies": {
+    "@cloudflare/blindrsa-ts": "0.4.6",
+    "@hpke/core": "1.9.0",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "@scure/bip39": "2.4.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

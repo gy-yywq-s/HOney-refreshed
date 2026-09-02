@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 import fastifyStatic from "@fastify/static";
 import { HOneyPortalConnector, PortalApi, PortalHttp } from "@honey/portal-connector";
@@ -14,10 +14,17 @@ import { registerAuthRoutes } from "./routes/auth.js";
 import { registerDataRoutes } from "./routes/data.js";
 import { registerExperienceRoutes } from "./routes/experiences.js";
 import { registerAdminRoutes } from "./routes/admin.js";
+import { registerCommunityRoutes } from "./routes/community.js";
+import { registerVaultRoutes } from "./routes/vault.js";
 import { EntityDirectory } from "./school/directory.js";
 import { profileFor } from "./school/profiles/huayaopudong.js";
 import { ExperienceService } from "./experiences/service.js";
 import { SettingsService } from "./experiences/settings.js";
+import { EligibilityIssuer, type IssuerKeyFile } from "./community-issuer/issuer.js";
+import { IssuanceLimits } from "./community-issuer/issuance-limits.js";
+import { openVaultDatabase } from "./control-vault/vault-db.js";
+import { ControlVaultStore } from "./control-vault/vault-records.js";
+import { deriveKey } from "./crypto.js";
 
 // HOney Core backend (Bands 3 & 4). UI-agnostic domain API only — no screen
 // shapes here (spec §14). The server-side connector never holds a school
@@ -39,6 +46,10 @@ export interface BuildAppOptions {
   dbPath?: string;
   /** Absolute path to the built web app; when present, served with SPA fallback. */
   webDist?: string;
+  /** Issuer key for tests (the checked-in test key); production loads from the keys directory. */
+  issuerKey?: IssuerKeyFile;
+  /** vault.sqlite path for tests (defaults to config.vaultDbPath). */
+  vaultDbPath?: string;
 }
 
 export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: AppContext } {
@@ -47,7 +58,12 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
     ...opts.config,
   };
   if (opts.portalBaseUrl) config.portalBaseUrl = opts.portalBaseUrl;
-  if (opts.dbPath) config.dbPath = opts.dbPath;
+  if (opts.dbPath) {
+    // The vault file and key directory follow the core database unless set explicitly.
+    config.dbPath = opts.dbPath;
+    config.vaultDbPath = opts.vaultDbPath ?? join(dirname(opts.dbPath), "vault.db");
+    config.keysDir = opts.config?.keysDir ?? join(dirname(opts.dbPath), "keys");
+  }
 
   const db = openDatabase(config.dbPath);
   const profile = profileFor(config.schoolId);
@@ -60,6 +76,9 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   const timetable = new TimetableService(db);
   const settings = new SettingsService(db, config.sealKey);
   const experiences = new ExperienceService(db, entities, settings, config.sealKey);
+  const limits = new IssuanceLimits(db, deriveKey(config.sealKey, "issuance-mark"));
+  const vaultDb = openVaultDatabase(opts.vaultDbPath ?? config.vaultDbPath);
+  const vault = new ControlVaultStore(vaultDb, deriveKey(config.sealKey, "vault-locator"));
 
   const ctx: AppContext = {
     db,
@@ -72,8 +91,26 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
     entities,
     experiences,
     settings,
+    issuer: null,
+    issuerReady: Promise.resolve(),
+    limits,
+    vault,
     ...makeAuthHelpers(accounts),
   };
+  // The issuer key is read asynchronously (WebCrypto import); routes await it.
+  ctx.issuerReady = (opts.issuerKey
+    ? EligibilityIssuer.fromKeyFile(opts.issuerKey, { production: config.production })
+    : EligibilityIssuer.load(config.keysDir, { production: config.production })
+  )
+    .then((issuer) => {
+      ctx.issuer = issuer;
+    })
+    .catch((err: unknown) => {
+      // A broken key file must not take the whole service down: eligibility
+      // reports issuer_unavailable and the rest of HOney keeps working.
+      // eslint-disable-next-line no-console
+      console.error("issuer key unavailable:", err instanceof Error ? err.message : err);
+    });
 
   const app = Fastify({ logger: false }) as unknown as FastifyInstance & { ctx: AppContext };
   app.ctx = ctx;
@@ -95,6 +132,8 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   registerDataRoutes(app, ctx);
   registerExperienceRoutes(app, ctx);
   registerAdminRoutes(app, ctx);
+  registerCommunityRoutes(app, ctx);
+  registerVaultRoutes(app, ctx);
 
   // Single-origin production deployment: the backend serves the built web app
   // and falls back to index.html for client-side routes (deep links §6.3).
@@ -123,6 +162,7 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
 
   app.addHook("onClose", async () => {
     db.close();
+    vaultDb.close();
   });
 
   return app;

@@ -17,6 +17,10 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { PostControlsPage } from "./pages/settings/PostControlsPage";
+import { RecoveryWordsPage } from "./pages/settings/RecoveryWordsPage";
+import { PairDevicePage } from "./pages/settings/PairDevicePage";
+import { RotateRootPage } from "./pages/settings/RotateRootPage";
 import { TimetablePage } from "./pages/TimetablePage";
 
 export function App() {
@@ -51,6 +55,10 @@ export function App() {
               <Route path="/experiences/place/:id" element={<ExperienceEntityPage kind="room" />} />
               <Route path="/experiences/food/:id" element={<ExperienceEntityPage kind="dish" />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings/post-controls" element={<PostControlsPage />} />
+              <Route path="/settings/post-controls/recovery-words" element={<RecoveryWordsPage />} />
+              <Route path="/settings/post-controls/pair" element={<PairDevicePage />} />
+              <Route path="/settings/post-controls/replace-root" element={<RotateRootPage />} />
               <Route path="/settings/:section" element={<SettingsPage />} />
               <Route
                 path="/dash"

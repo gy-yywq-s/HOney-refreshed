@@ -39,6 +39,10 @@ const NODES: RouteNode[] = [
   { pattern: "/settings/connection", title: "School connection", parent: "/settings" },
   { pattern: "/settings/privacy", title: "How anonymity works", parent: "/settings" },
   { pattern: "/settings/appearance", title: "Appearance", parent: "/settings" },
+  { pattern: "/settings/post-controls", title: "Post controls", parent: "/settings" },
+  { pattern: "/settings/post-controls/recovery-words", title: "Recovery words", parent: "/settings/post-controls" },
+  { pattern: "/settings/post-controls/pair", title: "Another device", parent: "/settings/post-controls" },
+  { pattern: "/settings/post-controls/replace-root", title: "Replace control root", parent: "/settings/post-controls" },
   { pattern: "/dash", title: "Dash", parent: "/settings" },
 ];
 

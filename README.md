@@ -74,6 +74,7 @@ Per-stage documentation lives in [`docs/architecture/`](docs/architecture/):
 | M2 | [`m2-honey-core.md`](docs/architecture/m2-honey-core.md) | Accounts, sessions, consent, data API |
 | ★ | [`canonical-school-data.md`](docs/architecture/canonical-school-data.md) | **Canonical school data** — Subject · Course · Class section · Lesson · Topic, the import resolver, real fixtures, dev reset |
 | M3 | [`m3-experiences.md`](docs/architecture/m3-experiences.md) | Anonymity model, entities, ops |
+| ★ | [`anonymous-control-v2.md`](docs/architecture/anonymous-control-v2.md) | **Anonymous Control v2** — one recoverable root, blind eligibility with public metadata, per-post control keys, encrypted Control Vault (passkey · another device · recovery words) |
 | ★ | [`moderation-pipeline.md`](docs/architecture/moderation-pipeline.md) | **The moderation pipeline** — layers, LLM constraints, pass mechanics |
 | M5 | [`m5-web-and-deploy.md`](docs/architecture/m5-web-and-deploy.md) | Web app, admin dash, deploy |
 | — | [`acceptance.md`](docs/acceptance.md) | **Line-by-line acceptance** (§20 / §27 / §26.2) |

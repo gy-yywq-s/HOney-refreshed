@@ -311,6 +311,17 @@ const MIGRATIONS: string[] = [
     value TEXT NOT NULL
   ) STRICT;
   `,
+  // 004 — Anonymous Control v2 issuer side (spec §31): account issuance
+  // bounds on an unlinkable HMAC mark of (account, scope, day). No token
+  // value, no post, no key is stored here.
+  `
+  CREATE TABLE issuance_marks (
+    mark_hash TEXT PRIMARY KEY,
+    day INTEGER NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0
+  ) STRICT;
+  CREATE INDEX idx_issuance_day ON issuance_marks(day);
+  `,
 ];
 
 export class SchemaEpochError extends Error {

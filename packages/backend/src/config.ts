@@ -1,4 +1,5 @@
 import { scryptSync } from "node:crypto";
+import { dirname, join } from "node:path";
 
 export interface HOneyConfig {
   dbPath: string;
@@ -13,6 +14,11 @@ export interface HOneyConfig {
   /** The single school this deployment serves (canonical-data scope). */
   schoolId: string;
   schoolName: string;
+  /** Where service key files live (issuer private key 0600, public descriptors for peers). */
+  keysDir: string;
+  /** vault.sqlite — a separate file from the core database by design. */
+  vaultDbPath: string;
+  production: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
@@ -22,8 +28,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
   }
   // On hostd the only path that survives a deploy is $HOSTD_DATA_DIR.
   const defaultDb = env.HOSTD_DATA_DIR ? `${env.HOSTD_DATA_DIR}/honey.db` : "./honey.db";
+  const dbPath = env.HONEY_DB_PATH ?? defaultDb;
+  const dataDir = dirname(dbPath);
   return {
-    dbPath: env.HONEY_DB_PATH ?? defaultDb,
+    dbPath,
+    keysDir: env.HONEY_KEYS_DIR ?? join(dataDir, "keys"),
+    vaultDbPath: env.HONEY_VAULT_DB_PATH ?? join(dataDir, "vault.db"),
+    production: env.NODE_ENV === "production",
     // scrypt turns the deploy secret into a stable 32-byte seal key.
     sealKey: scryptSync(secret || "honey-dev-secret", "honey-seal-v1", 32),
     portalBaseUrl: env.PORTAL_BASE_URL ?? "https://www.huayaopudong.com",

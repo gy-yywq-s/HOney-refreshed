@@ -77,7 +77,7 @@ No migration bridges the pre-canonical schema: `openDatabase` refuses a file fro
 
 ```bash
 sudo systemctl stop honey
-sudo -u honey bash -lc 'cd /home/honey/app && npx --yes pnpm@11.24.0 --filter @honey/backend db:reset:dev -- --yes'
+sudo -u honey bash -lc 'set -a; . /home/honey/.secrets/honey.env; set +a; cd /home/honey/app && npx --yes pnpm@11.24.0 --filter @honey/backend db:reset:dev -- --yes'
 sudo systemctl start honey
 ```
 
