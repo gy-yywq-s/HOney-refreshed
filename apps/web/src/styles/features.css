@@ -352,7 +352,7 @@ p.caption.timetable-note {
 }
 /* Lesson blocks: ink cards on the canvas. */
 .lesson-block {
-  scroll-margin-top: 72px; /* compact landing: the day heading + note stay in view above block 1 (documented exception) */
+  scroll-margin-top: 100px; /* compact landing: heading + note (≈96px) stay in view above block 1 (documented exception) */
   position: absolute;
   left: 10px;
   right: 8px;
