@@ -104,18 +104,28 @@ struct ChipTab: View {
     }
 }
 
-/// `.cat-chips`: every chip visible, wrapping, never clipped (rule 4f).
+/// `.cat-chips` and inline runs of links: every item visible, wrapping like
+/// inline content, never clipped (rule 4f). An item wider than the row gets
+/// the row's width and wraps inside itself (a long course name).
 struct FlowLayout: Layout {
     var spacing: CGFloat = HSpace.x2
+    var rowSpacing: CGFloat? = nil
+
+    private func measure(_ subview: LayoutSubview, maxWidth: CGFloat) -> CGSize {
+        let ideal = subview.sizeThatFits(.unspecified)
+        if ideal.width <= maxWidth { return ideal }
+        return subview.sizeThatFits(ProposedViewSize(width: maxWidth, height: nil))
+    }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? .infinity
+        let vGap = rowSpacing ?? spacing
         var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, maxX: CGFloat = 0
         for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
+            let size = measure(subview, maxWidth: width)
             if x > 0, x + size.width > width {
                 x = 0
-                y += rowHeight + spacing
+                y += rowHeight + vGap
                 rowHeight = 0
             }
             x += size.width + spacing
@@ -126,12 +136,13 @@ struct FlowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let vGap = rowSpacing ?? spacing
         var x = bounds.minX, y = bounds.minY, rowHeight: CGFloat = 0
         for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
+            let size = measure(subview, maxWidth: bounds.width)
             if x > bounds.minX, x + size.width > bounds.maxX {
                 x = bounds.minX
-                y += rowHeight + spacing
+                y += rowHeight + vGap
                 rowHeight = 0
             }
             subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))

@@ -45,6 +45,7 @@ struct DayTimelineView: View {
                     canvas(layout, height: height, nowMinute: nowMinute)
                 }
                 .frame(height: height)
+                .padding(.top, HSpace.x2) // the first hour label sits 6 pt above the canvas edge
             }
         }
     }

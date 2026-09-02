@@ -68,14 +68,15 @@ final class FixtureTransport: HTTPTransport, @unchecked Sendable {
         guard var json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               var lesson = json["nextLesson"] as? [String: Any],
               let starts = lesson["startsAt"] as? Double, let ends = lesson["endsAt"] as? Double else { return data }
-        let now = Date().timeIntervalSince1970 * 1000
-        let length = ends - starts
+        // Whole milliseconds: the DTOs decode Int64, a fractional value fails.
+        let now = (Date().timeIntervalSince1970 * 1000).rounded()
+        let length = (ends - starts).rounded()
         if lesson["temporalState"] as? String == "now" {
-            lesson["startsAt"] = now - length / 2
-            lesson["endsAt"] = now + length / 2
+            lesson["startsAt"] = Int64(now - (length / 2).rounded())
+            lesson["endsAt"] = Int64(now + (length / 2).rounded())
         } else {
-            lesson["startsAt"] = now + 64 * 60_000
-            lesson["endsAt"] = now + 64 * 60_000 + length
+            lesson["startsAt"] = Int64(now + 64 * 60_000)
+            lesson["endsAt"] = Int64(now + 64 * 60_000 + length)
             lesson["minutesUntilStart"] = 64
         }
         json["nextLesson"] = lesson
@@ -118,9 +119,9 @@ final class FixtureTransport: HTTPTransport, @unchecked Sendable {
 
     private static func retime(_ lesson: [String: Any], from: String, to: String) -> [String: Any] {
         var l = lesson
-        let delta = Double(daysBetween(from, to)) * 86_400_000
-        if let s = l["startsAt"] as? Double { l["startsAt"] = s + delta }
-        if let e = l["endsAt"] as? Double { l["endsAt"] = e + delta }
+        let delta = Int64(daysBetween(from, to)) * 86_400_000
+        if let s = l["startsAt"] as? Double { l["startsAt"] = Int64(s) + delta }
+        if let e = l["endsAt"] as? Double { l["endsAt"] = Int64(e) + delta }
         return l
     }
 }
@@ -165,9 +166,13 @@ enum SnapshotHarness {
         return env
     }
 
-    /// Hosts the real root in a phone-sized window, lets the fixtures land,
-    /// draws the hierarchy, writes the PNG. Returns the image for assertions.
-    static func snapshot(_ env: AppEnvironment, name: String, settle: TimeInterval = 1.6) async throws -> UIImage {
+    /// One shell per environment, kept alive across snapshots like the real
+    /// app (a shell rebuilt per snapshot let the previous, not yet torn down,
+    /// view consume a navigation intent before the new one appeared).
+    private static var windows: [ObjectIdentifier: UIWindow] = [:]
+
+    static func window(for env: AppEnvironment) -> UIWindow {
+        if let existing = windows[ObjectIdentifier(env)] { return existing }
         let root = ThemedRoot(store: env.themeStore) { RootView() }
             .environment(env)
             .environment(env.navigator)
@@ -178,7 +183,24 @@ enum SnapshotHarness {
         let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow(frame: CGRect(origin: .zero, size: size))
         window.frame = CGRect(origin: .zero, size: size)
         window.rootViewController = host
+        windows[ObjectIdentifier(env)] = window
+        return window
+    }
+
+    static func release(_ env: AppEnvironment) {
+        if let window = windows.removeValue(forKey: ObjectIdentifier(env)) {
+            window.isHidden = true
+            window.rootViewController = nil
+        }
+    }
+
+    /// Shows the shell in its phone-sized window, lets the fixtures land,
+    /// draws the hierarchy, writes the PNG. Returns the image for assertions.
+    static func snapshot(_ env: AppEnvironment, name: String, settle: TimeInterval = 1.6) async throws -> UIImage {
+        let window = window(for: env)
+        for other in windows.values where other !== window { other.isHidden = true }
         window.makeKeyAndVisible()
+        guard let host = window.rootViewController else { throw NSError(domain: "snapshot", code: 1) }
         host.view.frame = window.bounds
         host.view.layoutIfNeeded()
         try await Task.sleep(nanoseconds: UInt64(settle * 1_000_000_000))
@@ -196,8 +218,6 @@ enum SnapshotHarness {
         if let dir = outputDirectory, let data = image.pngData() {
             try data.write(to: dir.appendingPathComponent("\(name).png"))
         }
-        window.isHidden = true
-        window.rootViewController = nil
         return image
     }
 
@@ -246,6 +266,7 @@ final class VisualFixtureTests: XCTestCase {
             theme(env, bg, accent, size)
             env.navigator.selected = .home
             assertRendered(try await SnapshotHarness.snapshot(env, name: name), name)
+            SnapshotHarness.release(env)
         }
     }
 
@@ -284,6 +305,7 @@ final class VisualFixtureTests: XCTestCase {
             env.navigator.settingsPath = []
             await env.signOut()
             assertRendered(try await SnapshotHarness.snapshot(env, name: "login-\(suffix)", settle: 0.6), "login")
+            SnapshotHarness.release(env)
         }
     }
 
@@ -295,6 +317,7 @@ final class VisualFixtureTests: XCTestCase {
             env.navigator.selected = .settings
             env.navigator.settingsPath = [.settingsAppearance]
             assertRendered(try await SnapshotHarness.snapshot(env, name: "appearance-\(bg.rawValue)", settle: 0.8), "appearance \(bg.rawValue)")
+            SnapshotHarness.release(env)
         }
     }
 }

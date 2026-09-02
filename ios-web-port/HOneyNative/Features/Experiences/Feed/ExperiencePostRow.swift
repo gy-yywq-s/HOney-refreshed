@@ -70,27 +70,25 @@ struct ExperiencePostRow: View {
     /// `.post__context`: caption 600 in ink-2; names are links that inherit
     /// the line's colour (features.css `.post__context a { color: inherit }`).
     private func contextLine(_ parts: [EntitySummary]) -> some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 4) { contextButtons(parts) }
-            VStack(alignment: .leading, spacing: 2) { contextButtons(parts) }
-        }
-    }
-
-    @ViewBuilder
-    private func contextButtons(_ parts: [EntitySummary]) -> some View {
-        ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
-            HStack(spacing: 4) {
-                if index > 0 { Text("·").foregroundStyle(theme.ink2) }
+        // Inline links that flow and wrap like the Web's text run.
+        FlowLayout(spacing: 4, rowSpacing: 0) {
+            ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
+                if index > 0 { Text("·").font(ramp.font(.captionSemibold)).foregroundStyle(theme.ink2) }
                 if let route = ExperienceDisplay.route(for: part) {
-                    Button(part.name ?? "") { openEntity(route) }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(theme.ink2)
+                    Button { openEntity(route) } label: {
+                        Text(part.name ?? "")
+                            .font(ramp.font(.captionSemibold))
+                            .foregroundStyle(theme.ink2)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .buttonStyle(.plain)
                 } else {
-                    Text(part.name ?? "").foregroundStyle(theme.ink2)
+                    Text(part.name ?? "")
+                        .font(ramp.font(.captionSemibold))
+                        .foregroundStyle(theme.ink2)
+                        .multilineTextAlignment(.leading)
                 }
             }
-            .font(ramp.font(.captionSemibold))
-            .lineLimit(1)
         }
     }
 

@@ -285,10 +285,14 @@ extension View {
     /// The page ground for every screen: the chosen surface, edge to edge.
     func surfaceBackground() -> some View { modifier(SurfaceBackground()) }
 
-    /// A pushed screen's chrome: inline title on the surface, no system large title.
+    /// A pushed screen's chrome, like the Web's `.pagebar`: only "‹ Parent"
+    /// in the bar (the title names the screen for the next back button; a
+    /// principal item keeps it out of the bar itself), the page title in
+    /// content, no system large title.
     func webScreen(title: String) -> some View {
         self.navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) } }
             .toolbar(.hidden, for: .tabBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .surfaceBackground()
