@@ -98,11 +98,14 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   if (webDist && existsSync(join(webDist, "index.html"))) {
     void app.register(fastifyStatic, {
       root: webDist,
+      cacheControl: false, // we set it ourselves below, per file class
       setHeaders(res, path) {
         // The service worker must be re-checked on every load (r5–r7 relay);
-        // hashed assets are immutable by construction.
+        // hashed assets are immutable by construction; everything else
+        // revalidates.
         if (path.endsWith("/sw.js")) res.setHeader("cache-control", "no-cache");
         else if (path.includes("/assets/")) res.setHeader("cache-control", "public, max-age=31536000, immutable");
+        else res.setHeader("cache-control", "public, max-age=0, must-revalidate");
       },
     });
     app.setNotFoundHandler((req, reply) => {
