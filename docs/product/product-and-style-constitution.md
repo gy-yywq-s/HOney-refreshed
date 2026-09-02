@@ -48,8 +48,18 @@ Do not broaden the product before these three are excellent.
   until genuine protocol unlinkability ships (recorded launch blocker).
 - **Four background surfaces (Stone / White / Mist / Night) stay** — the owner's choice.
   The system dark preference is honoured before first paint when nothing is stored.
-- **The 620 px timetable canvas density on normal heights stays.** Compact heights degrade by
-  documented notches (540 px, 450 px on SE-class widths), never by silent compression.
+- **The timetable canvas fills the phone's frame and never compresses below 560 px** (desktop
+  656 px). Every notched iPhone in standalone mode fits with zero page scroll; taller phones
+  get a taller canvas. Compact heights degrade by documented notches (540 px, 450 px on
+  SE-class widths), never by silent compression. The day range widens to the hour for a lesson
+  outside 09:00–20:00 — a clipped block is not an option.
+- **On phones the timetable is a native-style screen with no captions and no utility buttons**
+  (Gary, 2026-09-02). The date bar sits flush under the status bar and *is* the heading; the
+  native date input lies invisibly over it, so a tap opens the platform calendar. Pull-to-
+  refresh has two stages — release to refresh, pull further to sync with the school portal
+  (the label says so). At the end of the canvas a deliberate pull-up opens History; it needs
+  the owner already at its end, a long damped drag, more time than a flick, and shows the
+  release point first. Desktop keeps History and Sync now as buttons.
 
 ## 3. Personality
 

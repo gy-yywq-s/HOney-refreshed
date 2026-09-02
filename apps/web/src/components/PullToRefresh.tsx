@@ -22,9 +22,9 @@ type Stage = "idle" | "pull" | "refresh" | "sync";
 function labelFor(stage: Stage, syncable: boolean): string {
   switch (stage) {
     case "pull":
-      return syncable ? "Pull further to sync with school" : "";
+      return "Pull to refresh";
     case "refresh":
-      return "Release to refresh";
+      return syncable ? "Release to refresh · pull further to sync" : "Release to refresh";
     case "sync":
       return "Release to sync with school";
     default:
