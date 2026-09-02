@@ -2,6 +2,13 @@
 // view models; they never build URLs, refresh tokens, sequence the
 // publication flow or touch the Keychain. Everything below the view models
 // lives in HOneyCore and is tested on Linux.
+//
+// Account boundary (review 11d42e3 §3.1): one `AccountScope` is activated
+// per signed-in HOney account, and every account-scoped store (notes,
+// drafts, control keys, preferences, school login, portal state, caches)
+// is switched — awaited — BEFORE the signed-in shell appears. Signing out
+// deactivates the scope before the login screen shows, so no store can be
+// read under a stale account.
 
 import Foundation
 import Observation
@@ -9,16 +16,33 @@ import SwiftUI
 import HOneyCore
 
 struct AppConfig {
-    let honeyBaseURL = URL(string: "https://honey.gaelisus.com")!
-    let portalBaseURL = URL(string: "https://www.huayaopudong.com")!
-    let portalHome = URL(string: "https://www.huayaopudong.com/student/notification")!
-    let portalHosts: Set<String> = ["www.huayaopudong.com", "huayaopudong.com"]
-    let dashURL = URL(string: "https://honey.gaelisus.com/dash")!
-    let buildLabel: String = {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        return "\(version) (\(build))"
-    }()
+    let honeyBaseURL: URL
+    let portalBaseURL: URL
+    let portalHome: URL
+    let portalHosts: Set<String>
+    let dashURL: URL
+    let environmentName: String
+    let buildLabel: String
+
+    /// Production unless the bundle's Info.plist names another HOney server
+    /// (`HOneyBaseURL`, set per build configuration in project.yml).
+    static func fromBundle(_ bundle: Bundle = .main) -> AppConfig {
+        let info = bundle.infoDictionary ?? [:]
+        let honey = (info["HOneyBaseURL"] as? String).flatMap(URL.init(string:)) ?? URL(string: "https://honey.gaelisus.com")!
+        let portal = (info["HOneyPortalBaseURL"] as? String).flatMap(URL.init(string:)) ?? URL(string: "https://www.huayaopudong.com")!
+        let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = info["CFBundleVersion"] as? String ?? "1"
+        let name = info["HOneyEnvironment"] as? String ?? "production"
+        return AppConfig(
+            honeyBaseURL: honey,
+            portalBaseURL: portal,
+            portalHome: portal.appendingPathComponent("student/notification"),
+            portalHosts: [portal.host ?? "www.huayaopudong.com", "huayaopudong.com"],
+            dashURL: honey.appendingPathComponent("dash"),
+            environmentName: name,
+            buildLabel: "\(version) (\(build))" + (name == "production" ? "" : " · \(name)")
+        )
+    }
 }
 
 enum AuthPhase: Equatable {
@@ -37,6 +61,28 @@ enum AuthPhase: Equatable {
     }
 }
 
+/// The signed-in account every account-scoped store is bound to.
+struct AccountScope: Equatable {
+    let honeyId: String
+    let displayName: String
+}
+
+/// What account deletion actually managed to clear (review §4.16).
+struct DeletionReport: Equatable {
+    var serverDeleted = false
+    var portalSecretsCleared = true
+    var notesCleared: Bool?
+    var keysCleared: Bool?
+
+    var failures: [String] {
+        var out: [String] = []
+        if !portalSecretsCleared { out.append("the school login kept on this iPhone") }
+        if notesCleared == false { out.append("private notes") }
+        if keysCleared == false { out.append("post control keys") }
+        return out
+    }
+}
+
 @MainActor
 @Observable
 final class AppEnvironment {
@@ -50,18 +96,23 @@ final class AppEnvironment {
     let timetable: TimetableRepository
     let notes: PrivateNoteStore
     let drafts: ComposerDraftStore
+    let journal: PublicationJournal
     let prefs: Preferences
     let navigator: Navigator
     let portal: PortalController
-    private let secrets: SecretStore
-    private(set) var keys: SecretOwnershipKeyStore
+    let keys: SecretOwnershipKeyStore
 
     private(set) var phase: AuthPhase = .loading
     private(set) var me: Me?
+    private(set) var scope: AccountScope?
     /// The `Me` last seen for this account, so a failed refresh keeps the shell.
     private var cachedMe: Me?
+    /// Bumped on every account change; async work compares before applying.
+    private var accountEpoch = 0
     /// One honest notice after login when the Keychain refused the school login.
     var loginNotice: String?
+    /// Shown on the login screen after a deletion that could not clear everything.
+    var signedOutNotice: String?
     var appearance: AppearanceChoice {
         didSet { prefs.appearance = appearance }
     }
@@ -74,7 +125,6 @@ final class AppEnvironment {
 
     init(config: AppConfig, secrets: SecretStore, storageDirectory: URL, prefs: Preferences, writeOptions: Data.WritingOptions) {
         self.config = config
-        self.secrets = secrets
         self.prefs = prefs
         self.appearance = prefs.appearance
         self.language = prefs.language
@@ -88,45 +138,99 @@ final class AppEnvironment {
         portalConfig.waitsForConnectivity = false
         portalConfig.requestCachePolicy = .reloadIgnoringLocalCacheData
         let portalAPI = PortalAPI(baseURL: config.portalBaseURL, transport: URLSessionTransport(configuration: portalConfig))
-        let portalCoordinator = PortalSessionCoordinator(api: portalAPI, sessions: portalVault, credentials: portalVault)
+        let portalCoordinator = PortalSessionCoordinator(api: portalAPI, sessions: portalVault, credentials: portalVault, binding: portalVault)
         self.api = api
         self.publication = PublicationAPIClient(baseURL: config.honeyBaseURL, transport: URLSessionTransport.identityFree())
         self.portalVault = portalVault
         self.portalAPI = portalAPI
         self.portalCoordinator = portalCoordinator
         self.feedStore = FeedStore()
-        self.timetable = TimetableRepository(api: api)
+        self.timetable = TimetableRepository(provider: api)
         self.notes = PrivateNoteStore(directory: storageDirectory, writeOptions: writeOptions)
         self.drafts = ComposerDraftStore(directory: storageDirectory, writeOptions: writeOptions)
-        self.keys = SecretOwnershipKeyStore(store: secrets, account: "anonymous")
+        self.journal = PublicationJournal(directory: storageDirectory, writeOptions: writeOptions)
+        self.keys = SecretOwnershipKeyStore(store: secrets, account: SecretOwnershipKeyStore.signedOutAccount)
         self.navigator = Navigator()
-        self.portal = PortalController(api: api, coordinator: portalCoordinator, vault: portalVault, prefs: prefs, home: config.portalHome)
+        self.portal = PortalController(api: api, coordinator: portalCoordinator, home: config.portalHome)
     }
 
     static func live() -> AppEnvironment {
         let support = (try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true))
             ?? FileManager.default.temporaryDirectory
-        let env = AppEnvironment(
-            config: AppConfig(),
+        return AppEnvironment(
+            config: AppConfig.fromBundle(),
             secrets: KeychainSecretStore(service: "com.gaelisus.honey.native"),
             storageDirectory: support.appendingPathComponent("HOney", isDirectory: true),
             prefs: Preferences(),
             writeOptions: [.completeFileProtection]
         )
-        return env
+    }
+
+    // MARK: Account scope
+
+    /// Bind every account-scoped store to this account — awaited, in order,
+    /// before any signed-in UI can read them.
+    private func activate(_ me: Me) async {
+        let next = AccountScope(honeyId: me.honeyId, displayName: me.displayName)
+        if scope != next {
+            accountEpoch += 1
+            await feedStore.invalidateAll()
+            await timetable.invalidateAll()
+            navigator.reset()
+        }
+        scope = next
+        self.me = me
+        cachedMe = me
+        keys.setAccount(me.honeyId)
+        drafts.setAccount(me.honeyId)
+        prefs.setAccount(me.honeyId)
+        await notes.setAccount(me.honeyId)
+        await journal.setAccount(me.honeyId)
+        portalVault.setAccount(me.honeyId, expectedName: me.displayName)
+        await portalCoordinator.accountChanged()
+        await portal.reset()
+        await PortalWebController.shared.resetForAccountChange()
+    }
+
+    /// Unbind everything before the login screen appears.
+    private func deactivate() async {
+        accountEpoch += 1
+        scope = nil
+        me = nil
+        cachedMe = nil
+        keys.setAccount(SecretOwnershipKeyStore.signedOutAccount)
+        drafts.setAccount(nil)
+        prefs.setAccount(nil)
+        await notes.setAccount(nil)
+        await journal.setAccount(nil)
+        portalVault.setAccount(nil, expectedName: nil)
+        await portalCoordinator.accountChanged()
+        await portal.reset()
+        await PortalWebController.shared.resetForAccountChange()
+        await feedStore.invalidateAll()
+        await timetable.invalidateAll()
+        navigator.reset()
     }
 
     // MARK: Session
 
     func bootstrap() async {
         await api.onSessionLost { [weak self] in
-            Task { @MainActor in self?.sessionLost() }
+            Task { @MainActor in await self?.sessionLost() }
         }
         await portalCoordinator.setFreshTokenHandler { [weak self] token in
             // A token minted on the device also serves HOney's own sync/entry.
-            try? await self?.api.pushPortalToken(token)
+            guard let self else { return false }
+            do {
+                try await self.api.pushPortalToken(token)
+                return true
+            } catch {
+                await self.portal.noteTokenPushFailure(APIErrorCopy.describe(error))
+                return false
+            }
         }
         guard await api.hasSession() else {
+            await deactivate()
             phase = .signedOut
             return
         }
@@ -135,26 +239,22 @@ final class AppEnvironment {
     }
 
     func refreshMe(initial: Bool = false) async {
+        let epoch = accountEpoch
         do {
             let me = try await api.me()
-            apply(me)
+            guard epoch == accountEpoch || scope == nil else { return }
+            await activate(me)
             phase = .signedIn(me)
+            await recoverPublications()
         } catch let error as APIError where error.status == 401 {
-            sessionLost()
+            await sessionLost()
         } catch {
-            if let cachedMe {
+            if let cachedMe, scope != nil {
                 phase = .signedIn(cachedMe)
             } else if initial {
                 phase = .unavailable(APIErrorCopy.describe(error))
             }
         }
-    }
-
-    private func apply(_ me: Me) {
-        self.me = me
-        cachedMe = me
-        keys.setAccount(me.honeyId)
-        Task { await notes.setAccount(me.honeyId) }
     }
 
     /// School login IS the HOney login. Saves the school login to the Keychain
@@ -163,6 +263,12 @@ final class AppEnvironment {
     func login(username: String, password: String) async throws {
         let result = try await api.login(LoginInput(username: username, password: password))
         loginNotice = nil
+        let me = Me(
+            honeyId: result.honeyId, displayName: result.displayName, isAdmin: result.isAdmin,
+            consent: Me.Consent(timetable: result.consent.timetable, grantedAt: nil),
+            connection: Me.Connection(connected: true, lastSyncedAt: nil, portalTokenValid: true)
+        )
+        await activate(me)
         if prefs.stayConnectedWanted {
             do {
                 try await portalCoordinator.authorize(PortalCredentials(username: username, password: password))
@@ -170,12 +276,6 @@ final class AppEnvironment {
                 loginNotice = "Signed in, but this iPhone could not keep your school login, so automatic reconnect is off for now. You can try again in Settings › School connection."
             }
         }
-        let me = Me(
-            honeyId: result.honeyId, displayName: result.displayName, isAdmin: result.isAdmin,
-            consent: Me.Consent(timetable: result.consent.timetable, grantedAt: nil),
-            connection: Me.Connection(connected: true, lastSyncedAt: nil, portalTokenValid: true)
-        )
-        apply(me)
         phase = .signedIn(me)
         await refreshMe()
         Task { await portal.prewarm() }
@@ -183,34 +283,46 @@ final class AppEnvironment {
 
     func signOut() async {
         await api.logout()
-        await timetable.invalidateAll()
-        await feedStore.invalidateAll()
-        // Notes and control keys stay (spec §5.1): only "erase local data" removes them.
-        me = nil
-        cachedMe = nil
-        navigator.reset()
+        // Notes and control keys stay on the device for this account (spec
+        // §5.1): only "erase local data" removes them. Everything is unbound.
+        await deactivate()
         phase = .signedOut
     }
 
-    func deleteAccount(eraseLocalData: Bool) async throws {
+    /// Deletes the account server-side, then clears what the student asked
+    /// for locally and reports exactly what could not be cleared.
+    func deleteAccount(eraseLocalData: Bool) async throws -> DeletionReport {
         try await api.deleteAccount()
-        await portalCoordinator.forgetEverything()
-        if eraseLocalData {
-            try? await notes.clearAll()
-            for key in (try? keys.list()) ?? [] { try? keys.remove(key: key.key) }
+        var report = DeletionReport(serverDeleted: true)
+        do {
+            try await portalCoordinator.forgetEverything()
+        } catch {
+            report.portalSecretsCleared = false
         }
-        await timetable.invalidateAll()
-        await feedStore.invalidateAll()
-        me = nil
-        cachedMe = nil
-        navigator.reset()
+        if eraseLocalData {
+            do {
+                try await notes.clearAll()
+                report.notesCleared = true
+            } catch {
+                report.notesCleared = false
+            }
+            var keysOK = true
+            for key in (try? keys.list()) ?? [] {
+                do { try keys.remove(key: key.key) } catch { keysOK = false }
+            }
+            try? await journal.clearAll()
+            report.keysCleared = keysOK
+        }
+        await deactivate()
+        if !report.failures.isEmpty {
+            signedOutNotice = "Your HOney account was deleted, but this iPhone could not clear: \(report.failures.joined(separator: ", ")). Reinstalling the app removes them."
+        }
         phase = .signedOut
+        return report
     }
 
-    private func sessionLost() {
-        me = nil
-        cachedMe = nil
-        navigator.reset()
+    private func sessionLost() async {
+        await deactivate()
         phase = .signedOut
     }
 
@@ -220,35 +332,58 @@ final class AppEnvironment {
         await portal.prewarm()
     }
 
-    /// The Reconnect / Save-login sheet's work: HOney login with the school
-    /// account, then the saved login is kept or cleared per the wish.
+    /// Control keys journaled at publish time but not yet in the Keychain
+    /// (the app died, or the Keychain refused): try again on every launch.
+    func recoverPublications() async {
+        let pending = (try? await journal.pending()) ?? []
+        for record in pending {
+            do {
+                try keys.add(key: record.ownershipKey, experienceId: record.experienceId)
+                guard try keys.list().contains(where: { $0.experienceId == record.experienceId }) else { continue }
+                try? await journal.remove(experienceId: record.experienceId)
+            } catch {
+                // Keep the journal entry; the next launch tries again.
+            }
+        }
+    }
+
+    /// The Reconnect / Save-login sheet's work: the school login is proven
+    /// against the school itself by the device coordinator, kept or cleared
+    /// per the wish, and the fresh token handed to HOney.
     func reconnectSchool(username: String, password: String, keep: Bool) async throws {
-        _ = try await api.login(LoginInput(username: username, password: password))
+        let credentials = PortalCredentials(username: username, password: password)
+        try await portalCoordinator.verify(credentials)
         if keep {
             prefs.stayConnectedWanted = true
-            try await portalCoordinator.authorize(PortalCredentials(username: username, password: password))
+            try await portalCoordinator.authorize(credentials)
+            _ = try await portalCoordinator.prepareForSensitiveAction()
         } else {
-            await portalCoordinator.forgetEverything()
+            prefs.stayConnectedWanted = false
+            try? await portalCoordinator.forgetEverything()
+            // No saved login: HOney itself needs the sign-in once to hold a portal token.
+            _ = try await api.login(LoginInput(username: username, password: password))
         }
         await refreshMe()
-        await portal.prewarm()
+        await portal.prewarm(force: true)
     }
 
     /// Settings toggle: off deletes the Keychain school login and records the wish.
     func setStayConnected(_ on: Bool) async {
         prefs.stayConnectedWanted = on
-        if !on { await portalCoordinator.forgetEverything() }
+        if !on { try? await portalCoordinator.forgetEverything() }
     }
 
     var hasSavedSchoolLogin: Bool { portalVault.hasCredentials }
 
-    /// Upstream school sync (explicit action): silently re-logs in with the
-    /// saved school login when the portal session ended.
+    /// Upstream school sync (explicit action). When HOney's portal token has
+    /// ended, the device coordinator renews it directly with the school and
+    /// hands it to HOney — the full HOney login is never replayed for this.
     func syncWithSchool() async throws -> (SyncResponse, reconnected: Bool) {
         var result = try await api.sync()
         var reconnected = false
-        if result.status == .portalReconnectRequired, let creds = try? portalVault.loadCredentials() {
-            _ = try await api.login(LoginInput(username: creds.username, password: creds.password))
+        if result.status == .portalReconnectRequired, portalVault.hasCredentials {
+            let token = try await portalCoordinator.freshToken()
+            try await api.pushPortalToken(token)
             result = try await api.sync()
             reconnected = true
         }
@@ -257,92 +392,5 @@ final class AppEnvironment {
             await refreshMe()
         }
         return (result, reconnected)
-    }
-}
-
-/// App-wide read cache for school data (spec §3.4 TimetableRepository):
-/// day/week/history/directory/entities, coalesced in-flight requests,
-/// invalidated after a school sync. Cached content paints before refresh.
-actor TimetableRepository {
-    private let api: APIClient
-    private var days: [String: TimetableResponse] = [:]
-    private var weeks: [String: TimetableRangeResponse] = [:]
-    private var nextLesson: NextLessonResponse?
-    private var directory: DirectoryResponse?
-    private var entities: EntitiesResponse?
-    private var histories: [String: HistoryResponse] = [:]
-    private var inflight: [String: Task<any Sendable, Error>] = [:]
-
-    init(api: APIClient) { self.api = api }
-
-    func cachedDay(_ date: String) -> TimetableResponse? { days[date] }
-    func cachedWeek(_ monday: String) -> TimetableRangeResponse? { weeks[monday] }
-    func cachedNextLesson() -> NextLessonResponse? { nextLesson }
-    func cachedDirectory() -> DirectoryResponse? { directory }
-    func cachedEntities() -> EntitiesResponse? { entities }
-
-    func day(_ date: String, reload: Bool = false) async throws -> TimetableResponse {
-        if !reload, let cached = days[date] { return cached }
-        let value = try await coalesce("day:\(date)") { try await self.api.timetable(date: date) }
-        days[date] = value
-        return value
-    }
-
-    func week(monday: String, reload: Bool = false) async throws -> TimetableRangeResponse {
-        if !reload, let cached = weeks[monday] { return cached }
-        let value = try await coalesce("week:\(monday)") {
-            try await self.api.timetableRange(from: monday, to: Formatters.shiftIsoDate(monday, days: 6))
-        }
-        weeks[monday] = value
-        return value
-    }
-
-    func next(reload: Bool = false) async throws -> NextLessonResponse {
-        if !reload, let cached = nextLesson { return cached }
-        let value = try await coalesce("next") { try await self.api.nextLesson() }
-        nextLesson = value
-        return value
-    }
-
-    func directory(reload: Bool = false) async throws -> DirectoryResponse {
-        if !reload, let cached = directory { return cached }
-        let value = try await coalesce("directory") { try await self.api.directory() }
-        directory = value
-        return value
-    }
-
-    func entities(reload: Bool = false) async throws -> EntitiesResponse {
-        if !reload, let cached = entities { return cached }
-        let value = try await coalesce("entities") { try await self.api.entities() }
-        entities = value
-        return value
-    }
-
-    func history(_ params: HistoryParams, reload: Bool = false) async throws -> HistoryResponse {
-        let key = "history:\(params.q ?? "")|\(params.teacherId ?? "")|\(params.courseId ?? "")|\(params.limit ?? 0)"
-        if !reload, let cached = histories[key] { return cached }
-        let value = try await coalesce(key) { try await self.api.history(params) }
-        histories[key] = value
-        return value
-    }
-
-    func invalidateAll() {
-        days.removeAll()
-        weeks.removeAll()
-        nextLesson = nil
-        directory = nil
-        histories.removeAll()
-        // entities are a community registry, not school data — kept.
-        inflight.removeAll()
-    }
-
-    func invalidateEntities() { entities = nil }
-
-    private func coalesce<T: Sendable>(_ key: String, _ work: @escaping @Sendable () async throws -> T) async throws -> T {
-        if let task = inflight[key] { return try await task.value as! T }
-        let task = Task<any Sendable, Error> { try await work() as any Sendable }
-        inflight[key] = task
-        defer { inflight[key] = nil }
-        return try await task.value as! T
     }
 }

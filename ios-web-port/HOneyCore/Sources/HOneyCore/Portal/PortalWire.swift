@@ -240,4 +240,7 @@ public enum PortalError: Error, Sendable, Equatable {
     case schemaIncompatible(endpoint: String)
     /// No saved school login on this device: silent recovery is impossible.
     case noCredentials
+    /// The school identity behind the login is not the one this HOney
+    /// account is bound to — never used, never kept.
+    case identityMismatch
 }

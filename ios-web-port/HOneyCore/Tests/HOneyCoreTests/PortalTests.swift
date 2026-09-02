@@ -93,7 +93,10 @@ final class PortalSessionCoordinatorTests: XCTestCase {
         var loginResult: Result<String, PortalError> = .success("tok")
         var loginDelayNs: UInt64 = 0
         private(set) var logins = 0
+        private(set) var logouts = 0
         var exp: Date = Date().addingTimeInterval(3600)
+        var identityName = ""
+        var studentId = "1"
 
         func login(_ credentials: PortalCredentials) async throws -> String {
             logins += 1
@@ -102,18 +105,74 @@ final class PortalSessionCoordinatorTests: XCTestCase {
         }
 
         func identity(token: String) async throws -> PortalIdentity {
-            PortalIdentity(studentId: "1", name: "x", isDayStudent: nil, tokenExpiresAt: exp)
+            PortalIdentity(studentId: studentId, name: identityName, isDayStudent: nil, tokenExpiresAt: exp)
         }
 
-        func logout(token: String) async {}
+        func logout(token: String) async { logouts += 1 }
     }
 
-    func make(creds: Bool = true, saved: PortalSession? = nil) -> (PortalSessionCoordinator, FakeAuth, SecretPortalVault) {
+    func make(creds: Bool = true, saved: PortalSession? = nil, expectedName: String? = nil) -> (PortalSessionCoordinator, FakeAuth, SecretPortalVault) {
         let vault = SecretPortalVault(store: InMemorySecretStore())
+        vault.setAccount("h_1", expectedName: expectedName)
         if creds { try? vault.saveCredentials(PortalCredentials(username: "u", password: "p")) }
         if let saved { try? vault.saveSession(saved) }
         let auth = FakeAuth()
-        return (PortalSessionCoordinator(api: auth, sessions: vault, credentials: vault), auth, vault)
+        return (PortalSessionCoordinator(api: auth, sessions: vault, credentials: vault, binding: vault), auth, vault)
+    }
+
+    func testIdentityMismatchNeverBecomesASession() async {
+        let (c, auth, vault) = make(expectedName: "沈高远")
+        auth.identityName = "王某某"
+        let state = await c.restore()
+        XCTAssertEqual(state, .userActionRequired(.unknown))
+        XCTAssertFalse(vault.hasCredentials, "a login for someone else is purged")
+        XCTAssertNil(try? vault.loadSession())
+        XCTAssertEqual(auth.logouts, 1, "the foreign token is logged out")
+    }
+
+    func testStudentIdIsRememberedPerAccountAndMustNotChange() async throws {
+        let (c, auth, vault) = make(expectedName: "沈高远")
+        auth.identityName = "沈高远"
+        auth.studentId = "1001"
+        await c.restore()
+        XCTAssertTrue(vault.hasCredentials)
+        try? vault.saveSession(PortalSession(token: "stale", expiresAt: Date().addingTimeInterval(-10), studentId: "1001"))
+        auth.studentId = "2002"
+        await c.accountChanged()
+        await XCTAssertThrowsPortal(.identityMismatch) { _ = try await c.prepareForSensitiveAction() }
+    }
+
+    func testVaultReadsNothingWithoutAnAccount() throws {
+        let vault = SecretPortalVault(store: InMemorySecretStore())
+        XCTAssertNil(try? vault.loadCredentials())
+        XCTAssertThrowsError(try vault.saveCredentials(PortalCredentials(username: "u", password: "p")))
+        vault.setAccount("h_1", expectedName: nil)
+        try vault.saveCredentials(PortalCredentials(username: "u", password: "p"))
+        vault.setAccount("h_2", expectedName: nil)
+        XCTAssertNil(try vault.loadCredentials(), "another account sees no school login")
+        vault.setAccount(nil, expectedName: nil)
+        XCTAssertNil(try? vault.loadCredentials())
+    }
+
+    func testAccountChangeDropsInFlightReauth() async throws {
+        let (c, auth, _) = make()
+        auth.loginDelayNs = 100_000_000
+        let pending = Task { try await c.prepareForSensitiveAction() }
+        try await Task.sleep(nanoseconds: 10_000_000)
+        await c.accountChanged()
+        do {
+            _ = try await pending.value
+            XCTFail("a token minted for the previous account must not be delivered")
+        } catch {}
+    }
+
+    func testVerifyProvesWithoutKeeping() async throws {
+        let (c, auth, vault) = make(creds: false, expectedName: "沈高远")
+        auth.identityName = "沈高远"
+        try await c.verify(PortalCredentials(username: "u", password: "p"))
+        XCTAssertFalse(vault.hasCredentials)
+        auth.identityName = "someone else"
+        await XCTAssertThrowsPortal(.identityMismatch) { try await c.verify(PortalCredentials(username: "u", password: "p")) }
     }
 
     func testRestoreUsesFreshSavedSessionWithoutLogin() async {

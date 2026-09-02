@@ -1,11 +1,16 @@
 // Small device-local stores: the transient composer draft (Web:
 // lib/composerDraft.ts), recent Explore contexts (lib/recentContexts.ts),
-// app preferences (saved-login wish, feed scope, language, appearance) and
-// the Web → iPhone transfer bundle (spec §5.5).
+// app preferences and the Web → iPhone transfer bundle (spec §5.5).
+//
+// Account boundary (review 11d42e3 §3.1): everything a second HOney account
+// on the same iPhone must not see is keyed by the active account — drafts,
+// recent contexts, the first-share disclosure, feed scope, Explore category.
+// Appearance and language stay device-level. Signed out = no account = no
+// reads and no writes.
 
 import Foundation
 
-// MARK: - Composer draft (one slot, keyed by target)
+// MARK: - Composer draft (one slot per account, keyed by target)
 
 public struct ComposerDraft: Codable, Sendable, Equatable {
     /// lesson:<id> or the entity_key — the composer target this text belongs to.
@@ -15,37 +20,67 @@ public struct ComposerDraft: Codable, Sendable, Equatable {
     public var updatedAt: Int64
 }
 
+public enum ComposerDraftStoreError: Error, Sendable, Equatable {
+    case noAccount
+    case notWritten
+}
+
 /// Plaintext on purpose: the student's own working text, short-lived and
-/// re-shown only to them. Written BEFORE any moderation call.
+/// re-shown only to them. Written BEFORE any moderation call; `save` throws
+/// and verifies the bytes so "Saved" is never claimed for a write that did
+/// not happen.
 public final class ComposerDraftStore: @unchecked Sendable {
-    private let url: URL
+    private let directory: URL
     private let writeOptions: Data.WritingOptions
     private let lock = NSLock()
+    private var account: String?
 
     public init(directory: URL, writeOptions: Data.WritingOptions = []) {
-        self.url = directory.appendingPathComponent("composer-draft.json")
+        self.directory = directory
         self.writeOptions = writeOptions.union(.atomic)
     }
 
-    /// The saved draft for this target, or nil (another target's draft is ignored).
+    public func setAccount(_ honeyId: String?) {
+        lock.lock(); defer { lock.unlock() }
+        account = honeyId
+    }
+
+    private func url() throws -> URL {
+        guard let account else { throw ComposerDraftStoreError.noAccount }
+        return directory.appendingPathComponent("drafts").appendingPathComponent("\(AccountFiles.safeName(account)).json")
+    }
+
+    /// The saved draft for this target, or nil (another target's or account's
+    /// draft, an unreadable file, or no account).
     public func get(_ targetKey: String) -> ComposerDraft? {
         lock.lock(); defer { lock.unlock() }
-        guard let data = try? Data(contentsOf: url), let draft = try? JSONDecoder().decode(ComposerDraft.self, from: data) else { return nil }
+        guard let url = try? url(), let data = try? Data(contentsOf: url),
+              let draft = try? JSONDecoder().decode(ComposerDraft.self, from: data) else { return nil }
         return draft.targetKey == targetKey ? draft : nil
     }
 
-    public func save(targetKey: String, body: String, rating: Int?) {
+    public func save(targetKey: String, body: String, rating: Int?) throws {
         lock.lock(); defer { lock.unlock() }
+        let url = try url()
         let draft = ComposerDraft(targetKey: targetKey, body: body, rating: rating, updatedAt: HOneyClock.now().epochMillis)
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? JSONEncoder().encode(draft).write(to: url, options: writeOptions)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let data = try JSONEncoder().encode(draft)
+        try data.write(to: url, options: writeOptions)
+        guard (try? Data(contentsOf: url)) == data else { throw ComposerDraftStoreError.notWritten }
     }
 
     /// Clear the slot, but only if it still holds this target's draft.
-    public func clear(_ targetKey: String) {
+    public func clear(_ targetKey: String) throws {
         guard get(targetKey) != nil else { return }
         lock.lock(); defer { lock.unlock() }
-        try? FileManager.default.removeItem(at: url)
+        try FileManager.default.removeItem(at: try url())
+    }
+}
+
+/// File names derived from a HOney id: alphanumerics only.
+public enum AccountFiles {
+    public static func safeName(_ account: String) -> String {
+        account.unicodeScalars.map { CharacterSet.alphanumerics.contains($0) ? String($0) : "_" }.joined()
     }
 }
 
@@ -67,34 +102,50 @@ public struct RecentContext: Codable, Sendable, Equatable, Hashable, Identifiabl
     }
 }
 
-/// UserDefaults-backed, non-secret preferences.
+/// UserDefaults-backed, non-secret preferences. Account-sensitive keys are
+/// namespaced by the active HOney account; without one they read as
+/// defaults and writes are dropped.
 public final class Preferences: @unchecked Sendable {
     private let defaults: UserDefaults
+    private let lock = NSLock()
+    private var account: String?
+
+    /// Bump when the first-share disclosure's content changes materially,
+    /// so every account sees the new wording once.
+    public static let disclosureVersion = 1
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
+    public func setAccount(_ honeyId: String?) {
+        lock.lock(); defer { lock.unlock() }
+        account = honeyId
+    }
+
     private enum Key {
         static let stayOff = "honey.school.stayOff"
-        static let scope = "honey.exp.scope"
         static let language = "honey.lang"
         static let appearance = "honey.appearance"
+        static let scope = "honey.exp.scope"
         static let recent = "honey.exp.recent"
         static let exploreCategory = "honey.explore.category"
         static let firstPublishSeen = "honey.exp.firstPublishSeen"
     }
+
+    private func scoped(_ key: String) -> String? {
+        lock.lock(); defer { lock.unlock() }
+        guard let account else { return nil }
+        return "\(key).\(AccountFiles.safeName(account))"
+    }
+
+    // Device-level
 
     /// Whether the student wants HOney to keep the school login on this
     /// iPhone: on unless they turned it off in Settings.
     public var stayConnectedWanted: Bool {
         get { !defaults.bool(forKey: Key.stayOff) }
         set { defaults.set(!newValue, forKey: Key.stayOff) }
-    }
-
-    public var feedScope: FeedScope {
-        get { FeedScope(rawValue: defaults.string(forKey: Key.scope) ?? "") ?? .myClasses }
-        set { defaults.set(newValue.rawValue, forKey: Key.scope) }
     }
 
     public var language: AppLanguage {
@@ -107,29 +158,47 @@ public final class Preferences: @unchecked Sendable {
         set { defaults.set(newValue.rawValue, forKey: Key.appearance) }
     }
 
-    public var exploreCategory: EntityType {
-        get { EntityType(rawValue: defaults.string(forKey: Key.exploreCategory) ?? "teacher") }
-        set { defaults.set(newValue.rawValue, forKey: Key.exploreCategory) }
+    // Account-scoped
+
+    public var feedScope: FeedScope {
+        get {
+            guard let k = scoped(Key.scope) else { return .myClasses }
+            return FeedScope(rawValue: defaults.string(forKey: k) ?? "") ?? .myClasses
+        }
+        set { if let k = scoped(Key.scope) { defaults.set(newValue.rawValue, forKey: k) } }
     }
 
+    public var exploreCategory: EntityType {
+        get {
+            guard let k = scoped(Key.exploreCategory) else { return .teacher }
+            return EntityType(rawValue: defaults.string(forKey: k) ?? "teacher")
+        }
+        set { if let k = scoped(Key.exploreCategory) { defaults.set(newValue.rawValue, forKey: k) } }
+    }
+
+    /// Seen for THIS account and THIS disclosure version.
     public var firstPublishDisclosureSeen: Bool {
-        get { defaults.bool(forKey: Key.firstPublishSeen) }
-        set { defaults.set(newValue, forKey: Key.firstPublishSeen) }
+        get {
+            guard let k = scoped(Key.firstPublishSeen) else { return false }
+            return defaults.integer(forKey: k) >= Self.disclosureVersion
+        }
+        set { if let k = scoped(Key.firstPublishSeen) { defaults.set(newValue ? Self.disclosureVersion : 0, forKey: k) } }
     }
 
     /// The last few entity pages opened (a convenience, never a signal).
     public var recentContexts: [RecentContext] {
-        guard let data = defaults.data(forKey: Key.recent) else { return [] }
+        guard let k = scoped(Key.recent), let data = defaults.data(forKey: k) else { return [] }
         return (try? JSONDecoder().decode([RecentContext].self, from: data)) ?? []
     }
 
     public func rememberContext(_ ctx: RecentContext, max: Int = 5) {
+        guard let k = scoped(Key.recent) else { return }
         let next = Array(([ctx] + recentContexts.filter { $0.id != ctx.id }).prefix(max))
-        defaults.set(try? JSONEncoder().encode(next), forKey: Key.recent)
+        defaults.set(try? JSONEncoder().encode(next), forKey: k)
     }
 
     public func clearRecentContexts() {
-        defaults.removeObject(forKey: Key.recent)
+        if let k = scoped(Key.recent) { defaults.removeObject(forKey: k) }
     }
 }
 

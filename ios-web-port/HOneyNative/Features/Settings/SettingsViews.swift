@@ -166,7 +166,7 @@ struct AccountView: View {
     private func delete(erase: Bool) {
         busy = true
         Task {
-            do { try await env.deleteAccount(eraseLocalData: erase) } catch { self.error = APIErrorCopy.describe(error) }
+            do { _ = try await env.deleteAccount(eraseLocalData: erase) } catch { self.error = APIErrorCopy.describe(error) }
             busy = false
         }
     }
@@ -231,7 +231,7 @@ struct SchoolConnectionView: View {
         .sheet(isPresented: $showSaveLogin) { SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted } }
         .sheet(isPresented: $showReconnect) { SchoolLoginSheet(purpose: .reconnect) { sync() } }
         .confirmationDialog("Disconnect school account?", isPresented: $confirmDisconnect, titleVisibility: .visible) {
-            Button(L10n.t("Disconnect"), role: .destructive) { run("disconnect", "School account disconnected.") { try await env.api.disconnectSchool(); await env.portalCoordinator.forgetEverything() } }
+            Button(L10n.t("Disconnect"), role: .destructive) { run("disconnect", "School account disconnected.") { try await env.api.disconnectSchool(); try await env.portalCoordinator.forgetEverything() } }
             Button(L10n.t("Cancel"), role: .cancel) {}
         } message: { Text("HOney will stop syncing until you reconnect. Imported data is kept.") }
         .confirmationDialog("Delete imported data?", isPresented: $confirmDeleteData, titleVisibility: .visible) {

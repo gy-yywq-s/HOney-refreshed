@@ -181,8 +181,8 @@ final class ComposerViewModel {
             check: { try await api.checkExperience($0) },
             publish: { try await publication.publish($0) },
             storeKey: { id, key in try keys.add(key: key, experienceId: id) },
-            saveDraft: { key, body, rating in drafts.save(targetKey: key, body: body, rating: rating) },
-            clearDraft: { key in drafts.clear(key) },
+            saveDraft: { key, body, rating in try? drafts.save(targetKey: key, body: body, rating: rating) },
+            clearDraft: { key in try? drafts.clear(key) },
             didPublish: {
                 await feedStore.invalidateAll()
                 await timetable.invalidateEntities()
@@ -271,7 +271,7 @@ final class ComposerViewModel {
         do {
             let saved = try await env.notes.save(id: note?.id, body: body, rating: isDish ? rating : nil, target: targetInfo, cooldown: cooldown)
             note = saved
-            if let scope { env.drafts.clear(scope.draftKey) }
+            if let scope { try? env.drafts.clear(scope.draftKey) }
             return true
         } catch {
             privateSaveError = "Could not save the note on this iPhone."

@@ -33,6 +33,9 @@ struct LoginView: View {
                         .foregroundStyle(Color.honeySecondary)
                 }
 
+                if let notice = env.signedOutNotice {
+                    InlineStatusBanner(text: notice, tone: .warning, action: ("OK", { env.signedOutNotice = nil }))
+                }
                 if let error {
                     InlineStatusBanner(text: error, tone: .danger)
                 }

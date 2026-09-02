@@ -20,7 +20,12 @@ settings:
     SWIFT_VERSION: "5.0"
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     ENABLE_USER_SCRIPT_SANDBOXING: "YES"
-    SWIFT_STRICT_CONCURRENCY: minimal
+    SWIFT_STRICT_CONCURRENCY: complete
+    # Servers per configuration; override HONEY_BASE_URL in a scheme or
+    # xcconfig to point a Debug build at a review server.
+    HONEY_BASE_URL: https://honey.gaelisus.com
+    HONEY_PORTAL_BASE_URL: https://www.huayaopudong.com
+    HONEY_ENVIRONMENT: production
 
 targets:
   HOneyNative:
@@ -47,13 +52,20 @@ targets:
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: "YES"
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_UIUserInterfaceStyle: Automatic
-        INFOPLIST_KEY_NSFaceIDUsageDescription: ""
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SWIFT_EMIT_LOC_STRINGS: "NO"
+    configs:
+      Debug:
+        HONEY_ENVIRONMENT: development
+      Release:
+        HONEY_ENVIRONMENT: production
     info:
       path: HOneyNative/Info.plist
       properties:
+        HOneyEnvironment: $(HONEY_ENVIRONMENT)
+        HOneyBaseURL: $(HONEY_BASE_URL)
+        HOneyPortalBaseURL: $(HONEY_PORTAL_BASE_URL)
         CFBundleURLTypes:
           - CFBundleURLName: com.gaelisus.honey.native
             CFBundleURLSchemes: [honey]

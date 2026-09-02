@@ -219,6 +219,7 @@ public enum AccessCopy {
         case .credentialsRejected: return "Your school password may have changed. Update the school login in Settings."
         case .userActionRequired: return "The school portal needs a manual sign-in. Open the School Portal, then try again."
         case .noCredentials: return "Access needs your school login kept on this iPhone. Turn on Stay connected in Settings."
+        case .identityMismatch: return "That school login belongs to a different student than this HOney account. Sign in to HOney with the matching school account."
         case .schemaIncompatible: return "The school portal changed and Access needs an update."
         case .operationRejected(_, _, let message):
             if let message, !message.isEmpty { return message }

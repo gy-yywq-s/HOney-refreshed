@@ -104,21 +104,23 @@ final class OwnershipKeyStoreTests: XCTestCase {
 }
 
 final class LocalStoresTests: XCTestCase {
-    func testComposerDraftSlotIsKeyedByTarget() {
+    func testComposerDraftSlotIsKeyedByTarget() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let drafts = ComposerDraftStore(directory: dir)
-        drafts.save(targetKey: "lesson:1", body: "hello", rating: nil)
+        drafts.setAccount("h_1")
+        try drafts.save(targetKey: "lesson:1", body: "hello", rating: nil)
         XCTAssertEqual(drafts.get("lesson:1")?.body, "hello")
         XCTAssertNil(drafts.get("dish:2"))
-        drafts.clear("dish:2")
+        try drafts.clear("dish:2")
         XCTAssertNotNil(drafts.get("lesson:1"), "clearing another target leaves the slot")
-        drafts.clear("lesson:1")
+        try drafts.clear("lesson:1")
         XCTAssertNil(drafts.get("lesson:1"))
     }
 
     func testPreferencesDefaults() {
         let defaults = UserDefaults(suiteName: "honey-tests-\(UUID().uuidString)")!
         let prefs = Preferences(defaults: defaults)
+        prefs.setAccount("h_1")
         XCTAssertTrue(prefs.stayConnectedWanted, "saved login is wanted by default")
         prefs.stayConnectedWanted = false
         XCTAssertFalse(prefs.stayConnectedWanted)

@@ -82,6 +82,9 @@ public final class SecretOwnershipKeyStore: OwnershipKeyStoring, @unchecked Send
     private let lock = NSLock()
     private var account: String
 
+    /// The namespace used while no account is signed in: nothing lives there.
+    public static let signedOutAccount = "signed-out"
+
     public init(store: SecretStore, account: String, prefix: String = "honey.keys") {
         self.store = store
         self.account = account
@@ -100,6 +103,7 @@ public final class SecretOwnershipKeyStore: OwnershipKeyStoring, @unchecked Send
 
     public func list() throws -> [StoredOwnershipKey] {
         lock.lock(); defer { lock.unlock() }
+        if account == Self.signedOutAccount { return [] }
         var out: [StoredOwnershipKey] = []
         for name in try store.keys(withPrefix: namespace) {
             guard let data = try store.read(name), let k = try? JSONDecoder().decode(StoredOwnershipKey.self, from: data), k.isValid else { continue }
@@ -110,6 +114,7 @@ public final class SecretOwnershipKeyStore: OwnershipKeyStoring, @unchecked Send
 
     public func add(key: String, experienceId: String) throws {
         lock.lock(); defer { lock.unlock() }
+        if account == Self.signedOutAccount { throw SecretStoreError.unavailable }
         let entry = StoredOwnershipKey(key: key, experienceId: experienceId, createdAt: HOneyClock.now().epochMillis)
         try store.write(namespace + experienceId, try JSONEncoder().encode(entry))
     }
