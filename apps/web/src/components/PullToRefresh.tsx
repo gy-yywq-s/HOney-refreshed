@@ -134,27 +134,28 @@ export function PullToRefresh() {
 
   return (
     <div className="ptr" aria-hidden={!busy}>
-      <div ref={groupRef} className="ptr__group" data-stage="idle">
-        <div
-          className={busy ? "ptr__disc ptr__disc--spin" : "ptr__disc"}
-          role="status"
-          aria-label={busy === "sync" ? "Syncing with school" : busy ? "Refreshing" : undefined}
+      <div
+        ref={groupRef}
+        className="ptr__pill"
+        data-stage="idle"
+        role="status"
+        aria-label={busy === "sync" ? "Syncing with school" : busy ? "Refreshing" : undefined}
+      >
+        <svg
+          className={busy ? "ptr__icon ptr__icon--spin" : "ptr__icon"}
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          aria-hidden="true"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-            <path d="M21 3v6h-6" />
-          </svg>
-        </div>
-        <span ref={labelRef} className="ptr__label caption" />
+          <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+          <path d="M21 3v6h-6" />
+        </svg>
+        <span ref={labelRef} className="ptr__label" />
       </div>
     </div>
   );

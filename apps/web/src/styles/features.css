@@ -1387,7 +1387,7 @@
   outline-offset: 3px;
   border-radius: 17px; /* the card radius the system already renders */
 }
-.section-title[id]:focus {
+.section-title[id]:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
 }
@@ -1398,10 +1398,12 @@
   display: none;
 }
 /* Skip-link landing: a visible inset ring on the scroll owner. */
-.main:focus {
+.main:focus-visible {
   outline: none;
 }
-.main:focus > .view {
+.main:focus-visible > .view {
+  /* focus-VISIBLE: #main is a tap target (tabindex -1), and a plain :focus
+     painted this ring after every touch on the page (Gary, 2026-09-02). */
   /* The skip landing paints in the shell's padding gutter, off content. */
   outline: 3px solid var(--accent);
   outline-offset: 3px;

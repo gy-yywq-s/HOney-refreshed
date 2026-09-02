@@ -1,7 +1,19 @@
 # evidence-copy — Copy & Honesty / Integrity (r10)
 
-Anchor IDs `[C-R10-n]`. Target: deployed `41a01fe` on `integration/product-v2`, https://honey.gaelisus.com,
-measured 2026-09-02, in-page today 2026-09-02. Harness `/root/claude-work/design-audit/`, probes
+Anchor IDs `[C-R10-n]` (`18` and `19` are unassigned — the sequence jumps 17 → 20). Target: https://honey.gaelisus.com on `integration/product-v2`, measured
+2026-09-02, in-page today 2026-09-02.
+
+> **Build attribution (added after the run).** The live site was redeployed during this audit:
+> `41a01fe` → `9c3b23f` → `60c8672` → `979a42e` → `bd54519` → `bc3b7c9` (now served
+> `index-4oNbE07m.js` / `index-C9l5CGbD.css`, confirmed 2026-09-02T04:11:44Z). **Sections 0–7 below
+> were measured on `41a01fe`**; section 8 was measured on `bc3b7c9`. Attribution is by probe-log
+> mtime against the orchestrator's redeploy window (~03:41 UTC) — the served JS filename was not
+> recorded per probe at the time, so the per-probe build in §6 is stated as inferred, with the one
+> straddling probe named and independently corroborated. The redeploy touched only `Modal.tsx`,
+> `PullToHistory.tsx` (new), `PullToRefresh.tsx`, `format.ts`, `refresh.ts`, `TimetablePage.tsx`,
+> the three stylesheets and the constitution; **every finding in §§0–7 that does not concern the
+> Timetable, the pull gesture or `format.ts` is unaffected by it**, and the three that are affected
+> are flagged in place. Harness `/root/claude-work/design-audit/`, probes
 `r10-copy-*.js` / `.log` / `.png`. Every string below was read **as rendered** in the state named;
 source `file:line` is `apps/web/src/…` unless prefixed `packages/`. **No verdicts, no scores.**
 No post was published (every `POST /api/experiences/publish` was aborted at the route level, 0 attempts
@@ -24,16 +36,16 @@ r9 move 3 = "one truth per channel"; the r9 Preserve list holds the honesty map.
 | 0.5 | Feed status per tab ("Nothing from your classes yet" on the class tab) | **CONFIRMED** | `r10-copy-feed.log`: class tab status `"Nothing from your classes yet"` beside the visible `"Nothing from your classes yet. A small honest note is enough. Share the first one"`; school tab status `"Nothing has been shared yet"` beside `"Nothing has been shared yet. A short thought is enough to begin. Share an experience"`. `FeedPage.tsx:44`. |
 | 0.6 | "N more" on load-more | **CONFIRMED** | `r10-copy-loadmore.log`: page 1 status `"12 experiences"` → after the sentinel fired (18 posts) `"6 more"`. Poll trace shows exactly one transition. `FeedPage.tsx:46`. |
 | 0.7 | No re-announcement on a tab change | **PARTIAL** | Equal counts: `r10-copy-feed2.log` EQUAL-COUNT trace — text never changes across two tab changes (3 items both tabs). Different counts: DIFFERENT-COUNT trace emits **`"4 more"` then `"7 experiences"`** for a single tab change (3→7) — a spurious extra announcement. See `[C-R10-12]`. |
-| 0.8 | Home and Timetable use one date formatter | **CONFIRMED** | Same day, `r10-copy-sweep.log` + `r10-copy-misc.log`: Home `.home-head__date` `"Wednesday, 2 September 2026"`; Timetable `h1.schedule-header` `"Wednesday, 2 September 2026"`. `HomePage.tsx:47` now calls `formatDayHeading` (`format.ts:35`). |
+| 0.8 | Home and Timetable use one date formatter | **CONFIRMED on `41a01fe`; REGRESSED on `bc3b7c9`** (see `[C-R10-34]`) | Same day, `r10-copy-sweep.log` + `r10-copy-misc.log`: Home `.home-head__date` `"Wednesday, 2 September 2026"`; Timetable `h1.schedule-header` `"Wednesday, 2 September 2026"`. `HomePage.tsx:47` now calls `formatDayHeading` (`format.ts:35`). |
 | 0.9 | `formatTime` locked to en-GB | **CONFIRMED** | `lib/format.ts:27` `toLocaleTimeString("en-GB", …)`. Rendered under `locale:"en-GB"`, `"en-US"`, `"zh-CN"` (`r10-copy-misc.log`): hour rail `09:00 / 10:00 / 11:00`, block `"09:00–10:30"`, Home next `"13:30–15:00"` — byte-identical in all three. |
 | 0.10 | One provenance map (Feed, Entity, Mine, `shared.tsx` = `ExperiencePost.tsx`) | **CONFIRMED**, with a dead-fallback residue | `shared.tsx:16-21` `PROVENANCE_LINE` is now the single map, re-exported and consumed by `ExperiencePost.tsx:19,151`. Rendered feed (`r10-copy-feed.log`): `"from a class you’ve taken"`, `"from someone who has taken this over time"`, `"from a student here"`. Rendered Mine (`r10-copy-mine.log`, seeded keys): the identical three. Residue: `shared.tsx:24` still returns the old register `"Verified school member"` as the unknown-provenance fallback. |
 | 0.11 | One storage-caveat sentence | **REFUTED** | Five distinct rendered shapes remain (`r10-copy-dialogs.log`, `r10-copy-sweep.log`) — see `[C-R10-6]`. |
 | 0.12 | One spelling of the load failure | **CONFIRMED** | Compose region `aria-label="Could not load"` (`ComposePage.tsx:230,257`) over the alert `"Could not reach the HOney server. Check your connection and try again."` (`api/client.ts:439`) — both "Could not …". The r9 `"Couldn’t load"` spelling is gone (census delta, removed). |
 | 0.13 | `···` menu → a direct "Report" | **REFUTED** | `r10-copy-dialogs.log`: trigger `{"text":"···","ariaLabel":"More options","haspopup":"menu"}` → menu `aria-label="Post options"` → items `["Report"]`. Unchanged from r9. `ExperiencePost.tsx:249,258`. |
 | 0.14 | Explore under an error shows the banner without "Nothing here yet." | **CONFIRMED** | `r10-copy-errors.log` EXPLORE entities-down / directory-down / both-down: `empties: []`, one alert, 0 section headings. `ExplorePage.tsx:124` `entities.error || directory.error ? null : …`. New residue: the "everything is listed below" helper still renders — `[C-R10-14]`. |
-| 0.15 | Lesson dialog description = one sentence | **CONFIRMED** | `#lesson-dialog-body` textContent `"09:00 to 10:30, with 陈拯侃, in room 416."` (`r10-copy-dialogs.log`); visible `<dl>` repeats Time/Topic/Teacher/Course/Room. |
+| 0.15 | Lesson dialog description = one sentence | **CONFIRMED on both builds** (re-measured on `bc3b7c9`, `[C-R10-43]` and §8.1) | `#lesson-dialog-body` textContent `"09:00 to 10:30, with 陈拯侃, in room 416."` (`r10-copy-dialogs.log`); visible `<dl>` repeats Time/Topic/Teacher/Course/Room. |
 | 0.16 | 404 copy incl. nested paths and the signed-out wrong address | **PARTIAL / REFUTED** | Copy CONFIRMED: title = h1 `"Page not found"`, body `"That page doesn’t exist."`, button `"Go home"` (`NotFoundPage.tsx:13,16`). Nested paths **REFUTED for assistive tech**: `/experiences/new` and `/timetable/oops` render `aria-current="page"` on the rail *and* mobile nav while `is-active` is false — see `[C-R10-11]`. Signed-out wrong address **REFUTED (unchanged)**: `/nonsense` signed out is the login page, title `"Sign in · HOney"`, with no line saying why (`r10-copy-sweep.log` SIGNED-OUT /nonsense). |
-| 0.17 | Timetable note on lesson and empty days | **CONFIRMED** | Lesson day: `"P1–P6 are the school’s six lesson periods. Last synced 9 h ago."`; empty day (2026-09-06 / 2026-08-22): `"Last synced 9 h ago."` — no leading space. `r10-copy-sweep.log`, `r10-copy-misc.log`. |
+| 0.17 | Timetable note on lesson and empty days | **CONFIRMED on `41a01fe`; the note no longer exists on `bc3b7c9`** (see `[C-R10-35]`) | Lesson day: `"P1–P6 are the school’s six lesson periods. Last synced 9 h ago."`; empty day (2026-09-06 / 2026-08-22): `"Last synced 9 h ago."` — no leading space. `r10-copy-sweep.log`, `r10-copy-misc.log`. |
 | 0.18 | "1 experience" / "N experiences" | **CONFIRMED** | Real feed `"1 experience"`; 12 mocked items `"12 experiences"`; 3 items `"3 experiences"` (`r10-copy-feed.log`, `r10-copy-feed2.log`). |
 | 0.19 | Feed status silent on error | **PARTIAL** | Cold error: status `""` with exactly one `role=alert` (`r10-copy-feed.log` FEED ERROR). After a successful load then an error: status keeps **`"12 experiences"`** while the panel shows only the alert — `[C-R10-13]`. |
 | 0.20 | WhyPage "strongly protected" (r9's one inflation) | **STILL PRESENT** | Rendered `r10-copy-sweep.log` /experiences/why: `"HOney narrows what the public space will carry before publication, so ordinary peer speech can be strongly protected."` `WhyPage.tsx:73`. |
@@ -454,6 +466,25 @@ surfaces.
 ## 6. Probe inventory
 
 All under `/root/claude-work/design-audit/`, all run from that directory, all browsers closed.
+Build column: inferred from the log's mtime against the redeploy window (~03:41 UTC), not from a
+recorded asset filename — see the header note.
+
+| probe | log mtime (UTC) | build |
+|---|---|---|
+| `r10-copy-census.js` (×2) | 03:21:17 / 03:21:31 | source at `41a01fe` (static, not the served bundle) |
+| `r10-copy-sweep.js` | 03:22:49 | `41a01fe` |
+| `r10-copy-dialogs.js` | 03:27:51 | `41a01fe` |
+| `r10-copy-feed.js` | 03:29:14 | `41a01fe` |
+| `r10-copy-feed2.js` | 03:30:20 | `41a01fe` |
+| `r10-copy-loadmore.js` | 03:31:04 | `41a01fe` |
+| `r10-copy-errors.js` | 03:32:58 | `41a01fe` |
+| `r10-copy-compose.js` | 03:35:59 | `41a01fe` |
+| `r10-copy-misc.js` | 03:38:05 | `41a01fe` |
+| `r10-copy-mine.js` | 03:39:36 | `41a01fe` (Mine/Feed unchanged by the redeploy either way) |
+| `r10-copy-react.js` | 03:40:37 | `41a01fe` (`ExperiencePost.tsx` unchanged by the redeploy either way) |
+| **`r10-copy-states.js`** | **03:43:38** | **straddles the redeploy** — its Timetable block returned `undefined` for `h1.schedule-header`, `p.caption.timetable-note` and `button.daynav__date`, the three elements deleted in `9c3b23f`, which independently dates that block to a post-`41a01fe` build. Its non-Timetable results (Home, PTR node, compose delisted, Explore 320) stand; **its Timetable rows are superseded by §8.** |
+| `r10-copy-tt-bc3b7c9.js` | 04:11–04:18 | **`bc3b7c9`** (`index-4oNbE07m.js` recorded in the log's first line) |
+
 
 | probe | what it produced | log / screenshots |
 |---|---|---|
@@ -474,3 +505,175 @@ Safety accounting: 0 posts published (`grep -c "publish attempt ABORTED" r10-cop
 the flow never reached publish), 0 reports submitted, 0 Settings confirms pressed, 0 reaction POSTs
 forwarded to the server, 0 reads of `/home/honey/.secrets/` or `.session.json` by any r10 probe, 0
 credentials or tokens in any log or in this file.
+
+---
+
+## 8. Timetable copy on `bc3b7c9`
+
+Probe `r10-copy-tt-bc3b7c9.js` / `.log`, run 2026-09-02 04:11–04:18 UTC against the served
+`index-4oNbE07m.js` / `index-C9l5CGbD.css` (filename recorded in the log's first line). Viewports
+390×844 and 320×568 (`isMobile`, `hasTouch`, iPhone UA) and 1280×800, all `timezoneId:"Asia/Shanghai"`,
+dates: today (2026-09-02), 2026-08-24, 2026-08-25, 2026-09-06 (empty), plus error and loading.
+**Safety:** every `POST /api/sync` was fulfilled with a mocked `{status:"ok"}` body and never
+forwarded — the log carries exactly **one** `[POST /api/sync INTERCEPTED — mocked, never forwarded]`
+line and **zero** `!! BLOCKED` lines; the underlying `lastSyncedAt` only advanced 12 → 13 min across
+the whole run, confirming no real portal sync fired. Screenshots `r10-copy-tt-*.png`.
+
+### 8.1 What renders
+
+`[C-R10-33]` **The phone Timetable is now four strings.** Rendered `visibleText` inside `#main` at
+390×844, today: `["‹", "Wednesday, 2 September", "›", "09" ":00" … "20" ":00",
+"IELTS-Speaking 213 P1 · 09:00–10:30 · ChenJenny", "Edexcel Economics-U4 309 P3 · 13:30–15:00 · 朱昂明",
+"Activity P5 · 16:30–18:00 · 活动课老师", "P2 Free", "P4 Free", "P6 Free", "Lunch Break", "Dinner Break"]`.
+`h1` is `h1.daynav__date`, textContent `"Wednesday, 2 SeptemberWed 2 Sept"` (the short span carries
+`aria-hidden="true"`, so the accessible name is `"Wednesday, 2 September"`). No caption, no note, no
+utility button. `document.title` is unchanged: `"Timetable · HOney"`.
+
+| surface | 390×844 | 320×568 | 1280×800 |
+|---|---|---|---|
+| `h1` visible text | `"Wednesday, 2 September"` (`.daynav__date-long`, `display:block`, 212×22) | `"Wed 2 Sept"` (`.daynav__date-short`, 92 px; the long span clipped to 1×1 but still the accessible name) | `"Wednesday, 2 September"` (212×22) |
+| date control | `input.daynav__picker[type=date]`, `opacity:0`, `aria-label="Pick a date (Wednesday, 2 September)"`, value `2026-09-02` | same, `aria-label="Pick a date (Wednesday, 2 September)"` | same |
+| stepper | `div.daynav__stepper[role=group][aria-label="Choose a day"]`, `‹` = `"Previous day"`, `›` = `"Next day"` | same | same |
+| "Back to today" | present only off today: rendered `"Back to today"` 104×… on 2026-08-24 / 08-25 / 09-06 | same | same |
+| `.daynav__row` (`"Synced 13 min ago"` + `History` + `Sync now`) | **`display:none`** (`features.css:280-282`) — 0×0 | **`display:none`** | **`display:flex`, 576×36** |
+| sr-only History link | `.daynav__history-sr` `"History"`, `display:block`, 1×1 (revealed on `:focus-visible`) | same | **`display:none`** |
+| `p.caption.timetable-note` ("P1–P6 …", "Last synced …") | **null — removed** | **null** | **null** |
+| `.daynav__note` ("Sync now signs in again with your saved school login…") | **null — removed** | **null** | **null** |
+| `h1.schedule-header` (`"Wednesday, 2 September 2026"`) | **null — removed** | **null** | **null** |
+| empty day 2026-09-06 | `<p role="status">"No lessons on Sun 6 Sept"`, hour rail 09:00–20:00 still drawn, `.blocks: []` | same | same |
+| error (`/api/timetable` aborted) | one `role=alert` `"Could not reach the HOney server. Check your connection and try again."` + `"Try again"`, inside `role=region "Day timeline"`; visibleText = `["‹","Wednesday, 2 September","›","Pull up for History","Could not reach…","Try again"]` | same | same |
+| loading (`/api/timetable` delayed 9 s) | 5 skeleton nodes, `role=status` text `""` (silent to AT), `#main` innerText `"‹ Wednesday, 2 September › History Pull up for History"` | same | same |
+| lesson dialog | title `"CIE Physics-A2"`, `#lesson-dialog-body` `"09:00 to 10:30, with 陈拯侃, in room 416."`, `<dl>` Time/Topic/Teacher/Course/Room, actions `"View teacher experiences"` / `"View course experiences"` / `"Share experience"` / `"Close"` | identical | identical |
+
+`[C-R10-34]` **The one-formatter fix from r9 move 3 has regressed.** `bc3b7c9` introduces
+`formatDayTitle` (`lib/format.ts:35-40`, `"Wednesday, 2 September"` — no year) for the Timetable
+heading, while Home keeps `formatDayHeading` (`lib/format.ts:43-48`, `"Wednesday, 2 September 2026"`).
+Rendered on the same day, same build: Home `.home-head__date` `"Wednesday, 2 September 2026"`;
+Timetable `h1` `"Wednesday, 2 September"`. Two date formatters again, both en-GB — the exact
+condition `[C-R9-14]` recorded and r9 move 3 was written to close. (A third grammar,
+`formatStepperDate` `"Wed 2 Sept"`, is now inside the same `h1`.)
+
+`[C-R10-35]` **The Timetable no longer says anything about sync on a phone.** `bc3b7c9` deletes
+`p.caption.timetable-note` (the `"P1–P6 are the school's six lesson periods. Last synced N ago."`
+sentence) and `.daynav__note` (`"Sync now signs in again with your saved school login if the portal
+session expired."`) from `TimetablePage.tsx`, and hides `.daynav__row` — which carries
+`"Synced 13 min ago"`, `History` and `Sync now` — at ≤700 px (`features.css:280-282`). Measured at
+390 and 320 on four dates and in the error and loading states: **`note`, `daynavNote` and
+`scheduleHeader` are `null` and `.daynav__row` computes `display:none` in every one.** Desktop 1280
+still renders `"Synced 13 min ago"`, `"History"`, `"Sync now"`. Consequence: a phone student on
+/timetable can no longer read when the data was last synced, and the "P1–P6" gloss that explained the
+period labels is gone from the only screen that shows them (`P2 Free`, `P4 Free`, `P6 Free`, and
+`P1`/`P3`/`P5` inside the blocks still render).
+
+### 8.2 The pull gestures — labels in the order they render
+
+`[C-R10-36]` **Pull down, on /timetable** (synthetic touch drag on `[data-scroll-owner]`, damped
+0.45; labels quoted in the order they appeared):
+
+1. idle (< 12 damped px): `""` (the `.ptr__label` is empty and `display:none` via `.ptr__label:empty`)
+2. `"Pull to refresh"` (stage `pull`, from ~13 damped px)
+3. `"Release to refresh · pull further to sync"` (stage `refresh`, from 64 damped px — this wording appears **only** where a screen registered a sync handler)
+4. `"Release to sync with school"` (stage `sync`, from 132 damped px)
+
+On release at stage 4: `"Syncing with school…"`, disc `role="status"` with
+`aria-label="Syncing with school"`, `.ptr` `aria-hidden="false"`; then the result banner
+`"Synced lessons from the school portal."` and `.daynav__state` `"Synced 13 min ago"` (desktop-only
+surface). On release at stage 3: `"Refreshing…"`, disc `aria-label="Refreshing"`.
+
+**Pull down, on /experiences** (no `useSyncHandler` mounted): `""` → `"Pull to refresh"` →
+`"Release to refresh"` — the second stage and the `· pull further to sync` clause are correctly
+absent. `.pullup` is not in the DOM off the Timetable.
+
+`[C-R10-37]` **Pull up, on /timetable:** `"Pull up for History"` → (past 110 damped px)
+`"Release to open History"`. The mark turns accent-filled at the same threshold (`[data-ready]`).
+Release navigates to `/history` (`PullToHistory.tsx:76`).
+
+**Do the labels say what a release does — and is that honest against the endpoint?**
+
+| label | what release actually does | honest? |
+|---|---|---|
+| `"Release to refresh"` | `apiCache.clear()` + `emitRefresh()` (`PullToRefresh.tsx:113-116`) — every mounted hook re-reads HOney; no portal call | **yes** — it claims nothing more than a refresh |
+| `"Release to refresh · pull further to sync"` | as above, plus it names the next stage | **yes** |
+| `"Release to sync with school"` / `"Syncing with school…"` | `emitSync()` → `TimetablePage.tsx:103-105` `useSyncHandler(() => runSync())` → `runSync()` (`TimetablePage.tsx:79-98`) → `api.syncSeamless()` (`api/client.ts:135-145`) → `POST /api/sync` → `importer.syncTimetable` (`packages/backend/src/routes/data.ts:17`). **"sync with school" is accurate for the happy path.** | **partly — see `[C-R10-38]`** |
+| `"Pull up for History"` / `"Release to open History"` | `navigate("/history")` | **yes** |
+
+`[C-R10-38]` **The sync label does not name the portal sign-in it can perform, and the sentence that
+used to name it was deleted from this screen.** `api.syncSeamless()` (`api/client.ts:135-145`): when
+`/api/sync` returns `portal_reconnect_required` **and** this device holds a saved school login, it
+replays the stored credentials to `POST /api/auth/login` — a real portal sign-in — and retries the
+sync. On `41a01fe` the Timetable disclosed exactly this, in a caption under the bar:
+*"Sync now signs in again with your saved school login if the portal session expired."*
+(`TimetablePage.tsx` `.daynav__note`, rendered whenever `portalCredentials.isAuthorized()`).
+`bc3b7c9` deletes that caption. The fact survives only in Settings — School connection, ON state,
+rendered on `41a01fe` at 03:27 as `"Last synced 9 h ago · Sync now signs in again with your saved
+school login if the portal session expired."` (`SettingsPage.tsx:112-118`) — a different screen from
+the one where the action now happens. The test account has no saved login, so the seamless path is
+dormant here; the finding is code-cited, not reproduced live.
+
+`[C-R10-39]` **Both gestures are invisible to assistive technology.** `.pullup` carries
+`aria-hidden="true"` (`PullToHistory.tsx:96`), so `"Pull up for History"` and
+`"Release to open History"` are never announced; the AT path is the 1×1 `.daynav__history-sr`
+`"History"` link (`features.css:283-293`), which is `display:none` on desktop and reveals itself on
+`:focus-visible` on phones. `.ptr` carries `aria-hidden` until a commit
+(`PullToRefresh.tsx:136` `aria-hidden={!busy}`), so the whole label ladder
+(`"Pull to refresh"` → `"Release to refresh · pull further to sync"` → `"Release to sync with
+school"`) is never announced either — AT hears only the committed `role=status`
+`"Refreshing"` / `"Syncing with school"`. Rendered proof: `r10-copy-tt-bc3b7c9.log`
+`pullup a11y: {"ariaHidden":"true","role":null,"text":"Release to open History"}`,
+and `ptrHidden: "true"` in every idle census.
+Side note: because `.pullup` is only `opacity:0` (not `display:none`), the string
+`"Pull up for History"` is present in `#main`'s `innerText` on every Timetable state including
+loading and error — visually invisible and `aria-hidden`, so no rendered defect, but it is in the DOM.
+
+### 8.3 Disclosure completeness — Settings vs the Timetable
+
+`[C-R10-40]` **The named trigger still exists on a phone.** Rendered at 390 on `bc3b7c9`
+(`r10-copy-tt-bc3b7c9.log`, SETTINGS 390): the Timetable-import row reads verbatim
+*"Timetable import — On for every HOney account since 1 September 2026 — your timetable and history
+are imported from the school portal when your account is created, and again whenever you press Sync
+now. Delete them below at any time."* (`SettingsPage.tsx:200-204`), and the School-connection card
+renders a **visible 102 px `"Sync now"` button**. So the disclosure's named control is still
+reachable and the sentence is still literally true. **No broken reference.**
+
+`[C-R10-41]` **But the disclosure now names one trigger out of three — and the constitution requires
+all of them.** Constitution §2: *"the disclosure names exactly the triggers that exist"*. The
+triggers that exist on `bc3b7c9` are:
+
+1. account creation — `packages/backend/src/routes/auth.ts:32` (guarded by `if (result.created)`) — **named** ("when your account is created");
+2. Settings → "Sync now" → `POST /api/sync` → `packages/backend/src/routes/data.ts:17` — **named** ("whenever you press Sync now");
+3. **the phone's pull-to-sync gesture** → `PullToRefresh.tsx:113` `emitSync()` → `refresh.ts:29-31` → `TimetablePage.tsx:103-105` → the same `POST /api/sync` — **not named anywhere in the disclosure.**
+
+Label→behaviour, both sides: label `SettingsPage.tsx:200-204` ("whenever you press Sync now");
+behaviour `PullToRefresh.tsx:97-118` + `refresh.ts:29-46` + `TimetablePage.tsx:103-105`. The gesture
+imports timetable and history from the school portal exactly as the button does, and on a phone the
+button it names is on a different screen from the gesture. The gesture's own label
+(`"Release to sync with school"`) is the only place a phone student learns the gesture syncs — and
+it is `aria-hidden` (`[C-R10-39]`).
+
+### 8.4 Constitution §2 drift on `bc3b7c9`
+
+`git show bc3b7c9 -- docs/product/product-and-style-constitution.md` replaces one §2 bullet and adds
+one. Added lines, quoted, with what the app renders:
+
+| added constitution line | rendered on `bc3b7c9` | match |
+|---|---|---|
+| *"The timetable canvas fills the phone's frame and never compresses below 560 px (desktop 656 px). … The day range widens to the hour for a lesson outside 09:00–20:00 — a clipped block is not an option."* | geometry, not copy — `TimetablePage.tsx:288-303` `rangeFor()` widens to the hour; on all four probed dates every lesson falls inside 09:00–20:00, so the hour rail rendered `09:00 … 20:00` (12 marks) unchanged. Canvas heights are a **visual-pass** measurement, deferred. | not a copy claim |
+| *"On phones the timetable is a native-style screen with no captions and no utility buttons (Gary, 2026-09-02)."* | matches: 0 captions rendered (`note`, `daynavNote`, `scheduleHeader` all `null`), `.daynav__row` `display:none` at 390 and 320 | **matches** |
+| *"The date bar sits flush under the status bar and is the heading; the native date input lies invisibly over it, so a tap opens the platform calendar."* | matches: `h1.daynav__date` is the heading, `input.daynav__picker[type=date]` `opacity:0`, `inset:0`, `aria-label="Pick a date (Wednesday, 2 September)"` | **matches** |
+| *"Pull-to-refresh has two stages — release to refresh, pull further to sync with the school portal (the label says so)."* | matches: the label ladder is quoted in `[C-R10-36]`, and stage 3 literally reads `"Release to refresh · pull further to sync"` | **matches** |
+| *"At the end of the canvas a deliberate pull-up opens History; it needs the owner already at its end, a long damped drag, more time than a flick, and shows the release point first."* | matches: `PullToHistory.tsx:52-55` requires `atEnd()` at touchstart and throughout; `OPEN_AT = 110` damped at `DAMPING = 0.45` ≈ 244 px of finger; `MIN_MS = 220`; the ladder shows `"Release to open History"` before release | **matches** |
+| *"Desktop keeps History and Sync now as buttons."* | matches at 1280: `.daynav__row` `display:flex`, 576×36, rendering `"Synced 13 min ago"`, `"History"`, `"Sync now"` | **matches** |
+
+`[C-R10-42]` **§5 (Voice) is untouched by this diff** — no canonical line, no forbidden phrasing and
+no personality clause changed; every §2 verdict in section 3 above (identity-free publish, no consent
+gate, four surfaces, search only filters, moderation ordering) re-reads unchanged in the amended file.
+**One §2 decision is now out of step with the app it governs:** *"the disclosure names exactly the
+triggers that exist"* — `[C-R10-41]`. That is the only §2 drift found.
+
+`[C-R10-43]` **Superseded r10 measurements.** `[C-R10 row 0.8]` (one formatter) and `[C-R10 row 0.17]`
+(the timetable note) were CONFIRMED on `41a01fe` and no longer hold on `bc3b7c9` — see `[C-R10-34]`
+and `[C-R10-35]`. `[C-R10-24]`'s date-grammar census gains a sixth shape on `bc3b7c9`
+(`"Wednesday, 2 September"`). `[C-R10 row 0.15]` (lesson dialog), the error/`"Try again"` family
+(`[C-R10-23]`), the empty-day sentence and `document.title` re-verify **unchanged** on `bc3b7c9` at
+all three viewports. Everything in §§1–7 that does not touch the Timetable, the pull gesture or
+`format.ts` is unaffected by the redeploy.
