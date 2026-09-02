@@ -4,7 +4,7 @@
 
 import XCTest
 import HOneyCore
-@testable import HOney
+@testable import HOneyNative
 
 final class KeychainSecretStoreTests: XCTestCase {
     func testRoundTripAndPrefixEnumeration() throws {
