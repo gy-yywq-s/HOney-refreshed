@@ -21,7 +21,7 @@ final class RefreshTrigger {
 struct RefreshAnchor: View {
     var body: some View {
         GeometryReader { geo in
-            Color.clear.preference(key: RefreshOffsetKey.self, value: geo.frame(in: .named(HoneyRefresh.space)).minY)
+            Color.clear.preference(key: RefreshOffsetKey.self, value: geo.frame(in: .named(HOneyRefresh.space)).minY)
         }
         .frame(height: 0)
     }
@@ -32,7 +32,7 @@ private struct RefreshOffsetKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
-enum HoneyRefresh {
+enum HOneyRefresh {
     static let space = "honey.refresh"
     static let threshold: CGFloat = 72
 }
@@ -40,7 +40,7 @@ enum HoneyRefresh {
 extension View {
     /// Apply to the ScrollView whose content carries `.refreshAnchor()`.
     func honeyRefreshable(trigger: RefreshTrigger? = nil, action: @escaping () async -> Void) -> some View {
-        modifier(HoneyRefreshModifier(trigger: trigger, action: action))
+        modifier(HOneyRefreshModifier(trigger: trigger, action: action))
     }
 
     /// Apply to the ScrollView's content stack: reports its top edge without
@@ -50,7 +50,7 @@ extension View {
     }
 }
 
-private struct HoneyRefreshModifier: ViewModifier {
+private struct HOneyRefreshModifier: ViewModifier {
     enum Phase: Equatable { case idle, pulling(CGFloat), armed, refreshing, done }
 
     @Environment(\.theme) private var theme
@@ -65,7 +65,7 @@ private struct HoneyRefreshModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .coordinateSpace(name: HoneyRefresh.space)
+            .coordinateSpace(name: HOneyRefresh.space)
             .onPreferenceChange(RefreshOffsetKey.self) { value in
                 Task { @MainActor in handle(offset: value) }
             }
@@ -82,7 +82,7 @@ private struct HoneyRefreshModifier: ViewModifier {
         case .idle:
             if y > 8 { phase = .pulling(y) }
         case .pulling:
-            if y >= HoneyRefresh.threshold {
+            if y >= HOneyRefresh.threshold {
                 phase = .armed
                 armedTaps += 1
             } else if y <= 0 {
@@ -92,7 +92,7 @@ private struct HoneyRefreshModifier: ViewModifier {
             }
         case .armed:
             // The finger let go (or came back): the band shrinks past the threshold.
-            if y < HoneyRefresh.threshold * 0.6 { Task { await run() } }
+            if y < HOneyRefresh.threshold * 0.6 { Task { await run() } }
         case .refreshing, .done:
             break
         }
@@ -126,14 +126,14 @@ private struct HoneyRefreshModifier: ViewModifier {
     private var opacity: Double {
         switch phase {
         case .idle: return 0
-        case .pulling(let y): return min(1, Double(y) / Double(HoneyRefresh.threshold))
+        case .pulling(let y): return min(1, Double(y) / Double(HOneyRefresh.threshold))
         case .armed, .refreshing, .done: return 1
         }
     }
 
     private var spin: Angle {
         switch phase {
-        case .pulling(let y): return .degrees(Double(y) / Double(HoneyRefresh.threshold) * 180)
+        case .pulling(let y): return .degrees(Double(y) / Double(HOneyRefresh.threshold) * 180)
         case .armed: return .degrees(180)
         default: return .zero
         }
