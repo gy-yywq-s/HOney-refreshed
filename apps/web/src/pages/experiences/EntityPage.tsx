@@ -51,9 +51,7 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
   const landing = useRetryFocus<HTMLDivElement>(feed.loading || namesLoading);
   // Descriptive counts only (review §8.3): "18 experiences across 3 courses".
   const stats = useApi(() => api.entityStats(entityKey), [entityKey], `stats:${entityKey}`);
-  useEffect(() => {
-    if (listed && name && name !== KIND_TITLE[kind]) recentContexts.remember({ name, path: `/experiences/${kind}/${encodeURIComponent(id)}` });
-  }, [listed, name, kind, id]);
+
   // Delisted entries (deduped rooms, placeholders) stay reachable by URL
   // but must not offer a composer that the server will refuse (r2). A
   // deduped duplicate points at the surviving entry of the same name (r3).
@@ -78,6 +76,10 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
   useEffect(() => {
     document.title = neverListed ? "Not found · HOney" : `${name} · HOney`;
   });
+  // Find's Recent list: remember an entity page that resolved to a real name.
+  useEffect(() => {
+    if (listed && name && name !== KIND_TITLE[kind]) recentContexts.remember({ name, path: `/experiences/${kind}/${encodeURIComponent(id)}` });
+  }, [listed, name, kind, id]);
 
   if (neverListed) {
     return (
