@@ -98,11 +98,11 @@ export function SettingsPage() {
             </span>
             <ChevronRightIcon size={18} />
           </Link>
-          <button type="button" className="row" onClick={() => void signOut()}>
-            <span className="row__main">
-              <span className="row__title">Sign out</span>
-            </span>
-          </button>
+          <div className="row row--actions">
+            <button type="button" className="btn btn--danger-outline" onClick={() => void signOut()}>
+              Sign out
+            </button>
+          </div>
         </section>
 
         <section className="rowlist" aria-label="School connection">
@@ -225,11 +225,11 @@ export function SettingsPage() {
                 </span>
               </span>
             </div>
-            <button type="button" className="row" onClick={() => void signOut()}>
-              <span className="row__main">
-                <span className="row__title">Sign out</span>
-              </span>
-            </button>
+            <div className="row row--actions">
+              <button type="button" className="btn btn--danger-outline" onClick={() => void signOut()}>
+                Sign out
+              </button>
+            </div>
           </section>
           <section className="rowlist rowlist--danger" aria-label="Delete account">
             <h2 className="overline">Delete account</h2>

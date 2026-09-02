@@ -110,6 +110,15 @@ a.btn:hover {
 .btn--danger:hover:not(:disabled) {
   opacity: 0.9;
 }
+/* Outlined danger: a red-bordered secondary action (Sign out). */
+.btn--danger-outline {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn--danger-outline:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
 .btn--small {
   font-size: var(--fs-caption);
   padding: 0 var(--sp-3);
