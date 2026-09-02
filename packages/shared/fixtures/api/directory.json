@@ -1,0 +1,48 @@
+{
+  "teachers": [
+    {
+      "id": "t_76b873b12d89",
+      "name": "朱昂明"
+    },
+    {
+      "id": "t_23348879d1b4",
+      "name": "Jennifer Anne Whitcombe-Rasmussen"
+    },
+    {
+      "id": "t_9e75caffc183",
+      "name": "活动课老师"
+    },
+    {
+      "id": "t_zhao",
+      "name": "赵流畅"
+    }
+  ],
+  "courses": [
+    {
+      "id": "c_55566",
+      "name": "Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明"
+    },
+    {
+      "id": "c_55738",
+      "name": "CIE Chinese Language & Literature 2026秋CIEAL中文备考班 赵流畅"
+    },
+    {
+      "id": "c_56081",
+      "name": "IELTS-Speaking 2026秋IELTS Speaking强化班 Jennifer Anne Whitcombe-Rasmussen"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "r_345",
+      "name": "309"
+    },
+    {
+      "id": "r_360",
+      "name": "A203"
+    },
+    {
+      "id": "r_lib",
+      "name": "Library"
+    }
+  ]
+}

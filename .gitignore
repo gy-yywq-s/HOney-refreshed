@@ -18,3 +18,9 @@ ios/**/*.xcodeproj/xcuserdata/
 ios/**/*.xcodeproj/project.xcworkspace/xcuserdata/
 ios/**/*.xcworkspace/xcuserdata/
 ios/**/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# iOS web port (clean-room target): generated project and SwiftPM build state
+ios-web-port/HOneyNative.xcodeproj/
+ios-web-port/**/.build/
+ios-web-port/**/.swiftpm/
+ios-web-port/**/*.xcuserstate

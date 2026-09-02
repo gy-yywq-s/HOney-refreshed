@@ -1,0 +1,11 @@
+{
+  "lane": "cooldown",
+  "reasons": [
+    "timing:high_arousal"
+  ],
+  "policyVersion": 7,
+  "cooldown": {
+    "ticket": "cool_fixture",
+    "retryAt": 1788397200000
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "honeyId": "h_fixture01",
+  "displayName": "沈高远",
+  "isAdmin": true,
+  "consent": {
+    "timetable": true,
+    "grantedAt": "2026-09-01T16:51:24.747Z"
+  },
+  "connection": {
+    "connected": true,
+    "lastSyncedAt": "2026-09-02T06:40:46.298Z",
+    "portalTokenValid": true
+  }
+}

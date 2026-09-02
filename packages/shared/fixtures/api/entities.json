@@ -1,0 +1,42 @@
+{
+  "entities": [
+    {
+      "entity_key": "teacher:t_76b873b12d89",
+      "type": "teacher",
+      "name": "朱昂明",
+      "source": "organic",
+      "active": 1,
+      "created_at": 1788271504140
+    },
+    {
+      "entity_key": "teacher:t_23348879d1b4",
+      "type": "teacher",
+      "name": "Jennifer Anne Whitcombe-Rasmussen",
+      "source": "organic"
+    },
+    {
+      "entity_key": "course:c_55566",
+      "type": "course",
+      "name": "Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明",
+      "source": "organic"
+    },
+    {
+      "entity_key": "course:c_55738",
+      "type": "course",
+      "name": "CIE Chinese Language & Literature 2026秋CIEAL中文备考班 赵流畅",
+      "source": "organic"
+    },
+    {
+      "entity_key": "room:r_345",
+      "type": "room",
+      "name": "309",
+      "source": "organic"
+    },
+    {
+      "entity_key": "dish:d_001",
+      "type": "dish",
+      "name": "番茄炒蛋",
+      "source": "admin"
+    }
+  ]
+}

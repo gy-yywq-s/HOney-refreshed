@@ -1,0 +1,18 @@
+{
+  "nextLesson": {
+    "id": "1322902",
+    "subjectName": "Activity",
+    "topicName": "Activity",
+    "teacherId": "t_9e75caffc183",
+    "teacherName": "活动课老师",
+    "courseId": "c_55456",
+    "courseName": "Activity 2026年秋活动课 活动课老师",
+    "roomId": "r_df12aeba9bb9",
+    "roomName": null,
+    "startsAt": 1788337800000,
+    "endsAt": 1788343200000,
+    "temporalState": "now",
+    "minutesUntilStart": 0
+  },
+  "lastSyncedAt": "2026-09-02T06:40:46.298Z"
+}

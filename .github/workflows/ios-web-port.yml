@@ -1,0 +1,64 @@
+name: iOS web port
+on:
+  push:
+    paths:
+      - "ios-web-port/**"
+      - "packages/shared/fixtures/**"
+      - "packages/shared/src/api/**"
+      - ".github/workflows/ios-web-port.yml"
+  pull_request:
+    paths:
+      - "ios-web-port/**"
+      - "packages/shared/fixtures/**"
+      - "packages/shared/src/api/**"
+      - ".github/workflows/ios-web-port.yml"
+concurrency:
+  group: ios-web-port-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core:
+    name: HOneyCore (Linux) + no-reuse gate
+    runs-on: ubuntu-latest
+    container: swift:6.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: No-reuse gate
+        run: bash ios-web-port/scripts/check-no-reuse.sh
+      - name: Contract fixtures are checked in
+        run: test "$(ls packages/shared/fixtures/api/*.json | wc -l)" -ge 30
+      - name: swift test
+        run: swift test --parallel
+        working-directory: ios-web-port/HOneyCore
+  app:
+    name: HOneyNative (macOS runner)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+        working-directory: ios-web-port
+      - name: Pick an available iOS simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; ids=[x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x.get('isAvailable') and 'iPhone' in x.get('name','')]; print(ids[0])")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Using simulator $UDID"
+      - name: Build & test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project ios-web-port/HOneyNative.xcodeproj \
+            -scheme HOneyNative \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log | grep -E "error:|warning: unre|Test Case|Executed|BUILD|TEST" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log

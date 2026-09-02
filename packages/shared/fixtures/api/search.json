@@ -1,0 +1,41 @@
+{
+  "q": "diagrams",
+  "entities": [
+    {
+      "entity_key": "course:c_55566",
+      "type": "course",
+      "name": "Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明",
+      "source": "organic"
+    }
+  ],
+  "experiences": [
+    {
+      "id": "exp_short",
+      "entity_key": "lesson:tok_a1",
+      "ctx_teacher_id": "t_76b873b12d89",
+      "ctx_course_id": "c_55566",
+      "ctx_room_id": "r_345",
+      "body": "Econ today actually made sense once the diagrams came out.",
+      "rating": null,
+      "provenance": "verified_lesson",
+      "publishedDay": 20698,
+      "reactions": {
+        "likes": 3,
+        "dislikes": 1
+      },
+      "myReaction": 1,
+      "primary": {
+        "type": "lesson",
+        "id": "tok_a1",
+        "name": null
+      },
+      "contexts": [
+        {
+          "type": "course",
+          "id": "c_55566",
+          "name": "Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明"
+        }
+      ]
+    }
+  ]
+}

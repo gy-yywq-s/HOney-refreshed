@@ -1,0 +1,52 @@
+{
+  "experiences": [
+    {
+      "id": "exp_short",
+      "entity_key": "lesson:tok_a1",
+      "lesson_id": "tok_a1",
+      "ctx_teacher_id": "t_76b873b12d89",
+      "ctx_course_id": "c_55566",
+      "ctx_room_id": "r_345",
+      "body": "Econ today actually made sense once the diagrams came out.",
+      "rating": null,
+      "provenance": "verified_lesson",
+      "status": "published",
+      "status_detail": null,
+      "policy_version": 7,
+      "created_at": 1788333120000,
+      "published_at": 1788333120000
+    },
+    {
+      "id": "exp_hidden",
+      "entity_key": "teacher:t_zhao",
+      "lesson_id": null,
+      "ctx_teacher_id": null,
+      "ctx_course_id": null,
+      "ctx_room_id": null,
+      "body": "…",
+      "rating": null,
+      "provenance": "verified_retrospective",
+      "status": "blocked",
+      "status_detail": "Hidden after re-check.",
+      "policy_version": 7,
+      "created_at": 1788091200000,
+      "published_at": 1788091200000
+    },
+    {
+      "id": "exp_gone",
+      "entity_key": "dish:d_001",
+      "lesson_id": null,
+      "ctx_teacher_id": null,
+      "ctx_course_id": null,
+      "ctx_room_id": null,
+      "body": null,
+      "rating": 2,
+      "provenance": "verified_member",
+      "status": "revoked",
+      "status_detail": null,
+      "policy_version": 6,
+      "created_at": 1787198400000,
+      "published_at": null
+    }
+  ]
+}

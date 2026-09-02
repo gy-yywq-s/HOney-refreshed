@@ -1,0 +1,6 @@
+{
+  "accessToken": "acc_fixture_token",
+  "accessExpiresAt": "2026-09-02T09:30:00.000Z",
+  "refreshToken": "ref_fixture_token",
+  "refreshExpiresAt": "2026-10-02T09:00:00.000Z"
+}

@@ -1,0 +1,131 @@
+{
+  "from": "2026-08-31",
+  "to": "2026-09-06",
+  "days": [
+    {
+      "date": "2026-08-31",
+      "lessons": []
+    },
+    {
+      "date": "2026-09-01",
+      "lessons": [
+        {
+          "id": "1330002",
+          "subjectName": "CIE Physics-A2",
+          "topicName": "Fields",
+          "teacherId": "t_chen",
+          "teacherName": "陈拯侃",
+          "courseId": "c_55800",
+          "courseName": "CIE Physics-A2 2026秋A2PHY备考5班 陈拯侃",
+          "roomId": "r_308",
+          "roomName": "308",
+          "startsAt": 1788246000000,
+          "endsAt": 1788251400000
+        }
+      ]
+    },
+    {
+      "date": "2026-09-02",
+      "lessons": [
+        {
+          "id": "1335340",
+          "subjectName": "IELTS-Speaking",
+          "topicName": "IELTS-Speaking",
+          "teacherId": "t_23348879d1b4",
+          "teacherName": "Jennifer Anne Whitcombe-Rasmussen",
+          "courseId": "c_56081",
+          "courseName": "IELTS-Speaking 2026秋IELTS Speaking强化班 Jennifer Anne Whitcombe-Rasmussen",
+          "roomId": "r_360",
+          "roomName": "A203",
+          "startsAt": 1788309000000,
+          "endsAt": 1788314400000
+        },
+        {
+          "id": "1325152",
+          "subjectName": "Edexcel Economics-U4",
+          "topicName": "Edexcel Economics-U4",
+          "teacherId": "t_76b873b12d89",
+          "teacherName": "朱昂明",
+          "courseId": "c_55566",
+          "courseName": "Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明",
+          "roomId": "r_345",
+          "roomName": "309",
+          "startsAt": 1788327000000,
+          "endsAt": 1788332400000
+        },
+        {
+          "id": "1322902",
+          "subjectName": "Activity",
+          "topicName": "Activity",
+          "teacherId": "t_9e75caffc183",
+          "teacherName": "活动课老师",
+          "courseId": "c_55456",
+          "courseName": "Activity 2026年秋活动课 活动课老师",
+          "roomId": "r_df12aeba9bb9",
+          "roomName": null,
+          "startsAt": 1788337800000,
+          "endsAt": 1788343200000
+        }
+      ]
+    },
+    {
+      "date": "2026-09-03",
+      "lessons": [
+        {
+          "id": "1330001",
+          "subjectName": "CIE Chinese Language & Literature",
+          "topicName": null,
+          "teacherId": "t_zhao",
+          "teacherName": "赵流畅",
+          "courseId": "c_55738",
+          "courseName": "CIE Chinese Language & Literature 2026秋CIEAL中文备考班 赵流畅",
+          "roomId": null,
+          "roomName": null,
+          "startsAt": 1788402600000,
+          "endsAt": 1788408000000
+        }
+      ]
+    },
+    {
+      "date": "2026-09-04",
+      "lessons": [
+        {
+          "id": "1330004",
+          "subjectName": "Morning Reading",
+          "topicName": null,
+          "teacherId": null,
+          "teacherName": null,
+          "courseId": null,
+          "courseName": null,
+          "roomId": null,
+          "roomName": "Library",
+          "startsAt": 1788480000000,
+          "endsAt": 1788482400000
+        }
+      ]
+    },
+    {
+      "date": "2026-09-05",
+      "lessons": [
+        {
+          "id": "1330003",
+          "subjectName": "Public Speaking",
+          "topicName": null,
+          "teacherId": null,
+          "teacherName": null,
+          "courseId": null,
+          "courseName": null,
+          "roomId": null,
+          "roomName": null,
+          "startsAt": 1788570000000,
+          "endsAt": 1788575400000
+        }
+      ]
+    },
+    {
+      "date": "2026-09-06",
+      "lessons": []
+    }
+  ],
+  "lastSyncedAt": "2026-09-02T06:40:46.298Z"
+}

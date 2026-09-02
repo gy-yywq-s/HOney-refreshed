@@ -1,0 +1,8 @@
+{
+  "lane": "nudge",
+  "reasons": [
+    "composition:low_information"
+  ],
+  "policyVersion": 7,
+  "pass": "pass_fixture"
+}

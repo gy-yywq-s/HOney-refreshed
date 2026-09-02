@@ -1,0 +1,14 @@
+{
+  "honeyId": "h_fixture02",
+  "displayName": "Alex",
+  "isAdmin": false,
+  "consent": {
+    "timetable": true,
+    "grantedAt": null
+  },
+  "connection": {
+    "connected": false,
+    "lastSyncedAt": null,
+    "portalTokenValid": false
+  }
+}
