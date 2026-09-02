@@ -309,10 +309,23 @@
   flex: none;
   color: var(--ink-2);
 }
+.daynav__datebtn {
+  /* The visible, ringed control: the day's name and the caret. */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
 .daynav__picker {
   /* The real control, invisible, over the whole heading: the user's tap
      lands on it, so every platform opens its own calendar. 16px keeps iOS
-     from zooming on focus. */
+     from zooming on focus. Not a Tab stop — the button is. */
   position: absolute;
   inset: 0;
   width: 100%;
@@ -325,10 +338,6 @@
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-}
-.daynav__date:has(.daynav__picker:focus-visible) {
-  outline: 3px solid var(--accent);
-  outline-offset: -3px;
 }
 @media (max-width: 700px) {
   /* Phones: a native-style top bar. It pulls up under the status bar (its
@@ -460,6 +469,7 @@
   position: absolute;
   left: 0;
   right: 0;
+  z-index: 5; /* above the now-line: labels never get crossed out */
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -468,6 +478,13 @@
   letter-spacing: 0.03em;
   line-height: 1;
   pointer-events: none;
+}
+.timeline__ghost > span {
+  /* A ground under each label so the now-line passes behind it (r10). */
+  background: var(--surface-solid);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
 }
 .timeline__ghost-period {
   font-weight: 700;
@@ -1858,6 +1875,13 @@ button.row:hover {
 }
 .mine-item__status--danger {
   color: var(--danger);
+}
+.mine-item__status--cooling {
+  color: var(--accent);
+  font-weight: 600;
+}
+.shell-fallback {
+  padding-top: var(--sp-4);
 }
 .mine-item__actions {
   display: flex;

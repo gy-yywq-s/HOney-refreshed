@@ -46,7 +46,12 @@ const OUT_OF_SCOPE = "This sounds like something that needs real support or acti
 const BLOCKED = "This can't be published under the community rules. Nothing was stored — your draft is still here if you want to reshape it.";
 const FAILED_CLOSED = "The safety check couldn't run just now, and nothing publishes unchecked. Your draft is safe — please try again in a moment.";
 
-export function useComposer(target: ComposerTarget | null) {
+export interface ComposerSeed {
+  /** A private note that was cooling when it was kept: restore its ticket. */
+  cooldown?: { until: number; ticket: string; body: string; rating: number | null } | undefined;
+}
+
+export function useComposer(target: ComposerTarget | null, seed?: ComposerSeed) {
   const [body, setBody] = useState("");
   const [rating, setRating] = useState<number | null>(null);
   const [status, setStatus] = useState<ComposerStatus>({ kind: "editing" });
@@ -61,6 +66,17 @@ export function useComposer(target: ComposerTarget | null) {
   const cooldownTicket = useRef<{ ticket: string; body: string; rating: number | null } | null>(null);
 
   const key = target ? targetKeyOf(target) : null;
+
+  // A kept note that was cooling: hold its ticket so the re-check after the
+  // pause uses it, and show the pause if it is still running.
+  const seededTicket = seed?.cooldown?.ticket;
+  useEffect(() => {
+    const c = seed?.cooldown;
+    if (!c) return;
+    cooldownTicket.current = { ticket: c.ticket, body: c.body.trim(), rating: c.rating };
+    if (c.until > Date.now()) setStatus({ kind: "cooldown", retryAt: c.until, reasons: [] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seededTicket]);
 
   // Restore any saved draft for this target on mount (audit §3.4).
   useEffect(() => {
@@ -185,6 +201,12 @@ export function useComposer(target: ComposerTarget | null) {
     return runCheck(usable ? held.ticket : undefined);
   }, [runCheck, body, rating]);
 
+  /** The cooling ticket for the CURRENT text, or null when the text changed. */
+  const heldCooldown = useCallback(() => {
+    const held = cooldownTicket.current;
+    return held && held.body === body.trim() && held.rating === rating ? held : null;
+  }, [body, rating]);
+
   // Leave the nudge preflight to add more context, keeping the draft.
   const backToEditing = useCallback(() => {
     pass.current = null;
@@ -198,9 +220,11 @@ export function useComposer(target: ComposerTarget | null) {
     setRating,
     status,
     notice,
-    publish: () => runCheck(),
+    // An ordinary publish after a pause reuses the ticket for unchanged text.
+    publish: () => recheckAfterCooldown(),
     publishAsIs,
     recheckAfterCooldown,
+    heldCooldown,
     backToEditing,
   };
 }

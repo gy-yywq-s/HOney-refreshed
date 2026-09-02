@@ -56,11 +56,20 @@ export interface PrivateNoteTarget {
   entityType?: string;
 }
 
+export interface NoteCooldown {
+  /** When the check may run again (ms epoch). */
+  until: number;
+  /** The server's stateless cooldown ticket for this exact text. */
+  ticket: string;
+}
+
 export interface PrivateNote {
   id: string;
   body: string;
   rating: number | null;
   target: PrivateNoteTarget;
+  /** Set when the pre-publish check put this text into a cooling-off period. */
+  cooldown?: NoteCooldown | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -216,6 +225,8 @@ export class PrivateNoteStore {
     body: string;
     rating?: number | null;
     target: PrivateNoteTarget;
+    /** Omit to keep an existing cooling state; null clears it. */
+    cooldown?: NoteCooldown | null;
   }): Promise<PrivateNote> {
     const notes = await this.list();
     const now = Date.now();
@@ -225,6 +236,7 @@ export class PrivateNoteStore {
       body: input.body,
       rating: input.rating ?? null,
       target: input.target,
+      cooldown: input.cooldown === undefined ? (existing?.cooldown ?? null) : input.cooldown,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };

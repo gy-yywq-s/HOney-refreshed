@@ -420,6 +420,8 @@ export interface AdminOverview {
   };
   policyVersion: number;
   killSwitches: Record<KillSwitchName, boolean>;
+  /** Cooling-off period before a high-arousal draft may be re-checked (whole hours). */
+  cooldownHours: number;
   llm: { configured: boolean; model: string };
 }
 

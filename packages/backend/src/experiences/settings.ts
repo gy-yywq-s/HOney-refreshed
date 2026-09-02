@@ -89,4 +89,13 @@ export class SettingsService {
   reactionMinCount(): number {
     return Number(this.get("reactions.minCount") ?? 0);
   }
+
+  /** Cooling-off period before a high-arousal draft may be re-checked (hours; Dash-adjustable). */
+  cooldownHours(): number {
+    const n = Number(this.get("cooldown.hours"));
+    return Number.isFinite(n) && n > 0 ? n : 24;
+  }
+  setCooldownHours(hours: number): void {
+    this.set("cooldown.hours", String(hours));
+  }
 }

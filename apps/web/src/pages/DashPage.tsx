@@ -152,6 +152,17 @@ export function DashPage() {
         busy={busy === "minCount"}
       />
 
+      <CooldownPeriod
+        current={overview.data?.cooldownHours ?? 24}
+        onApply={(h) =>
+          void run("cooldown", async () => {
+            await api.adminSetCooldownHours(h);
+            overview.reload();
+          }, `Cooling-off period is now ${describeHours(h)}.`)
+        }
+        busy={busy === "cooldown"}
+      />
+
       {pendingSwitch && (
         <ConfirmDialog
           title={pendingSwitch.on ? "Turn this kill switch ON?" : "Turn this kill switch off?"}
@@ -605,6 +616,58 @@ function ReactionThreshold({
           />
           <button className="btn btn--ghost btn--small" disabled={!valid || busy} onClick={() => onApply(n)}>
             Apply
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const COOLDOWN_PRESETS = [1, 2, 3, 6, 12, 24, 48, 72, 168];
+function describeHours(h: number): string {
+  if (h % 24 === 0) return h === 24 ? "1 day" : `${h / 24} days`;
+  return h === 1 ? "1 hour" : `${h} hours`;
+}
+
+/** The cooling-off period: a wheel of whole-hour presets (a native picker on phones). */
+function CooldownPeriod({
+  current,
+  onApply,
+  busy,
+}: {
+  current: number;
+  onApply: (h: number) => void;
+  busy: boolean;
+}) {
+  const [value, setValue] = useState<number | null>(null);
+  const chosen = value ?? current;
+  const options = COOLDOWN_PRESETS.includes(current) ? COOLDOWN_PRESETS : [...COOLDOWN_PRESETS, current].sort((a, b) => a - b);
+  return (
+    <section className="card" aria-label="Cooling-off period">
+      <h2 className="section-title">Cooling-off period</h2>
+      <div className="setting-row">
+        <div className="setting-row__main">
+          <span>Currently {describeHours(current)}</span>
+          <span className="caption">
+            A high-arousal draft is kept private for this long before it can be checked again. The
+            student sees the remaining time on the note.
+          </span>
+        </div>
+        <div className="card-actions" style={{ marginTop: 0 }}>
+          <select
+            className="input"
+            aria-label="Cooling-off period"
+            value={chosen}
+            onChange={(e) => setValue(Number(e.target.value))}
+          >
+            {options.map((h) => (
+              <option key={h} value={h}>
+                {describeHours(h)}
+              </option>
+            ))}
+          </select>
+          <button className="btn btn--primary" disabled={busy || chosen === current} onClick={() => onApply(chosen)}>
+            {busy ? "Saving…" : "Apply"}
           </button>
         </div>
       </div>

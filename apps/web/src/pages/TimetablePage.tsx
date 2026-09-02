@@ -54,6 +54,7 @@ export function TimetablePage() {
   const { data, error, loading, reload } = useApi(() => api.timetable(date), [date], `timetable:${date}`);
   const [selected, setSelected] = useState<Lesson | null>(null);
   const closeLesson = useCallback(() => setSelected(null), []);
+  const pickerRef = useRef<HTMLInputElement>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<SyncFeedback | null>(null);
   const [showReconnect, setShowReconnect] = useState(false);
@@ -121,17 +122,36 @@ export function TimetablePage() {
               <input type="date"> sits invisibly over the text, so a tap or
               a click opens the platform's own calendar (iOS included). */}
           <h1 className="daynav__date">
-            <span className="daynav__date-long">{formatDayTitle(date)}</span>
-            <span className="daynav__date-short" aria-hidden="true">
-              {formatStepperDate(date)}
-            </span>
-            <svg className="daynav__caret" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
-              <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            {/* One ringed Tab stop (the button); the native input stays
+                under the finger for taps but out of the Tab order (r10). */}
+            <button
+              type="button"
+              className="daynav__datebtn"
+              aria-label={`Pick a date (${formatDayTitle(date)})`}
+              onClick={() => {
+                const el = pickerRef.current;
+                if (!el) return;
+                try {
+                  el.showPicker?.();
+                } catch {
+                  el.focus();
+                }
+              }}
+            >
+              <span className="daynav__date-long">{formatDayTitle(date)}</span>
+              <span className="daynav__date-short" aria-hidden="true">
+                {formatStepperDate(date)}
+              </span>
+              <svg className="daynav__caret" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+                <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
             <input
+              ref={pickerRef}
               className="daynav__picker"
               type="date"
-              aria-label={`Pick a date (${formatDayTitle(date)})`}
+              tabIndex={-1}
+              aria-hidden="true"
               value={date}
               onClick={(e) => {
                 // Desktop browsers open the calendar only from their own
@@ -358,11 +378,16 @@ function DayTimeline({
     // the owner's smooth scroll-behavior must not animate the landing.
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>(`[data-lesson="${first.id}"]`);
-      el?.scrollIntoView({ block: "start", behavior: "instant" });
-      // Reset the keyboard's starting point so Tab 1 is still the skip link.
-      const skip = document.querySelector<HTMLElement>(".skip-link");
-      skip?.focus({ preventScroll: true });
-      skip?.blur();
+      const owner = document.querySelector<HTMLElement>("[data-scroll-owner]");
+      if (!el || !owner) return;
+      // Set scrollTop directly: unlike scrollIntoView() it never moves the
+      // sequential-focus start point, so Tab 1 stays the skip link (r10).
+      const margin = 100; // heading + bar stay in view above block 1
+      const top = el.getBoundingClientRect().top - owner.getBoundingClientRect().top + owner.scrollTop - margin;
+      const prev = owner.style.scrollBehavior;
+      owner.style.scrollBehavior = "auto";
+      owner.scrollTop = Math.max(0, top);
+      owner.style.scrollBehavior = prev;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, visible.length, land]);

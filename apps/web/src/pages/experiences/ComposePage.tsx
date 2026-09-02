@@ -6,7 +6,7 @@
 // as a preflight, and a `nudge` asks the user to choose before anything is
 // published (audit §3.3) — nothing is ever auto-published.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, Lesson } from "../../api/types";
@@ -20,6 +20,7 @@ import { privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote } from "../../lib/ownershipKeys";
 import { StarInput, describeCheckReasons, useNames } from "./shared";
 import { useComposer } from "./useComposer";
+import type { ComposerSeed } from "./useComposer";
 import type { ComposerTarget } from "./useComposer";
 
 // ONE stable prompt (review v3 §10.4): the composer is a quiet place to put
@@ -105,7 +106,14 @@ export function ExperiencesComposePage() {
     [target === null],
     target ? undefined : "history:recent",
   );
-  const composer = useComposer(target);
+  const seed = useMemo<ComposerSeed | undefined>(
+    () =>
+      note?.cooldown
+        ? { cooldown: { ...note.cooldown, body: note.body, rating: note.rating } }
+        : undefined,
+    [note],
+  );
+  const composer = useComposer(target, seed);
   const { names } = useNames(!!effectiveEntityKey);
   // Arm on every flag a retry on this screen reloads (r9 contract).
   const landing = useRetryFocus<HTMLElement>(entities.loading || history.loading || recentLessons.loading);
@@ -120,15 +128,21 @@ export function ExperiencesComposePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note]);
 
-  async function savePrivately() {
+  async function savePrivately(opts: { quiet?: boolean } = {}) {
     if (saveBusy) return;
     setSaveBusy(true);
     setSaveError(null);
     try {
-      await privateNotes.save({
+      // The cooling state travels with the note: the ticket for THIS text,
+      // or nothing once the text changed.
+      const held = composer.heldCooldown();
+      const cooldown =
+        status.kind === "cooldown" && held ? { until: status.retryAt, ticket: held.ticket } : null;
+      const savedNote = await privateNotes.save({
         ...(note ? { id: note.id } : {}),
         body,
         rating: target?.isDish ? rating : null,
+        cooldown,
         target: {
           label: target ? [target.label, target.detail].filter(Boolean).join(" · ") : "No target",
           ...(target?.lessonId ? { lessonId: target.lessonId } : {}),
@@ -136,13 +150,27 @@ export function ExperiencesComposePage() {
           ...(target?.isDish ? { entityType: "dish" } : {}),
         },
       });
-      setSaved(true);
+      if (opts.quiet) setNote(savedNote);
+      else setSaved(true);
     } catch {
       setSaveError("Could not save the note on this device.");
     } finally {
       setSaveBusy(false);
     }
   }
+
+  // A cooling-off outcome keeps the words private on this device at once
+  // (review §9.6): the note carries the remaining time and the ticket, so
+  // Your notes & posts shows "can be shared in …" and the re-check reuses it.
+  const keptForTicket = useRef<string | null>(null);
+  useEffect(() => {
+    if (status.kind !== "cooldown") return;
+    const held = composer.heldCooldown();
+    if (!held || keptForTicket.current === held.ticket) return;
+    keptForTicket.current = held.ticket;
+    void savePrivately({ quiet: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status.kind]);
 
   if (status.kind === "published") {
     return (
@@ -461,8 +489,6 @@ export function ExperiencesComposePage() {
             <CooldownPanel
               retryAt={status.retryAt}
               onRecheck={() => void composer.recheckAfterCooldown()}
-              onKeepPrivate={() => void savePrivately()}
-              saveBusy={saveBusy}
             />
           ) : (
             <div className="card-actions compose-actions">
@@ -537,17 +563,7 @@ function NudgePreflight({
   );
 }
 
-function CooldownPanel({
-  retryAt,
-  onRecheck,
-  onKeepPrivate,
-  saveBusy,
-}: {
-  retryAt: number;
-  onRecheck: () => void;
-  onKeepPrivate: () => void;
-  saveBusy: boolean;
-}) {
+function CooldownPanel({ retryAt, onRecheck }: { retryAt: number; onRecheck: () => void }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
@@ -559,7 +575,9 @@ function CooldownPanel({
     <section className="card nudge" aria-label="Cooling off">
       <span className="eyebrow">Publishing can wait</span>
       <p style={{ marginTop: 0 }}>
-        Your words are saved. Come back after the pause if you still want to share them.
+        {ready
+          ? "The pause is over. This can still be your Experience — decide again whenever you like."
+          : `This can still be your Experience. It has been kept private on this device for now; you can share it again in ${formatRemaining(remaining)}.`}
       </p>
       <p className="text-3" style={{ marginTop: 0 }}>
         This is a pause, not a judgment about your experience.
@@ -568,9 +586,9 @@ function CooldownPanel({
         <button className="btn btn--primary" disabled={!ready} onClick={onRecheck}>
           {ready ? "Run the check again" : `Check again in ${formatRemaining(remaining)}`}
         </button>
-        <button className="btn btn--ghost" disabled={saveBusy} onClick={onKeepPrivate}>
-          Keep private
-        </button>
+        <Link className="btn btn--ghost" to="/experiences/mine">
+          Your notes &amp; posts
+        </Link>
       </div>
     </section>
   );

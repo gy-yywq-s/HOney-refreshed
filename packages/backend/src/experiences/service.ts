@@ -117,7 +117,6 @@ export type LlmRunner = (text: string) => Promise<LlmVerdict>;
 
 const ELIGIBILITY_TTL_MS = 60 * 60 * 1000; // ample for check + a nudge decision
 const PASS_TTL_MS = 10 * 60 * 1000;
-const COOLDOWN_MS = 24 * 3600 * 1000;
 const COOLDOWN_TICKET_LIFE_MS = 7 * 24 * 3600 * 1000;
 
 export class ExperienceService {
@@ -360,7 +359,7 @@ export class ExperienceService {
         return { ...base, lane: decision.action === "publish_nudge" ? "nudge" : "publish", pass };
       }
       case "cooldown_24h": {
-        const notBefore = this.now() + COOLDOWN_MS;
+        const notBefore = this.now() + this.settings.cooldownHours() * 3600 * 1000;
         return {
           ...base, lane: "cooldown",
           cooldown: { ticket: this.issueCooldownTicket(c.contentHash, c.target.entityKey, notBefore), retryAt: notBefore },

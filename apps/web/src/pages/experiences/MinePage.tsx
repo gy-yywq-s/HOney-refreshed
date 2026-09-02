@@ -10,7 +10,7 @@ import { api } from "../../api/client";
 import type { MyExperience } from "../../api/types";
 import { ConfirmDialog } from "../../components/Modal";
 import { ChevronRightIcon, PenIcon } from "../../components/icons";
-import { formatCoarseDate } from "../../lib/format";
+import { formatCoarseDate, formatRemaining } from "../../lib/format";
 import { ownershipKeys, privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote, StoredOwnershipKey } from "../../lib/ownershipKeys";
 import { Skeleton } from "../../lib/motion";
@@ -290,6 +290,11 @@ function PrivateNoteRow({
   onDelete: (id: string) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  // A note the check put into a pause is not an ordinary private note: it
+  // says when it can be shared again (Gary 2026-09-02).
+  const remaining = note.cooldown ? note.cooldown.until - Date.now() : 0;
+  const cooling = !!note.cooldown && remaining > 0;
+  const paused = !!note.cooldown && remaining <= 0;
   return (
     <article className="mine-item">
       <div className="mine-item__meta">
@@ -299,7 +304,15 @@ function PrivateNoteRow({
       {note.rating !== null && <Stars value={note.rating} />}
       <p className="mine-item__body">{note.body}</p>
       <div className="mine-item__foot">
-        <span className="mine-item__status mine-item__status--muted">Private · only on this device</span>
+        {cooling ? (
+          <span className="mine-item__status mine-item__status--cooling">
+            Cooling · can be shared in {formatRemaining(remaining)}
+          </span>
+        ) : paused ? (
+          <span className="mine-item__status mine-item__status--ok">Pause over · ready to share again</span>
+        ) : (
+          <span className="mine-item__status mine-item__status--muted">Private · only on this device</span>
+        )}
         <span className="mine-item__actions">
           <Link
             className="btn btn--ghost btn--small"

@@ -305,6 +305,10 @@ export class ApiClient {
     return this.request("POST", "/api/admin/reaction-min-count", { minCount });
   }
 
+  adminSetCooldownHours(hours: number): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/admin/cooldown-hours", { hours });
+  }
+
   disconnectSchool(): Promise<void> {
     return this.request("POST", "/api/school/disconnect");
   }

@@ -38,6 +38,7 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
       counts,
       policyVersion: POLICY_VERSION,
       killSwitches: Object.fromEntries(KILL_SWITCHES.map((k) => [k, ctx.settings.killSwitch(k)])),
+      cooldownHours: ctx.settings.cooldownHours(),
       llm: {
         configured: ctx.settings.llmConfig() !== null,
         model: ctx.settings.get("llm.model") ?? "mistralai/mistral-small-3.2-24b-instruct",
@@ -165,6 +166,19 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
       const n = req.body?.minCount;
       if (typeof n !== "number" || n < 0) return reply.code(400).send({ error: "minCount >= 0 required" });
       ctx.settings.set("reactions.minCount", String(n));
+      return { ok: true };
+    },
+  );
+
+  // The cooling-off period (Gary 2026-09-02): whole hours, 1–168.
+  app.post<{ Body: { hours?: number } }>(
+    "/api/admin/cooldown-hours",
+    { preHandler: requireAdmin },
+    async (req, reply) => {
+      const h = req.body?.hours;
+      if (typeof h !== "number" || !Number.isInteger(h) || h < 1 || h > 168)
+        return reply.code(400).send({ error: "hours must be an integer from 1 to 168" });
+      ctx.settings.setCooldownHours(h);
       return { ok: true };
     },
   );

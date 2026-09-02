@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, Navigate, Outlet, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import { parentOf, rootOf, titleOf } from "../lib/navigation";
+import { useRetryFocus } from "../lib/useRetryFocus";
+import { Skeleton } from "../lib/motion";
 import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import type { Me } from "../api/types";
@@ -108,19 +110,29 @@ function AppLayout() {
     if (name) document.title = `${name} · HOney`;
   }, [location.pathname]);
 
-  if (!me) {
-    if (loading) return <div className="fullscreen-note">Loading…</div>;
-    return (
-      <div className="fullscreen-note">
-        <div className="card">
-          <p className="muted">{error ?? "Could not load your account."}</p>
-          <button className="btn btn--primary" onClick={() => void refreshMe()}>
-            Retry
+  // The account request failing must not replace the app (r10): the shell
+  // stays — nav, skip link, scroll owner — with one alert and a landing retry.
+  const shellLanding = useRetryFocus<HTMLDivElement>(loading);
+  const shellFallback = !me ? (
+    <div className="focus-landing shell-fallback" ref={shellLanding.ref} tabIndex={-1} role="region" aria-label="Your account">
+      {loading ? (
+        <Skeleton lines={3} />
+      ) : (
+        <div role="alert" className="banner banner--danger">
+          <span>{error ?? "Could not load your account."}</span>
+          <button
+            className="btn btn--ghost btn--small"
+            onClick={() => {
+              shellLanding.arm();
+              void refreshMe();
+            }}
+          >
+            Try again
           </button>
         </div>
-      </div>
-    );
-  }
+      )}
+    </div>
+  ) : null;
 
   const railIndex = tabIndex(location.pathname, DESKTOP_TABS);
   const mobileIndex = tabIndex(location.pathname, MOBILE_TABS);
@@ -171,7 +183,7 @@ function AppLayout() {
               <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4" />
             </svg>
           </button>
-          <UserMenu me={me} />
+          {me && <UserMenu me={me} />}
         </div>
       </aside>
 
@@ -198,7 +210,7 @@ function AppLayout() {
               </Link>
             </nav>
           )}
-          <Outlet />
+          {shellFallback ?? <Outlet />}
         </div>
       </main>
 
