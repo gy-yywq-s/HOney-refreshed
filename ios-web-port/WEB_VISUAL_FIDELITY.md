@@ -81,6 +81,33 @@ stays `Owner decision: pending` until Gary approves the pair.
 | ReconnectDialog.tsx | `SchoolLoginSheet` | MATCHED | — | — | device check | pending |
 | — (no Web page) | `Access/AccessView.swift` | NATIVE_EQUIVALENT | built only from the token/component grammar above | Access is the one native-only surface | access-*.png | pending |
 
+## First parity round — `557a6f9` (2026-09-02)
+
+Web references: `design-audit/fixture-server.js` + `fixture-shots.js` (the built
+Web at 9cbedf6 answering `/api/*` from the same contract fixtures, Playwright at
+390 × 844 @2x, Asia/Shanghai, standalone insets). Native: the evidence branch at
+`557a6f9`. Compared side by side: home (5 fixtures), experiences, explore,
+compose picker, mine, timetable day/week, history, settings, appearance (4
+backgrounds), login, night/cobalt set.
+
+What the pairs showed and what changed before this commit:
+
+- Home hero on White/Cobalt: blue "45 min left" over the teal wash on both —
+  `accent` and `accent2` are distinct (§6.7 mandatory case).
+- The stream's context line broke one name per line on the iPhone; it now
+  flows and wraps like the Web's inline run (`FlowLayout`).
+- The Day canvas clipped its first hour label; 8 pt of air above the canvas.
+- Pushed screens repeated the page title in the navigation bar; the bar now
+  carries only "‹ Parent" like `.pagebar`, the title lives in content.
+- Harness: whole-millisecond fixture times (a fractional `startsAt` failed to
+  decode and showed the error banner), one shell per environment.
+
+Remaining visible differences, all listed above as platform adaptations: the
+system back chevron/label instead of the Web's glyph, the ··· overflow on the
+Timetable frame (History · Sync with school), the native menu behind a post's
+···, and the status-bar/home-indicator zones. Owner review of the pairs is the
+next step; every row stays `pending` until then.
+
 ## Discrepancies between the spec and the current Web (resolved to the Web)
 
 1. Stream reactions' on-state is accent tint, not ink (features.css, line
