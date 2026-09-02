@@ -167,6 +167,12 @@
   margin: 0;
   white-space: nowrap;
 }
+.daynav__history-sr {
+  /* Phones answer History with a gesture; a keyboard still gets a link,
+     visible only while focused (the skip-link pattern). Desktop has the
+     button, so the link is not rendered there. */
+  display: none;
+}
 .daynav__stepper {
   display: inline-flex;
   align-items: stretch;
@@ -267,6 +273,29 @@
   }
   .daynav__date {
     flex: 1;
+  }
+  .daynav__today {
+    align-self: center;
+  }
+  .daynav__row {
+    display: none;
+  }
+  .daynav__history-sr {
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .daynav__history-sr:focus-visible {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    align-self: center;
+    padding: var(--sp-1) var(--sp-3);
   }
 }
 @media (max-width: 359px) {

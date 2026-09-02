@@ -6,6 +6,8 @@ import { api, describeApiError } from "../api/client";
 import type { Lesson, SyncResponse } from "../api/types";
 import { Modal } from "../components/Modal";
 import { ReconnectDialog } from "../components/ReconnectDialog";
+import { PullToHistory } from "../components/PullToHistory";
+import { useSyncHandler } from "../lib/refresh";
 import { apiCache, useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
 import {
@@ -97,6 +99,10 @@ export function TimetablePage() {
   }
 
   const isToday = date === todayIsoDate();
+  // The pull's second stage (phones) is this screen's own sync.
+  useSyncHandler(() => {
+    if (!syncBusy) void runSync();
+  });
 
   return (
     <div className="timetable-screen">
@@ -148,16 +154,18 @@ export function TimetablePage() {
             &rsaquo;
           </button>
         </div>
+        {!isToday && (
+          <button className="btn btn--ghost btn--small daynav__today" onClick={() => setDate(todayIsoDate())}>
+            Back to today
+          </button>
+        )}
+        {/* Desktop only: the phone answers these with gestures — pull down
+            twice (refresh, then sync), pull up at the end for History. A
+            keyboard on a phone still reaches History through the sr link. */}
         <div className="daynav__row">
-          {isToday ? (
-            <span className="caption daynav__state">
-              {data?.lastSyncedAt ? `Synced ${timeAgo(data.lastSyncedAt)}` : ""}
-            </span>
-          ) : (
-            <button className="btn btn--ghost btn--small" onClick={() => setDate(todayIsoDate())}>
-              Back to today
-            </button>
-          )}
+          <span className="caption daynav__state">
+            {data?.lastSyncedAt ? `Synced ${timeAgo(data.lastSyncedAt)}` : ""}
+          </span>
           <span className="daynav__spacer" />
           <Link className="btn btn--ghost btn--small" to="/history">
             History
@@ -170,7 +178,11 @@ export function TimetablePage() {
             {syncBusy ? "Syncing…" : "Sync now"}
           </button>
         </div>
+        <Link className="daynav__history-sr" to="/history">
+          History
+        </Link>
       </header>
+      <PullToHistory />
 
       {syncFeedback?.kind === "error" && (
         <div role="alert" className="banner banner--danger">{syncFeedback.message}</div>
