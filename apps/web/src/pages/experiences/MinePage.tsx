@@ -1,13 +1,15 @@
 // Scroll model: FRAMED_SCROLL (§16.14.2).
-// /experiences/mine — the user's own contributions: server-side submissions
-// (proved by device-held ownership keys) merged with local private notes.
-// Private notes are visually distinct; they never left this browser.
+// /experiences/mine — the user's own words first (review v1.1 §10): private
+// notes and shared posts as plain rows with quiet status labels; the
+// device-held control is one low-priority row that links to Settings, and
+// only escalates when something is actually wrong (orphaned keys).
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { MyExperience } from "../../api/types";
 import { ConfirmDialog } from "../../components/Modal";
+import { ChevronRightIcon, PenIcon } from "../../components/icons";
 import { formatCoarseDate } from "../../lib/format";
 import { ownershipKeys, privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote, StoredOwnershipKey } from "../../lib/ownershipKeys";
@@ -17,7 +19,7 @@ import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Stars, provenanceLabel, useNames } from "./shared";
 
 interface StatusMeta {
-  chip: string;
+  label: string;
   tone: "ok" | "muted" | "danger";
   explain: string;
 }
@@ -26,15 +28,15 @@ interface StatusMeta {
 // check/publish split means rejected drafts are never stored. So the only
 // statuses are published, later-hidden (blocked), and revoked.
 const STATUS_META: Record<string, StatusMeta> = {
-  published: { chip: "Published", tone: "ok", explain: "" },
+  published: { label: "Shared", tone: "ok", explain: "" },
   blocked: {
-    chip: "Hidden",
+    label: "Hidden",
     tone: "danger",
     explain:
       "This was hidden after a re-check against the current community rules. You can remove it if you want to write a new one about this.",
   },
   revoked: {
-    chip: "Removed",
+    label: "Removed",
     tone: "muted",
     explain: "You removed this post — you can write a new one about this whenever you want.",
   },
@@ -69,13 +71,11 @@ export function ExperiencesMinePage() {
     [keys],
   );
 
-  // Merge server rows and private notes into one reverse-chronological list.
-  const items = useMemo(() => {
-    const rows: { at: number; el: "exp" | "note"; exp?: MyExperience; note?: PrivateNote }[] = [];
-    for (const exp of mine.data?.experiences ?? []) rows.push({ at: exp.created_at, el: "exp", exp });
-    for (const note of notes ?? []) rows.push({ at: note.updatedAt, el: "note", note });
-    return rows.sort((a, b) => b.at - a.at);
-  }, [mine.data, notes]);
+  const shared = useMemo(
+    () => [...(mine.data?.experiences ?? [])].sort((a, b) => b.created_at - a.created_at),
+    [mine.data],
+  );
+  const privateList = useMemo(() => [...(notes ?? [])].sort((a, b) => b.updatedAt - a.updatedAt), [notes]);
 
   const orphanKeys = useMemo(() => {
     if (!mine.data) return [];
@@ -85,7 +85,7 @@ export function ExperiencesMinePage() {
 
   function targetLabel(exp: MyExperience): string {
     if (exp.entity_key.startsWith("lesson:")) {
-      const parts = ["Lesson experience"];
+      const parts = ["Lesson"];
       if (exp.ctx_course_id && names.course.get(exp.ctx_course_id))
         parts.push(names.course.get(exp.ctx_course_id)!);
       if (exp.ctx_teacher_id && names.teacher.get(exp.ctx_teacher_id))
@@ -126,25 +126,26 @@ export function ExperiencesMinePage() {
 
   const empty = keys.length === 0 && (notes?.length ?? 0) === 0;
 
-
   return (
     <div className="stack focus-landing" ref={landing.ref} tabIndex={-1} role="region" aria-label="Your notes & posts">
-      <header className="page-head">
-        {/* "My submissions/contributions" is administrative language (review v3
-            §10.5) — this page is the user's own notes & posts. */}
+      <header className="page-head page-head--tools">
         <h1 className="page-title">Your notes &amp; posts</h1>
         {!empty && (
-          <Link className="btn btn--primary" to="/experiences/compose">
-            Share an experience
+          <Link className="iconbtn iconbtn--primary" to="/experiences/compose" aria-label="Share an experience" title="Share an experience">
+            <PenIcon />
           </Link>
         )}
       </header>
 
       {keys.length > 0 && (
-        <div role="status" className="banner banner--warning">
-          Your ownership keys exist only in this browser. Clearing site data permanently removes
-          your control over these posts.
-        </div>
+        <Link className="row row--quiet" to="/settings/privacy#keys">
+          <span className="row__main">
+            <span className="row__title">Post controls are stored on this device.</span>
+          </span>
+          <span className="row__act">
+            Manage <ChevronRightIcon size={16} />
+          </span>
+        </Link>
       )}
       {feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>}
       {namesError && (
@@ -157,22 +158,17 @@ export function ExperiencesMinePage() {
       )}
 
       {empty ? (
-        <section className="card">
-          <h2 className="section-title">Nothing here yet</h2>
-          <p className="muted">
-            Published experiences are stored without an author ID. Each one hands this browser a
-            one-time ownership key — that key is the only control over the post that exists, and it
-            is how this page finds and removes your posts. Private notes live here too, scrambled at
-            rest (unreadable without this device’s key), without ever leaving the device.
+        <div className="feed-empty">
+          <p>
+            <strong>Nothing here yet.</strong>
           </p>
-          <div className="card-actions">
-            <Link className="btn btn--primary" to="/experiences/compose">
-              Share your first experience
-            </Link>
-          </div>
-        </section>
+          <p className="muted">Keep something private or share an Experience when you are ready.</p>
+          <Link className="btn btn--primary" to="/experiences/compose">
+            Share an experience
+          </Link>
+        </div>
       ) : mine.loading || notes === null ? (
-        <Skeleton lines={3} />
+        <Skeleton lines={4} />
       ) : mine.error ? (
         <div role="alert" className="banner banner--danger">
           <span>{mine.error}</span>
@@ -181,36 +177,43 @@ export function ExperiencesMinePage() {
           </button>
         </div>
       ) : (
-        <div className="stack">
-          {items.map((item) =>
-            item.el === "exp" ? (
-              <MineExperienceCard
-                key={item.exp!.id}
-                exp={item.exp!}
-                label={targetLabel(item.exp!)}
-                ownershipKey={keyByExperienceId.get(item.exp!.id) ?? ""}
-                busy={busyKey === keyByExperienceId.get(item.exp!.id)}
-                onRevoke={(k) => setRevoking(k)}
-              />
-            ) : (
-              <PrivateNoteCard
-                key={item.note!.id}
-                note={item.note!}
-                onDelete={(id) => void deleteNote(id)}
-              />
-            ),
+        <>
+          {privateList.length > 0 && (
+            <section aria-label="Private notes" className="mine-group">
+              <h2 className="overline">Private notes</h2>
+              {privateList.map((note) => (
+                <PrivateNoteRow key={note.id} note={note} onDelete={(id) => void deleteNote(id)} />
+              ))}
+            </section>
+          )}
+          {shared.length > 0 && (
+            <section aria-label="Shared" className="mine-group">
+              <h2 className="overline">Shared</h2>
+              {shared.map((exp) => (
+                <SharedRow
+                  key={exp.id}
+                  exp={exp}
+                  label={targetLabel(exp)}
+                  ownershipKey={keyByExperienceId.get(exp.id) ?? ""}
+                  busy={busyKey === keyByExperienceId.get(exp.id)}
+                  onRevoke={(k) => setRevoking(k)}
+                />
+              ))}
+            </section>
           )}
           {orphanKeys.length > 0 && (
-            <div className="caption orphan-keys">
-              {orphanKeys.length === 1
-                ? "1 stored key no longer matches a post on the server."
-                : `${orphanKeys.length} stored keys no longer match a post on the server.`}{" "}
+            <div className="banner banner--warning orphan-keys" role="status">
+              <span>
+                {orphanKeys.length === 1
+                  ? "1 stored post control no longer matches a post on the server."
+                  : `${orphanKeys.length} stored post controls no longer match a post on the server.`}
+              </span>
               <button type="button" className="btn btn--ghost btn--small" onClick={forgetOrphans}>
                 Forget {orphanKeys.length > 1 ? "them" : "it"}
               </button>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {revoking && (
@@ -228,7 +231,7 @@ export function ExperiencesMinePage() {
   );
 }
 
-function MineExperienceCard({
+function SharedRow({
   exp,
   label,
   ownershipKey,
@@ -241,33 +244,30 @@ function MineExperienceCard({
   busy: boolean;
   onRevoke: (key: string) => void;
 }) {
-  const meta = STATUS_META[exp.status] ?? {
-    chip: exp.status,
-    tone: "muted" as const,
-    explain: "",
-  };
+  const meta = STATUS_META[exp.status] ?? { label: exp.status, tone: "muted" as const, explain: "" };
   const canRevoke = exp.status !== "revoked";
 
   return (
-    <article className="card exp-card">
-      <div className="exp-card__meta">
-        <span className={`chip chip--${meta.tone}`}>{meta.chip}</span>
-        <span className="exp-card__provenance">{provenanceLabel(exp.provenance)}</span>
+    <article className="mine-item">
+      <div className="mine-item__meta">
+        <span className="mine-item__context">{label}</span>
         <span className="caption">{formatCoarseDate(exp.created_at)}</span>
       </div>
-      <div className="caption exp-card__context">{label}</div>
       {exp.rating !== null && <Stars value={exp.rating} />}
       {exp.body !== null ? (
-        <p className="exp-card__body">{exp.body}</p>
+        <p className="mine-item__body">{exp.body}</p>
       ) : (
         <p className="muted">
           {exp.status === "revoked" ? "(text deleted when you removed this post)" : "(no text)"}
         </p>
       )}
-      {meta.explain && <p className="caption exp-card__note">{meta.explain}</p>}
-      {exp.status_detail && <p className="caption exp-card__note">{exp.status_detail}</p>}
-      {ownershipKey && canRevoke && (
-        <div className="exp-card__actions">
+      {meta.explain && <p className="caption">{meta.explain}</p>}
+      {exp.status_detail && <p className="caption">{exp.status_detail}</p>}
+      <div className="mine-item__foot">
+        <span className={`mine-item__status mine-item__status--${meta.tone}`}>
+          {meta.label} · {provenanceLabel(exp.provenance)}
+        </span>
+        {ownershipKey && canRevoke && (
           <button
             type="button"
             className="btn btn--ghost btn--small"
@@ -276,13 +276,13 @@ function MineExperienceCard({
           >
             Remove…
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </article>
   );
 }
 
-function PrivateNoteCard({
+function PrivateNoteRow({
   note,
   onDelete,
 }: {
@@ -291,28 +291,26 @@ function PrivateNoteCard({
 }) {
   const [confirming, setConfirming] = useState(false);
   return (
-    <article className="card exp-card exp-card--private">
-      <div className="exp-card__meta">
-        <span className="chip chip--private">Private — only on this device</span>
+    <article className="mine-item">
+      <div className="mine-item__meta">
+        <span className="mine-item__context">{note.target.label}</span>
         <span className="caption">{formatCoarseDate(note.updatedAt)}</span>
       </div>
-      <div className="caption exp-card__context">{note.target.label}</div>
       {note.rating !== null && <Stars value={note.rating} />}
-      <p className="exp-card__body">{note.body}</p>
-      <div className="exp-card__actions">
-        <Link
-          className="btn btn--ghost btn--small"
-          to={`/experiences/compose?noteId=${encodeURIComponent(note.id)}`}
-        >
-          Edit / publish…
-        </Link>
-        <button
-          type="button"
-          className="btn btn--ghost btn--small"
-          onClick={() => setConfirming(true)}
-        >
-          Delete
-        </button>
+      <p className="mine-item__body">{note.body}</p>
+      <div className="mine-item__foot">
+        <span className="mine-item__status mine-item__status--muted">Private · only on this device</span>
+        <span className="mine-item__actions">
+          <Link
+            className="btn btn--ghost btn--small"
+            to={`/experiences/compose?noteId=${encodeURIComponent(note.id)}`}
+          >
+            Edit / share
+          </Link>
+          <button type="button" className="btn btn--ghost btn--small" onClick={() => setConfirming(true)}>
+            Delete
+          </button>
+        </span>
       </div>
       {confirming && (
         <ConfirmDialog

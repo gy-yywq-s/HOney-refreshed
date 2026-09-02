@@ -59,7 +59,7 @@
   --fs-reading: 17px; /* the student's words (post body), buttons */
   --fs-title-sm: 20px; /* short-post feature text, compact screen titles */
   --fs-title: 22px; /* card subjects, modal titles (mobile) */
-  --fs-display: 28px; /* page titles (mobile); clamps to 36 on desktop */
+  --fs-display: 30px; /* page titles (mobile); clamps to 34 on desktop (review v1.1 §2.2) */
 
   /* Spacing scale (design-is r1, move 1): rhythm values only ever step
      through this ladder. (Canvas geometry — timeline band math — is
@@ -72,6 +72,13 @@
   --sp-6: 24px;
   --sp-7: 32px;
   --sp-8: 44px;
+
+  /* Geometry (review v1.1 §2.2): pills only for genuine choice pills;
+     cards 16, controls 14, fields 12. One page inset on phones. */
+  --radius-card: 16px;
+  --radius-control: 14px;
+  --radius-field: 12px;
+  --page-x: 20px;
 
   --shadow: 0 14px 40px rgba(22, 30, 34, 0.1);
 

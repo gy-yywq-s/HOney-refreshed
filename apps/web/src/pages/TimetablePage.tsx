@@ -10,12 +10,14 @@ import { PullToHistory } from "../components/PullToHistory";
 import { useSyncHandler } from "../lib/refresh";
 import { apiCache, useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
+import { parseCourseName, roomLabel } from "../lib/displayNames";
 import {
   formatDayTitle,
   formatTime,
   shiftIsoDate,
   timeAgo,
   todayIsoDate,
+  formatShortDate,
 } from "../lib/format";
 
 type SyncFeedback = { kind: "result"; result: SyncResponse } | { kind: "error"; message: string };
@@ -494,63 +496,65 @@ function CalendarGlyph() {
 }
 
 function LessonDetail({ lesson, onClose }: { lesson: Lesson; onClose: () => void }) {
+  const course = lesson.courseName ? parseCourseName(lesson.courseName, lesson.teacherName) : null;
+  const extra = course && course.meta ? course.meta : null;
   return (
     <Modal title={lesson.subjectName} onClose={onClose} describedBy="lesson-dialog-body">
       <p className="sr-only" id="lesson-dialog-body">
         {[
-          `${formatTime(lesson.startsAt)} to ${formatTime(lesson.endsAt)}`,
+          `${formatShortDate(lesson.startsAt)}, ${formatTime(lesson.startsAt)} to ${formatTime(lesson.endsAt)}`,
           lesson.teacherName ? `with ${lesson.teacherName}` : null,
-          lesson.roomName ? `in room ${lesson.roomName}` : null,
+          lesson.roomName ? `in ${roomLabel(lesson.roomName)}` : null,
         ]
           .filter(Boolean)
           .join(", ")}
         .
       </p>
-      <dl className="kv">
-        <dt>Time</dt>
-        <dd>
-          {formatTime(lesson.startsAt)}–{formatTime(lesson.endsAt)}
-        </dd>
-        {lesson.topicName && (
-          <>
-            <dt>Topic</dt>
-            <dd>{lesson.topicName}</dd>
-          </>
+      {/* Core context first (§16.1): when, then who and where. */}
+      <div className="lesson-facts" aria-hidden="true">
+        <div className="lesson-facts__line lesson-facts__line--time">
+          {formatShortDate(lesson.startsAt)} · {formatTime(lesson.startsAt)}–{formatTime(lesson.endsAt)}
+        </div>
+        {(lesson.teacherName || lesson.roomName) && (
+          <div className="lesson-facts__line">
+            {[lesson.teacherName, roomLabel(lesson.roomName)].filter(Boolean).join(" · ")}
+          </div>
         )}
-        {lesson.teacherName && (
-          <>
-            <dt>Teacher</dt>
-            <dd>{lesson.teacherName}</dd>
-          </>
-        )}
-        {lesson.courseName && (
-          <>
-            <dt>Course</dt>
-            <dd>{lesson.courseName}</dd>
-          </>
-        )}
-        {lesson.roomName && (
-          <>
-            <dt>Room</dt>
-            <dd>{lesson.roomName}</dd>
-          </>
-        )}
-      </dl>
+      </div>
       <div className="modal__actions">
+        <Link className="btn btn--primary" to={`/experiences/compose?lessonId=${lesson.id}`}>
+          Share what this was like
+        </Link>
         {lesson.teacherId && (
           <Link className="btn btn--ghost" to={`/experiences/teacher/${lesson.teacherId}`}>
-            View teacher experiences
+            Experiences with {lesson.teacherName ?? "this teacher"}
           </Link>
         )}
         {lesson.courseId && (
           <Link className="btn btn--ghost" to={`/experiences/course/${lesson.courseId}`}>
-            View course experiences
+            Experiences from this course
           </Link>
         )}
-        <Link className="btn btn--primary" to={`/experiences/compose?lessonId=${lesson.id}`}>
-          Share experience
-        </Link>
       </div>
+      {(extra || (lesson.topicName && lesson.topicName !== lesson.subjectName)) && (
+        <details className="disclosure">
+          <summary>More lesson details</summary>
+          <dl className="kv">
+            {lesson.topicName && lesson.topicName !== lesson.subjectName && (
+              <>
+                <dt>Topic</dt>
+                <dd>{lesson.topicName}</dd>
+              </>
+            )}
+            {extra && (
+              <>
+                <dt>Course</dt>
+                <dd>{extra}</dd>
+              </>
+            )}
+          </dl>
+        </details>
+      )}
     </Modal>
   );
 }

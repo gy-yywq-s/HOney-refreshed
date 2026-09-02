@@ -9,7 +9,9 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
-import { formatDayBucket, formatDayHeading, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
+import { formatDayBucket, formatDayTitle, formatRemaining, formatTime, isStale, timeAgo } from "../lib/format";
+import { roomLabel } from "../lib/displayNames";
+import { ChevronRightIcon } from "../components/icons";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
 
@@ -31,75 +33,120 @@ export function HomePage() {
     next && next.temporalState === "now"
       ? Math.min(1, Math.max(0, (now - next.startsAt) / Math.max(1, next.endsAt - next.startsAt)))
       : null;
-  // Humanized: "In 45 min" same-day, "Tomorrow · 13:30" / "Thursday · 13:30"
-  // beyond — never "In 618 min" (Gary + copy audit 2026-09-01).
-  const stateChip = (() => {
+  // One temporal sentence across the card (review v1.1 §4.4 A): the state
+  // on the left, the relative time on the right. Humanized: "In 45 min"
+  // same-day, "Tomorrow · 13:30" / "Thursday · 13:30" beyond — never
+  // "In 618 min" (Gary + copy audit 2026-09-01).
+  const isNow = next?.temporalState === "now";
+  const sameDay = !!next && new Date(next.startsAt).toDateString() === new Date(now).toDateString();
+  const when = (() => {
     if (!next) return null;
-    if (next.temporalState === "now") return "Now";
-    const start = new Date(next.startsAt);
-    const sameDay = start.toDateString() === new Date(now).toDateString();
+    if (isNow) return `${formatRemaining(next.endsAt - now)} left`;
     if (sameDay) return `In ${formatRemaining(next.startsAt - now)}`;
+    const start = new Date(next.startsAt);
     const tomorrow = start.toDateString() === new Date(now + 86_400_000).toDateString();
     const day = tomorrow ? "Tomorrow" : start.toLocaleDateString("en-GB", { weekday: "long" });
     return `${day} · ${formatTime(next.startsAt)}`;
   })();
+  const soon = !!next && !isNow && sameDay && next.startsAt - now < 10 * 60_000;
+  const stateLabel = isNow ? "Now" : "Next lesson";
+  const stale = lastSyncedAt !== null && isStale(lastSyncedAt);
+  const cardName = next
+    ? [
+        `${stateLabel}: ${next.subjectName}`,
+        `${formatTime(next.startsAt)} to ${formatTime(next.endsAt)}`,
+        next.teacherName,
+        roomLabel(next.roomName),
+        when,
+      ]
+        .filter(Boolean)
+        .join(", ") + ". Open timetable"
+    : "Nothing coming up. Open timetable";
 
-  const today = formatDayHeading(new Date(now).toLocaleDateString("en-CA"));
+  // The same string as the Timetable's own heading — one formatter (r10).
+  const today = formatDayTitle(new Date(now).toLocaleDateString("en-CA"));
   const previews = (fromClasses.experiences ?? []).filter((e) => e.body).slice(0, 2);
 
   return (
     <div className="stack home">
       <header className="home-head">
         <h1 className="home-head__hi">Hi, {me.displayName}</h1>
-        <p className="home-head__date">
-          {today}
-          {lastSyncedAt && isStale(lastSyncedAt) && (
-            <span className="home-head__stale"> · last synced {timeAgo(lastSyncedAt)}</span>
-          )}
-        </p>
+        <p className="home-head__date">{today}</p>
       </header>
 
-      <section className="card card--hero nextlesson focus-landing" aria-label="Now and next" role="region" ref={landing.ref} tabIndex={-1}>
-        {progress !== null && (
-          <div
-            className="nextlesson__wash"
-            style={{ width: `${(progress * 100).toFixed(1)}%` }}
-            aria-hidden="true"
-          />
-        )}
-        <span className="eyebrow">{next?.temporalState === "now" ? "Now" : "Next"}</span>
+      {/* The Now/Next object (review v1.1 §4.3): one temporal header, one
+          subject block, one structured details row; the whole card is the
+          navigation target. The slot keeps its height across states. */}
+      <section
+        className="nextlesson-slot focus-landing"
+        aria-label="Now and next"
+        role="region"
+        ref={landing.ref}
+        tabIndex={-1}
+      >
         {loading ? (
-          <Skeleton lines={2} />
+          <div className="card card--hero nextlesson" aria-busy="true">
+            <div className="nextlesson__head">
+              <span className="nextlesson__label">Next lesson</span>
+            </div>
+            <Skeleton lines={2} />
+          </div>
         ) : error ? (
           <div role="alert" className="banner banner--danger">
-          <span>{error}</span>
-          <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); reload(); }}>
-            Try again
-          </button>
-        </div>
+            <span>{error}</span>
+            <button className="btn btn--ghost btn--small" onClick={() => { landing.arm(); reload(); }}>
+              Try again
+            </button>
+          </div>
         ) : next ? (
-          <>
-            <span className="nextlesson__state">{stateChip}</span>
+          <Link
+            className="card card--hero nextlesson"
+            to={`/timetable?date=${new Date(next.startsAt).toLocaleDateString("en-CA")}`}
+            aria-label={cardName}
+          >
+            {progress !== null && (
+              <div
+                className="nextlesson__wash"
+                style={{ width: `${(progress * 100).toFixed(1)}%` }}
+                aria-hidden="true"
+              />
+            )}
+            <div className="nextlesson__head">
+              <span className="nextlesson__label">{stateLabel}</span>
+              {when && (
+                <span className={soon ? "nextlesson__when nextlesson__when--soon" : "nextlesson__when"}>
+                  {when}
+                </span>
+              )}
+            </div>
             <div className="nextlesson__subject">{next.subjectName}</div>
-            <p className="muted">
-              {formatTime(next.startsAt)}–{formatTime(next.endsAt)}
-              {next.teacherName ? ` · ${next.teacherName}` : ""}
-              {next.roomName ? ` · ${next.roomName}` : ""}
-            </p>
-            <Link
-              className="caption"
-              to={`/timetable?date=${new Date(next.startsAt).toLocaleDateString("en-CA")}`}
-            >
-              Open timetable
-            </Link>
-          </>
+            <div className="nextlesson__details">
+              <span className="nextlesson__time">
+                {formatTime(next.startsAt)}–{formatTime(next.endsAt)}
+              </span>
+              {(next.teacherName || next.roomName) && (
+                <span className="nextlesson__who">
+                  {next.teacherName && <span className="nextlesson__teacher">{next.teacherName}</span>}
+                  {next.roomName && <span className="nextlesson__room">{roomLabel(next.roomName)}</span>}
+                </span>
+              )}
+            </div>
+            {stale && <div className="nextlesson__stale">Last updated {timeAgo(lastSyncedAt!)}</div>}
+            <span className="nextlesson__chev">
+              <ChevronRightIcon size={18} />
+            </span>
+          </Link>
         ) : (
-          <>
-            <p className="empty">No upcoming lessons in your imported timetable.</p>
-            <Link className="caption" to="/timetable">
-              Open timetable
-            </Link>
-          </>
+          <Link className="card card--hero nextlesson nextlesson--empty" to="/timetable" aria-label={cardName}>
+            <div className="nextlesson__head">
+              <span className="nextlesson__label">Nothing coming up</span>
+            </div>
+            <div className="nextlesson__subject">No upcoming lessons in your timetable.</div>
+            {stale && <div className="nextlesson__stale">Last updated {timeAgo(lastSyncedAt!)}</div>}
+            <span className="nextlesson__chev">
+              <ChevronRightIcon size={18} />
+            </span>
+          </Link>
         )}
       </section>
 

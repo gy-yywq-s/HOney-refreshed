@@ -51,6 +51,7 @@ export function App() {
               <Route path="/experiences/place/:id" element={<ExperienceEntityPage kind="room" />} />
               <Route path="/experiences/food/:id" element={<ExperienceEntityPage kind="dish" />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings/:section" element={<SettingsPage />} />
               <Route
                 path="/dash"
                 element={

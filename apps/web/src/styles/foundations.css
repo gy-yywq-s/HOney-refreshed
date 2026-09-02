@@ -126,8 +126,8 @@ a.btn:active {
   margin: 0;
   font-family: var(--display);
   /* Quiet scale (candidate A): a page title, not a campaign headline. */
-  font-size: clamp(28px, 3.4vw, 36px);
-  line-height: 1.12;
+  font-size: clamp(30px, 3.2vw, 34px);
+  line-height: 1.1;
   letter-spacing: -0.015em;
   font-weight: 650;
 }

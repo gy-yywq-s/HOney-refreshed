@@ -1,19 +1,24 @@
-// /experiences/explore — the deliberate lookup mode (review v3 §9.10):
-// entity search over teachers / courses / places / food. EVERY selectable
-// entity is displayed (owner rule 4f — never "use search to find the rest");
-// the search box only narrows the complete listing. Long sections group by
-// first letter so the full set stays scannable, not messy.
-// Scroll model: FRAMED_EDITOR/FRAMED_SCROLL hybrid (web-lab.md).
+// /experiences/explore — the deliberate lookup mode (review v1.1 §6): a
+// framed finder, not a directory document. The search field and the
+// category chips stay in the frame while the result region scrolls; one
+// category is browsable at a time (Teachers / Courses / Places / Food) and
+// EVERY entity in it is listed (owner rule 4f — never "use search to find
+// the rest"). Typing filters every category and, from two characters,
+// also finds published experiences that mention the words. Raw portal
+// course strings are split into title + metadata for display.
+// Scroll model: FRAMED_EDITOR/FRAMED_SCROLL hybrid.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, EntityType } from "../../api/types";
 import { useApi } from "../../lib/useApi";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
 import { recentContexts } from "../../lib/recentContexts";
+import { entityMeta, entityTitle } from "../../lib/displayNames";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
+import { ChevronRightIcon, CloseIcon, SearchIcon } from "../../components/icons";
 import { entityPath } from "./shared";
 
 const SECTIONS: { type: EntityType; label: string }[] = [
@@ -25,37 +30,71 @@ const SECTIONS: { type: EntityType; label: string }[] = [
 
 /** Group by first letter once a section is long enough to need landmarks. */
 const GROUP_THRESHOLD = 18;
+const STATE_KEY = "honey.explore.state"; // query + category survive a round trip
+
+function restore(): { q: string; cat: EntityType } {
+  try {
+    const raw = sessionStorage.getItem(STATE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw) as { q?: string; cat?: EntityType };
+      if (s.cat && SECTIONS.some((x) => x.type === s.cat)) return { q: s.q ?? "", cat: s.cat };
+    }
+  } catch {
+    /* no session storage */
+  }
+  return { q: "", cat: "teacher" };
+}
 
 export function ExperiencesExplorePage() {
-  const [q, setQ] = useState("");
+  const initial = useMemo(restore, []);
+  const [q, setQ] = useState(initial.q);
+  const [cat, setCat] = useState<EntityType>(initial.cat);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STATE_KEY, JSON.stringify({ q, cat }));
+    } catch {
+      /* ignore */
+    }
+  }, [q, cat]);
+
   const entities = useApi(() => api.entities(), [], "entities");
   const directory = useApi(() => api.directory(), [], "directory");
-  // Find mode (review §8.1): with two or more characters the server also
-  // searches the words of published experiences; entity rows still filter
-  // locally so the complete listing never leaves the screen.
-  const searchQ = q.trim().length >= 2 ? q.trim() : "";
+  // Find mode: from two characters the server also searches the words of
+  // published experiences — debounced, cached per query, with its own
+  // loading / error / empty states (r10).
+  const [debounced, setDebounced] = useState(q.trim());
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(q.trim()), 250);
+    return () => window.clearTimeout(t);
+  }, [q]);
+  const searchQ = debounced.length >= 2 ? debounced : "";
   const search = useApi(
     () => (searchQ ? api.search(searchQ) : Promise.resolve(null)),
     [searchQ],
+    searchQ ? `search:${searchQ}` : undefined,
   );
   const recent = recentContexts.list();
-  // Arm on both flags the retry reloads (r9 contract).
-  const landing = useRetryFocus<HTMLDivElement>(entities.loading || directory.loading);
+  // Arm on every flag a retry on this page reloads (r9 contract).
+  const landing = useRetryFocus<HTMLDivElement>(entities.loading || directory.loading || search.loading);
 
+  const needle = q.trim().toLowerCase();
   const byType = useMemo(() => {
     const groups: Record<EntityType, EntityRef[]> = { teacher: [], course: [], room: [], dish: [] };
-    const needle = q.trim().toLowerCase();
     for (const e of entities.data?.entities ?? []) {
       if (needle && !e.name.toLowerCase().includes(needle)) continue;
       groups[e.type]?.push(e);
     }
     for (const list of Object.values(groups)) list.sort((a, b) => a.name.localeCompare(b.name));
     return groups;
-  }, [entities.data, q]);
+  }, [entities.data, needle]);
+  const totals = useMemo(() => {
+    const t: Record<EntityType, number> = { teacher: 0, course: 0, room: 0, dish: 0 };
+    for (const e of entities.data?.entities ?? []) t[e.type] = (t[e.type] ?? 0) + 1;
+    return t;
+  }, [entities.data]);
 
-  // "From your history": the user's own imported teachers/courses are the
-  // most likely lookup targets. They are MARKED inline in the complete
-  // listing (design-is r2: a separate strip repeated 9 of 10 names).
+  // "From your classes": the student's own imported teachers/courses are
+  // MARKED inline in the complete listing (design-is r2).
   const fromHistory = useMemo(() => {
     const dir = directory.data;
     if (!dir) return new Set<string>();
@@ -66,25 +105,58 @@ export function ExperiencesExplorePage() {
     return mine;
   }, [directory.data, entities.data]);
 
+  const matches = needle ? SECTIONS.filter((s) => byType[s.type].length > 0) : [];
+  const nameCount = needle ? matches.reduce((n, s) => n + byType[s.type].length, 0) : 0;
+  const status = !needle
+    ? ""
+    : searchQ && search.loading
+      ? `${nameCount} names, searching experiences`
+      : `${nameCount} names${searchQ && search.data ? `, ${search.data.experiences.length} experiences` : ""}`;
+
   return (
     <div className="stack explore">
-      <header className="section-head">
-        <div>
-          <h1 className="page-title">Find someone or something</h1>
-          <p className="muted" style={{ margin: 0 }}>
-            Teachers, courses, places and food are all listed below — typing only narrows the list.
-          </p>
-        </div>
+      <header className="explore-head">
+        <h1 className="page-title">Explore</h1>
+        <p className="muted explore-head__sub">Teachers, courses, places and food.</p>
       </header>
 
-      <input
-        className="search-box"
-        type="search"
-        placeholder="Filter by name…"
-        aria-label="Filter by name"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
+      <div className="explore-frame">
+        <div className="search-field">
+          <span className="search-field__glyph">
+            <SearchIcon size={18} />
+          </span>
+          <input
+            className="search-box"
+            type="search"
+            placeholder="Search names and experiences"
+            aria-label="Search names and experiences"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          {q && (
+            <button type="button" className="search-field__clear" aria-label="Clear search" onClick={() => setQ("")}>
+              <CloseIcon size={16} />
+            </button>
+          )}
+        </div>
+        {!needle && (
+          <div className="cat-chips" role="tablist" aria-label="Category">
+            {SECTIONS.map((s) => (
+              <button
+                key={s.type}
+                type="button"
+                role="tab"
+                aria-selected={cat === s.type}
+                className="chip-tab"
+                onClick={() => setCat(s.type)}
+              >
+                {s.label}
+                {entities.data && <span className="chip-tab__n">{totals[s.type]}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {(entities.error || directory.error) && (
         <div role="alert" className="banner banner--danger">
@@ -93,52 +165,94 @@ export function ExperiencesExplorePage() {
             className="btn btn--ghost btn--small"
             onClick={() => {
               landing.arm();
-              entities.reload();
-              directory.reload();
+              if (entities.error) entities.reload();
+              if (directory.error) directory.reload();
             }}
           >
             Try again
           </button>
         </div>
       )}
-      {!q && recent.length > 0 && (
-        <section aria-label="Recent">
-          <h2 className="overline">Recent</h2>
-          <ul className="entity-list">
-            {recent.map((r) => (
-              <li key={r.path}>
-                <Link className="entity-row" to={r.path}>
-                  <span>{r.name}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      <div ref={landing.ref} tabIndex={-1} className="focus-landing" role="group" aria-label="Everything listed">
-      {entities.loading ? (
-        <Skeleton lines={6} />
-      ) : entities.error || directory.error ? null : (
-        SECTIONS.map(({ type, label }) => (
-          <ExploreSection
-            key={type}
-            label={label}
-            items={byType[type]}
-            filtered={q.trim().length > 0}
-            mine={fromHistory}
-          />
-        ))
-      )}
-      {searchQ && !search.loading && search.data && search.data.experiences.length > 0 && (
-        <section aria-label="Experiences that mention this">
-          <h2 className="overline">Experiences that mention “{searchQ}”</h2>
-          <div className="feed-stream">
-            {search.data.experiences.map((exp) => (
-              <ExperiencePost key={exp.id} exp={exp} />
-            ))}
-          </div>
-        </section>
-      )}
+
+      <div ref={landing.ref} tabIndex={-1} className="focus-landing explore-results" role="group" aria-label="Results">
+        <p className="sr-only" role="status">
+          {status}
+        </p>
+        {entities.loading ? (
+          <Skeleton lines={6} />
+        ) : entities.error ? null : needle ? (
+          matches.length === 0 ? (
+            <p className="empty">Nothing by that name.</p>
+          ) : (
+            matches.map((s) => (
+              <ExploreSection
+                key={s.type}
+                label={s.label}
+                count={`${byType[s.type].length} of ${totals[s.type]}`}
+                items={byType[s.type]}
+                mine={fromHistory}
+              />
+            ))
+          )
+        ) : (
+          <>
+            {recent.length > 0 && (
+              <section aria-label="Recently opened" className="explore-recent">
+                <h2 className="overline">Recently opened</h2>
+                <ul className="entity-list">
+                  {recent.map((r) => (
+                    <li key={r.path}>
+                      <Link className="entity-row" to={r.path}>
+                        <span className="entity-row__main">
+                          <span className="entity-row__title">{r.name}</span>
+                        </span>
+                        <ChevronRightIcon size={18} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            <ExploreSection
+              key={cat}
+              label={SECTIONS.find((s) => s.type === cat)!.label}
+              count={String(totals[cat])}
+              items={byType[cat]}
+              mine={fromHistory}
+            />
+          </>
+        )}
+        {searchQ && (
+          <section aria-labelledby="explore-mentions" className="explore-mentions">
+            <h2 className="overline" id="explore-mentions">
+              Experiences that mention “{searchQ}”
+            </h2>
+            {search.loading ? (
+              <Skeleton lines={4} />
+            ) : search.error ? (
+              <div role="alert" className="banner banner--danger">
+                <span>{search.error}</span>
+                <button
+                  className="btn btn--ghost btn--small"
+                  onClick={() => {
+                    landing.arm();
+                    search.reload();
+                  }}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : search.data && search.data.experiences.length > 0 ? (
+              <div className="feed-stream">
+                {search.data.experiences.map((exp) => (
+                  <ExperiencePost key={exp.id} exp={exp} />
+                ))}
+              </div>
+            ) : (
+              <p className="caption">No experiences mention “{searchQ}”.</p>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );
@@ -146,13 +260,13 @@ export function ExperiencesExplorePage() {
 
 function ExploreSection({
   label,
+  count,
   items,
-  filtered,
   mine,
 }: {
   label: string;
+  count: string;
   items: EntityRef[];
-  filtered: boolean;
   mine: Set<string>;
 }) {
   // The mark only earns its place where it distinguishes: if every row in the
@@ -174,10 +288,10 @@ function ExploreSection({
   return (
     <section aria-label={label}>
       <h2 className="overline">
-        {label} <span className="caption">{items.length}</span>
+        {label} <span className="caption">{count}</span>
       </h2>
       {items.length === 0 ? (
-        <p className="empty">{filtered ? "Nothing by that name." : "Nothing here yet."}</p>
+        <p className="empty">Nothing here yet.</p>
       ) : grouped ? (
         grouped.map(([letter, list]) => (
           <div key={letter} className="explore-letter">
@@ -201,19 +315,30 @@ function ExploreSection({
 }
 
 function ExploreRow({ entity, mine }: { entity: EntityRef; mine: boolean }) {
+  const title = entityTitle(entity.type, entity.name);
+  const meta = entityMeta(entity.type, entity.name);
   return (
     <li>
       <Link
         className="entity-row"
         to={entityPath(entity)}
-        onClick={() => recentContexts.remember({ name: entity.name, path: entityPath(entity) })}
+        onClick={() => recentContexts.remember({ name: title, path: entityPath(entity) })}
       >
-        <span>{entity.name}</span>
-        {mine && (
-          <span className="caption">
-            <span className="sr-only">, </span>from your classes
-          </span>
-        )}
+        <span className="entity-row__main">
+          <span className="entity-row__title">{title}</span>
+          {(meta || mine) && (
+            <span className="caption">
+              {meta}
+              {mine && (
+                <>
+                  {meta ? " · " : ""}
+                  <span className="sr-only">, </span>from your classes
+                </>
+              )}
+            </span>
+          )}
+        </span>
+        <ChevronRightIcon size={18} />
       </Link>
     </li>
   );

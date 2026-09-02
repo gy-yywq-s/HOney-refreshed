@@ -7,13 +7,15 @@
 // published (audit §3.3) — nothing is ever auto-published.
 
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../../api/client";
 import type { EntityRef, Lesson } from "../../api/types";
 import { useApi } from "../../lib/useApi";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
-import { formatShortDate, formatTime, formatRemaining } from "../../lib/format";
+import { formatShortDate, formatTime, formatRemaining, formatDayBucket } from "../../lib/format";
+import { entityTitle, roomLabel } from "../../lib/displayNames";
+import { ChevronRightIcon } from "../../components/icons";
 import { privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote } from "../../lib/ownershipKeys";
 import { StarInput, describeCheckReasons, useNames } from "./shared";
@@ -24,11 +26,10 @@ import type { ComposerTarget } from "./useComposer";
 // an experience into words, not a rotating morality display. Boundaries
 // appear only when a specific gate asks for something.
 const COMPOSE_PROMPT = "What was it like for you?";
-const COMPOSE_HELPER = "Specific details can help someone understand. A feeling can matter too.";
+const COMPOSE_HELPER = "A moment, a pattern, or just a feeling. Specific context can help, but it is not required.";
 
 export function ExperiencesComposePage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const lessonId = searchParams.get("lessonId");
   const entityKeyParam = searchParams.get("entityKey");
   const noteId = searchParams.get("noteId");
@@ -87,7 +88,7 @@ export function ExperiencesComposePage() {
       return {
         // Never flash the raw key while the registry loads (r2 visual); an
         // unknown key after load is handled below (no editor).
-        label: entity?.name ?? "Loading…",
+        label: entity ? entityTitle(entity.type, entity.name) : "Loading…",
         detail:
           type === "room" ? "Place" : type === "dish" ? "Food" : type === "course" ? "Course" : "Teacher",
         entityKey: effectiveEntityKey,
@@ -100,13 +101,14 @@ export function ExperiencesComposePage() {
   // Chooser (review §9.2): the target is picked before the editor — the
   // student's last few lessons are the likeliest, so they are one tap away.
   const recentLessons = useApi(
-    () => (target ? Promise.resolve(null) : api.history({ limit: 5, order: "desc" })),
+    () => (target ? Promise.resolve(null) : api.history({ limit: 6, order: "desc" })),
     [target === null],
     target ? undefined : "history:recent",
   );
   const composer = useComposer(target);
   const { names } = useNames(!!effectiveEntityKey);
-  const landing = useRetryFocus<HTMLElement>(entities.loading || history.loading);
+  // Arm on every flag a retry on this screen reloads (r9 contract).
+  const landing = useRetryFocus<HTMLElement>(entities.loading || history.loading || recentLessons.loading);
   const { body, setBody, rating, setRating, status, notice } = composer;
 
   // Republishing a private note: seed the composer from the note's text.
@@ -314,44 +316,86 @@ export function ExperiencesComposePage() {
 
       {target ? (
         <section className="compose-target" aria-label="What this is about">
-          <span className="eyebrow">About</span>
+          <div className="compose-target__row">
+            <span className="eyebrow">About</span>
+            {!noteId && (
+              <Link className="compose-target__change" to="/experiences/compose">
+                Change
+              </Link>
+            )}
+          </div>
           <strong className="compose-target__label">{target.label}</strong>
           {target.detail && <span className="text-3">{target.detail}</span>}
         </section>
       ) : (
-        <section className="card" aria-label="Pick a target">
-          <p className="text-3">
-            An experience is about one of your own lessons, or a teacher, course, place or dish.
+        /* The target picker (review v1.1 §7): plain rows, one tap to the
+           editor; History and Explore are secondary rows, not hero buttons. */
+        <section className="picker focus-landing" aria-label="What is this about?" ref={landing.ref} tabIndex={-1}>
+          <h2 className="picker__title">What is this about?</h2>
+          <p className="caption picker__hint">
+            One of your own lessons, or a teacher, course, place or dish.
           </p>
-          {recentLessons.data && recentLessons.data.lessons.length > 0 && (
-            <>
-              <h2 className="overline">Your recent lessons</h2>
-              <ul className="entity-list">
-                {recentLessons.data.lessons.slice(0, 5).map((l) => (
-                  <li key={l.id}>
-                    <Link
-                      className="entity-row"
-                      to={`/experiences/compose?lessonId=${encodeURIComponent(l.id)}`}
-                    >
-                      <span>{l.subjectName}</span>
+          <h3 className="overline">Recent lessons</h3>
+          {recentLessons.loading ? (
+            <Skeleton lines={4} />
+          ) : recentLessons.error ? (
+            <div role="alert" className="banner banner--danger">
+              <span>{recentLessons.error}</span>
+              <button
+                className="btn btn--ghost btn--small"
+                onClick={() => {
+                  landing.arm();
+                  recentLessons.reload();
+                }}
+              >
+                Try again
+              </button>
+            </div>
+          ) : recentLessons.data && recentLessons.data.lessons.length > 0 ? (
+            <ul className="entity-list">
+              {recentLessons.data.lessons.slice(0, 6).map((l) => (
+                <li key={l.id}>
+                  <Link
+                    className="entity-row"
+                    to={`/experiences/compose?lessonId=${encodeURIComponent(l.id)}`}
+                  >
+                    <span className="entity-row__main">
+                      <span className="entity-row__title">{l.subjectName}</span>
                       <span className="caption">
-                        {formatShortDate(l.startsAt)}
-                        {l.teacherName ? ` · ${l.teacherName}` : ""}
+                        {[formatDayBucket(l.startsAt), l.teacherName, roomLabel(l.roomName)]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
+                    </span>
+                    <ChevronRightIcon size={18} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="caption">No lessons in your history yet.</p>
           )}
-          <div className="card-actions">
-            <Link className="btn btn--primary" to="/history?select=1">
-              Pick a lesson from History
-            </Link>
-            <Link className="btn btn--ghost" to="/experiences/explore">
-              Find someone or something
-            </Link>
-          </div>
+          <ul className="entity-list">
+            <li>
+              <Link className="entity-row" to="/history?select=1">
+                <span className="entity-row__main">
+                  <span className="entity-row__title">See full History</span>
+                </span>
+                <ChevronRightIcon size={18} />
+              </Link>
+            </li>
+          </ul>
+          <h3 className="overline">Other school context</h3>
+          <ul className="entity-list">
+            <li>
+              <Link className="entity-row" to="/experiences/explore">
+                <span className="entity-row__main">
+                  <span className="entity-row__title">Teachers, courses, places and food</span>
+                </span>
+                <ChevronRightIcon size={18} />
+              </Link>
+            </li>
+          </ul>
         </section>
       )}
 
@@ -372,6 +416,11 @@ export function ExperiencesComposePage() {
               disabled={status.kind === "nudge"}
             />
             <span className="text-4 compose-hint">{COMPOSE_HELPER}</span>
+            {body.trim().length > 0 && (
+              <span className="caption compose-draft" role="status">
+                Draft saved on this device
+              </span>
+            )}
           </div>
 
           {target.isDish && (
@@ -423,24 +472,21 @@ export function ExperiencesComposePage() {
                 disabled={!canAct}
                 onClick={() => void composer.publish()}
               >
-                {busy ? "Checking…" : "Share anonymously"}
+                {busy ? "Checking…" : "Continue to share"}
               </button>
               <button
                 className="btn btn--ghost"
                 disabled={saveBusy || body.trim().length === 0 || busy}
                 onClick={() => void savePrivately()}
               >
-                {saveBusy ? "Saving…" : "Keep this for yourself"}
-              </button>
-              <button className="btn btn--ghost" disabled={busy} onClick={() => navigate(-1)}>
-                Cancel
+                {saveBusy ? "Saving…" : "Keep private"}
               </button>
             </div>
           )}
 
           <p className="text-4" style={{ marginBottom: 0 }}>
-            A safety check runs first. Published posts carry no author ID; private notes never
-            leave this device. <Link to="/settings#privacy">How privacy works</Link>
+            Public sharing runs a text check. Public Experiences are stored without an ordinary
+            author field. <Link to="/settings/privacy">How anonymity works</Link>
           </p>
         </section>
       )}
@@ -485,7 +531,7 @@ function NudgePreflight({
           Add a little context
         </button>
         <button className="btn btn--ghost" disabled={busy || saveBusy} onClick={onKeepPrivate}>
-          Keep this for yourself
+          Keep private
         </button>
       </div>
     </section>
@@ -524,7 +570,7 @@ function CooldownPanel({
           {ready ? "Run the check again" : `Check again in ${formatRemaining(remaining)}`}
         </button>
         <button className="btn btn--ghost" disabled={saveBusy} onClick={onKeepPrivate}>
-          Keep this for yourself
+          Keep private
         </button>
       </div>
     </section>

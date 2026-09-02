@@ -68,10 +68,31 @@
   padding: var(--sp-7) var(--sp-6);
 }
 
-/* Next / current lesson — surface-solid card with the animated progress wash. */
+/* Now / Next — ONE lesson object (review v1.1 §4.3): a temporal header
+   (state left, relative time right, one baseline), the subject, a
+   structured details row (time · teacher · room), the whole card a link
+   with a chevron. The slot reserves its settled height so nothing on Home
+   shifts when the hero resolves late (r10 CLS 0.185). */
+.nextlesson-slot {
+  min-height: 168px;
+  display: flex;
+  flex-direction: column;
+}
 .nextlesson {
   position: relative;
   overflow: hidden;
+  display: block;
+  flex: 1 1 auto;
+  padding: var(--sp-5) var(--sp-8) var(--sp-5) var(--sp-5);
+  color: inherit;
+  text-decoration: none;
+}
+.nextlesson:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.nextlesson:active {
+  transform: scale(0.99);
 }
 .nextlesson__wash {
   position: absolute;
@@ -86,37 +107,95 @@
 .nextlesson > :not(.nextlesson__wash) {
   position: relative;
 }
-.nextlesson__state {
-  display: inline-block;
-  font-size: var(--fs-micro);
+.nextlesson__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-caption);
   font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--ink); /* tokenized: the literal failed 1.54:1 on night (r2) */
-  background: var(--glacier);
-  border-radius: 99px;
-  padding: var(--sp-1) var(--sp-3);
-  margin-bottom: var(--sp-2);
+}
+.nextlesson__label {
+  color: var(--ink-2);
+}
+.nextlesson__when {
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.nextlesson__when--soon {
+  /* < 10 min: stronger accent text, never an alarm surface. */
+  color: var(--ink);
+  background: var(--accent-tint);
+  border-radius: var(--radius-field);
+  padding: 2px var(--sp-2);
 }
 .nextlesson__subject {
   font-family: var(--display);
-  /* The focal object of the whole screen — it reads at headline size
-     (Gary 2026-09-01: bigger type, less dead air in this card). */
-  font-size: clamp(26px, 6.5vw, 34px);
+  font-size: clamp(25px, 6vw, 29px);
   letter-spacing: -0.015em;
-  line-height: 1.08;
-  font-weight: 650;
-  margin: var(--sp-2) 0 0;
+  line-height: 1.12;
+  font-weight: 600;
+  margin: var(--sp-4) 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
-.nextlesson p {
-  margin: var(--sp-2) 0 0;
+.nextlesson__details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-4);
+  margin-top: var(--sp-3);
+  color: var(--ink-2);
+}
+.nextlesson__time {
+  flex: none;
   font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.nextlesson .caption {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin-top: 0;
+.nextlesson__who {
+  /* Teacher and room share a line; when they cannot sit beside the time
+     they wrap together to a second line, teacher left, room right. */
+  flex: 1 0 auto;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-width: 0;
+  font-size: var(--fs-secondary);
+}
+.nextlesson__teacher {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.nextlesson__room {
+  white-space: nowrap;
+}
+.nextlesson__chev {
+  position: absolute;
+  right: var(--sp-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-3, var(--ink-2));
+}
+.nextlesson__stale {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-caption);
+  color: var(--ink-3, var(--ink-2));
+}
+.nextlesson--empty .nextlesson__subject {
+  font-size: var(--fs-reading);
+  font-weight: 500;
+  color: var(--ink-2);
+  margin-top: var(--sp-2);
+}
+.nextlesson-slot > .banner {
+  flex: 1 1 auto;
 }
 
 /* ── Timetable — the Day canvas, restyled: surface-solid bands, hairline
@@ -264,8 +343,8 @@
     flex-direction: column;
     align-items: stretch;
     gap: var(--sp-1);
-    margin: 0 calc(-1 * var(--sp-4)) var(--sp-2);
-    padding: calc(var(--inset-top) + var(--sp-2)) var(--sp-4) var(--sp-1);
+    margin: 0 calc(-1 * var(--page-x)) var(--sp-2);
+    padding: calc(var(--inset-top) + var(--sp-2)) var(--page-x) var(--sp-1);
   }
   .daynav__stepper {
     flex: 0 0 auto;
@@ -277,8 +356,12 @@
   .daynav__today {
     align-self: center;
   }
-  .daynav__row {
-    display: none;
+  /* The gestures replace the row only where gestures exist: a touch
+     screen. A narrow mouse window keeps History and Sync now (r10). */
+  @media (pointer: coarse) {
+    .daynav__row {
+      display: none;
+    }
   }
   .daynav__history-sr {
     display: block;
@@ -293,9 +376,12 @@
     position: static;
     width: auto;
     height: auto;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
     clip: auto;
     align-self: center;
-    padding: var(--sp-1) var(--sp-3);
+    padding: 0 var(--sp-3);
   }
 }
 @media (max-width: 359px) {
@@ -621,7 +707,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
-  min-height: 44px;
+  min-height: 56px;
   padding: var(--sp-3) 0;
   color: var(--ink);
   font-weight: 600;
@@ -637,6 +723,7 @@
 }
 .entity-row .caption {
   font-weight: 400;
+  color: var(--muted);
 }
 
 .exp-card {
@@ -935,18 +1022,16 @@
 .feed-head__tools {
   display: flex;
   gap: var(--sp-2);
-  flex-wrap: wrap;
-}
-.feed-headline {
-  margin: 0;
-  font-size: var(--fs-reading);
-  line-height: 1.4;
-  color: var(--ink);
 }
 .feed-identity {
+  /* The persistent culture line: one sentence and the Why entry. */
   margin: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-secondary);
   color: var(--ink-2);
+}
+.feed-identity strong {
+  color: var(--ink);
+  font-weight: 600;
 }
 .feed-identity a {
   white-space: nowrap;
@@ -965,7 +1050,7 @@
   border: 0;
   background: none;
   padding: 0 var(--sp-4);
-  min-height: 44px;
+  min-height: 34px;
   border-radius: 999px;
   font: inherit;
   font-size: var(--fs-secondary);
@@ -1001,7 +1086,7 @@
 }
 
 .post {
-  padding: var(--sp-4) 0 var(--sp-3);
+  padding: var(--sp-5) 0 var(--sp-4);
   border-bottom: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -1020,13 +1105,11 @@
   text-decoration: underline;
 }
 .post__provenance {
+  /* Its own line before the words (review v1.1 §5.6): never truncated for
+     the reactions' sake. */
+  margin: calc(-1 * var(--sp-1)) 0 0;
   font-size: var(--fs-caption);
   color: var(--muted);
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .post__body {
   margin: var(--sp-1) 0 0;
@@ -1053,13 +1136,15 @@
   cursor: pointer;
 }
 .post__actions {
-  /* ONE line, always: the provenance yields (ellipsis), the reaction
-     cluster keeps the right edge — wrapping here split the thumbs across
-     rows and pushed the menu off-screen (Gary, 2026-09-01 screenshot). */
+  /* ONE line, always: reactions left, report right (Gary, 2026-09-01: the
+     thumbs never split across rows). */
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   margin-top: var(--sp-1);
+}
+.post__spacer {
+  flex: 1 1 auto;
 }
 /* In the stream footer the reactions sit quiet: no pill borders — the
    icon + count carries it; the on-state uses the accent tint. */
@@ -1067,6 +1152,22 @@
   border-color: transparent;
   padding: 0 var(--sp-2);
   color: var(--muted);
+  font-size: var(--fs-caption);
+}
+.post__report {
+  border: 0;
+  background: none;
+  padding: 0 var(--sp-2);
+  min-height: 44px;
+  font: inherit;
+  font-size: var(--fs-caption);
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: var(--radius-field);
+}
+.post__report:hover {
+  background: var(--soft);
+  color: var(--ink);
 }
 .post__actions .react-btn:hover:not(:disabled) {
   background: var(--soft);
@@ -1205,9 +1306,6 @@
   font-size: var(--fs-secondary);
   color: var(--ink-2);
 }
-.home-head__stale {
-  color: var(--ink-3, var(--ink-2));
-}
 .home-voices__head {
   display: flex;
   align-items: baseline;
@@ -1245,7 +1343,6 @@
   margin: var(--sp-2) 0 0;
 }
 .home-foot {
-  min-height: 44px; /* reserved: resolves late (r9 CLS 0.095) */
   display: flex;
   align-items: center;
   gap: var(--sp-4);
@@ -1287,6 +1384,12 @@
   .card--hero {
     padding: var(--sp-4) var(--sp-5);
   }
+  .nextlesson-slot {
+    min-height: 150px;
+  }
+  .nextlesson {
+    padding: var(--sp-4) var(--sp-8) var(--sp-4) var(--sp-5);
+  }
   /* Home compact: previews 2 → 1 before anything overflows (§16.14.6). */
   .home-voices__row:nth-child(n + 2) {
     display: none;
@@ -1319,7 +1422,6 @@
 
 /* Inline text links on primary screens: pad the tap zone (a11y audit —
    18-19px tall links) without shifting the visual line. */
-.feed-identity a,
 .home-voices__head a,
 .post__context a,
 .compose-editor .text-4 a,
@@ -1414,4 +1516,367 @@
 
 .home-voices {
   min-height: 132px; /* reserved: resolves late (r9 CLS 0.095) */
+}
+
+/* ── Rows (review v1.1 §2.2): page surface + hairlines, no grouping cards ── */
+.rowlist {
+  display: flex;
+  flex-direction: column;
+}
+.rowlist > .overline {
+  margin-bottom: 0;
+  padding-bottom: var(--sp-1);
+}
+.rowlist--danger .caption {
+  margin: var(--sp-1) 0 var(--sp-3);
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--sp-3) 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: default;
+}
+.rowlist > .row:first-of-type,
+.rowlist > .overline + .row {
+  border-top: 0;
+}
+a.row,
+button.row {
+  cursor: pointer;
+}
+a.row:hover,
+button.row:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
+.row > svg {
+  flex: none;
+  color: var(--ink-3, var(--ink-2));
+}
+.row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.row__title {
+  font-weight: 600;
+}
+.row__sub {
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+  color: var(--muted);
+}
+.row__act {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.row--quiet {
+  min-height: 44px;
+  padding: var(--sp-2) 0;
+  border-top: 0;
+  border-bottom: 1px solid var(--line);
+}
+.row--quiet .row__title {
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  color: var(--muted);
+}
+.row--actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: var(--sp-2);
+}
+.row--stack {
+  flex-wrap: wrap;
+}
+.row__actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.settings .privacy-list {
+  margin-top: 0;
+}
+
+/* Switch (review v1.1 §17.5) */
+.switch {
+  flex: none;
+  position: relative;
+  width: 46px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--soft);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-solid);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.switch[aria-checked="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.switch[aria-checked="true"] .switch__knob {
+  transform: translateX(18px);
+}
+
+/* Disclosure rows: detail one tap away, never a permanent paragraph. */
+.disclosure {
+  border-top: 1px solid var(--line);
+  padding: var(--sp-2) 0;
+}
+.disclosure summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: var(--accent);
+  list-style: none;
+}
+.disclosure summary::-webkit-details-marker {
+  display: none;
+}
+.disclosure summary::after {
+  content: "";
+  margin-left: auto;
+  width: 8px;
+  height: 8px;
+  border-right: 1.8px solid currentColor;
+  border-bottom: 1.8px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.disclosure[open] summary::after {
+  transform: rotate(-135deg);
+}
+.disclosure > .caption,
+.disclosure > .kv {
+  margin: 0 0 var(--sp-2);
+}
+
+/* Explore frame: the field and the category chips stay put; results scroll. */
+.explore-head__sub {
+  margin: var(--sp-1) 0 0;
+}
+.explore-frame {
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  background: var(--surface);
+}
+@media (max-width: 960px) {
+  .explore-frame {
+    /* Under the sticky back bar (inset + 52px). */
+    top: calc(var(--inset-top) + 52px);
+  }
+}
+.cat-chips {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 1px;
+}
+.cat-chips::-webkit-scrollbar {
+  display: none;
+}
+.chip-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 36px;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: 99px; /* a genuine choice pill */
+  background: var(--surface-solid);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--fs-secondary);
+  font-weight: 600;
+  cursor: pointer;
+}
+.chip-tab__n {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--muted);
+}
+.chip-tab[aria-selected="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+.chip-tab[aria-selected="true"] .chip-tab__n {
+  color: inherit;
+  opacity: 0.75;
+}
+.explore-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.explore-mentions .feed-stream {
+  margin-top: calc(-1 * var(--sp-2));
+}
+.entity-row > svg {
+  flex: none;
+  color: var(--ink-3, var(--ink-2));
+}
+.entity-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.entity-row__title {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* The target picker (review v1.1 §7) */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.picker__title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: var(--fs-title-sm);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.picker__hint {
+  margin: 0 0 var(--sp-3);
+}
+.picker .overline {
+  margin: var(--sp-3) 0 0;
+}
+.compose-target__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.compose-target__row .eyebrow {
+  margin: 0;
+}
+.compose-target__change {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--sp-2);
+  margin-right: calc(-1 * var(--sp-2));
+}
+.compose-draft {
+  color: var(--ink-3, var(--ink-2));
+}
+
+/* Notes & Posts (review v1.1 §10): the user's words, hairline rows. */
+.page-head--tools {
+  align-items: center;
+}
+.mine-group {
+  display: flex;
+  flex-direction: column;
+}
+.mine-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--line);
+}
+.mine-group > .overline + .mine-item {
+  border-top: 0;
+}
+.mine-item__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.mine-item__context {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.mine-item__body {
+  margin: 0;
+  font-size: var(--fs-reading);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mine-item__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.mine-item__status {
+  font-size: var(--fs-caption);
+  color: var(--muted);
+}
+.mine-item__status--ok {
+  color: var(--ok);
+}
+.mine-item__status--danger {
+  color: var(--danger);
+}
+.mine-item__actions {
+  display: flex;
+  gap: var(--sp-1);
+}
+
+/* Lesson sheet (review v1.1 §16): the facts, two continuations, details folded. */
+.lesson-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-2);
+  color: var(--ink-2);
+}
+.lesson-facts__line--time {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }

@@ -25,11 +25,11 @@
 .card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 17px;
+  border-radius: var(--radius-card);
   padding: var(--sp-5);
 }
 .card--hero {
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--surface-solid);
   box-shadow: var(--shadow);
 }
@@ -50,7 +50,7 @@
   font-family: var(--ui);
   font-weight: 600;
   font-size: var(--fs-secondary);
-  border-radius: 99px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
   padding: 0 var(--sp-5);
   min-height: 44px;
@@ -114,6 +114,37 @@ a.btn:hover {
   font-size: var(--fs-caption);
   padding: 0 var(--sp-3);
   min-height: 36px;
+  border-radius: var(--radius-field);
+}
+/* Icon-only toolbar control (feed header, Notes & Posts): 44px square. */
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-field);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.iconbtn:hover {
+  background: var(--soft);
+  text-decoration: none;
+}
+.iconbtn--primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+.iconbtn--primary:hover {
+  background: color-mix(in srgb, var(--ink) 86%, var(--accent));
+}
+.iconbtn svg {
+  width: 20px;
+  height: 20px;
 }
 .btn--block {
   width: 100%;
@@ -136,7 +167,7 @@ a.btn:hover {
   color: var(--ink);
   background: var(--surface-solid);
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: var(--radius-field);
   padding: var(--sp-3) var(--sp-3);
   min-height: 44px;
 }
@@ -144,23 +175,56 @@ a.btn:hover {
   color: var(--muted);
 }
 
-/* Big underline search (Experiences hub) — editorial search-box. */
+/* Search field (Explore): a real, anchored control — not a display line.
+   The wrapper carries the glyph and the clear button. */
+.search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.search-field__glyph {
+  position: absolute;
+  left: var(--sp-3);
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  pointer-events: none;
+}
 .search-box {
   width: 100%;
-  margin: var(--sp-1) 0 var(--sp-2);
-  padding: var(--sp-3) 0;
-  border: 0;
-  border-bottom: 2px solid var(--ink);
-  border-radius: 0;
-  background: transparent;
-  font-family: var(--display);
-  font-size: clamp(22px, 4vw, 40px);
-  letter-spacing: -0.03em;
-  outline: none;
+  margin: 0;
+  padding: 0 44px 0 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--surface-solid);
+  font: 400 16px/1.4 var(--ui);
+  color: var(--ink);
   min-height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.search-box::-webkit-search-cancel-button {
+  display: none;
 }
 .search-box::placeholder {
   color: var(--muted);
+}
+.search-field__clear {
+  position: absolute;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.search-field__clear svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ── Banners — quiet tinted notices (kept: they carry flow copy) ────────── */
@@ -170,7 +234,7 @@ a.btn:hover {
   gap: var(--sp-3);
   flex-wrap: wrap;
   border: 1px solid var(--line);
-  border-radius: 13px;
+  border-radius: var(--radius-field);
   background: var(--soft);
   padding: var(--sp-3) var(--sp-4);
   color: color-mix(in srgb, var(--ink) 86%, var(--muted));
@@ -234,7 +298,7 @@ a.btn:hover {
   color: var(--muted);
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 99px;
+  border-radius: var(--radius-field);
   padding: 0 var(--sp-4);
   cursor: pointer;
   min-height: 38px;
@@ -337,10 +401,10 @@ a.btn:hover {
 }
 .modal__title {
   font-family: var(--display);
-  font-size: clamp(24px, 5vw, 32px);
-  letter-spacing: -0.04em;
-  line-height: 1.02;
-  font-weight: 600;
+  font-size: clamp(22px, 4vw, 26px);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-weight: 650;
   margin: 0;
 }
 .modal__close {
@@ -612,7 +676,7 @@ a.btn:hover {
   min-height: 44px;
   margin-left: calc(-1 * var(--sp-2));
   padding: 0 var(--sp-3) 0 var(--sp-1);
-  border-radius: 99px;
+  border-radius: var(--radius-field);
   color: var(--accent);
   font-weight: 600;
   text-decoration: none;
@@ -631,8 +695,8 @@ a.btn:hover {
     top: 0;
     z-index: 12;
     background: var(--surface);
-    margin: 0 calc(-1 * var(--sp-4)) var(--sp-2);
-    padding: calc(var(--inset-top) + var(--sp-1)) var(--sp-3) var(--sp-1);
+    margin: 0 calc(-1 * var(--page-x)) var(--sp-2);
+    padding: calc(var(--inset-top) + var(--sp-1)) var(--sp-4) var(--sp-1);
   }
 }
 
@@ -755,22 +819,25 @@ a.btn:hover {
   }
   .main {
     margin-left: 0;
-    padding: calc(var(--sp-4) + var(--inset-top)) var(--sp-4)
-      calc(80px + var(--inset-bottom)); /* 80px = nav 64 + its 10px offset + a 6px gap (documented exception) */
+    /* 80px = nav 54 + its 10px offset + a 16px gap (documented exception) */
+    padding: calc(var(--sp-4) + var(--inset-top)) var(--page-x)
+      calc(80px + var(--inset-bottom));
   }
   .mobile-nav {
+    /* Review v1.1 §2.4: 54px bar, 21px icons, 12px labels, a soft selected
+       block — never the largest dark object on the screen. */
     position: fixed;
     z-index: 30;
-    left: 10px;
-    right: 10px;
+    left: 12px;
+    right: 12px;
     bottom: calc(10px + var(--inset-bottom));
-    min-height: 58px;
-    padding: var(--sp-2);
+    min-height: 54px;
+    padding: var(--sp-1);
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: var(--sp-1);
     border: 1px solid var(--line);
-    border-radius: 17px;
+    border-radius: 22px;
     background: color-mix(in srgb, var(--surface) 95%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -780,13 +847,13 @@ a.btn:hover {
   .mobile-nav__pill {
     position: absolute;
     z-index: 0;
-    top: 6px;
-    bottom: 6px;
-    left: 6px;
-    width: calc((100% - 12px - 6px) / 4);
-    border-radius: 11px;
-    background: var(--ink);
-    transform: translateX(calc(var(--active, 0) * (100% + 2px)));
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc((100% - 8px - 12px) / 4);
+    border-radius: 18px;
+    background: var(--accent-tint);
+    transform: translateX(calc(var(--active, 0) * (100% + 4px)));
     transition: transform var(--dur) var(--ease);
   }
   .mobile-nav__pill[data-off="true"] {
@@ -796,14 +863,14 @@ a.btn:hover {
     position: relative;
     z-index: 1;
     min-width: 0;
-    min-height: 46px;
+    min-height: 44px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--sp-1);
+    gap: 3px;
     border: 0;
-    border-radius: 11px;
+    border-radius: 18px;
     background: transparent;
     color: var(--muted);
     font-size: var(--fs-micro);
@@ -815,19 +882,19 @@ a.btn:hover {
     text-decoration: none;
   }
   .mobile-nav__item.is-active {
-    color: var(--surface);
+    color: var(--accent);
   }
   .tabbar__icon {
-    width: 22px;
-    height: 22px;
+    width: 21px;
+    height: 21px;
     flex: none;
   }
 }
 
 /* Icon size on desktop contexts too (icons come from navTabs). */
 .tabbar__icon {
-  width: 22px;
-  height: 22px;
+  width: 21px;
+  height: 21px;
 }
 
 /* ── Theme (appearance) controls — settings dialog + Settings page ──────── */

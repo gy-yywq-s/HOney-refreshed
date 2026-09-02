@@ -69,7 +69,8 @@ export function LoginPage() {
         </div>
         <p className="text-4 login__footnote">
           There is no separate sign-up — your school account is your HOney account, created on
-          first sign-in. Your timetable and history come along with it, and again whenever you press Sync now.
+          first sign-in. Your timetable and history come along with it, and again whenever you sync
+          — Sync now in Settings, or pulling the timetable down to sync.
         </p>
       </div>
     </main>

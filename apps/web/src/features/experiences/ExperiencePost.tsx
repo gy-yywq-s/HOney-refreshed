@@ -182,6 +182,8 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
     } finally {
       setBusy(false);
       setPendingValue(0);
+      // The in-flight note leaves with the flight; an error note stays (r10).
+      setNote((n) => (n === "Saving your reaction…" ? null : n));
     }
   }
 
@@ -200,6 +202,12 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           })}
         </div>
       )}
+      {/* Provenance on its own line before the words (review v1.1 §5.6):
+          never truncated because the reactions need room. */}
+      <div className="post__provenance">
+        {provenance}
+        {exp.publishedDay !== null && <> · {formatDayBucket(exp.publishedDay)}</>}
+      </div>
       {exp.rating !== null && <Stars value={exp.rating} />}
       {/* Raw-first: the words verbatim, whitespace kept, largest weight.
           Short posts set larger — one line must still read as the subject. */}
@@ -213,10 +221,6 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
       )}
 
       <div className="post__actions">
-        <span className="post__provenance">
-          {provenance}
-          {exp.publishedDay !== null && <> · {formatDayBucket(exp.publishedDay)}</>}
-        </span>
         <button
           type="button"
           className={myValue === 1 ? "react-btn react-btn--on" : "react-btn"}
@@ -241,6 +245,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperience }) {
           <ThumbDownIcon />
           {counts && <span className="react-btn__count">{counts.dislikes}</span>}
         </button>
+        <span className="post__spacer" />
         <div className="post__overflow" ref={overflowRef}>
           <button
             type="button"

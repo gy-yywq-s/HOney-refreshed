@@ -13,6 +13,7 @@ import { useFeedController } from "../../features/experiences/useFeedController"
 import { useLoadMoreSentinel } from "../../features/experiences/useLoadMoreSentinel";
 import { Skeleton } from "../../lib/motion";
 import type { FeedScope } from "../../api/types";
+import { BookmarkIcon, PenIcon, SearchIcon } from "../../components/icons";
 
 const SCOPE_STORAGE = "honey.exp.scope";
 const SHARE_PROMPT_EVERY = 8; // one gentle invitation per ~8 posts (§9.7.4)
@@ -36,7 +37,13 @@ export function ExperiencesFeedPage() {
   const announced = useRef<{ scope: FeedScope; count: number } | null>(null);
   const [statusText, setStatusText] = useState("");
   useEffect(() => {
-    if (feed.loading || feed.error) return;
+    if (feed.loading) return;
+    if (feed.error) {
+      // The alert speaks; a stale count must not sit beside it (r10).
+      setStatusText("");
+      announced.current = null;
+      return;
+    }
     const n = feed.items.length;
     const prev = announced.current;
     let text = "";
@@ -56,28 +63,27 @@ export function ExperiencesFeedPage() {
   return (
     <div className="feed-screen">
       <header className="feed-head">
+        {/* Toolbar (review v1.1 §5.4): the three doorways as compact icon
+            controls beside the title, so the stream begins on the first
+            screen. The culture line stays: one sentence + the Why entry. */}
         <div className="feed-head__row">
           <h1 className="page-title">Experiences</h1>
           <div className="feed-head__tools">
+            <Link className="iconbtn" to="/experiences/explore" aria-label="Find someone or something" title="Find someone or something">
+              <SearchIcon />
+            </Link>
+            <Link className="iconbtn" to="/experiences/mine" aria-label="Your notes & posts" title="Your notes & posts">
+              <BookmarkIcon />
+            </Link>
             {showHeaderShare && (
-              <Link className="btn btn--primary btn--small" to="/experiences/compose">
-                Share
+              <Link className="iconbtn iconbtn--primary" to="/experiences/compose" aria-label="Share an experience" title="Share an experience">
+                <PenIcon />
               </Link>
             )}
-            <Link className="btn btn--ghost btn--small" to="/experiences/explore">
-              Find someone or something
-            </Link>
-            <Link className="btn btn--ghost btn--small" to="/experiences/mine">
-              Your notes &amp; posts
-            </Link>
           </div>
         </div>
-        {/* Positioning (product review §5.4): the headline names the social
-            unit — people who were there — and the support line names both
-            acts. Never a hero; two short lines above the stream. */}
-        <p className="feed-headline">What school feels like, from people who were there.</p>
         <p className="feed-identity">
-          Read what others experienced. Share what it was like for you.{" "}
+          <strong>Written by students, for students.</strong>{" "}
           <Link to="/experiences/why">Why this space exists</Link>
         </p>
         <div
