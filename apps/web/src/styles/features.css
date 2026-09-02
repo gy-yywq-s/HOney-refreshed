@@ -121,6 +121,14 @@
 
 /* ── Timetable — the Day canvas, restyled: surface-solid bands, hairline
    grid, accent exam strip, danger now-line, ink lesson blocks. ─────────── */
+.timetable-screen > .focus-landing {
+  /* The retry-landing region wraps every branch (r9); it hands the frame's
+     remaining height to the canvas instead of sizing to content. */
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 .timetable-screen {
   /* FRAMED_SCROLL: this screen is a flex column filling .view, so the day
      canvas can actually stretch (its flex:1 was inert without this —
@@ -241,11 +249,16 @@
      own padding carries the inset, its background covers the zone) and
      spans edge to edge; the stepper is row one, state + utilities row two.
      Nothing floats loose, nothing explains itself. */
+  .main:has(> .view > .timetable-screen) {
+    /* A sticky box can never sit above the scroll owner's padding edge, so
+       the owner gives its top padding to the bar. */
+    padding-top: 0;
+  }
   .daynav {
     flex-direction: column;
     align-items: stretch;
     gap: var(--sp-2);
-    margin: calc(-1 * (var(--sp-4) + var(--inset-top))) calc(-1 * var(--sp-4)) var(--sp-3);
+    margin: 0 calc(-1 * var(--sp-4)) var(--sp-3);
     padding: calc(var(--inset-top) + var(--sp-2)) var(--sp-4) var(--sp-2);
   }
   .daynav__stepper {
@@ -1236,8 +1249,8 @@
 --------------------------------------------------------------------------- */
 @media (max-height: 700px) {
   .main {
-    padding-top: var(--sp-4);
-    padding-bottom: 90px; /* 90px: nav clearance (documented exception) */
+    padding-top: calc(var(--sp-4) + var(--inset-top));
+    padding-bottom: calc(90px + var(--inset-bottom)); /* 90px: nav clearance (documented exception) */
   }
   .stack {
     gap: var(--sp-4);
@@ -1262,7 +1275,7 @@
 @media (min-height: 851px) {
   /* Tall screens get breathing room — never proportionally bigger chrome. */
   .main {
-    padding-top: var(--sp-8);
+    padding-top: calc(var(--sp-8) + var(--inset-top));
   }
 }
 
