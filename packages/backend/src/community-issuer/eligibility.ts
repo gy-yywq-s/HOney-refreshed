@@ -27,7 +27,8 @@ export type TargetError =
   | "entity_frozen"
   | "standalone_closed"
   | "not_invited"
-  | "no_verified_exposure";
+  | "no_verified_exposure"
+  | "lesson_not_started";
 
 export class EligibilityService {
   private readonly markKey: Buffer;
@@ -38,6 +39,7 @@ export class EligibilityService {
     private readonly directory: EntityDirectory,
     private readonly settings: SettingsService,
     sealKey: Buffer,
+    private readonly now: () => number = Date.now,
   ) {
     this.markKey = deriveKey(sealKey, "exp-mark");
     this.lessonScopeKey = deriveKey(sealKey, "lesson-scope");
@@ -68,11 +70,14 @@ export class EligibilityService {
     if (lessonId) {
       const lesson = this.db
         .prepare(
-          `SELECT li.id, li.teacher_id, li.course_id, li.room_id FROM user_lesson_exposures e
+          `SELECT li.id, li.teacher_id, li.course_id, li.room_id, li.starts_at FROM user_lesson_exposures e
            JOIN lesson_instances li ON li.id = e.lesson_instance_id WHERE e.honey_id = ? AND li.id = ?`,
         )
-        .get(honeyId, lessonId) as { id: string; teacher_id: string | null; course_id: string | null; room_id: string | null } | undefined;
+        .get(honeyId, lessonId) as { id: string; teacher_id: string | null; course_id: string | null; room_id: string | null; starts_at: number } | undefined;
       if (!lesson) return { ok: false, error: "lesson_not_yours" };
+      // An experience is of something that happened: a lesson that has not
+      // started yet cannot be written about (Gary 2026-09-03).
+      if (lesson.starts_at > this.now()) return { ok: false, error: "lesson_not_started" };
       target = {
         entityKey: `lesson:${this.lessonToken(lesson.id)}`,
         entityType: "lesson",

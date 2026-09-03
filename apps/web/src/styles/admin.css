@@ -1,52 +1,106 @@
 /*
- * Admin (Dash) — the ops console keeps its own scoped grammar, restyled to
- * the same cool system: hairline stat tiles, hairline rows, quiet tables.
+ * Admin (Dash) — the ops console in the product's own vocabulary (Gary
+ * 2026-09-03: 按照现在新的设计再翻修): the Settings grammar — overline
+ * groups, hairline-free rows with the control at the right, the one
+ * switch — plus stat tiles and forms as cards that sit on the surface
+ * (--shadow-card), fields with the tiny field shadow, and one quiet table.
  */
 
 .admin .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
 }
 .admin .stat-tile {
-  padding: 16px 14px;
-  border-right: 1px solid var(--line);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
-}
-.admin .stat-tile:last-child {
-  border-right: 0;
 }
 .admin .stat-tile__value {
   font-family: var(--display);
-  font-size: clamp(22px, 3vw, 34px);
-  letter-spacing: -0.04em;
-  font-weight: 600;
+  font-size: var(--fs-display);
+  letter-spacing: -0.03em;
+  font-weight: 650;
+  line-height: 1.1;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
+.admin .stat-tile .caption {
+  color: var(--muted);
+}
+.admin__status {
+  margin: var(--sp-2) 0 0;
+}
 
-.admin .entity-admin-row {
+/* Forms (entity import, moderation model) are cards on the surface. */
+.admin .card {
+  box-shadow: var(--shadow-card);
   display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.admin .card .field {
+  margin: 0;
+}
+.admin .card .caption {
+  margin: 0;
+}
+.admin .card .card-actions {
+  margin-top: 0;
+}
+.admin .card textarea.input {
+  width: 100%;
+  resize: vertical;
+  min-height: 120px;
+}
+.admin code {
+  font-size: var(--fs-caption);
+  background: var(--soft);
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+/* Rows: the control sits at the right; a select + Apply pair keeps together
+   and drops under the text on a narrow phone. */
+.admin .row {
+  flex-wrap: wrap;
+}
+.admin .row__actions {
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
+  flex-wrap: nowrap;
 }
-.admin .entity-admin-row:first-child {
-  border-top: 0;
+.admin .row__actions .input {
+  min-height: 40px;
+  padding-top: var(--sp-2);
+  padding-bottom: var(--sp-2);
 }
-.admin .entity-admin-row__actions {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+.admin .row__actions .input[type="number"] {
+  width: 96px;
+}
+.admin .row__actions .input--key {
+  width: 100%;
+  min-width: 0;
+}
+.admin .row__actions .input--id {
+  width: 110px;
+}
+.admin .rowlist .input[type="search"] {
+  margin-bottom: var(--sp-2);
+}
+@media (max-width: 480px) {
+  .admin .row__actions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
 }
 
+/* The reports table: quiet, scrolls inside its own box. */
 .admin .table-wrap {
   overflow-x: auto;
 }
@@ -60,14 +114,14 @@
   text-align: left;
   font-weight: 700;
   font-size: var(--fs-micro);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 8px 12px 8px 0;
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) 0;
   border-bottom: 1px solid var(--line);
 }
 .admin .table td {
-  padding: 8px 12px 8px 0;
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) 0;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }

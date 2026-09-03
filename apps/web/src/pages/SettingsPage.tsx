@@ -14,6 +14,7 @@ import { ConfirmDialog, Modal } from "../components/Modal";
 import { ThemeControls } from "../components/ThemeControls";
 import { ReconnectDialog } from "../components/ReconnectDialog";
 import { ChevronRightIcon } from "../components/icons";
+import { Switch } from "../components/Switch";
 import { portalCredentials } from "../lib/portalCredentials";
 import { timeAgo } from "../lib/format";
 import { clearChecklist, deleteAccountAfterContent, deletePublicContent, readChecklist, type DeletionOutcome } from "../lib/community-v2/account-deletion";
@@ -535,21 +536,6 @@ export function SettingsPage() {
         />
       )}
     </div>
-  );
-}
-
-function Switch({ on, label, onChange }: { on: boolean; label: string; onChange: (next: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      className="switch"
-      onClick={() => onChange(!on)}
-    >
-      <span className="switch__knob" />
-    </button>
   );
 }
 

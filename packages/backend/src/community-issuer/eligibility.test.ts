@@ -5,6 +5,7 @@ import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { makeMockPortal } from "@honey/portal-connector/testing";
 import { buildApp } from "../app.js";
+import { EligibilityService } from "./eligibility.js";
 
 // Standing on Core (spec §31.1): lesson targets need the account's exposure;
 // standalone targets follow the admin's modes (verified / open / invite /
@@ -59,6 +60,16 @@ describe("target resolution", () => {
     expect(ok.target.provenance).toBe("verified_lesson");
     expect(app.ctx.eligibility.resolveTarget(honeyId, "999999")).toEqual({ ok: false, error: "lesson_not_yours" });
     expect(app.ctx.eligibility.resolveTarget(honeyId)).toEqual({ ok: false, error: "target_required" });
+  });
+
+  it("a lesson that has not started yet is refused; the same lesson resolves once it has begun", async () => {
+    const lessonId = await myLessonId();
+    const row = app.ctx.db.prepare("SELECT starts_at FROM lesson_instances WHERE id = ?").get(lessonId) as { starts_at: number };
+    // The seal key only shapes the opaque scope id, not the decision; the clock does.
+    const before = new EligibilityService(app.ctx.db, app.ctx.entities, app.ctx.settings, Buffer.alloc(32, 7), () => row.starts_at - 60_000);
+    expect(before.resolveTarget(honeyId, lessonId)).toEqual({ ok: false, error: "lesson_not_started" });
+    const after = new EligibilityService(app.ctx.db, app.ctx.entities, app.ctx.settings, Buffer.alloc(32, 7), () => row.starts_at + 60_000);
+    expect(after.resolveTarget(honeyId, lessonId).ok).toBe(true);
   });
 
   it("teacher with exposure → verified_retrospective; a dish needs an admin import and gets member provenance", async () => {

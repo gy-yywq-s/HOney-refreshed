@@ -1,7 +1,13 @@
 // /dash — ops console (admin only). Kill switches, standalone-eligibility
 // modes, entity import/freeze/invites, LLM config + live probe, reports,
-// reaction-count threshold. Deliberately NO author-lookup capability exists
-// anywhere here (App A §22.2) — the API cannot answer it.
+// reaction-count threshold, cooling-off period, the Web Access switch.
+// Deliberately NO author-lookup capability exists anywhere here (App A
+// §22.2) — the API cannot answer it.
+//
+// Restyled 2026-09-03 (Gary: 按照现在新的设计再翻修) in the Settings grammar:
+// overline groups of rows with the control at the right, the one switch for
+// on/off things (each flip confirmed), stat tiles and forms as cards on the
+// surface. Same API calls and confirmations as before.
 
 import { useMemo, useState } from "react";
 import { Skeleton } from "../lib/motion";
@@ -14,6 +20,7 @@ import type {
 } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
+import { Switch } from "../components/Switch";
 import { formatCoarseDate } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { WebAccessPanel } from "./dash/WebAccessPanel";
@@ -51,6 +58,7 @@ const STANDALONE_MODES: { value: StandaloneMode; label: string }[] = [
 const ENTITY_TYPES: EntityType[] = ["teacher", "room", "dish"];
 
 type Feedback = { tone: "success" | "danger"; text: string } | null;
+type Run = (key: string, fn: () => Promise<void>, successText?: string) => Promise<void>;
 
 export function DashPage() {
   const { me } = useAuth();
@@ -64,7 +72,7 @@ export function DashPage() {
   if (!me) return null;
   if (!me.isAdmin) return <Navigate to="/home" replace />;
 
-  async function run(key: string, fn: () => Promise<void>, successText?: string) {
+  const run: Run = async (key, fn, successText) => {
     setBusy(key);
     setFeedback(null);
     try {
@@ -78,12 +86,12 @@ export function DashPage() {
     } finally {
       setBusy(null);
     }
-  }
+  };
 
   const counts = overview.data?.counts;
 
   return (
-    <div className="stack admin">
+    <div className="stack settings admin">
       <h1 className="page-title">Dash</h1>
       {feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>}
       {overview.error && <div role="alert" className="banner banner--danger">{overview.error}</div>}
@@ -95,7 +103,6 @@ export function DashPage() {
       )}
 
       <section aria-label="Overview">
-        <h2 className="overline">Overview</h2>
         <div className="stat-grid">
           <StatTile label="Users" value={counts?.users} />
           <StatTile label="Published" value={counts?.published} />
@@ -103,32 +110,31 @@ export function DashPage() {
           <StatTile label="Entities" value={counts?.entities} />
         </div>
         {overview.data && (
-          <p className="caption" style={{ marginTop: "var(--space-sm)" }}>
-            Policy v{overview.data.policyVersion} · LLM{" "}
-            {overview.data.llm.configured ? `configured (${overview.data.llm.model})` : "not configured"}
+          <p className="caption admin__status">
+            Policy v{overview.data.policyVersion} · moderation model{" "}
+            {overview.data.llm.configured ? `${overview.data.llm.model}` : "not configured"}
           </p>
         )}
       </section>
 
       <WebAccessPanel />
 
-      <section className="card" aria-label="Kill switches">
-        <h2 className="section-title">Kill switches</h2>
+      <section className="rowlist" aria-label="Kill switches">
+        <h2 className="overline">Kill switches</h2>
         {KILL_SWITCH_META.map((meta) => {
           const on = overview.data?.killSwitches[meta.name] ?? false;
           return (
-            <div className="setting-row" key={meta.name}>
-              <div className="setting-row__main">
-                <span>{meta.label}</span>
-                <span className="caption">{meta.description}</span>
-              </div>
-              <button
-                className={on ? "btn btn--danger btn--small" : "btn btn--ghost btn--small"}
+            <div className="row" key={meta.name}>
+              <span className="row__main">
+                <span className="row__title">{meta.label}</span>
+                <span className="row__sub">{meta.description}</span>
+              </span>
+              <Switch
+                on={on}
+                label={meta.label}
                 disabled={overview.loading || busy === meta.name}
-                onClick={() => setPendingSwitch({ name: meta.name, on: !on })}
-              >
-                {on ? "ON — switch off" : "Off — switch on"}
-              </button>
+                onChange={(next) => setPendingSwitch({ name: meta.name, on: next })}
+              />
             </div>
           );
         })}
@@ -142,15 +148,6 @@ export function DashPage() {
         }
         busy={busy}
       />
-
-      <EntityImport onDone={() => overview.reload()} />
-      <EntityAdmin run={run} busy={busy} />
-      <LlmPanel
-        model={overview.data?.llm.model ?? ""}
-        configured={overview.data?.llm.configured ?? false}
-        onSaved={() => overview.reload()}
-      />
-      <ReportsPanel />
 
       <ReactionThreshold
         onApply={(n) =>
@@ -172,9 +169,18 @@ export function DashPage() {
         busy={busy === "cooldown"}
       />
 
+      <EntityAdmin run={run} busy={busy} />
+      <EntityImport onDone={() => overview.reload()} />
+      <LlmPanel
+        model={overview.data?.llm.model ?? ""}
+        configured={overview.data?.llm.configured ?? false}
+        onSaved={() => overview.reload()}
+      />
+      <ReportsPanel />
+
       {pendingSwitch && (
         <ConfirmDialog
-          title={pendingSwitch.on ? "Turn this kill switch ON?" : "Turn this kill switch off?"}
+          title={pendingSwitch.on ? "Turn this kill switch on?" : "Turn this kill switch off?"}
           body={`${KILL_SWITCH_META.find((m) => m.name === pendingSwitch.name)!.label}: this applies to everyone immediately.`}
           confirmLabel={pendingSwitch.on ? "Switch on" : "Switch off"}
           danger={pendingSwitch.on}
@@ -215,18 +221,18 @@ function StandaloneModes({
     dish: "verified",
   });
   return (
-    <section className="card" aria-label="Standalone review modes">
-      <h2 className="section-title">Standalone review modes</h2>
+    <section className="rowlist" aria-label="Standalone review modes">
+      <h2 className="overline">Standalone review modes</h2>
       <p className="caption">
         Who may review teachers / places / dishes directly (lesson reviews are always an
         unconditional right). The server does not echo current values — applying sets them.
       </p>
       {ENTITY_TYPES.map((type) => (
-        <div className="setting-row" key={type}>
-          <div className="setting-row__main">
-            <span style={{ textTransform: "capitalize" }}>{type === "room" ? "Places" : type === "dish" ? "Dishes" : "Teachers"}</span>
-          </div>
-          <div className="card-actions" style={{ marginTop: 0 }}>
+        <div className="row" key={type}>
+          <span className="row__main">
+            <span className="row__title">{type === "room" ? "Places" : type === "dish" ? "Dishes" : "Teachers"}</span>
+          </span>
+          <span className="row__actions">
             <select
               className="input"
               aria-label={`Standalone mode for ${type}`}
@@ -246,7 +252,7 @@ function StandaloneModes({
             >
               Apply
             </button>
-          </div>
+          </span>
         </div>
       ))}
     </section>
@@ -297,42 +303,38 @@ function EntityImport({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <section className="card" aria-label="Entity import">
-      <h2 className="section-title">Entity import</h2>
-      <p className="caption">
-        One per line, as <code>type,name</code> — e.g. <code>dish,Braised beef noodles</code> or{" "}
-        <code>room,Library</code>. The result is a union with organic entities, deduped by name.
-      </p>
-      <textarea
-        className="input"
-        rows={5}
-        aria-label="Entities to import"
-        placeholder={"dish,Braised beef noodles\nroom,Library\nteacher,Ms Example"}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <div className="card-actions">
-        <button
-          className="btn btn--primary"
-          disabled={busy || parsed.items.length === 0}
-          onClick={() => void importNow()}
-        >
-          {busy ? "Importing…" : `Import ${parsed.items.length || ""} ${parsed.items.length === 1 ? "entity" : "entities"}`}
-        </button>
-        {parsed.bad > 0 && <span className="caption">{parsed.bad} line(s) will be skipped.</span>}
+    <section className="rowlist" aria-label="Entity import">
+      <h2 className="overline">Entity import</h2>
+      <div className="card">
+        <p className="caption">
+          One per line, as <code>type,name</code> — e.g. <code>dish,Braised beef noodles</code> or{" "}
+          <code>room,Library</code>. The result is a union with organic entities, deduped by name.
+        </p>
+        <textarea
+          className="input"
+          rows={5}
+          aria-label="Entities to import"
+          placeholder={"dish,Braised beef noodles\nroom,Library\nteacher,Ms Example"}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <div className="card-actions">
+          <button
+            className="btn btn--primary"
+            disabled={busy || parsed.items.length === 0}
+            onClick={() => void importNow()}
+          >
+            {busy ? "Importing…" : `Import ${parsed.items.length || ""} ${parsed.items.length === 1 ? "entity" : "entities"}`}
+          </button>
+          {parsed.bad > 0 && <span className="caption">{parsed.bad} line(s) will be skipped.</span>}
+        </div>
+        {result && <p className="caption">{result}</p>}
       </div>
-      {result && <p className="caption">{result}</p>}
     </section>
   );
 }
 
-function EntityAdmin({
-  run,
-  busy,
-}: {
-  run: (key: string, fn: () => Promise<void>, successText?: string) => Promise<void>;
-  busy: string | null;
-}) {
+function EntityAdmin({ run, busy }: { run: Run; busy: string | null }) {
   const [q, setQ] = useState("");
   const entities = useApi(() => api.entities(), []);
   const [inviteKey, setInviteKey] = useState("");
@@ -345,8 +347,8 @@ function EntityAdmin({
   }, [entities.data, q]);
 
   return (
-    <section className="card" aria-label="Entities">
-      <h2 className="section-title">Entities</h2>
+    <section className="rowlist" aria-label="Entities">
+      <h2 className="overline">Entities</h2>
       <input
         className="input"
         type="search"
@@ -358,16 +360,16 @@ function EntityAdmin({
       {entities.loading ? (
         <Skeleton lines={3} />
       ) : (
-        <ul className="entity-list" style={{ marginTop: "var(--space-md)" }}>
+        <>
           {shown.map((e) => (
-            <li className="entity-admin-row" key={e.entity_key}>
-              <div className="setting-row__main">
-                <span>{e.name}</span>
-                <span className="caption">
+            <div className="row" key={e.entity_key}>
+              <span className="row__main">
+                <span className="row__title">{e.name}</span>
+                <span className="row__sub">
                   {e.entity_key} · {e.source}
                 </span>
-              </div>
-              <div className="entity-admin-row__actions">
+              </span>
+              <span className="row__actions">
                 {/* Freeze state isn't exposed by the API; both directions offered. */}
                 <button
                   className="btn btn--ghost btn--small"
@@ -392,7 +394,7 @@ function EntityAdmin({
                   Unfreeze
                 </button>
                 <button
-                  className="btn btn--ghost btn--small"
+                  className="btn btn--danger-outline btn--small"
                   disabled={busy === `active:${e.entity_key}`}
                   onClick={() =>
                     void run(`active:${e.entity_key}`, async () => {
@@ -403,32 +405,31 @@ function EntityAdmin({
                 >
                   Deactivate
                 </button>
-              </div>
-            </li>
+              </span>
+            </div>
           ))}
-          {shown.length === 0 && <li className="caption">No matching active entities.</li>}
-        </ul>
+          {shown.length === 0 && <p className="caption">No matching active entities.</p>}
+        </>
       )}
-      <div className="setting-row">
-        <div className="setting-row__main">
-          <span>Invite a student to review an entity</span>
-          <span className="caption">For invite-mode entities; by school studentId.</span>
-        </div>
-        <div className="card-actions" style={{ marginTop: 0 }}>
+      <div className="row row--stack">
+        <span className="row__main">
+          <span className="row__title">Invite a student to review an entity</span>
+          <span className="row__sub">For invite-mode entities; by school studentId.</span>
+        </span>
+        <span className="row__actions">
           <input
-            className="input"
+            className="input input--key"
             placeholder="entity key (e.g. dish:a_1b2c…)"
             aria-label="Entity key to invite to"
             value={inviteKey}
             onChange={(e) => setInviteKey(e.target.value)}
           />
           <input
-            className="input"
+            className="input input--id"
             placeholder="studentId"
             aria-label="Student id to invite"
             value={inviteStudent}
             onChange={(e) => setInviteStudent(e.target.value)}
-            style={{ maxWidth: 120 }}
           />
           <button
             className="btn btn--ghost btn--small"
@@ -450,7 +451,7 @@ function EntityAdmin({
           >
             Invite
           </button>
-        </div>
+        </span>
       </div>
     </section>
   );
@@ -510,44 +511,46 @@ function LlmPanel({
   }
 
   return (
-    <section className="card" aria-label="Moderation LLM">
-      <h2 className="section-title">Moderation LLM</h2>
-      <p className="caption">
-        {configured ? "A key is configured (sealed at rest — never shown again)." : "No key configured: moderation fails closed and nothing publishes."}
-      </p>
-      <div className="field">
-        <label className="field__label" htmlFor="llm-model">
-          Model
-        </label>
-        <input
-          id="llm-model"
-          className="input"
-          value={modelInput ?? model}
-          onChange={(e) => setModelInput(e.target.value)}
-        />
-      </div>
-      <div className="field">
-        <label className="field__label" htmlFor="llm-key">
-          OpenRouter API key (write-only)
-        </label>
-        <input
-          id="llm-key"
-          className="input"
-          type="password"
-          autoComplete="off"
-          placeholder={configured ? "•••••••• (set — enter a new key to replace)" : "sk-or-…"}
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-        />
-      </div>
-      <div className="card-actions">
-        <button className="btn btn--primary" disabled={busy !== null} onClick={() => void save()}>
-          {busy === "save" ? "Saving…" : "Save"}
-        </button>
-        <button className="btn btn--ghost" disabled={busy !== null} onClick={() => void test()}>
-          {busy === "test" ? "Testing…" : "Test"}
-        </button>
-        {note && <span className="caption">{note}</span>}
+    <section className="rowlist" aria-label="Moderation model">
+      <h2 className="overline">Moderation model</h2>
+      <div className="card">
+        <p className="caption">
+          {configured ? "A key is configured (sealed at rest — never shown again)." : "No key configured: moderation fails closed and nothing publishes."}
+        </p>
+        <div className="field">
+          <label className="field__label" htmlFor="llm-model">
+            Model
+          </label>
+          <input
+            id="llm-model"
+            className="input"
+            value={modelInput ?? model}
+            onChange={(e) => setModelInput(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label className="field__label" htmlFor="llm-key">
+            OpenRouter API key (write-only)
+          </label>
+          <input
+            id="llm-key"
+            className="input"
+            type="password"
+            autoComplete="off"
+            placeholder={configured ? "•••••••• (set — enter a new key to replace)" : "sk-or-…"}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+        </div>
+        <div className="card-actions">
+          <button className="btn btn--primary" disabled={busy !== null} onClick={() => void save()}>
+            {busy === "save" ? "Saving…" : "Save"}
+          </button>
+          <button className="btn btn--ghost" disabled={busy !== null} onClick={() => void test()}>
+            {busy === "test" ? "Testing…" : "Test"}
+          </button>
+          {note && <span className="caption">{note}</span>}
+        </div>
       </div>
     </section>
   );
@@ -556,14 +559,14 @@ function LlmPanel({
 function ReportsPanel() {
   const reports = useApi(() => api.adminReports(), []);
   return (
-    <section className="card" aria-label="Reports">
-      <h2 className="section-title">Reports</h2>
+    <section className="rowlist" aria-label="Reports">
+      <h2 className="overline">Reports</h2>
       {reports.loading ? (
         <Skeleton lines={3} />
       ) : reports.error ? (
         <div role="alert" className="banner banner--danger">{reports.error}</div>
       ) : (reports.data?.reports.length ?? 0) === 0 ? (
-        <p className="empty">No reports.</p>
+        <p className="caption">No reports.</p>
       ) : (
         <div className="table-wrap">
           <table className="table">
@@ -603,16 +606,16 @@ function ReactionThreshold({
   const n = Number(value);
   const valid = value.trim() !== "" && Number.isInteger(n) && n >= 0;
   return (
-    <section className="card" aria-label="Reaction count threshold">
-      <h2 className="section-title">Reaction count threshold</h2>
-      <div className="setting-row">
-        <div className="setting-row__main">
-          <span>Hide counts below</span>
-          <span className="caption">
+    <section className="rowlist" aria-label="Reaction count threshold">
+      <h2 className="overline">Reaction counts</h2>
+      <div className="row">
+        <span className="row__main">
+          <span className="row__title">Hide counts below</span>
+          <span className="row__sub">
             Small-cohort protection: posts with fewer total reactions show buttons but no numbers.
           </span>
-        </div>
-        <div className="card-actions" style={{ marginTop: 0 }}>
+        </span>
+        <span className="row__actions">
           <input
             className="input"
             type="number"
@@ -621,12 +624,11 @@ function ReactionThreshold({
             aria-label="Minimum reaction count"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            style={{ maxWidth: 100 }}
           />
           <button className="btn btn--ghost btn--small" disabled={!valid || busy} onClick={() => onApply(n)}>
             Apply
           </button>
-        </div>
+        </span>
       </div>
     </section>
   );
@@ -652,17 +654,17 @@ function CooldownPeriod({
   const chosen = value ?? current;
   const options = COOLDOWN_PRESETS.includes(current) ? COOLDOWN_PRESETS : [...COOLDOWN_PRESETS, current].sort((a, b) => a - b);
   return (
-    <section className="card" aria-label="Cooling-off period">
-      <h2 className="section-title">Cooling-off period</h2>
-      <div className="setting-row">
-        <div className="setting-row__main">
-          <span>Currently {describeHours(current)}</span>
-          <span className="caption">
+    <section className="rowlist" aria-label="Cooling-off period">
+      <h2 className="overline">Cooling-off period</h2>
+      <div className="row">
+        <span className="row__main">
+          <span className="row__title">Currently {describeHours(current)}</span>
+          <span className="row__sub">
             A high-arousal draft is kept private for this long before it can be checked again. The
             student sees the remaining time on the note.
           </span>
-        </div>
-        <div className="card-actions" style={{ marginTop: 0 }}>
+        </span>
+        <span className="row__actions">
           <select
             className="input"
             aria-label="Cooling-off period"
@@ -675,10 +677,10 @@ function CooldownPeriod({
               </option>
             ))}
           </select>
-          <button className="btn btn--primary" disabled={busy || chosen === current} onClick={() => onApply(chosen)}>
+          <button className="btn btn--primary btn--small" disabled={busy || chosen === current} onClick={() => onApply(chosen)}>
             {busy ? "Saving…" : "Apply"}
           </button>
-        </div>
+        </span>
       </div>
     </section>
   );

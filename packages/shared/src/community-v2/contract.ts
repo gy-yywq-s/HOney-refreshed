@@ -66,6 +66,7 @@ export type EligibilityErrorCode =
   | "standalone_closed"
   | "not_invited"
   | "no_verified_exposure"
+  | "lesson_not_started"
   | "issuer_unavailable"
   | "issuance_rate_limited"
   | "blinded_message_invalid";

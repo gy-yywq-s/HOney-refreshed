@@ -311,6 +311,25 @@ export function ExperiencesComposePage() {
       </div>
     );
   }
+  // A lesson that has not started yet (opened from the Timetable): no editor —
+  // the server would refuse it (lesson_not_started) and the student should
+  // hear it here, in words (Gary 2026-09-03).
+  const pendingLesson = effectiveLessonId ? history.data?.lessons.find((l) => l.id === effectiveLessonId) : undefined;
+  if (pendingLesson && pendingLesson.startsAt > Date.now()) {
+    return (
+      <div className="stack">
+        <h1 className="page-title">{t("Share an experience")}</h1>
+        <section className="card" role="region" aria-label="Not yet">
+          <p className="text-3">{t("This lesson hasn't started yet. You can share what it was like once it has begun.")}</p>
+          <div className="card-actions">
+            <Link className="btn btn--primary" to={`/timetable?date=${new Date(pendingLesson.startsAt).toLocaleDateString("en-CA")}`}>
+              {t("Open the timetable")}
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
   if (unlisted) {
     // Same distinction as the entity page: a name the directory still knows
     // is a delisted duplicate (point at the survivor); an unknown id never

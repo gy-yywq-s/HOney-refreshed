@@ -88,6 +88,7 @@ export const SUBMIT_ERROR_COPY: Record<string, string> = {
   not_invited: "This entry is invite-only, and this account hasn't been invited to review it.",
   no_verified_exposure:
     "You can review teachers and rooms your imported timetable shows you've actually had — nothing in your history matches this entry.",
+  lesson_not_started: "This lesson hasn't started yet. You can share what it was like once it has begun.",
   rating_not_allowed:
     "Stars are for dishes only, never for people, lessons or rooms. Remove the rating to continue.",
   cooldown_ticket_invalid:

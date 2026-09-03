@@ -623,12 +623,18 @@ function LessonDetail({
             {t("Open this day")}
           </button>
         )}
-        <Link
-          className="btn btn--primary"
-          to={`/experiences/compose?lessonId=${lesson.id}&date=${new Date(lesson.startsAt).toLocaleDateString("en-CA")}`}
-        >
-          {t("Share what this was like")}
-        </Link>
+        {/* An experience is of something that happened: before the lesson
+            starts there is nothing to share yet (Gary 2026-09-03). */}
+        {lesson.startsAt > Date.now() ? (
+          <p className="caption lesson-facts__note">{t("You can share what this was like once the lesson has started.")}</p>
+        ) : (
+          <Link
+            className="btn btn--primary"
+            to={`/experiences/compose?lessonId=${lesson.id}&date=${new Date(lesson.startsAt).toLocaleDateString("en-CA")}`}
+          >
+            {t("Share what this was like")}
+          </Link>
+        )}
         {lesson.teacherId && (
           <Link className="btn btn--ghost" to={`/experiences/teacher/${lesson.teacherId}`}>
             {t("Experiences with")} {lesson.teacherName ?? "this teacher"}

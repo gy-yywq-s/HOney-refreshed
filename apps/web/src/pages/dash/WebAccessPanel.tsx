@@ -1,10 +1,13 @@
 // Dash › Web Access (spec §24): the switch that gates every physical
 // request from the web, read from and written to the Access Service itself
 // (Core only proxies). Default OFF; turning it on is a confirmed action.
+// Styled like every other group on Dash and Settings: an overline, one row,
+// the switch at the right (Gary 2026-09-03).
 
 import { useState } from "react";
 import { api, ApiError } from "../../api/client";
 import { ConfirmDialog } from "../../components/Modal";
+import { Switch } from "../../components/Switch";
 import { useApi } from "../../lib/useApi";
 
 export function WebAccessPanel() {
@@ -31,18 +34,16 @@ export function WebAccessPanel() {
   }
 
   return (
-    <section className="card" aria-label="Web Access">
-      <h2 className="section-title">Web Access</h2>
+    <section className="rowlist" aria-label="Web Access">
+      <h2 className="overline">Web Access</h2>
       {feedback && <div className={`banner banner--${feedback.tone}`}>{feedback.text}</div>}
       {access.data && !reachable && <div role="alert" className="banner banner--danger">The Access process is unreachable: the switch cannot be read or changed, and students see Web Access as unavailable.</div>}
-      <div className="setting-row">
-        <div className="setting-row__main">
-          <span>{s ? (s.enabled ? "ON — students can open gates from the web" : "Paused — nothing physical is sent from the web") : "…"}</span>
-          <span className="caption">{s ? `Access ${s.serviceVersion} · egress ${s.egress.portalOrigin} · ${s.activeOperations} in progress · ${s.unknownToday} unknown today · ${s.typicalOpen}` : ""}</span>
-        </div>
-        <button className={s?.enabled ? "btn btn--danger btn--small" : "btn btn--primary btn--small"} disabled={!s || busy} onClick={() => setPending(!s!.enabled)}>
-          {s?.enabled ? "Pause" : "Turn on"}
-        </button>
+      <div className="row">
+        <span className="row__main">
+          <span className="row__title">{s ? (s.enabled ? "On — students can open gates from the web" : "Paused — nothing physical is sent from the web") : "…"}</span>
+          <span className="row__sub">{s ? `Access ${s.serviceVersion} · egress ${s.egress.portalOrigin} · ${s.activeOperations} in progress · ${s.unknownToday} unknown today · ${s.typicalOpen}` : "Reading the Access service…"}</span>
+        </span>
+        <Switch on={!!s?.enabled} label="Web Access" disabled={!s || busy} onChange={(next) => setPending(next)} />
       </div>
       {pending !== null && (
         <ConfirmDialog
