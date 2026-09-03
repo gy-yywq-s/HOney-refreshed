@@ -47,7 +47,9 @@ export class CanonicalResolver {
       roomId,
       topicName,
       startsAt: c.startsAt,
-      endsAt: c.endsAt,
+      // The source writes period slots; the school profile says when teaching ends.
+      endsAt: this.profile.teachingEnd(c.startsAt, c.endsAt),
+      slotEndsAt: c.endsAt,
     };
   }
 

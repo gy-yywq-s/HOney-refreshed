@@ -36,12 +36,13 @@ export class SchoolImportService {
 
     const lessonStmt = this.db.prepare(
       `INSERT INTO lesson_instances (id, school_id, source_system, source_lesson_id, subject_id, course_id, class_section_id,
-         teacher_id, room_id, subject_name, topic_name, starts_at, ends_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         teacher_id, room_id, subject_name, topic_name, starts_at, ends_at, slot_ends_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          subject_id = excluded.subject_id, course_id = excluded.course_id, class_section_id = excluded.class_section_id,
          teacher_id = excluded.teacher_id, room_id = excluded.room_id, subject_name = excluded.subject_name,
-         topic_name = excluded.topic_name, starts_at = excluded.starts_at, ends_at = excluded.ends_at`,
+         topic_name = excluded.topic_name, starts_at = excluded.starts_at, ends_at = excluded.ends_at,
+         slot_ends_at = excluded.slot_ends_at`,
     );
     const exposureStmt = this.db.prepare(
       `INSERT INTO user_lesson_exposures (honey_id, lesson_instance_id, teacher_id, course_id, class_section_id)
@@ -63,7 +64,7 @@ export class SchoolImportService {
         const r = resolver.resolve(c);
         lessonStmt.run(
           r.lessonId, this.profile.id, c.sourceSystem, c.sourceLessonId, r.subjectId, r.courseId, r.classSectionId,
-          r.teacherId, r.roomId, r.subjectName, r.topicName, r.startsAt, r.endsAt,
+          r.teacherId, r.roomId, r.subjectName, r.topicName, r.startsAt, r.endsAt, r.slotEndsAt,
         );
         exposureStmt.run(honeyId, r.lessonId, r.teacherId, r.courseId, r.classSectionId);
         if (r.teacherId) teachers.add(r.teacherId);

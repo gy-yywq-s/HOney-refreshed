@@ -4,7 +4,7 @@
 //   Subject        Economics                       broad area, search alias, fallback label
 //   Course         AL ECON U4                      the curricular unit students mean; PUBLIC entity
 //   Class section  2026 Autumn · Prep Class · Ms Z operational teaching group; stored, never public
-//   Lesson         Wed 13:30–15:00 · Room 309      one occurrence; the "what just happened" anchor
+//   Lesson         Wed 13:30–14:50 · Room 309      one occurrence; the "what just happened" anchor
 //   Topic          Market structures revision      lesson-level text, never an entity
 //
 // Normalization happens ONCE, at the import write boundary. Reads never guess.
@@ -24,6 +24,7 @@ export interface ImportedLessonCandidate {
   sourceRoomId?: string;
   rawRoomName?: string;
   startsAt: number;
+  /** The source's end time as written — for this school, the period SLOT's end (see teachingEnd). */
   endsAt: number;
 }
 
@@ -64,6 +65,13 @@ export interface SchoolProfile {
   parseSection(input: { className: string | null; subjectName: string | null; teacherName: string | null }): SectionLabel;
   /** The academic year a lesson at this instant belongs to ("2026-27"). */
   academicYearFor(startsAtMs: number): string;
+  /**
+   * When teaching actually ends for a lesson the source wrote as
+   * [startsAt, slotEndsAt). Sources that write period slots (the slot ends
+   * where the next one starts) answer with the teaching end; others return
+   * slotEndsAt unchanged.
+   */
+  teachingEnd(startsAtMs: number, slotEndsAtMs: number): number;
   /** Explicit teacher merges: normalized alias → normalized canonical alias. */
   teacherAliases: Record<string, string>;
   /** Room labels that mean "no room". */
@@ -82,7 +90,10 @@ export interface ResolvedLesson {
   roomId: string | null;
   topicName: string | null;
   startsAt: number;
+  /** When teaching ends — what every read path shows and counts down to. */
   endsAt: number;
+  /** The source's period-slot end (the next slot's start); kept as the source fact. */
+  slotEndsAt: number;
 }
 
 export interface UnresolvedLabel {

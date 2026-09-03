@@ -13,7 +13,7 @@ HOney stores the object students mean, not whichever portal string happens to co
 | **Subject** | Economics | broad area; search alias; timetable fallback label |
 | **Course** | `AL ECON U4` | the curricular unit — the **public Experiences entity** |
 | **Class section** | 2026 Autumn · Prep Class · 朱昂明 | the school's operational teaching group — stored, **never** a public entity |
-| **Lesson instance** | Wed 13:30–15:00 · Room 309 | one occurrence; the "what just happened" anchor |
+| **Lesson instance** | Wed 13:30–14:50 · Room 309 | one occurrence; the "what just happened" anchor |
 | **Topic** | Market structures revision | lesson text; never an entity |
 
 Invariants (`packages/backend/src/school/canonical.test.ts` checks every one against real records):
@@ -61,6 +61,23 @@ flowchart LR
 Deterministic across development resets: `c_<hash(school, canonical code)>`, `t_<hash(school, normalized
 name)>`, `r_<hash(school, normalized name)>`, `sec_<hash(school, source, class id)>`, `subj_<hash(school,
 code)>`; lesson ids are the source lesson ids. Aliases, not re-hashing, resolve later spellings.
+
+## Period slots vs teaching time
+
+**Since:** 2026-09-03 (Gary: "no lesson is 1.5 h; a lesson is 1 h 20 min").
+
+The portal writes every lesson on its 90-minute **period grid** (09:00 · 10:30 · 13:30 · 15:00 · 16:30,
+Asia/Shanghai) and the `end_time` it stores is the slot boundary — the next period's start. All 102 real
+records are exactly n × 90 min (n = 2 only for the TMUA double period). Teaching runs 80 min of each slot;
+the last 10 min is the change-over. The school profile therefore answers `teachingEnd(startsAt, slotEnd)`
+= slot end − 10 min for any span on the grid (13:30–15:00 → 14:50, 13:30–16:30 → 16:20) and leaves any
+other span as written.
+
+Storage keeps both facts: `lesson_instances.ends_at` is **when teaching ends** (what every read path —
+timetable, Now/Next countdown, History, the composer's lesson line — shows), `slot_ends_at` is the
+source's slot end. Migration 006 moved rows imported before the rule with the same arithmetic; the
+next sync rewrites both columns through the resolver. Clients never re-derive this: the Web and iOS
+timetables draw the 80-minute lesson and the 10-minute gap from the API as given.
 
 ## Real fixture
 

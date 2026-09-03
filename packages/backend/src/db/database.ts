@@ -337,6 +337,23 @@ const MIGRATIONS: string[] = [
   DROP TABLE IF EXISTS abuse_counters;
   DROP TABLE IF EXISTS experiences;
   `,
+  // 006 — lesson times are TEACHING times (Gary 2026-09-03: no lesson is
+  // 1.5 h; a lesson is 1 h 20 min). The portal writes period slots whose end
+  // is the next slot's start; the slot end is kept as the source fact
+  // (slot_ends_at) and ends_at becomes when teaching ends. Rows already
+  // imported are moved by the same rule the school profile applies on every
+  // import (n × 90-minute slots → slot end − 10 min); the next sync rewrites
+  // both columns through the resolver anyway.
+  `
+  ALTER TABLE lesson_instances ADD COLUMN slot_ends_at INTEGER;
+  UPDATE lesson_instances
+     SET slot_ends_at = ends_at,
+         ends_at = ends_at - 600000
+   WHERE slot_ends_at IS NULL
+     AND (ends_at - starts_at) > 0
+     AND (ends_at - starts_at) % 5400000 = 0;
+  UPDATE lesson_instances SET slot_ends_at = ends_at WHERE slot_ends_at IS NULL;
+  `,
 ];
 
 export class SchemaEpochError extends Error {

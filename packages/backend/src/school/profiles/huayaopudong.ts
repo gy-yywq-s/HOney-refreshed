@@ -144,6 +144,25 @@ function academicYearFor(startsAtMs: number): string {
   return m >= 8 ? `${y}-${String(y + 1).slice(2)}` : `${y - 1}-${String(y).slice(2)}`;
 }
 
+/**
+ * Period slots → teaching time (Gary 2026-09-03: "1.5 h lessons do not
+ * exist; a lesson is 1 h 20 min"). The portal writes every lesson on its
+ * 90-minute period grid (09:00 · 10:30 · 13:30 · 15:00 · 16:30, Asia/Shanghai)
+ * and the `end_time` it stores is the slot boundary — the next period's
+ * start. Every one of the 102 real records is exactly n × 90 min (n = 1, or
+ * 2 for the TMUA double period). Teaching runs 80 min of each slot; the last
+ * 10 min is the change-over. So a lesson's teaching end is the slot end
+ * minus 10 min, for single and double periods alike (13:30–15:00 → 14:50,
+ * 13:30–16:30 → 16:20). Anything not on the grid is left as written.
+ */
+const PERIOD_SLOT_MS = 90 * 60_000;
+const CHANGE_OVER_MS = 10 * 60_000;
+function teachingEnd(startsAtMs: number, slotEndsAtMs: number): number {
+  const span = slotEndsAtMs - startsAtMs;
+  if (span <= 0 || span % PERIOD_SLOT_MS !== 0) return slotEndsAtMs;
+  return slotEndsAtMs - CHANGE_OVER_MS;
+}
+
 function normalizeTopic(raw: string | null, subjectName: string | null): string | null {
   if (!raw || isPlaceholder(raw)) return null;
   const topic = collapseWhitespace(raw);
@@ -160,6 +179,7 @@ export const huayaopudong: SchoolProfile = {
   parseCourse,
   parseSection,
   academicYearFor,
+  teachingEnd,
   teacherAliases: {},
   roomPlaceholders: ["Not selected"],
   normalizeTopic,

@@ -209,6 +209,51 @@ describe("unknown labels", () => {
   });
 });
 
+describe("period slots → teaching time", () => {
+  const SHANGHAI = (ms: number) => new Date(ms + 8 * 3600 * 1000).toISOString().slice(11, 16);
+
+  it("stores when teaching ends (slot end − 10 min) and keeps the slot end as the source fact", () => {
+    importer.importLessons("u1", lessonsFromFixture(fixture));
+    // A single period: 16:30–18:00 on the portal → teaching 16:30–17:50.
+    const single = rows<{ starts_at: number; ends_at: number; slot_ends_at: number }>(
+      "SELECT starts_at, ends_at, slot_ends_at FROM lesson_instances WHERE id = '1322902'",
+    )[0]!;
+    expect([SHANGHAI(single.starts_at), SHANGHAI(single.ends_at), SHANGHAI(single.slot_ends_at)]).toEqual(["16:30", "17:50", "18:00"]);
+    // The TMUA double period: 13:30–16:30 → 16:20.
+    const dbl = rows<{ starts_at: number; ends_at: number; slot_ends_at: number }>(
+      "SELECT starts_at, ends_at, slot_ends_at FROM lesson_instances WHERE id = '1344211'",
+    )[0]!;
+    expect([SHANGHAI(dbl.starts_at), SHANGHAI(dbl.ends_at), SHANGHAI(dbl.slot_ends_at)]).toEqual(["13:30", "16:20", "16:30"]);
+    // No real lesson is 90 min long any more; every one is 80 or 170.
+    const spans = rows<{ mins: number; n: number }>(
+      "SELECT (ends_at - starts_at) / 60000 AS mins, COUNT(*) AS n FROM lesson_instances GROUP BY mins ORDER BY mins",
+    );
+    expect(spans.map((s) => s.mins)).toEqual([80, 170]);
+  });
+
+  it("leaves a duration that is not on the period grid as written", () => {
+    importer.importLessons("u1", [
+      { id: "779", subjectName: "Activity", startsAt: new Date(1_788_000_000_000), endsAt: new Date(1_788_003_600_000), conflict: false, conflictWith: [] },
+    ]);
+    const li = rows<{ ends_at: number; slot_ends_at: number }>("SELECT ends_at, slot_ends_at FROM lesson_instances WHERE id = '779'")[0]!;
+    expect(li).toEqual({ ends_at: 1_788_003_600_000, slot_ends_at: 1_788_003_600_000 });
+  });
+
+  it("migration 006 moves rows imported before the rule and the next import agrees with it", () => {
+    importer.importLessons("u1", lessonsFromFixture(fixture));
+    // Put one row back the way the earlier epoch stored it and re-run the migration's statement.
+    db.exec("UPDATE lesson_instances SET ends_at = slot_ends_at, slot_ends_at = NULL WHERE id = '1322902'");
+    db.exec(
+      "UPDATE lesson_instances SET slot_ends_at = ends_at, ends_at = ends_at - 600000 WHERE slot_ends_at IS NULL AND (ends_at - starts_at) > 0 AND (ends_at - starts_at) % 5400000 = 0",
+    );
+    const moved = rows<{ ends_at: number; slot_ends_at: number }>("SELECT ends_at, slot_ends_at FROM lesson_instances WHERE id = '1322902'")[0]!;
+    expect(SHANGHAI(moved.ends_at)).toBe("17:50");
+    importer.importLessons("u1", lessonsFromFixture(fixture));
+    const again = rows<{ ends_at: number; slot_ends_at: number }>("SELECT ends_at, slot_ends_at FROM lesson_instances WHERE id = '1322902'")[0]!;
+    expect(again).toEqual(moved);
+  });
+});
+
 describe("roster redaction (§6.2)", () => {
   it("cuts everything after the teacher token, and long CJK runs when no teacher token exists", () => {
     expect(redactRoster(" Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明 张王李赵", "朱昂明")).toBe(
