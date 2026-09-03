@@ -54,7 +54,27 @@
   display: block;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
+}
+/* iOS Safari: a time field keeps an intrinsic width and its value centred
+   unless the native appearance is dropped; keep it inside its column. */
+.access-apply input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 var(--sp-3);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.access-apply input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+.access-apply input[type="time"]::-webkit-calendar-picker-indicator {
+  margin-left: auto;
 }
 .access-apply__badge {
   font-size: var(--fs-micro);
