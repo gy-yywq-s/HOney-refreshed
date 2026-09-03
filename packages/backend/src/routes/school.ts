@@ -39,13 +39,17 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
           validFrom: first.startDate,
           validTo: first.endDate,
         },
-        purchases: purchases.map((p) => ({
-          id: p.chargeNo,
-          where: p.merchantName,
-          amount: p.deduction,
-          balanceAfter: p.balance,
-          at: parsePortalTime(p.debitTime.slice(0, 19)) ?? 0,
-        })),
+        // The portal's own order is not chronological (two purchases in the
+        // same minute came back oldest-first): sort by the time it stamped.
+        purchases: purchases
+          .map((p) => ({
+            id: p.chargeNo,
+            where: p.merchantName,
+            amount: p.deduction,
+            balanceAfter: p.balance,
+            at: parsePortalTime(p.debitTime.slice(0, 19)) ?? 0,
+          }))
+          .sort((a, b) => b.at - a.at),
       };
     } catch (e) {
       if (isExpired(e)) {
