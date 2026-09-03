@@ -51,6 +51,10 @@ would read as a lost HOney session to the web client, and it is not one.
 | `access_operations` | id, subject **hash**, kind, gate key, permit record id, state, commit-secret **hash**, non-identifying payload (permit window/reason), stage timestamps, outcome code, upstream status class, service version | portal token, capability, commit secret, name/email/honeyId, upstream bodies |
 | `access_latency_samples` | kind, duration, warm flag, version | — |
 
+The edge sends only `/access/bootstrap`, `/access/operations/*` and `/access/health` to this
+process; every other `/access/*` path is a screen of the web app (`/access`,
+`/access/permits/new`) and deep-links like any other.
+
 Public routes (all require `Access-Capability`; a stray `Cookie`/`Authorization` is refused
 as a misrouted request):
 

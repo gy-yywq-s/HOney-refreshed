@@ -44,13 +44,13 @@ beforeEach(async () => {
   core = await upstream("core", seen);
   community = await upstream("community", seen);
   access = await upstream("access", seen, (req, res) => {
-    if (req.url === "/access/v1/stream") {
+    if (req.url === "/access/operations/stream") {
       res.writeHead(200, { "content-type": "application/x-ndjson" });
       res.write('{"stage":"accepted"}\n');
       setTimeout(() => res.end('{"stage":"confirmed","terminal":true}\n'), 150);
       return true;
     }
-    if (req.url === "/access/v1/hang") return true; // never answers
+    if (req.url === "/access/operations/hang") return true; // never answers
     return false;
   });
   edge = createEdge({
@@ -74,7 +74,7 @@ describe("lanes", () => {
     const laneOf = async (r: Response) => ((await r.json()) as { lane: string }).lane;
     expect(await laneOf(await fetch(`${base}/api/me`, { headers }))).toBe("core");
     expect(await laneOf(await fetch(`${base}/community/v2/feed`, { method: "POST", headers, body: "{}" }))).toBe("community");
-    expect(await laneOf(await fetch(`${base}/access/v1/bootstrap`, { headers }))).toBe("access");
+    expect(await laneOf(await fetch(`${base}/access/operations/bootstrap`, { headers }))).toBe("access");
     expect(await laneOf(await fetch(`${base}/settings`, { headers }))).toBe("core");
     const toCore = seen.find((s) => s.url === "/api/me")!;
     expect(toCore.headers.cookie).toBe("HOney=1");
@@ -95,7 +95,7 @@ describe("lanes", () => {
   });
 
   it("refuses an oversized body before contacting any upstream", async () => {
-    const res = await fetch(`${base}/access/v1/operations/prepare`, { method: "POST", headers: { "content-length": "5000", "content-type": "application/json" }, body: "x".repeat(5000) });
+    const res = await fetch(`${base}/access/operations/operations/prepare`, { method: "POST", headers: { "content-length": "5000", "content-type": "application/json" }, body: "x".repeat(5000) });
     expect(res.status).toBe(413);
     expect(seen).toHaveLength(0);
   });
@@ -103,14 +103,14 @@ describe("lanes", () => {
 
 describe("mutations and streams", () => {
   it("never retries: a headers timeout surfaces as one 502 and exactly one upstream request", async () => {
-    const res = await fetch(`${base}/access/v1/hang`, { method: "POST", body: "{}" });
+    const res = await fetch(`${base}/access/operations/hang`, { method: "POST", body: "{}" });
     expect(res.status).toBe(502);
     await new Promise((r) => setTimeout(r, 400));
-    expect(seen.filter((s) => s.url === "/access/v1/hang")).toHaveLength(1);
+    expect(seen.filter((s) => s.url === "/access/operations/hang")).toHaveLength(1);
   });
 
   it("streams NDJSON progress chunks as they arrive (no buffering)", async () => {
-    const res = await fetch(`${base}/access/v1/stream`);
+    const res = await fetch(`${base}/access/operations/stream`);
     const reader = res.body!.getReader();
     const t0 = Date.now();
     const first = await reader.read();
@@ -125,7 +125,10 @@ describe("mutations and streams", () => {
 describe("pure helpers", () => {
   it("laneFor and upstreamHeaders", () => {
     expect(laneFor("/community/v2/check")).toBe("community");
-    expect(laneFor("/access/v1/x")).toBe("access");
+    expect(laneFor("/access/operations/x")).toBe("access");
+    expect(laneFor("/access/bootstrap")).toBe("access");
+    expect(laneFor("/access/permits/new")).toBe("web"); // a screen of the web app, deep-linkable
+    expect(laneFor("/access")).toBe("web");
     expect(laneFor("/api/x")).toBe("api");
     expect(laneFor("/")).toBe("web");
     expect(upstreamHeaders("community", { cookie: "a", accept: "b", "x-forwarded-for": "1.2.3.4" })).toEqual({ accept: "b" });

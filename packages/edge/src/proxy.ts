@@ -4,7 +4,8 @@
 //   /api/*        → HOney Core         (cookies/authorization pass through)
 //   /community/*  → HOney Community    (Cookie, Authorization, account-derived
 //                                       and Core request ids are REMOVED)
-//   /access/*     → Access Service     (only Access-Capability / Access-Commit
+//   /access/{bootstrap,operations/*,health}
+//                 → Access Service     (only Access-Capability / Access-Commit
 //                                       reach it; nothing else identifying)
 //   everything    → HOney Core         (the built web app)
 //
@@ -32,9 +33,14 @@ const HOP_BY_HOP = new Set(["connection", "keep-alive", "proxy-authenticate", "p
 
 export type Lane = "api" | "community" | "access" | "web";
 
+// The Access Service owns only its three resource roots under /access/; the
+// rest of /access/* (e.g. /access/permits/new) is a screen of the web app and
+// must deep-link like any other.
+const ACCESS_ROOTS = ["/access/bootstrap", "/access/operations/", "/access/health"];
+
 export function laneFor(url: string): Lane {
   if (url.startsWith("/community/")) return "community";
-  if (url.startsWith("/access/")) return "access";
+  if (ACCESS_ROOTS.some((root) => url === root || url.startsWith(root) || url.startsWith(root + "?"))) return "access";
   if (url.startsWith("/api/")) return "api";
   return "web";
 }
