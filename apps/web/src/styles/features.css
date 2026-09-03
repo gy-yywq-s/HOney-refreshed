@@ -689,6 +689,10 @@
 .history__title {
   margin-bottom: var(--sp-4); /* the search block breathes under the title */
 }
+/* Pick mode: the notice sits above the search block, never on it. */
+.history__pick {
+  margin-bottom: var(--sp-3);
+}
 .filters {
   display: flex;
   gap: var(--sp-2);
@@ -698,6 +702,12 @@
 .filters .input {
   flex: 1;
   min-width: 160px;
+}
+/* The teacher/course row is shorter than the search field (Gary 2026-09-03). */
+.filters select.input {
+  min-height: 38px;
+  padding-top: var(--sp-2);
+  padding-bottom: var(--sp-2);
 }
 .day-group {
   margin-bottom: var(--sp-5);

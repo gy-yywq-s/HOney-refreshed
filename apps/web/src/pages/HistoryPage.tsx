@@ -73,7 +73,7 @@ export function HistoryPage() {
     <div>
       <h1 className="page-title history__title">History</h1>
       {selectMode && (
-        <div role="status" className="banner banner--success">
+        <div role="status" className="banner banner--success history__pick">
           Pick the lesson your experience is about.
         </div>
       )}

@@ -193,6 +193,7 @@
   border-radius: var(--radius-field);
   padding: var(--sp-3) var(--sp-3);
   min-height: 44px;
+  box-shadow: var(--shadow-field);
 }
 .input::placeholder {
   color: var(--muted);
@@ -223,6 +224,7 @@
   font: 400 16px/1.4 var(--ui);
   color: var(--ink);
   min-height: 44px;
+  box-shadow: var(--shadow-field);
   -webkit-appearance: none;
   appearance: none;
 }
