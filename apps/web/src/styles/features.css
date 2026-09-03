@@ -796,6 +796,33 @@
   font-weight: 600;
 }
 
+/* The campus card's balance, set like the Home hero's figure. */
+.cardbalance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.cardbalance__value {
+  font-family: var(--display);
+  font-size: calc(clamp(30px, 5vw, 40px) * var(--text-scale));
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cardrow__amount {
+  margin-left: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--ink);
+}
+.cardrow__amount .caption {
+  display: block;
+  font-weight: 400;
+}
+
 /* ── Experiences ────────────────────────────────────────────────────────── */
 .page-head {
   display: flex;

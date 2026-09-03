@@ -228,6 +228,13 @@ const ZH: Record<string, string> = {
   "Dinner": "晚休",
   // settings
   "Account": "账户",
+  "Campus card": "一卡通",
+  "Weekend stay": "周末留宿",
+  "School record": "学校记录",
+  "At school": "在学校",
+  "Balance, spending": "余额、消费",
+  "Days on record": "已记录的日期",
+  "What the school has recorded": "学校记录在案的内容",
   "School connection": "学校连接",
   "Sync, saved login, imported data": "同步、已保存的登录、导入的数据",
   "Share what a lesson was like…": "分享一节课的感受…",

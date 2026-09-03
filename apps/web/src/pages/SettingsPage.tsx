@@ -185,6 +185,33 @@ export function SettingsPage() {
           </div>
         </section>
 
+        {/* The student's own records at the school (Gary 2026-09-03): read
+            live from the portal when opened, never stored by HOney. */}
+        <section className="rowlist" aria-label="At school">
+          <h2 className="overline">{t("At school")}</h2>
+          <Link className="row" to="/settings/card">
+            <span className="row__main">
+              <span className="row__title">{t("Campus card")}</span>
+              <span className="row__sub">{t("Balance, spending")}</span>
+            </span>
+            <ChevronRightIcon size={18} />
+          </Link>
+          <Link className="row" to="/settings/weekend">
+            <span className="row__main">
+              <span className="row__title">{t("Weekend stay")}</span>
+              <span className="row__sub">{t("Days on record")}</span>
+            </span>
+            <ChevronRightIcon size={18} />
+          </Link>
+          <Link className="row" to="/settings/record">
+            <span className="row__main">
+              <span className="row__title">{t("School record")}</span>
+              <span className="row__sub">{t("What the school has recorded")}</span>
+            </span>
+            <ChevronRightIcon size={18} />
+          </Link>
+        </section>
+
         <section className="rowlist" aria-label="Experiences and privacy">
           <h2 className="overline">{t("Experiences & privacy")}</h2>
           <Link className="row" to="/experiences/mine">

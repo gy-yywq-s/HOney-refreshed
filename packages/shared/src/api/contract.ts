@@ -147,6 +147,71 @@ export interface NoticesResponse {
   portalOrigin: string;
 }
 
+/**
+ * The student's own records at the school (Gary 2026-09-03). HOney never
+ * stores these: every request reads them live with the student's own portal
+ * session. `unavailable` means the portal could not be read just now.
+ */
+export type SchoolReadStatus = "ok" | "portal_reconnect_required" | "unavailable";
+
+export interface CampusCard {
+  cardNo: string;
+  /** Yuan. `balance` is what the card can spend; the school splits it in two. */
+  balance: number;
+  general: number;
+  subsidy: number;
+  usable: boolean;
+  validFrom: string;
+  validTo: string;
+}
+
+export interface CardPurchase {
+  id: string;
+  /** The canteen or shop the school names on the record. */
+  where: string;
+  amount: number;
+  balanceAfter: number;
+  /** Epoch ms, school local time. */
+  at: number;
+}
+
+export interface CardResponse {
+  status: SchoolReadStatus;
+  card: CampusCard | null;
+  purchases: CardPurchase[];
+}
+
+export interface StudentWarning {
+  id: number;
+  /** "宿舍口头警告" — the school's own wording. */
+  kind: string;
+  rule: string;
+  reason: string;
+  on: string;
+  by: string;
+  recordedAt: string;
+}
+
+export interface WarningsResponse {
+  status: SchoolReadStatus;
+  warnings: StudentWarning[];
+}
+
+export interface WeekendStay {
+  id: number;
+  date: string;
+  label: string;
+  mentor: string;
+  campus: string;
+}
+
+export interface WeekendResponse {
+  status: SchoolReadStatus;
+  stays: WeekendStay[];
+  /** The days the school currently allows to be chosen. */
+  selectableDays: string[];
+}
+
 export type SyncStatus = "ok" | "portal_reconnect_required" | "no_consent";
 
 export interface SyncResponse {

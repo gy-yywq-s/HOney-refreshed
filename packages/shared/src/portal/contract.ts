@@ -89,6 +89,67 @@ export interface ExitPermitWire {
   update_time: string;
 }
 
+/**
+ * Campus card (GET /api/card/get_card_list) — one row per card. Balances are
+ * yuan as numbers; `useStatus` 1 = usable. Captured live 2026-09-03.
+ */
+export interface CampusCardWire {
+  cardId: string;
+  cardNo: string;
+  personName: string;
+  genAccount: number;
+  subAccount: number;
+  totalAccount: number;
+  useStatus: number;
+  startDate: string;
+  endDate: string;
+}
+
+/**
+ * GET /api/card/card-consume-record?cardNo=&page=&limit= — spending, newest
+ * first. NOTE (captured 2026-09-03): passing `cardId` answers HTTP 500; only
+ * `cardNo` works, and /api/card/recharge-record answered 500 for every
+ * parameter shape tried.
+ */
+export interface CardConsumeWire {
+  chargeNo: string;
+  personId: string;
+  personName: string;
+  merchantName: string;
+  /** Amount taken off the card. */
+  deduction: number;
+  /** Balance after this purchase. */
+  balance: number;
+  preAccount: number;
+  /** "2025-03-28 08:44:56.000", school local time. */
+  debitTime: string;
+}
+
+/** GET /api/students/get_my_warning — this student's disciplinary records. */
+export interface StudentWarningWire {
+  record_id: number;
+  campus_name: string;
+  warn_type: number;
+  warn_type_str: string;
+  /** The rule as the school words it. */
+  warn_select_str: string;
+  warn_reason: string;
+  warn_time: string;
+  operator_name: string;
+  create_time: string;
+  update_time: string;
+}
+
+/** GET /api/weekend/live_list — this student's weekend stay-over records. */
+export interface WeekendStayWire {
+  record_id: number;
+  campus_name: string;
+  mentor_name: string;
+  live_date: string;
+  live_date_str: string;
+  create_time: string;
+}
+
 export interface DoorOptionWire {
   key: string;
   value: string;

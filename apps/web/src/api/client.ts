@@ -28,6 +28,9 @@ import type {
   HistoryParams,
   HistoryResponse,
   NoticesResponse,
+  CardResponse,
+  WarningsResponse,
+  WeekendResponse,
   KillSwitchName,
   LoginInput,
   LoginResponse,
@@ -189,6 +192,19 @@ export class ApiClient {
 
   directory(): Promise<DirectoryResponse> {
     return this.request("GET", "/api/directory");
+  }
+
+  // The student's own records at the school — read live, never stored.
+  schoolCard(): Promise<CardResponse> {
+    return this.request("GET", "/api/school/card");
+  }
+
+  schoolWarnings(): Promise<WarningsResponse> {
+    return this.request("GET", "/api/school/warnings");
+  }
+
+  schoolWeekend(): Promise<WeekendResponse> {
+    return this.request("GET", "/api/school/weekend");
   }
 
   /** The school's own notices, newest first (Gary 2026-09-03). */

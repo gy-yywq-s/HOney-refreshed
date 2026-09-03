@@ -1,8 +1,12 @@
 import type {
+  CampusCardWire,
+  CardConsumeWire,
   DoorOptionWire,
   ExitPermitWire,
   LessonTableWire,
   SchoolNoticeWire,
+  StudentWarningWire,
+  WeekendStayWire,
   WeeklyLessonWire,
 } from "@honey/shared";
 import {
@@ -156,6 +160,53 @@ export class PortalApi {
     return (rows as SchoolNoticeWire[]).filter(
       (r) => r && typeof r.id === "number" && typeof r.title === "string" && typeof r.content === "string",
     );
+  }
+
+  /** Rows out of the portal's usual `{ status: 0, data: { rows } }` envelope. */
+  private async rows<T>(token: string, path: string): Promise<T[]> {
+    const resp = await this.http.request({ method: "GET", path, token });
+    const env = asEnvelope(this.http.triage(resp, path), path);
+    if (env.status !== 0) throw schemaIncompatible(path);
+    const data = env.data;
+    if (Array.isArray(data)) return data as T[];
+    if (data === null || typeof data !== "object") throw schemaIncompatible(path);
+    const rows = (data as { rows?: unknown }).rows;
+    if (!Array.isArray(rows)) throw schemaIncompatible(path);
+    return rows as T[];
+  }
+
+  /** GET /api/card/get_card_list — the student's campus card(s) and balances. */
+  cardList(token: string): Promise<CampusCardWire[]> {
+    return this.rows<CampusCardWire>(token, "/api/card/get_card_list");
+  }
+
+  /**
+   * GET /api/card/card-consume-record — spending on one card, newest first.
+   * The card is addressed by NUMBER: cardId answers 500 upstream.
+   */
+  cardConsume(token: string, cardNo: string, limit = 60): Promise<CardConsumeWire[]> {
+    const path = `/api/card/card-consume-record?cardNo=${encodeURIComponent(cardNo)}&page=1&limit=${Math.min(Math.max(limit, 1), 200)}`;
+    return this.rows<CardConsumeWire>(token, path);
+  }
+
+  /** GET /api/students/get_my_warning — the student's own disciplinary records. */
+  warnings(token: string): Promise<StudentWarningWire[]> {
+    return this.rows<StudentWarningWire>(token, "/api/students/get_my_warning");
+  }
+
+  /** GET /api/weekend/live_list — the student's own weekend stay-overs. */
+  weekendStays(token: string): Promise<WeekendStayWire[]> {
+    return this.rows<WeekendStayWire>(token, "/api/weekend/live_list");
+  }
+
+  /** GET /api/weekend/weekend_select/{studentId} — the days that can be chosen. */
+  async weekendDays(token: string, studentId: number | string): Promise<string[]> {
+    const path = `/api/weekend/weekend_select/${encodeURIComponent(String(studentId))}`;
+    const resp = await this.http.request({ method: "GET", path, token });
+    const env = asEnvelope(this.http.triage(resp, path), path);
+    if (env.status !== 0 || env.data === null || typeof env.data !== "object") return [];
+    const days = (env.data as { day_list?: unknown }).day_list;
+    return Array.isArray(days) ? days.filter((d): d is string => typeof d === "string") : [];
   }
 
   /** GET /api/user/get_door_list — NON-standard: success is status===1, doors in `message`. */

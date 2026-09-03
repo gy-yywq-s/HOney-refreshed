@@ -13,6 +13,7 @@ import { NoticeService } from "./services/notices.js";
 import { TimetableService } from "./services/timetable.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerDataRoutes } from "./routes/data.js";
+import { registerSchoolRoutes } from "./routes/school.js";
 import { registerEntityRoutes } from "./routes/entities.js";
 import { registerAdminRoutes } from "./routes/admin.js";
 import { registerCommunityRoutes } from "./routes/community.js";
@@ -155,6 +156,7 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   app.get("/api/health", async () => ({ status: "ok", service: "honey-backend" }));
   registerAuthRoutes(app, ctx);
   registerDataRoutes(app, ctx);
+  registerSchoolRoutes(app, ctx);
   registerEntityRoutes(app, ctx);
   registerAdminRoutes(app, ctx);
   registerCommunityRoutes(app, ctx);
