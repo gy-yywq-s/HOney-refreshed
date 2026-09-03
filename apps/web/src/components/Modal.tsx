@@ -8,6 +8,7 @@ const FOCUSABLE =
 const CLOSE_MS = 320; // matches the sheet's transition; the fallback if transitionend never fires
 const DISMISS_PX = 110; // damped drag that commits a dismiss
 const DISMISS_VELOCITY = 0.6; // px/ms — a flick commits too
+const EXPAND_PX = 40; // a pull up that takes a reading sheet to full height
 
 interface ModalProps {
   title: string;
@@ -17,6 +18,12 @@ interface ModalProps {
   describedBy?: string | undefined;
   /** false while something physical is in flight: no ×, no backdrop/Escape/drag dismiss. */
   dismissible?: boolean;
+  /**
+   * A reading sheet with two heights (Gary 2026-09-03: sheet 往上拉即可放大):
+   * it opens part-height, a pull UP takes it full-height, a pull down brings
+   * it back, and a pull down from part-height dismisses as usual.
+   */
+  expandable?: boolean;
 }
 
 function reducedMotion(): boolean {
@@ -32,10 +39,17 @@ function reducedMotion(): boolean {
  * exit. Focus starts on the dialog and returns to the opener; the app
  * behind is inert.
  */
-export function Modal({ title, onClose, children, describedBy, dismissible = true }: ModalProps) {
+export function Modal({ title, onClose, children, describedBy, dismissible = true, expandable = false }: ModalProps) {
   const shellRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [closing, setClosing] = useState(false);
+  // "medium" is the opening height of a reading sheet; a pull up makes it
+  // "large". Non-expandable sheets keep their single height.
+  const [detent, setDetent] = useState<"medium" | "large">(expandable ? "medium" : "large");
+  const detentRef = useRef(detent);
+  detentRef.current = detent;
+  const expandableRef = useRef(expandable);
+  expandableRef.current = expandable;
   // Read through a ref: an inline onClose (new identity each render) must
   // not re-run the focus/inert effect — its cleanup moves focus.
   const onCloseRef = useRef(onClose);
@@ -119,7 +133,11 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
     let dragging = false;
     let dy = 0;
     const onStart = (e: TouchEvent) => {
-      if (!sheet() || closingRef.current || !dismissibleRef.current || shell.scrollTop > 0) return;
+      if (!sheet() || closingRef.current) return;
+      // A pull UP is available even when the sheet cannot be dismissed; a
+      // pull DOWN needs the sheet's own content to be at its top.
+      if (!dismissibleRef.current && !expandableRef.current) return;
+      if (shell.scrollTop > 0 && !(expandableRef.current && detentRef.current === "medium")) return;
       const t = e.touches[0]!;
       startY = lastY = t.clientY;
       startT = lastT = Date.now();
@@ -129,10 +147,17 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
     const onMove = (e: TouchEvent) => {
       if (!dragging) return;
       const t = e.touches[0]!;
-      dy = Math.max(0, t.clientY - startY);
-      if (dy > 0 && e.cancelable) e.preventDefault(); // the sheet moves, not its content
+      dy = t.clientY - startY;
       lastY = t.clientY;
       lastT = Date.now();
+      // Upward on a part-height reading sheet: the gesture grows the sheet on
+      // release, so nothing is dragged here — the content keeps its scroll.
+      if (dy < 0) {
+        if (!(expandableRef.current && detentRef.current === "medium")) dy = 0;
+        return;
+      }
+      if (shell.scrollTop > 0) return;
+      if (e.cancelable) e.preventDefault(); // the sheet moves, not its content
       shell.dataset.dragging = "";
       shell.style.transform = `translateY(${dy}px)`;
       overlay.style.opacity = String(Math.max(0.2, 1 - dy / 480));
@@ -145,7 +170,17 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
       const velocity = (lastY - startY) / Math.max(1, lastT - startT);
       shell.style.transform = "";
       overlay.style.opacity = "";
-      if (dy >= DISMISS_PX || velocity > DISMISS_VELOCITY) requestClose();
+      if (expandableRef.current && dy <= -EXPAND_PX && detentRef.current === "medium") {
+        setDetent("large");
+        void dt;
+        return;
+      }
+      if (dy >= DISMISS_PX || velocity > DISMISS_VELOCITY) {
+        // From full height a pull down settles back to the reading height;
+        // from the reading height it dismisses.
+        if (expandableRef.current && detentRef.current === "large") setDetent("medium");
+        else requestClose();
+      }
       void dt;
     };
     shell.addEventListener("touchstart", onStart, { passive: true });
@@ -167,7 +202,13 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
       onClick={requestClose}
     >
       <div
-        className={closing ? "modal modal--closing" : "modal"}
+        className={[
+          "modal",
+          closing ? "modal--closing" : "",
+          expandable ? `modal--sheet modal--sheet-${detent}` : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         role="dialog"
         aria-modal="true"
         aria-label={title}

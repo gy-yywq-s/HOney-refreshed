@@ -13,7 +13,8 @@ import { formatRelativeDay, formatTime } from "../lib/format";
 import { markAllNoticesRead, markNoticeRead, useReadNotices } from "../lib/noticesRead";
 import { ChevronRightIcon } from "../components/icons";
 import { useT } from "../lib/i18n";
-import { useEffect } from "react";
+import { NoticeSheet, renderNoticeBody } from "../components/NoticeSheet";
+import { useEffect, useState } from "react";
 
 export function NoticesPage() {
   const { id } = useParams();
@@ -23,6 +24,9 @@ export function NoticesPage() {
   const read = useReadNotices();
   const list = notices.data?.notices ?? [];
   const one = id ? list.find((n) => n.id === id) : undefined;
+  // A notice is read in a sheet; the page under /notices/:id stays for anyone
+  // who wants it full-screen (Gary 2026-09-03).
+  const [openId, setOpenId] = useState<string | null>(null);
 
   // Opening a notice reads it — on this device only.
   useEffect(() => {
@@ -38,14 +42,16 @@ export function NoticesPage() {
           <>
             <header>
               <h1 className="page-title notice-doc__title">{one.title}</h1>
-              <p className="caption">
+              <p className="caption notice-doc__meta">
                 {formatRelativeDay(one.postedAt)} · {formatTime(one.postedAt)}
                 {one.updatedAt > one.postedAt ? ` · ${t("Edited")} ${formatRelativeDay(one.updatedAt)}` : ""}
               </p>
             </header>
-            {/* The school's own text: plain, whitespace kept, never translated. */}
-            <p className="notice-doc__body">{one.body}</p>
-            <p className="text-4">{t("Published by the school on the portal.")}</p>
+            {/* The school's own text: plain, whitespace kept, never translated.
+                Where the school wrote a file link, it becomes a real link to
+                the portal — the words around it are untouched. */}
+            <p className="notice-doc__body">{renderNoticeBody(one.body, notices.data?.portalOrigin ?? "")}</p>
+            <p className="text-4 notice-doc__source">{t("Published by the school on the portal.")}</p>
           </>
         ) : (
           <>
@@ -63,13 +69,14 @@ export function NoticesPage() {
   }
 
   const unread = list.filter((n) => !read.has(n.id));
+  const open = openId ? list.find((n) => n.id === openId) : undefined;
 
   return (
     <div>
       <div className="page-head page-head--tools">
         <h1 className="page-title">{t("From school")}</h1>
         {unread.length > 0 && (
-          <button className="btn btn--ghost btn--small" onClick={() => markAllNoticesRead(list.map((n) => n.id))}>
+          <button className="btn btn--small btn--pill-ok" onClick={() => markAllNoticesRead(list.map((n) => n.id))}>
             {t("Mark all read")}
           </button>
         )}
@@ -97,7 +104,7 @@ export function NoticesPage() {
           <ul className="notice-list">
             {list.map((n, i) => (
               <li className="notice-row stagger" style={staggerStyle(i)} key={n.id}>
-                <Link className="notice-row__link" to={`/notices/${n.id}`}>
+                <button type="button" className="notice-row__link" onClick={() => setOpenId(n.id)}>
                   <span className="notice-row__main">
                     <span className="notice-row__title">
                       {!read.has(n.id) && <span className="notice-row__dot" aria-hidden="true" />}
@@ -109,12 +116,19 @@ export function NoticesPage() {
                   <span className="notice-row__chev">
                     <ChevronRightIcon size={18} />
                   </span>
-                </Link>
+                </button>
               </li>
             ))}
           </ul>
         )}
       </div>
+      {open && (
+        <NoticeSheet
+          notice={open}
+          portalOrigin={notices.data?.portalOrigin ?? ""}
+          onClose={() => setOpenId(null)}
+        />
+      )}
     </div>
   );
 }

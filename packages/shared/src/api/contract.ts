@@ -139,6 +139,12 @@ export interface NoticesResponse {
   notices: SchoolNotice[];
   /** When HOney last read the portal's notice list. */
   fetchedAt: number | null;
+  /**
+   * The portal's origin, so a link the school wrote as a site-relative path
+   * (its attachments read `[name.pdf](</static/upload/name.pdf>)`) can be
+   * opened. The text itself is never rewritten.
+   */
+  portalOrigin: string;
 }
 
 export type SyncStatus = "ok" | "portal_reconnect_required" | "no_consent";

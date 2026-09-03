@@ -148,6 +148,7 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
       return {
         notices: ctx.notices.list(Number.isFinite(limit) ? limit : 50),
         fetchedAt,
+        portalOrigin: ctx.config.portalBaseUrl,
       };
     },
   );

@@ -141,6 +141,8 @@ export function checkPost(prepared: PreparedPost, cooldownTicket?: string): Prom
 
 export async function publishPost(prepared: PreparedPost, pass: string): Promise<{ experienceId: string }> {
   const res = await community.publish({ ...prepared, pass });
+  // Remember it as this reader's own — on the device, never on the server.
+  myPosts.add(res.experienceId);
   apiCache.invalidate("community");
   return { experienceId: res.experienceId };
 }
@@ -167,6 +169,8 @@ export async function listOwnedPosts(account: string): Promise<OwnedPost[]> {
       for (const e of res.experiences) out.push({ ...e, rootId: root.rootId, academicYear: epoch.academicYear });
     }
   }
+  // Posts published on another device become markable here too.
+  myPosts.add(...out.map((e) => e.id));
   return out.sort((a, b) => b.createdAt - a.createdAt);
 }
 
@@ -179,6 +183,7 @@ export async function revokePost(account: string, post: OwnedPost, schoolId: str
   const ch = await community.revokeChallenge(post.id);
   const statement = { purpose: "honey/v2/revoke" as const, experienceId: post.id, challenge: ch.challenge, expiresAt: ch.expiresAt };
   await community.revoke(post.id, { statement, signature: toBase64Url(signStatement(control.privateKey, statement)) });
+  myPosts.remove(post.id);
   apiCache.invalidate("community");
 }
 
@@ -228,6 +233,42 @@ export async function reportPost(account: string, experienceId: string, category
   const statement = { purpose: "honey/v2/report" as const, schoolId: r.schoolId, academicYear: r.academicYear, experienceId, category, nonce: toBase64Url(randomBytes(12)) };
   return community.report(experienceId, { statement, reactionPublicKey: r.publicKey, signature: toBase64Url(signStatement(r.privateKey, statement)) });
 }
+
+// Which posts in the feed are the reader's own (Gary 2026-09-03: 自己的post
+// 在主页和在experiences都要显示是自己的). Community stores no author, so this
+// cannot come from the server and must never be asked of it: the id is
+// remembered here when this device publishes, and Your notes & posts folds in
+// what the post controls prove when it lists them (posts made on another
+// device). It never leaves the device.
+const MY_POSTS_KEY = "honey.posts.mine";
+export const myPosts = {
+  ids(): string[] {
+    try {
+      const raw: unknown = JSON.parse(localStorage.getItem(MY_POSTS_KEY) ?? "[]");
+      return Array.isArray(raw) ? raw.filter((v): v is string => typeof v === "string") : [];
+    } catch {
+      return [];
+    }
+  },
+  has(id: string): boolean {
+    return myPosts.ids().includes(id);
+  },
+  add(...ids: string[]): void {
+    try {
+      const merged = Array.from(new Set([...myPosts.ids(), ...ids]));
+      localStorage.setItem(MY_POSTS_KEY, JSON.stringify(merged.slice(-500)));
+    } catch {
+      /* best effort: an unmarked post is only a missing label */
+    }
+  },
+  remove(id: string): void {
+    try {
+      localStorage.setItem(MY_POSTS_KEY, JSON.stringify(myPosts.ids().filter((v) => v !== id)));
+    } catch {
+      /* best effort */
+    }
+  },
+};
 
 // The viewer's own reactions, remembered on this device (Community is not
 // told who reads: the feed carries no per-viewer state).

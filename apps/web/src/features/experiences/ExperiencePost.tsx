@@ -14,10 +14,11 @@ import type { EntityRefV2, PublicExperienceV2 } from "@honey/shared/community-v2
 import { ApiError } from "../../api/client";
 import { useAuth } from "../../auth/AuthContext";
 import { Modal } from "../../components/Modal";
-import { myReactions, reactToPost, reportPost, PostControlsUnavailable } from "../../lib/community-v2/publish-client";
+import { myPosts, myReactions, reactToPost, reportPost, PostControlsUnavailable } from "../../lib/community-v2/publish-client";
 import { formatDayBucket } from "../../lib/format";
 import { PROVENANCE_LINE, Stars } from "../../pages/experiences/shared";
 import { useT } from "../../lib/i18n";
+import { PenIcon } from "../../components/icons";
 
 const REACTION_EXPLAINER =
   "Reactions show whether this matches the experience of students who have had the same class or place. They do not verify a post as fact.";
@@ -46,22 +47,34 @@ function contextParts(exp: PublicExperienceV2): EntityRefV2[] {
 const CLAMP_CHARS = 700; // ~8–12 lines before "Read more" (§9.7.2)
 const FEATURE_CHARS = 180; // at/below this, the words set larger
 
-function ThumbUpIcon() {
+/**
+ * Resonance (Gary 2026-09-03: 共鸣) — a centre and the rings it sets going,
+ * not a thumb. The reaction says "this rings true for me", which is what the
+ * count has always meant; a thumb reads as approval of a person.
+ */
+function ResonanceIcon() {
   return (
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M7 10v12" />
-      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+      <circle cx="12" cy="12" r="2.1" />
+      <path d="M8.3 8.3a5.2 5.2 0 0 0 0 7.4" />
+      <path d="M15.7 8.3a5.2 5.2 0 0 1 0 7.4" />
+      <path d="M5.4 5.4a9.3 9.3 0 0 0 0 13.2" />
+      <path d="M18.6 5.4a9.3 9.3 0 0 1 0 13.2" />
     </svg>
   );
 }
 
-function ThumbDownIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17 14V2" />
-      <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
-    </svg>
-  );
+/**
+ * Where "write your own" goes from a post: the same subject when it has a
+ * public one; a lesson is the writer's own and never the reader's, so those
+ * fall back to the course or teacher, and finally to the picker.
+ */
+function composeHref(exp: PublicExperienceV2): string {
+  const own =
+    (exp.primary.type !== "lesson" ? exp.primary : null) ??
+    exp.contexts.find((c) => c.type === "course") ??
+    exp.contexts.find((c) => c.type === "teacher");
+  return own ? `/experiences/compose?entityKey=${encodeURIComponent(`${own.type}:${own.id}`)}` : "/experiences/compose";
 }
 
 export function ExperiencePost({ exp }: { exp: PublicExperienceV2 }) {
@@ -124,6 +137,7 @@ export function ExperiencePost({ exp }: { exp: PublicExperienceV2 }) {
   }, [menuOpen]);
 
   const parts = contextParts(exp);
+  const mine = myPosts.has(exp.id);
   const provenance = PROVENANCE_LINE[exp.provenance] ?? PROVENANCE_LINE.verified_member;
   const body = exp.body ?? "";
   const clamped = !expanded && body.length > CLAMP_CHARS;
@@ -182,6 +196,9 @@ export function ExperiencePost({ exp }: { exp: PublicExperienceV2 }) {
         </div>
       )}
       <div className="post__provenance">
+        {/* Your own words, marked for you alone: the id is known on this
+            device, never on the server (Gary 2026-09-03). */}
+        {mine && <span className="post__mine">{t("Yours")} · </span>}
         {provenance}
         {exp.publishedDay !== null && <> · {formatDayBucket(exp.publishedDay)}</>}
       </div>
@@ -199,25 +216,19 @@ export function ExperiencePost({ exp }: { exp: PublicExperienceV2 }) {
           className={myValue === 1 ? "react-btn react-btn--on" : "react-btn"}
           title={REACTION_EXPLAINER}
           aria-pressed={myValue === 1}
-          aria-label={t("Matches my experience")}
+          aria-label={t("This resonates with me")}
           aria-disabled={pendingValue === 1 || undefined}
           onClick={() => void react(1)}
         >
-          <ThumbUpIcon />
+          <ResonanceIcon />
           {counts && <span className="react-btn__count">{counts.likes}</span>}
         </button>
-        <button
-          type="button"
-          className={myValue === -1 ? "react-btn react-btn--on" : "react-btn"}
-          title={REACTION_EXPLAINER}
-          aria-pressed={myValue === -1}
-          aria-label={t("Doesn’t match my experience")}
-          aria-disabled={pendingValue === -1 || undefined}
-          onClick={() => void react(-1)}
-        >
-          <ThumbDownIcon />
-          {counts && <span className="react-btn__count">{counts.dislikes}</span>}
-        </button>
+        {/* Disagreement is not a down-vote (Gary 2026-09-03: down 去掉):
+            a different experience is written down, not scored. */}
+        <Link className="react-btn react-btn--write" to={composeHref(exp)}>
+          <PenIcon size={16} />
+          <span className="react-btn__label">{t("Write your own")}</span>
+        </Link>
         <span className="post__spacer" />
         <div className="post__overflow" ref={overflowRef}>
           <button

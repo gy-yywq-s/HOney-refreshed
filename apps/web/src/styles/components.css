@@ -135,6 +135,20 @@
   min-height: 36px;
   border-radius: var(--radius-field);
 }
+/* A finishing action, outlined in the palette's green: "Mark all read"
+   (Gary 2026-09-03: 用绿色边框胶囊). */
+.btn--pill-ok {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ok) 55%, var(--line));
+  background: transparent;
+  color: var(--ok);
+  padding-inline: var(--sp-4);
+}
+@media (hover: hover) {
+  .btn--pill-ok:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ok) 8%, transparent);
+  }
+}
 /* Icon-only toolbar control (feed header, Notes & Posts): 44px square. */
 .iconbtn {
   display: inline-flex;
@@ -1089,6 +1103,20 @@
     border-bottom: none;
     padding: var(--sp-3) var(--sp-4) calc(var(--sp-6) + var(--inset-bottom));
     animation: sheet-up 0.36s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+  /* A reading sheet has two heights (Gary 2026-09-03): it arrives at reading
+     height and a pull up takes it to full height. */
+  .modal--sheet {
+    transition:
+      transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+      max-height 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 0.2s var(--ease);
+  }
+  .modal--sheet-medium {
+    max-height: 58dvh;
+  }
+  .modal--sheet-large {
+    max-height: 92dvh;
   }
   .modal--closing {
     /* Slides down the way it came, then the owner unmounts (transitionend). */

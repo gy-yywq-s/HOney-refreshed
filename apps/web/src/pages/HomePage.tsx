@@ -28,6 +28,8 @@ import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
 import { usePortalEntry } from "../lib/portalEntry";
 import { useReadNotices } from "../lib/noticesRead";
+import { NoticeSheet } from "../components/NoticeSheet";
+import { myPosts } from "../lib/community-v2/publish-client";
 
 /** Running as the installed (standalone) app, not in a browser tab. */
 function isStandalone(): boolean {
@@ -45,6 +47,7 @@ export function HomePage() {
   const lang = useLang();
   const portal = usePortalEntry();
   const [portalLogin, setPortalLogin] = useState(false);
+  const [openNotice, setOpenNotice] = useState<string | null>(null);
   const standalone = isStandalone();
   const notices = useApi(() => api.notices(20), [], "notices");
   const readNotices = useReadNotices();
@@ -57,6 +60,7 @@ export function HomePage() {
   const allNotices = notices.data?.notices ?? [];
   const unreadNotices = allNotices.filter((n) => !readNotices.has(n.id));
   const homeNotices = unreadNotices.length > 0 ? unreadNotices.slice(0, 2) : allNotices.slice(0, 1);
+  const openedNotice = openNotice ? allNotices.find((n) => n.id === openNotice) : undefined;
 
   const next = data?.nextLesson ?? null;
   // Legacy behavior kept: a running lesson fills the focal object with an
@@ -202,7 +206,7 @@ export function HomePage() {
           <ul className="home-notices__list">
             {homeNotices.map((n) => (
               <li key={n.id}>
-                <Link className="home-notices__row" to={`/notices/${n.id}`}>
+                <button type="button" className="home-notices__row" onClick={() => setOpenNotice(n.id)}>
                   <span className="home-notices__main">
                     <span className="home-notices__title">
                       {!readNotices.has(n.id) && <span className="notice-row__dot" aria-hidden="true" />}
@@ -211,7 +215,7 @@ export function HomePage() {
                     <span className="caption">{formatRelativeDay(n.postedAt)}</span>
                   </span>
                   <ChevronRightIcon size={16} />
-                </Link>
+                </button>
               </li>
             ))}
           </ul>
@@ -237,6 +241,8 @@ export function HomePage() {
                   {exp.body}
                 </Link>
                 <span className="caption">
+                  {/* Your own words are marked here too (Gary 2026-09-03). */}
+                  {myPosts.has(exp.id) && <span className="post__mine">{t("Yours")} · </span>}
                   {[
                     exp.contexts?.find((c) => c.type === "course")?.name,
                     exp.contexts?.find((c) => c.type === "teacher")?.name ??
@@ -284,6 +290,13 @@ export function HomePage() {
           </a>
         )}
       </div>
+      {openedNotice && (
+        <NoticeSheet
+          notice={openedNotice}
+          portalOrigin={notices.data?.portalOrigin ?? ""}
+          onClose={() => setOpenNotice(null)}
+        />
+      )}
       {portalLogin && (
         <ReconnectDialog
           purpose="reconnect"

@@ -1288,6 +1288,23 @@
     color: var(--ink);
   }
 }
+/* "Yours" — the reader's own words, marked only for them: this device knows
+   the id, the server never does (Gary 2026-09-03). */
+.post__mine {
+  color: var(--accent);
+  font-weight: 700;
+}
+/* Disagreement is written, not scored: the second action is the composer
+   (Gary 2026-09-03: down 去掉，换成 write down your own experience). */
+.post__actions .react-btn--write {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.react-btn__label {
+  font-size: var(--fs-caption);
+}
 .post__actions .react-btn--on {
   background: var(--accent-tint);
   color: var(--accent);
@@ -1600,6 +1617,13 @@
   padding: 0;
 }
 .home-notices__row {
+  /* A row that opens the notice in a sheet: a button that looks like a row. */
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -1640,6 +1664,12 @@
   border-top: 0;
 }
 .notice-row__link {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: var(--sp-4);
@@ -1682,9 +1712,26 @@
 .notice-doc__title {
   font-size: calc(clamp(24px, 3vw, 30px) * var(--text-scale));
 }
+.notice-doc__meta {
+  /* The date is not part of the headline (Gary 2026-09-03: 离标题远一点). */
+  margin-top: var(--sp-3);
+}
 .notice-doc__body {
   white-space: pre-wrap;
   line-height: 1.65;
+}
+/* A file the school attached: written into its text as a link, opened at the
+   portal (Gary 2026-09-03: pdf 那个链接没成功). */
+.notice-doc__file {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+/* Where the school's words end and HOney's note begins (Gary 2026-09-03:
+   要明显一点和上面内容区分开来). */
+.notice-doc__source {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
 }
 .home-foot {
   display: flex;
