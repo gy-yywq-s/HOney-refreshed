@@ -1572,10 +1572,12 @@
   gap: var(--sp-3);
   margin-top: var(--sp-3);
   padding: var(--sp-3) var(--sp-4);
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  /* Its own colour, apart from the lesson card above (Gary 2026-09-03: the
+     two must not share a tint): the palette's green (--ok), as a light wash
+     with a matching border, and the pen glyph in the same hue. */
+  border: 1px solid color-mix(in srgb, var(--ok) 26%, var(--line));
   border-radius: var(--radius-field);
-  /* A light wash of the accent and a soft shadow: it reads as the entry, not a plain field (Gary 2026-09-03). */
-  background: color-mix(in srgb, var(--accent) 7%, var(--cell));
+  background: color-mix(in srgb, var(--ok) 7%, var(--cell));
   box-shadow: var(--shadow-card);
   color: var(--ink-2);
   text-decoration: none;
@@ -1583,7 +1585,7 @@
 }
 .composer-prompt__glyph {
   display: inline-flex;
-  color: var(--accent);
+  color: var(--ok);
 }
 .composer-prompt__text {
   flex: 1 1 auto;
