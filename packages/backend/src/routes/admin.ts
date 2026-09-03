@@ -127,4 +127,18 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
     if (typeof h !== "number" || !Number.isInteger(h) || h < 1 || h > 168) return reply.code(400).send({ error: "hours must be an integer from 1 to 168" });
     return ctx.communityAdmin.setCooldownHours(h);
   });
+
+  // ---- Web Access (proxied to the Access Service; default OFF) ----
+  app.get("/api/admin/access", { preHandler: requireAdmin }, async () => {
+    try {
+      return { reachable: true, status: await ctx.accessAdmin.status() };
+    } catch {
+      return { reachable: false, status: null };
+    }
+  });
+  app.post<{ Body: { on?: boolean } }>("/api/admin/access/enabled", { preHandler: requireAdmin }, async (req, reply) => {
+    if (typeof req.body?.on !== "boolean") return reply.code(400).send({ error: "on (boolean) required" });
+    return ctx.accessAdmin.setEnabled(req.body.on);
+  });
+  app.get("/api/admin/access/journal", { preHandler: requireAdmin }, async () => ctx.accessAdmin.journal());
 }

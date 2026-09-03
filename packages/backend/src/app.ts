@@ -16,6 +16,9 @@ import { registerEntityRoutes } from "./routes/entities.js";
 import { registerAdminRoutes } from "./routes/admin.js";
 import { registerCommunityRoutes } from "./routes/community.js";
 import { registerVaultRoutes } from "./routes/vault.js";
+import { registerAccessRoutes } from "./routes/access.js";
+import { AccessCapabilitySigner } from "./access-issuer/signing.js";
+import { AccessAdminClient } from "./access-issuer/access-admin.js";
 import { EntityDirectory } from "./school/directory.js";
 import { profileFor } from "./school/profiles/huayaopudong.js";
 import { SettingsService } from "./experiences/settings.js";
@@ -55,6 +58,8 @@ export interface BuildAppOptions {
   vaultDbPath?: string;
   /** Community admin transport for tests. */
   communityFetch?: typeof fetch;
+  /** Access admin transport for tests. */
+  accessFetch?: typeof fetch;
 }
 
 export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: AppContext } {
@@ -85,6 +90,14 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   const vaultDb = openVaultDatabase(opts.vaultDbPath ?? config.vaultDbPath);
   const vault = new ControlVaultStore(vaultDb, deriveKey(config.sealKey, "vault-locator"));
   const communityAdmin = new CommunityAdminClient(config.communityInternalUrl, config.internalSecret, opts.communityFetch ?? fetch);
+  const accessAdmin = new AccessAdminClient(config.accessInternalUrl, config.internalSecret, opts.accessFetch ?? fetch);
+  let accessSigner: AccessCapabilitySigner | null = null;
+  try {
+    accessSigner = AccessCapabilitySigner.load(config.keysDir);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("access signing key unavailable:", err instanceof Error ? err.message : err);
+  }
 
   const ctx: AppContext = {
     db,
@@ -102,6 +115,8 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
     limits,
     vault,
     communityAdmin,
+    accessSigner,
+    accessAdmin,
     ...makeAuthHelpers(accounts),
   };
   // The issuer key is read asynchronously (WebCrypto import); routes await it.
@@ -141,6 +156,7 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   registerAdminRoutes(app, ctx);
   registerCommunityRoutes(app, ctx);
   registerVaultRoutes(app, ctx);
+  registerAccessRoutes(app, ctx);
 
   // Single-origin production deployment: the backend serves the built web app
   // and falls back to index.html for client-side routes (deep links §6.3).

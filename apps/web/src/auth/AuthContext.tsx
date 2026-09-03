@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { apiCache } from "../lib/useApi";
 import { portalCredentials } from "../lib/portalCredentials";
 import { api, ApiError, describeApiError } from "../api/client";
+import { accessClient } from "../lib/access/client";
 import type { Me } from "../api/types";
 
 interface AuthContextValue {
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     apiCache.clear();
     portalCredentials.clear();
+    accessClient.forget();
     await api.logout();
     setMe(null);
     navigate("/login", { replace: true });

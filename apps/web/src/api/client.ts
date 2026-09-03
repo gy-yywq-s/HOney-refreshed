@@ -16,6 +16,7 @@ import type {
   VaultPutResponse,
   VaultRecord,
 } from "@honey/shared/community-v2";
+import type { AccessAdminStatus, AccessSessionResponse } from "@honey/shared/access";
 import type {
   AdminImportResult,
   AdminLlmTestResponse,
@@ -199,7 +200,21 @@ export class ApiClient {
     return this.request("GET", qs ? `/api/entities?${qs}` : "/api/entities");
   }
 
+  // ---- Web Access (Core only issues the capability; the Access Service does the rest) ----
+
+  accessSession(): Promise<AccessSessionResponse> {
+    return this.request("POST", "/api/access/session");
+  }
+
   // ---- Admin dash (isAdmin only) ----
+
+  adminAccessStatus(): Promise<{ reachable: boolean; status: AccessAdminStatus | null }> {
+    return this.request("GET", "/api/admin/access");
+  }
+
+  adminSetAccessEnabled(on: boolean): Promise<{ ok: boolean; enabled: boolean }> {
+    return this.request("POST", "/api/admin/access/enabled", { on });
+  }
 
   adminUnresolvedLabels(): Promise<{ labels: UnresolvedLabel[] }> {
     return this.request("GET", "/api/admin/import/unresolved");

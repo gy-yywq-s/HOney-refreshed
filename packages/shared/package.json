@@ -17,6 +17,10 @@
     "./community-v2": {
       "types": "./dist/community-v2/index.d.ts",
       "default": "./dist/community-v2/index.js"
+    },
+    "./access": {
+      "types": "./dist/access/index.d.ts",
+      "default": "./dist/access/index.js"
     }
   },
   "scripts": {

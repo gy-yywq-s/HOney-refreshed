@@ -17,7 +17,7 @@ product works even when the portal is slow, down, or logged out.
 | Surface | Modules |
 |---|---|
 | **iOS** (Swift) | Home · Experiences · Timetable (Day view) · **Access** (direct-to-school gate control) |
-| **Web** (TypeScript) | Home · Experiences · Timetable (+ admin dashboard; Access is capability-gated) |
+| **Web** (TypeScript) | Home · Experiences · Timetable · **Access** (gates and exit permits through the isolated Access Service — capability-gated, at-most-once, Dash switch default OFF) (+ admin dashboard) |
 | **Backend** (TypeScript/Node) | HOney accounts & sessions · school-portal connector · normalized timetable/history · Experiences community with anonymous, fail-closed moderation |
 
 Deliberately **not** in V1: exams, week-view timetables, rankings, AI summaries, scalar ratings of
@@ -76,6 +76,7 @@ Per-stage documentation lives in [`docs/architecture/`](docs/architecture/):
 | M3 | [`m3-experiences.md`](docs/architecture/m3-experiences.md) | Anonymity model, entities, ops |
 | ★ | [`anonymous-control-v2.md`](docs/architecture/anonymous-control-v2.md) | **Anonymous Control v2** — one recoverable root, blind eligibility with public metadata, per-post control keys, encrypted Control Vault (passkey · another device · recovery words) |
 | ★ | [`community-process.md`](docs/architecture/community-process.md) | **Process / database / redaction map** — Core · Community · Access · edge; who may open what; the identity-free boundary |
+| ★ | [`web-access.md`](docs/architecture/web-access.md) | **Web Access** — signed capability with an HPKE-sealed portal session, the isolated Access Service, prepare/commit at-most-once, streamed progress + honest ETA, egress pinning, failure-injection run |
 | ★ | [`moderation-pipeline.md`](docs/architecture/moderation-pipeline.md) | **The moderation pipeline** — layers, LLM constraints, pass mechanics |
 | M5 | [`m5-web-and-deploy.md`](docs/architecture/m5-web-and-deploy.md) | Web app, admin dash, deploy |
 | — | [`acceptance.md`](docs/acceptance.md) | **Line-by-line acceptance** (§20 / §27 / §26.2) |

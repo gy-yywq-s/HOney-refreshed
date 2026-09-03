@@ -1,7 +1,7 @@
 // The app's primary navigation, defined once. Desktop renders DESKTOP_TABS in
 // the top nav; at <=640px the shell switches to the iOS-style bottom tab bar
 // (MOBILE_TABS), where Settings — desktop's user-menu item — becomes the
-// fourth tab. Icons are simple SF-Symbol-like line glyphs drawn inline.
+// fifth tab. Icons are simple SF-Symbol-like line glyphs drawn inline.
 
 import type { ReactNode } from "react";
 
@@ -18,6 +18,7 @@ export const DESKTOP_TABS: NavTab[] = [
   { to: "/home", label: "Home" },
   { to: "/experiences", label: "Experiences" },
   { to: "/timetable", label: "Timetable" },
+  { to: "/access", label: "Access" },
 ];
 
 function Icon({ children }: { children: ReactNode }) {
@@ -62,6 +63,16 @@ const timetableIcon = (
   </Icon>
 );
 
+/* gate: two posts and a bar (Web Access) */
+const accessIcon = (
+  <Icon>
+    <path d="M4.5 20.5V6.5M19.5 20.5V6.5" />
+    <path d="M4.5 6.5 12 3.5l7.5 3" />
+    <path d="M8 20.5V11h8v9.5" />
+    <path d="M12 11v9.5" />
+  </Icon>
+);
+
 /* gear */
 const settingsIcon = (
   <Icon>
@@ -74,5 +85,6 @@ export const MOBILE_TABS: MobileNavTab[] = [
   { to: "/home", label: "Home", icon: homeIcon },
   { to: "/experiences", label: "Experiences", icon: experiencesIcon },
   { to: "/timetable", label: "Timetable", icon: timetableIcon },
+  { to: "/access", label: "Access", icon: accessIcon },
   { to: "/settings", label: "Settings", icon: settingsIcon },
 ];

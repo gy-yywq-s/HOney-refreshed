@@ -16,6 +16,7 @@ import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
 import { formatCoarseDate } from "../lib/format";
 import { useApi } from "../lib/useApi";
+import { WebAccessPanel } from "./dash/WebAccessPanel";
 
 const KILL_SWITCH_META: { name: KillSwitchName; label: string; description: string }[] = [
   {
@@ -108,6 +109,8 @@ export function DashPage() {
           </p>
         )}
       </section>
+
+      <WebAccessPanel />
 
       <section className="card" aria-label="Kill switches">
         <h2 className="section-title">Kill switches</h2>

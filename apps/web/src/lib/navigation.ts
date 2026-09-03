@@ -1,6 +1,6 @@
 // The app's hierarchy, defined once (Gary, 2026-09-02: "kind of native
 // app" — on any screen you know what is above it, and the top-left arrow
-// takes you there). Four roots are the tabs; everything else hangs under
+// takes you there). Five roots are the tabs; everything else hangs under
 // one of them. AppLayout renders the back bar, marks the tab of the root
 // ancestor, sets the document title and answers the edge swipe from this.
 
@@ -34,6 +34,8 @@ const NODES: RouteNode[] = [
   { pattern: "/experiences/dish/:id", title: "Dish", parent: "/experiences" },
   { pattern: "/experiences/place/:id", title: "Place", parent: "/experiences" },
   { pattern: "/experiences/food/:id", title: "Food", parent: "/experiences" },
+  { pattern: "/access", title: "Access", parent: null },
+  { pattern: "/access/permits/new", title: "Request an exit permit", parent: "/access" },
   { pattern: "/settings", title: "Settings", parent: null },
   { pattern: "/settings/account", title: "Account", parent: "/settings" },
   { pattern: "/settings/connection", title: "School connection", parent: "/settings" },

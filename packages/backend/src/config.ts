@@ -21,8 +21,10 @@ export interface HOneyConfig {
   production: boolean;
   /** The Community process's loopback address for the Dash proxy (never a public URL). */
   communityInternalUrl: string;
-  /** Shared with Community for /internal/admin/* only. */
+  /** Shared with Community and Access for /internal/admin/* only. */
   internalSecret: string;
+  /** The Access Service's loopback address for the Dash proxy (never a public URL). */
+  accessInternalUrl: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
@@ -39,6 +41,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): HOneyConfig {
   }
   return {
     communityInternalUrl: env.HONEY_COMMUNITY_INTERNAL_URL ?? "http://127.0.0.1:8873",
+    accessInternalUrl: env.HONEY_ACCESS_INTERNAL_URL ?? "http://127.0.0.1:8874",
     internalSecret: env.HONEY_INTERNAL_SECRET ?? "dev-internal-secret",
     dbPath,
     keysDir: env.HONEY_KEYS_DIR ?? join(dataDir, "keys"),

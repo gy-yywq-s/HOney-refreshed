@@ -70,6 +70,31 @@ importers:
         specifier: ^2.1.5
         version: 2.1.9(@types/node@22.20.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(supports-color@7.2.0)
 
+  packages/access-service:
+    dependencies:
+      '@honey/portal-connector':
+        specifier: workspace:*
+        version: link:../portal-connector
+      '@honey/shared':
+        specifier: workspace:*
+        version: link:../shared
+      fastify:
+        specifier: ^5.1.0
+        version: 5.12.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.9.0
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.13
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.5
+        version: 2.1.9(@types/node@22.20.1)(jsdom@30.0.1(@noble/hashes@2.4.0))(supports-color@7.2.0)
+
   packages/backend:
     dependencies:
       '@cloudflare/blindrsa-ts':

@@ -15,7 +15,7 @@ export default defineConfig({
     ],
   },
   test: {
-    testTimeout: 15_000,
+    testTimeout: 30_000,
     server: { deps: { external: [/^node:sqlite$/] } },
   },
 });

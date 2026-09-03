@@ -13,6 +13,8 @@ import type { EligibilityService } from "./community-issuer/eligibility.js";
 import type { IssuanceLimits } from "./community-issuer/issuance-limits.js";
 import type { CommunityAdminClient } from "./community-issuer/community-admin.js";
 import type { ControlVaultStore } from "./control-vault/vault-records.js";
+import type { AccessCapabilitySigner } from "./access-issuer/signing.js";
+import type { AccessAdminClient } from "./access-issuer/access-admin.js";
 
 // Assembled per-app dependency context. Routes receive this instead of
 // importing singletons, so tests wire mock portals in freely. Nothing here
@@ -39,6 +41,10 @@ export interface AppContext {
   vault: ControlVaultStore;
   /** Dash → Community internal admin surface (loopback + internal secret). */
   communityAdmin: CommunityAdminClient;
+  /** Web Access capability signer (Ed25519); null when the keys directory is unusable. */
+  accessSigner: AccessCapabilitySigner | null;
+  /** Dash → Access Service internal admin surface (loopback + internal secret). */
+  accessAdmin: AccessAdminClient;
   requireAuth: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
   bearerToken: (req: FastifyRequest) => string;
   userOf: (req: FastifyRequest) => HOneyUserRow;
