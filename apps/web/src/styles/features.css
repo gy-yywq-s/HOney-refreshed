@@ -1261,9 +1261,15 @@
    icon + count carries it; the on-state uses the accent tint. */
 .post__actions .react-btn {
   border-color: transparent;
-  padding: 0 var(--sp-2);
   color: var(--muted);
   font-size: var(--fs-caption);
+  /* The footer is not a row of form controls (Gary 2026-09-03: 共鸣和 write
+     your own 高度太高): the tap zone stays 44px and reaches into the margins,
+     while the line it occupies — and anything it paints — is 32px. */
+  min-height: 44px;
+  padding: 6px var(--sp-2);
+  margin-block: -6px;
+  background-clip: content-box;
 }
 .post__report {
   border: 0;
