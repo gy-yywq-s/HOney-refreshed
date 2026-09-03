@@ -20,7 +20,7 @@ struct ExploreView: View {
     @State private var mine: Set<String> = []
     @State private var loading = true
     @State private var error: String?
-    @State private var search: SearchResponse?
+    @State private var search: SearchResponseV2?
     @State private var searching = false
     @State private var searchError: String?
     @State private var searchTask: Task<Void, Never>?
@@ -153,7 +153,7 @@ struct ExploreView: View {
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard !Task.isCancelled else { return }
             do {
-                let result = try await env.api.search(q: q)
+                let result = try await env.community.search(q: q)
                 guard !Task.isCancelled, q == query.trimmingCharacters(in: .whitespaces) else { return }
                 search = result
                 feedModel().seed(result.experiences)

@@ -132,7 +132,7 @@ struct EntityExperiencesView: View {
                 VStack(alignment: .leading, spacing: HSpace.x1) {
                     Text("This entry is no longer listed.").hfont(.body).foregroundStyle(theme.muted)
                     if let survivor {
-                        Button("Open the current entry for \(DisplayNames.entityTitle(type: type, name: survivor.name))") {
+                        Button("Open the current entry for \(survivor.name)") {
                             if let route = ExperienceDisplay.route(for: survivor) { nav.push(route) }
                         }
                         .buttonStyle(.webLinkBody)
