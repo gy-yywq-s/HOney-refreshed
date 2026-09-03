@@ -49,15 +49,22 @@ function useRowsThatFit(active: boolean, total: number): { bodyRef: RefObject<HT
       setFit(null);
       return;
     }
+    const rowGap = (el: Element) => parseFloat(getComputedStyle(el).rowGap || "0") || 0;
+    // Natural heights of everything around the rows. The permits body may be
+    // clipped (shrunk) while too many rows are rendered, so its own box is
+    // never summed — only its children, whose sizes overflow never changes.
+    const around = (parent: Element, except: Element | null) => {
+      const kids = Array.from(parent.children).filter((c) => c !== except);
+      return kids.reduce((n, c) => n + c.getBoundingClientRect().height, 0) + rowGap(parent) * Math.max(0, parent.children.length - 1);
+    };
     const measure = () => {
       const row = body.querySelector<HTMLElement>(".access-permit");
       const list = body.querySelector<HTMLElement>(".rowlist");
-      if (!row || !list) return;
+      const section = body.parentElement;
+      if (!row || !list || !section) return;
       const rowH = row.getBoundingClientRect().height;
-      const gap = parseFloat(getComputedStyle(list).rowGap || "0") || 0;
-      const stackGap = parseFloat(getComputedStyle(frame).rowGap || "0") || 0;
-      const children = Array.from(frame.children) as HTMLElement[];
-      const chrome = children.reduce((n, c) => n + c.getBoundingClientRect().height, 0) + stackGap * Math.max(0, children.length - 1) - list.getBoundingClientRect().height;
+      const gap = rowGap(list);
+      const chrome = around(frame, section) + around(section, body) + around(body, list);
       const available = frame.clientHeight - chrome;
       const n = Math.max(1, Math.floor((available + gap) / (rowH + gap)));
       setFit(Math.min(n, total));
