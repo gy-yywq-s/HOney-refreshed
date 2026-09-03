@@ -53,7 +53,7 @@ screenshot recorded here) is Gary's physical step and has **not** been done yet.
 
 ## iOS interop (2026-09-03)
 
-`ios-web-port` @ `e2c889f` merges `integration/product-v2` (groups 1–4) and implements Anonymous
+`ios-web-port` @ `b763c5d` (both workflows green) merges `integration/product-v2` (groups 1–4) and implements Anonymous
 Control v2 + the canonical contract in Swift (`ios-web-port/HOneyCore/Sources/HOneyCore/CommunityV2/`;
 `docs/architecture/anonymous-control-v2.md` § iOS). Interop evidence: the shared vectors,
 `fixtures/blind-token-kat.json` (a Web-produced token the Swift verifier accepts) and the 43
