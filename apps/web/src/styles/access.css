@@ -99,6 +99,11 @@
   display: inline-flex;
   align-items: center;
 }
+/* The Permits header keeps its distance from the apply card above it: the
+   row's own 44px tap zone must not eat into that gap (Gary 2026-09-03). */
+.access-section:has(> .access-fold) {
+  margin-top: var(--sp-3);
+}
 .access-fold--tap {
   cursor: pointer;
   /* A comfortable row to hit without adding height to the section. */
