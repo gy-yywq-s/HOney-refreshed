@@ -238,8 +238,8 @@ export function TimetablePage() {
           </button>
         )}
         {/* Desktop only: the phone answers these with gestures — pull down
-            twice (refresh, then sync), pull up at the end for History. A
-            keyboard on a phone still reaches History through the sr link. */}
+            twice (refresh, then sync), pull up at the end for History — and
+            keeps a small History link at the top-right (below). */}
         <div className="daynav__row">
           {/* No "synced … ago" here — Settings › School connection carries it (Gary 2026-09-02). */}
           <span className="daynav__spacer" />
@@ -254,8 +254,11 @@ export function TimetablePage() {
             {syncBusy ? "Syncing…" : "Sync now"}
           </button>
         </div>
-        <Link className="daynav__history-sr" to="/history">
-          History
+        {/* Phones: History in the empty top-right corner beside the Day|Week
+            pill, with the gesture named right there (Gary 2026-09-03). */}
+        <Link className="daynav__history" to="/history">
+          <span>{t("History")}</span>
+          <span className="daynav__history-hint">{t("or pull up at the end")}</span>
         </Link>
       </header>
       <PullToHistory />

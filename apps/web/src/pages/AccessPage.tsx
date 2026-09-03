@@ -34,32 +34,37 @@ const COLLAPSED_PERMITS = 3;
 
 /**
  * How many permit rows fit between the apply card and the dock on THIS
- * phone: the list body is measured, and the count re-derives on resize.
+ * phone. The frame (.access--fit) is exactly the visible region; everything
+ * in it except the permit rows is fixed chrome, so the rows get what is
+ * left. The leftover after whole rows goes BELOW the dock (the frame's
+ * trailing spacer), never between "Show all" and the dock (Gary 2026-09-03).
  */
 function useRowsThatFit(active: boolean, total: number): { bodyRef: RefObject<HTMLDivElement>; fit: number | null } {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<number | null>(null);
   useLayoutEffect(() => {
     const body = bodyRef.current;
-    if (!active || !body) {
+    const frame = body?.closest<HTMLElement>(".access--fit");
+    if (!active || !body || !frame) {
       setFit(null);
       return;
     }
     const measure = () => {
       const row = body.querySelector<HTMLElement>(".access-permit");
-      if (!row) return;
-      const rowH = row.getBoundingClientRect().height;
       const list = body.querySelector<HTMLElement>(".rowlist");
-      const gap = list ? parseFloat(getComputedStyle(list).rowGap || "0") || 0 : 0;
-      const more = body.querySelector<HTMLElement>(".access-more");
-      const moreH = more ? more.getBoundingClientRect().height + gap : 0;
-      const available = body.clientHeight - moreH;
+      if (!row || !list) return;
+      const rowH = row.getBoundingClientRect().height;
+      const gap = parseFloat(getComputedStyle(list).rowGap || "0") || 0;
+      const stackGap = parseFloat(getComputedStyle(frame).rowGap || "0") || 0;
+      const children = Array.from(frame.children) as HTMLElement[];
+      const chrome = children.reduce((n, c) => n + c.getBoundingClientRect().height, 0) + stackGap * Math.max(0, children.length - 1) - list.getBoundingClientRect().height;
+      const available = frame.clientHeight - chrome;
       const n = Math.max(1, Math.floor((available + gap) / (rowH + gap)));
       setFit(Math.min(n, total));
     };
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(body);
+    ro.observe(frame);
     return () => ro.disconnect();
   }, [active, total]);
   return { bodyRef, fit };

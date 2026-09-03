@@ -113,7 +113,7 @@ export function ExperiencesFeedPage() {
             className={scope === "my_classes" ? "scope-switch__btn scope-switch__btn--on" : "scope-switch__btn"}
             onClick={() => switchScope("my_classes")}
           >
-            {t("Your classes")}
+            {t("Related to you")}
           </button>
           <button
             role="tab"

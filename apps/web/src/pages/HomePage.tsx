@@ -28,6 +28,12 @@ import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
 import { usePortalEntry } from "../lib/portalEntry";
 
+/** Running as the installed (standalone) app, not in a browser tab. */
+function isStandalone(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
 export function HomePage() {
   const { me } = useAuth();
   const { data, error, loading, reload } = useApi(() => api.nextLesson(), [], "next-lesson");
@@ -38,6 +44,7 @@ export function HomePage() {
   const lang = useLang();
   const portal = usePortalEntry();
   const [portalLogin, setPortalLogin] = useState(false);
+  const standalone = isStandalone();
 
   if (!me) return null;
 
@@ -171,9 +178,9 @@ export function HomePage() {
         )}
       </section>
 
-      <section className="home-voices home-zone" aria-label="From your classes">
+      <section className="home-voices home-zone" aria-label="Related to you">
         <div className="home-voices__head">
-          <span className="eyebrow">{t("From your classes")}</span>
+          <span className="eyebrow">{t("Related to you")}</span>
         </div>
         {fromClasses.loading ? (
           <Skeleton lines={2} />
@@ -229,8 +236,14 @@ export function HomePage() {
           <a className="portal-row" href={portal.href} target="_blank" rel="noopener noreferrer">
             <img className="portal-row__icon" src="/oasis.png" alt="" width="22" height="22" />
             <span className="portal-row__title">School Portal</span>
+            {/* In the installed app the row says what it does: it enters the
+                portal signed in, here — not a jump to the outside (Gary 2026-09-03). */}
             <span className="caption">
-              {t("Open the official site")} <span aria-hidden="true">&#8599;</span>
+              {standalone ? t("Signed in · no login needed") : (
+                <>
+                  {t("Open the official site")} <span aria-hidden="true">&#8599;</span>
+                </>
+              )}
             </span>
           </a>
         )}

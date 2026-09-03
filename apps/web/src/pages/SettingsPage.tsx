@@ -256,7 +256,7 @@ export function SettingsPage() {
 
   return (
     <div className="stack settings">
-      <h1 className="page-title">{SECTIONS[section]}</h1>
+      <h1 className="page-title">{t(SECTIONS[section])}</h1>
       {feedbackEl}
 
       {section === "account" && (

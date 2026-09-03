@@ -22,9 +22,15 @@
   flex: 1 1 auto;
   min-height: 0;
 }
+/* The permits section takes only its measured rows; the leftover sits
+   below the dock, above the nav (Gary 2026-09-03: the dock hugs Show all). */
 .access--fit > .access-section:has(.access-permits__body) {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
+}
+.access--fit::after {
+  content: "";
+  flex: 1 1 auto;
 }
 .access-permits__body {
   display: flex;
@@ -32,7 +38,7 @@
   gap: var(--sp-2);
 }
 .access--fit .access-permits__body {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   overflow: hidden;
 }

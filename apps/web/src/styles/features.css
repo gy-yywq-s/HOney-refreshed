@@ -265,10 +265,8 @@
 .daynav__spacer {
   flex: 1;
 }
-.daynav__history-sr {
-  /* Phones answer History with a gesture; a keyboard still gets a link,
-     visible only while focused (the skip-link pattern). Desktop has the
-     button, so the link is not rendered there. */
+.daynav__history {
+  /* Desktop has the History button in the row; the corner link is a phone thing. */
   display: none;
 }
 .daynav__stepper {
@@ -398,25 +396,30 @@
       display: none;
     }
   }
-  .daynav__history-sr {
-    display: block;
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-  .daynav__history-sr:focus-visible {
-    position: static;
-    width: auto;
-    height: auto;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    clip: auto;
-    align-self: center;
-    padding: 0 var(--sp-3);
+  /* The corner link lives in the empty space right of the Day|Week pill —
+     nothing else moves; the pill is 40px tall, the link centres on it. */
+  @media (pointer: coarse) {
+    .daynav__history {
+      position: absolute;
+      right: var(--page-x);
+      top: calc(var(--inset-top) + var(--sp-2));
+      height: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 1px;
+      font-size: var(--fs-caption);
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .daynav__history-hint {
+      font-size: var(--fs-micro);
+      font-weight: 500;
+      color: var(--muted);
+    }
   }
 }
 @media (max-width: 359px) {
