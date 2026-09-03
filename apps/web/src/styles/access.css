@@ -284,7 +284,7 @@
 }
 .access-stage--rejected,
 .access-stage--not_sent {
-  color: var(--accent-2);
+  color: var(--warn);
 }
 .access-stage--outcome_unknown {
   color: var(--danger);

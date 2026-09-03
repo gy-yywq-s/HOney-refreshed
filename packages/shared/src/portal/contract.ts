@@ -111,7 +111,7 @@ export type ConnectorError =
   | { kind: "userActionRequired"; reason: "captcha" | "mfa" | "passwordChanged" | "unknown" }
   /** Well-formed envelope, but the portal refused the operation (NOT a schema problem). */
   /** `reason` = the portal's own words for the refusal (its `message`), when it gave any. */
-  | { kind: "operationRejected"; endpoint: string; status?: number; reason?: string }
+  | { kind: "operationRejected"; endpoint: string; status?: number; reason?: string; /** Keys + value kinds of the refusal envelope (no values) — loggable, so an unknown layout can be learned. */ shape?: string }
   | { kind: "schemaIncompatible"; endpoint: string };
 
 export interface PortalConnector {

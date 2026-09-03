@@ -8,6 +8,7 @@ import {
   credentialsRejected,
   operationRejected,
   refusalReason,
+  envelopeShape,
   schemaIncompatible,
   serverUnavailable,
   userActionRequired,
@@ -169,7 +170,7 @@ export class PortalApi {
     // quirk of a DIFFERENT endpoint (door list) — a nonzero status here means
     // the portal refused to open the gate, and must never read as success.
     if (env.status === 0 || code === 200) return;
-    throw operationRejected("/api/exit/update_door_flag", typeof env.status === "number" ? env.status : undefined, refusalReason(env));
+    throw operationRejected("/api/exit/update_door_flag", typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
   }
 
   /** POST /api/exit/add_record — create an exit permit request. Explicit user action only. */
@@ -184,7 +185,7 @@ export class PortalApi {
     const env = asEnvelope(this.http.triage(resp, "/api/exit/add_record"), "/api/exit/add_record");
     const code = (env as { code?: unknown }).code;
     if (env.status === 0 || code === 200) return;
-    throw operationRejected("/api/exit/add_record", typeof env.status === "number" ? env.status : undefined, refusalReason(env));
+    throw operationRejected("/api/exit/add_record", typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
   }
 
   /** POST /api/exit/delete_record — destructive; explicit user action only, never retried. */
@@ -199,7 +200,7 @@ export class PortalApi {
     const env = asEnvelope(this.http.triage(resp, "/api/exit/delete_record"), "/api/exit/delete_record");
     const code = (env as { code?: unknown }).code;
     if (env.status === 0 || code === 200) return;
-    throw operationRejected("/api/exit/delete_record", typeof env.status === "number" ? env.status : undefined, refusalReason(env));
+    throw operationRejected("/api/exit/delete_record", typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
   }
 
   /** POST /api/logout — never retried; callers clear local state even if this fails. */

@@ -345,6 +345,9 @@ export class AccessEngine {
         case "operationRejected":
           // The school's own words travel to the student (and the journal) verbatim.
           detail = e.info.kind === "operationRejected" ? e.info.reason : undefined;
+          // Shape only (keys and kinds, never values): if the school's words did not
+          // come through, this line says where the portal put them.
+          if (e.info.kind === "operationRejected") console.warn(`[honey-access] ${row.kind} rejected: reason=${detail ? "yes" : "none"} shape=${e.info.shape ?? "?"}`);
           this.deps.store.transition(row.id, "REJECTED", now, { outcomeCode: "portal_rejected", ...(detail ? { outcomeDetail: detail } : {}), ...(e.info.kind === "operationRejected" && e.info.status !== undefined ? { upstreamStatus: e.info.status } : {}) });
           stage = "rejected";
           break;

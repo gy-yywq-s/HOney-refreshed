@@ -269,9 +269,9 @@
   background: color-mix(in srgb, var(--ok) 8%, transparent);
 }
 .banner--warning {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 38%, transparent);
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
 }
 .banner--danger {
   color: var(--danger);

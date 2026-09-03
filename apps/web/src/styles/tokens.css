@@ -43,6 +43,8 @@
   --glacier: #dde8ec;
   --danger: #b53844;
   --ok: #2b7355;
+  /* Warnings are orange — never the accent (Gary 2026-09-03: "declined is blue, not orange"). */
+  --warn: #b0611a;
 
   /* Shell geometry. */
   --rail: 216px;
@@ -146,6 +148,7 @@
   --glacier: rgba(143, 194, 212, 0.16);
   --danger: #f2919a;
   --ok: #83c9a8;
+  --warn: #f0b072;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
 }
 
