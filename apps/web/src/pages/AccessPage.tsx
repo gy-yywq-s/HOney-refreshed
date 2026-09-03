@@ -14,7 +14,6 @@ import { Link } from "react-router-dom";
 import { displayReason, displayStatus, isOpenable, openablePermits, permitTone, quickPermitDraft, sortedForList, type AccessBootstrap, type AccessProgressEvent, type AccessRouteKind, type Door, type Permit, type PreparedOpenOperation } from "@honey/shared/access";
 import { AccessProgress } from "../components/AccessProgress";
 import { Modal } from "../components/Modal";
-import { ChevronRightIcon } from "../components/icons";
 import { accessClient, AccessClientError, describeAccessFailure, type AccessFailure } from "../lib/access/client";
 import { permitWindow, permitWindowFromTimes, toTimeInput } from "../lib/access/format";
 import { useT } from "../lib/i18n";
@@ -31,16 +30,6 @@ interface Flow {
 }
 
 const COLLAPSED_PERMITS = 3;
-const FOLD_KEY = "honey.access.permitsOpen";
-
-/** The permits fold: open by default (the list takes exactly the space that fits); remembered per device. */
-function readFold(): boolean {
-  try {
-    return localStorage.getItem(FOLD_KEY) !== "closed";
-  } catch {
-    return true;
-  }
-}
 
 /**
  * How many permit rows fit between the apply card and the dock on THIS
@@ -81,18 +70,7 @@ export function AccessPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [flow, setFlow] = useState<Flow | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [permitsOpen, setPermitsOpenState] = useState(() => readFold());
   const [now, setNow] = useState(Date.now());
-  const setPermitsOpen = (update: (v: boolean) => boolean) =>
-    setPermitsOpenState((v) => {
-      const next = update(v);
-      try {
-        localStorage.setItem(FOLD_KEY, next ? "open" : "closed");
-      } catch {
-        /* per-device convenience only */
-      }
-      return next;
-    });
 
   const reload = useCallback(async () => {
     setFailure(null);
@@ -118,8 +96,8 @@ export function AccessPage() {
   const openable = boot ? openablePermits(boot.permits, now) : [];
   const enabled = boot?.enabled ?? false;
   const canAct = enabled && !flow;
-  // Fit mode: the open fold shows exactly the rows that fit above the dock; Show all lets the page scroll.
-  const fitMode = !!boot && permitsOpen && !showAll;
+  // Fit mode: the list shows exactly the rows that fit above the dock — never fewer than one, never folded away; Show all lets the page scroll.
+  const fitMode = !!boot && !showAll;
   const { bodyRef, fit } = useRowsThatFit(fitMode, permits.length);
   const visiblePermits = showAll ? permits : permits.slice(0, fitMode ? (fit ?? COLLAPSED_PERMITS) : COLLAPSED_PERMITS);
 
@@ -213,19 +191,13 @@ export function AccessPage() {
           <ApplyCard disabled={!canAct} onApply={(d) => setFlow({ action: { kind: "apply", ...d }, step: "confirm" })} etaLabel={boot.eta.permit} />
 
           <section className="access-section" aria-label={t("Permits")}>
-            {/* The header row is the fold: collapsed by default so the whole screen fits without scrolling. */}
             <div className="access-fold">
-              <button className="access-fold__toggle" aria-expanded={permitsOpen} onClick={() => setPermitsOpen((v) => !v)}>
-                <h2 className="overline">{t("Permits")}</h2>
-                <span className="access-fold__summary">
-                  {boot.permitsFresh ? (openable.length > 0 ? `${openable.length} ${t("usable now")} · ${permits.length}` : `${permits.length}`) : t("unavailable")}
-                </span>
-                <span className={`access-fold__chevron${permitsOpen ? " is-open" : ""}`} aria-hidden="true">
-                  <ChevronRightIcon />
-                </span>
-              </button>
+              <h2 className="overline">{t("Permits")}</h2>
+              <span className="access-fold__summary">
+                {boot.permitsFresh ? (openable.length > 0 ? `${openable.length} ${t("usable now")} · ${permits.length}` : `${permits.length}`) : t("unavailable")}
+              </span>
             </div>
-            {permitsOpen && (
+            {(
               <div className="access-permits__body" ref={bodyRef}>
                 {!boot.permitsFresh && (
                   <div className="banner banner--warning">{t("The permit list could not be refreshed. It may be out of date and cannot open a gate until it is refreshed.")}</div>
@@ -244,7 +216,7 @@ export function AccessPage() {
           </section>
 
           {/* "Show all N" sits between Permits and School access: plain text, never clipped by the fitted list. */}
-          {permitsOpen && (permits.length > visiblePermits.length || showAll) && (
+          {(permits.length > visiblePermits.length || showAll) && (
             <button className="access-more" onClick={() => setShowAll((v) => !v)}>
               {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length}`}
             </button>

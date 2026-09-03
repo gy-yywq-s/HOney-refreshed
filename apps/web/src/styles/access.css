@@ -36,9 +36,6 @@
   min-height: 0;
   overflow: hidden;
 }
-.access-permits__more {
-  align-self: flex-start;
-}
 .access-section .overline {
   margin: 0;
 }
@@ -148,44 +145,19 @@
   white-space: nowrap;
 }
 
-/* The permits fold: the header row toggles the list; a summary sits beside the label. */
+/* The permits header: label + summary (the list beneath is never folded away). */
 .access-fold {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--sp-2);
-  width: 100%;
-  min-height: 44px;
+  min-height: 24px;
 }
-.access-fold__toggle {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  min-height: 44px;
-  padding: var(--sp-1) 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
 .access-fold .overline {
   margin: 0;
 }
 .access-fold__summary {
-  flex: 1;
   font-size: var(--fs-caption);
   color: var(--muted);
-}
-.access-fold__chevron {
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-  transition: transform var(--dur-fast) var(--ease);
-}
-.access-fold__chevron.is-open {
-  transform: rotate(90deg);
 }
 
 .access-permit__actions {
