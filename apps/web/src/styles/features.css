@@ -914,10 +914,12 @@
   flex-direction: column;
   gap: 2px;
   padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--line);
+  /* A touch of colour and a lighter lift (Gary 2026-09-03: 卡片上点色,
+     阴影轻一点) — the subject is tinted, not boxed in. */
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
   border-radius: var(--radius-card);
-  background: var(--card);
-  box-shadow: var(--shadow-card);
+  background: color-mix(in srgb, var(--accent) 5%, var(--card));
+  box-shadow: var(--shadow-field);
 }
 .compose-target__label {
   font-family: var(--display);
