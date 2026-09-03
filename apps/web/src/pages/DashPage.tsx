@@ -109,12 +109,16 @@ export function DashPage() {
           <StatTile label="Open reports" value={counts?.openReports} />
           <StatTile label="Entities" value={counts?.entities} />
         </div>
-        {overview.data && (
-          <p className="caption admin__status">
-            Policy v{overview.data.policyVersion} · moderation model{" "}
-            {overview.data.llm.configured ? `${overview.data.llm.model}` : "not configured"}
-          </p>
-        )}
+      </section>
+
+      {/* What the system is running: labelled rows, value at the right (Gary
+          2026-09-03: version and runtime facts are a group, not a stray line). */}
+      <section className="rowlist" aria-label="System">
+        <h2 className="overline">System</h2>
+        <SystemRow label="Policy version" value={overview.data ? `v${overview.data.policyVersion}` : "…"} />
+        <SystemRow label="Moderation model" value={overview.data ? (overview.data.llm.configured ? overview.data.llm.model : "Not configured — nothing publishes") : "…"} />
+        <SystemRow label="Blind-eligibility issuer" value={overview.data ? (overview.data.issuerReady ? "Key loaded" : "No key — students cannot share") : "…"} />
+        <SystemRow label="Community process" value={overview.data ? (overview.data.communityReachable ? "Reachable" : "Unreachable") : "…"} />
       </section>
 
       <WebAccessPanel />
@@ -195,6 +199,17 @@ export function DashPage() {
           }
         />
       )}
+    </div>
+  );
+}
+
+function SystemRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="row">
+      <span className="row__main">
+        <span className="row__title">{label}</span>
+      </span>
+      <span className="row__value">{value}</span>
     </div>
   );
 }
@@ -366,7 +381,7 @@ function EntityAdmin({ run, busy }: { run: Run; busy: string | null }) {
               <span className="row__main">
                 <span className="row__title">{e.name}</span>
                 <span className="row__sub">
-                  {e.entity_key} · {e.source}
+                  {e.source === "admin" ? "Added in Dash" : "From the timetable"} · {e.entity_key}
                 </span>
               </span>
               <span className="row__actions">
