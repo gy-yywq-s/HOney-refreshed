@@ -35,6 +35,30 @@ export function toLocalInput(ms: number): string {
   return `${key}T${schoolTime(ms)}`;
 }
 
+/** "YYYY-MM-DD" of an instant in the school's zone. */
+export function schoolDayKey(ms: number): string {
+  return dayKeyFmt.format(new Date(ms));
+}
+
+/** "HH:mm" for a time input, in the school's zone. */
+export function toTimeInput(ms: number): string {
+  return schoolTime(ms);
+}
+
+/**
+ * The iPhone's quick-permit rule: the date stays on today (school zone); an
+ * end earlier than or equal to the start counts as the next day. Returns the
+ * portal's wire strings, or null for an unparsable time.
+ */
+export function permitWindowFromTimes(start: string, end: string, now: number): { startTime: string; endTime: string; crossesMidnight: boolean } | null {
+  const re = /^(\d{2}):(\d{2})$/;
+  if (!re.test(start) || !re.test(end)) return null;
+  const today = schoolDayKey(now);
+  const crossesMidnight = end <= start;
+  const endDay = crossesMidnight ? schoolDayKey(now + 24 * 3600 * 1000) : today;
+  return { startTime: `${today} ${start}:00`, endTime: `${endDay} ${end}:00`, crossesMidnight };
+}
+
 /** datetime-local value → the portal's "YYYY-MM-DD HH:mm:ss" (school zone wall time). */
 export function fromLocalInput(value: string): string | null {
   const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::(\d{2}))?$/.exec(value);

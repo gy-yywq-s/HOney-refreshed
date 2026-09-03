@@ -13,7 +13,8 @@ import { displayReason, displayStatus, isOpenable, openablePermits, permitTone, 
 import { AccessProgress } from "../components/AccessProgress";
 import { ConfirmDialog, Modal } from "../components/Modal";
 import { accessClient, AccessClientError, describeAccessFailure, type AccessFailure } from "../lib/access/client";
-import { fromLocalInput, permitWindow, toLocalInput } from "../lib/access/format";
+import { ChevronRightIcon } from "../components/icons";
+import { permitWindow, permitWindowFromTimes, toTimeInput } from "../lib/access/format";
 import { useT } from "../lib/i18n";
 import { Skeleton } from "../lib/motion";
 
@@ -22,6 +23,16 @@ type Pending = { kind: "open"; door: Door; route: Route } | { kind: "withdraw"; 
 type Running = { title: string; op: PreparedOpenOperation; events: AccessProgressEvent[]; startedAt: number };
 
 const COLLAPSED_PERMITS = 3;
+const FOLD_KEY = "honey.access.permitsOpen";
+
+/** The permits fold: closed by default (the first screen holds everything); remembered per device. */
+function readFold(): boolean {
+  try {
+    return localStorage.getItem(FOLD_KEY) === "open";
+  } catch {
+    return false;
+  }
+}
 
 export function AccessPage() {
   const t = useT();
@@ -35,6 +46,17 @@ export function AccessPage() {
   const [busy, setBusy] = useState(false);
   const [running, setRunning] = useState<Running | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [permitsOpen, setPermitsOpenState] = useState(() => readFold());
+  const setPermitsOpen = (update: (v: boolean) => boolean) =>
+    setPermitsOpenState((v) => {
+      const next = update(v);
+      try {
+        localStorage.setItem(FOLD_KEY, next ? "open" : "closed");
+      } catch {
+        /* per-device convenience only */
+      }
+      return next;
+    });
   const [now, setNow] = useState(Date.now());
 
   const reload = useCallback(async () => {
@@ -164,23 +186,36 @@ export function AccessPage() {
           <ApplyCard disabled={!canAct} onApply={(d) => setPending({ kind: "apply", ...d })} etaLabel={boot.eta.permit} />
 
           <section className="access-section" aria-label={t("Permits")}>
-            <h2 className="overline">{t("Permits")}</h2>
-            {!boot.permitsFresh && (
-              <div className="banner banner--warning">{t("The permit list could not be refreshed. It may be out of date and cannot open a gate until it is refreshed.")}</div>
-            )}
-            {visiblePermits.length === 0 ? (
-              <p className="caption">{boot.permitsFresh ? t("No permits.") : t("Permits unavailable.")}</p>
-            ) : (
-              <div className="rowlist">
-                {visiblePermits.map((p) => (
-                  <PermitRow key={p.recordId} permit={p} now={now} actionable={canAct && boot.permitsFresh} onChooseGate={() => beginGateFlow({ kind: "exit_permit", permit: p })} onWithdraw={() => setPending({ kind: "withdraw", permit: p })} />
-                ))}
-              </div>
-            )}
-            {permits.length > COLLAPSED_PERMITS && (
-              <button className="btn btn--ghost btn--small" onClick={() => setShowAll((v) => !v)}>
-                {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length} ${t("permits")}`}
-              </button>
+            {/* The header row is the fold: collapsed by default so the whole screen fits without scrolling. */}
+            <button className="access-fold" aria-expanded={permitsOpen} onClick={() => setPermitsOpen((v) => !v)}>
+              <h2 className="overline">{t("Permits")}</h2>
+              <span className="access-fold__summary">
+                {boot.permitsFresh ? (openable.length > 0 ? `${openable.length} ${t("usable now")} · ${permits.length}` : `${permits.length}`) : t("unavailable")}
+              </span>
+              <span className={`access-fold__chevron${permitsOpen ? " is-open" : ""}`} aria-hidden="true">
+                <ChevronRightIcon />
+              </span>
+            </button>
+            {permitsOpen && (
+              <>
+                {!boot.permitsFresh && (
+                  <div className="banner banner--warning">{t("The permit list could not be refreshed. It may be out of date and cannot open a gate until it is refreshed.")}</div>
+                )}
+                {visiblePermits.length === 0 ? (
+                  <p className="caption">{boot.permitsFresh ? t("No permits.") : t("Permits unavailable.")}</p>
+                ) : (
+                  <div className="rowlist">
+                    {visiblePermits.map((p) => (
+                      <PermitRow key={p.recordId} permit={p} now={now} actionable={canAct && boot.permitsFresh} onChooseGate={() => beginGateFlow({ kind: "exit_permit", permit: p })} onWithdraw={() => setPending({ kind: "withdraw", permit: p })} />
+                    ))}
+                  </div>
+                )}
+                {permits.length > COLLAPSED_PERMITS && (
+                  <button className="btn btn--ghost btn--small" onClick={() => setShowAll((v) => !v)}>
+                    {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length} ${t("permits")}`}
+                  </button>
+                )}
+              </>
             )}
           </section>
 
@@ -295,46 +330,54 @@ export function AccessPage() {
   );
 }
 
-/** The iPhone's apply card: start · end · reason, the quick default prefilled (now → +2 h, 出门). */
+/**
+ * The iPhone's apply card, compact: the date stays on today, start · end as
+ * times on one row (an end at or before the start counts as tomorrow, "+1"),
+ * then reason and the Apply button on the next. Quick default: now → +2 h, 出门.
+ */
 function ApplyCard({ disabled, onApply, etaLabel }: { disabled: boolean; onApply: (d: { startTime: string; endTime: string; note: string }) => void; etaLabel: string }) {
   const t = useT();
   const [draft] = useState(() => quickPermitDraft(Date.now()));
-  const [start, setStart] = useState(toLocalInput(draft.start));
-  const [end, setEnd] = useState(toLocalInput(draft.end));
+  const [start, setStart] = useState(toTimeInput(draft.start));
+  const [end, setEnd] = useState(toTimeInput(draft.end));
   const [reason, setReason] = useState(draft.reason);
-  const startWire = fromLocalInput(start);
-  const endWire = fromLocalInput(end);
-  const valid = !!startWire && !!endWire && endWire > startWire;
+  const window = permitWindowFromTimes(start, end, Date.now());
   return (
     <form
-      className="card stack access-apply"
+      className="card access-apply"
       onSubmit={(e) => {
         e.preventDefault();
-        if (startWire && endWire) onApply({ startTime: startWire, endTime: endWire, note: reason.trim() || "出门" });
+        if (window) onApply({ startTime: window.startTime, endTime: window.endTime, note: reason.trim() || "出门" });
       }}
     >
       <div className="access-apply__head">
         <h2 className="section-title">{t("Apply for a permit")}</h2>
-        <span className="caption">{t(etaLabel)}</span>
+        <span className="caption">
+          {t("Today")} · {t(etaLabel)}
+        </span>
       </div>
       <div className="access-apply__row">
-        <label className="field">
+        <label className="field access-apply__time">
           <span className="field__label">{t("Start")}</span>
-          <input className="input" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} required />
+          <input className="input" type="time" value={start} onChange={(e) => setStart(e.target.value)} required />
         </label>
-        <label className="field">
-          <span className="field__label">{t("End")}</span>
-          <input className="input" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} required />
+        <label className="field access-apply__time">
+          <span className="field__label">
+            {t("End")}
+            {window?.crossesMidnight && <span className="chip chip--muted access-apply__badge">+1</span>}
+          </span>
+          <input className="input" type="time" value={end} onChange={(e) => setEnd(e.target.value)} required />
         </label>
       </div>
-      <label className="field">
-        <span className="field__label">{t("Reason")}</span>
-        <input className="input" type="text" value={reason} maxLength={60} placeholder="出门" onChange={(e) => setReason(e.target.value)} />
-      </label>
-      <p className="caption">{t("Left empty, the reason is 出门. Times are the school's clock (Shanghai).")}</p>
-      <button className="btn btn--primary btn--block" type="submit" disabled={disabled || !valid}>
-        {t("Apply for permit")}
-      </button>
+      <div className="access-apply__row access-apply__row--reason">
+        <label className="field">
+          <span className="field__label">{t("Reason")}</span>
+          <input className="input" type="text" value={reason} maxLength={60} placeholder="出门" onChange={(e) => setReason(e.target.value)} />
+        </label>
+        <button className="btn btn--primary access-apply__submit" type="submit" disabled={disabled || !window}>
+          {t("Apply")}
+        </button>
+      </div>
     </form>
   );
 }
