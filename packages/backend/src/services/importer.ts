@@ -88,15 +88,26 @@ export class ImportService {
     // They are campus-wide, not this student's data, and a notice failure
     // must never cost the student their timetable: it is swallowed here and
     // the previously stored list keeps being served.
-    if (this.notices) {
-      try {
-        this.notices.upsert(await retrySafeRead(() => this.api.noticeList(conn.token)));
-      } catch {
-        /* keep the stored notices */
-      }
-    }
+    await this.syncNotices(honeyId);
     this.accounts.markSynced(honeyId);
     return { ...counts, status: "ok" };
+  }
+
+  /**
+   * Refresh the school's notice list with this account's portal token. Safe to
+   * call often: it is one GET, it never touches the account's own data, and a
+   * failure leaves the stored notices in place (the reader keeps seeing the
+   * last list rather than an error).
+   */
+  async syncNotices(honeyId: string): Promise<number> {
+    if (!this.notices) return 0;
+    const conn = this.accounts.loadPortalToken(honeyId);
+    if (!conn) return 0;
+    try {
+      return this.notices.upsert(await retrySafeRead(() => this.api.noticeList(conn.token)));
+    } catch {
+      return 0;
+    }
   }
 
   /** Persistence of already-normalized lessons through the canonical resolver (also used by seeds/tests). */

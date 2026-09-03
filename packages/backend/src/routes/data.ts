@@ -135,10 +135,19 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
     "/api/notices",
     { preHandler: ctx.requireAuth },
     async (req): Promise<NoticesResponse> => {
+      const user = ctx.userOf(req);
       const limit = req.query.limit ? Number(req.query.limit) : 50;
+      const fetchedAt = ctx.notices.fetchedAt();
+      // Stale-while-revalidate: the stored list answers now, and a list older
+      // than a quarter of an hour is refreshed behind the response. Notices are
+      // campus-wide, so one student's read keeps everyone's copy current — and
+      // a slow or unhappy portal never delays the page.
+      if (fetchedAt === null || Date.now() - fetchedAt > 15 * 60_000) {
+        void ctx.importer.syncNotices(user.honey_id).catch(() => undefined);
+      }
       return {
         notices: ctx.notices.list(Number.isFinite(limit) ? limit : 50),
-        fetchedAt: ctx.notices.fetchedAt(),
+        fetchedAt,
       };
     },
   );
