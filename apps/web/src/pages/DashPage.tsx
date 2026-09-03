@@ -18,6 +18,7 @@ import type {
   KillSwitchName,
   StandaloneMode,
 } from "../api/types";
+import { CURATED_LLM_MODELS } from "@honey/shared/api";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
 import { Switch } from "../components/Switch";
@@ -536,12 +537,19 @@ function LlmPanel({
           <label className="field__label" htmlFor="llm-model">
             Model
           </label>
-          <input
-            id="llm-model"
-            className="input"
-            value={modelInput ?? model}
-            onChange={(e) => setModelInput(e.target.value)}
-          />
+          {/* A wheel of the benched models (a native picker on phones); the
+              configured model stays selectable even if it is not on the list. */}
+          <select id="llm-model" className="input" value={modelInput ?? model} onChange={(e) => setModelInput(e.target.value)}>
+            {model && !CURATED_LLM_MODELS.some((m) => m.id === model) && (
+              <option value={model}>{model} — configured</option>
+            )}
+            {CURATED_LLM_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label} — {m.note}
+              </option>
+            ))}
+          </select>
+          <span className="caption">{CURATED_LLM_MODELS.find((m) => m.id === (modelInput ?? model))?.id ?? (modelInput ?? model)}</span>
         </div>
         <div className="field">
           <label className="field__label" htmlFor="llm-key">

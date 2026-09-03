@@ -204,6 +204,24 @@ export interface AdminLlmTestResponse {
   model: string | null;
 }
 
+/**
+ * Moderation models the Dash offers on its wheel (Gary 2026-09-03): only
+ * models that were live-benchmarked against the real schema request
+ * (docs/architecture/moderation-pipeline.md §Model choice). A model that
+ * has not been benched is not on the wheel; the configured model is always
+ * shown even when it is not listed here.
+ */
+export interface CuratedLlmModel {
+  id: string;
+  label: string;
+  /** What the bench found, in a few words. */
+  note: string;
+}
+export const CURATED_LLM_MODELS: readonly CuratedLlmModel[] = [
+  { id: "mistralai/mistral-small-3.2-24b-instruct", label: "Mistral Small 3.2 (24B)", note: "Default · 2–4 s · 100 % schema-valid" },
+  { id: "deepseek/deepseek-v4-flash", label: "DeepSeek V4 Flash", note: "Fallback · 2–9 s · one malformed in nine" },
+];
+
 export interface AdminReport {
   id: string;
   experience_id: string;
