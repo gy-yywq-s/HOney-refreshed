@@ -51,6 +51,18 @@ switch is **OFF**; the failure-injection transcript is
 verification (§26.3: switch on → one confirmed open at a real gate → switch off, journal +
 screenshot recorded here) is Gary's physical step and has **not** been done yet.
 
+## iOS interop (2026-09-03)
+
+`ios-web-port` @ `e2c889f` merges `integration/product-v2` (groups 1–4) and implements Anonymous
+Control v2 + the canonical contract in Swift (`ios-web-port/HOneyCore/Sources/HOneyCore/CommunityV2/`;
+`docs/architecture/anonymous-control-v2.md` § iOS). Interop evidence: the shared vectors,
+`fixtures/blind-token-kat.json` (a Web-produced token the Swift verifier accepts) and the 43
+contract fixtures pass in `swift test` on Linux (110 tests). The macOS lane compiles the app.
+Deltas from the spec text for Gary: names are joined client-side (Community sends ids only);
+reactions are gated by school membership, not exposure; pairing is by code (no QR); the iOS blind
+client does its own modular arithmetic (swift-crypto cannot host the derived exponent); passkey
+PRF wrappers cannot be created from iOS in this build.
+
 ## Recorded risk acceptances (dev stage)
 
 - **Web HOney session tokens live in localStorage** (review v3 §12.15D wants
