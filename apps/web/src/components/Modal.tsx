@@ -111,7 +111,13 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
     // The app behind the dialog is inert (r8): no tab, click or AT access.
     const root = document.getElementById("root");
     root?.setAttribute("inert", "");
+    // …and it does not scroll under the sheet: a rubber-banding region behind
+    // a fixed overlay is what leaves the screen drifted on iOS (Gary
+    // 2026-09-03). The scroll position is kept — only the scrolling stops.
+    document.body.classList.add("has-sheet");
+    if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
     return () => {
+      document.body.classList.remove("has-sheet");
       window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", onKey);
       root?.removeAttribute("inert");

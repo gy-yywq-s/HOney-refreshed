@@ -63,6 +63,31 @@ function AppLayout() {
     void accessClient.bootstrap().catch(() => undefined);
   }, [me?.connection.connected]);
 
+  // iOS scrolls the WINDOW to a focused control — a native <select> wheel, a
+  // field under a sheet — even though this shell never window-scrolls (the
+  // .main region is the scroll owner). The page is then left drifted, with a
+  // fixed overlay sitting off the viewport (Gary 2026-09-03: 屏幕整个溢出然后
+  // 漂移). Whenever the document itself is not scrollable, put it back.
+  useEffect(() => {
+    const settle = () => {
+      if (document.documentElement.scrollHeight > window.innerHeight + 1) return;
+      if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
+    };
+    const vv = window.visualViewport;
+    window.addEventListener("focusin", settle);
+    window.addEventListener("focusout", settle);
+    window.addEventListener("scroll", settle, { passive: true });
+    vv?.addEventListener("resize", settle);
+    vv?.addEventListener("scroll", settle);
+    return () => {
+      window.removeEventListener("focusin", settle);
+      window.removeEventListener("focusout", settle);
+      window.removeEventListener("scroll", settle);
+      vv?.removeEventListener("resize", settle);
+      vv?.removeEventListener("scroll", settle);
+    };
+  }, []);
+
   const [back, setBack] = useState<StackEntry | null>(null);
   useEffect(() => {
     const here = location.pathname;

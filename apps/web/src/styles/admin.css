@@ -65,6 +65,13 @@
   resize: vertical;
   min-height: 120px;
 }
+/* A wheel sizes to its widest option; on a phone that is how a select
+   pushes the layout sideways (Gary 2026-09-03: 屏幕整个溢出). The box takes
+   the width it is given — the iOS picker still shows each option in full. */
+.admin select.input {
+  width: 100%;
+  max-width: 100%;
+}
 .admin code {
   font-size: var(--fs-caption);
   background: var(--soft);

@@ -407,6 +407,14 @@
 }
 
 /* ── Modal / dialog shell / bottom sheet ────────────────────────────────── */
+/* Nothing scrolls behind an open sheet (Gary 2026-09-03: 溢出然后漂移). */
+body.has-sheet {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+body.has-sheet .main {
+  overflow: hidden;
+}
 .modal-overlay {
   position: fixed;
   inset: 0;
