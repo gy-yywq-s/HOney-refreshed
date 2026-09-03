@@ -17,6 +17,14 @@
   justify-content: space-between;
   gap: var(--sp-2);
 }
+.access-apply__head .section-title {
+  white-space: nowrap;
+  margin: 0;
+}
+.access-apply__head .caption {
+  flex: 1;
+  text-align: right;
+}
 /* Compact: two rows of controls so the whole Access screen fits one phone height. */
 .access-apply {
   display: flex;
