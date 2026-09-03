@@ -1363,18 +1363,24 @@
 
 /* Home (product-v2 §6.3): a quiet doorway — greeting, focal lesson, two
    voices, one share action, one portal row. */
-.home-brand {
-  /* Brand bar (Gary 2026-09-02, after the reference build's top bar):
-     wordmark centred under the status bar, then a rule that runs edge to
-     edge with more weight than a hairline — the lesson-card frame stroke. */
+.home-head {
+  padding-top: calc(var(--inset-top) + var(--sp-2));
+}
+.home-head__row {
   display: flex;
-  justify-content: center;
-  margin: 0 calc(-1 * var(--page-x)) var(--sp-4);
-  padding: calc(var(--inset-top) + var(--sp-3)) var(--sp-4) var(--sp-3);
-  border-bottom: 1.5px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.home-head__mark {
+  flex: none;
+  padding-top: 4px;
 }
 @media (min-width: 961px) {
-  .home-brand {
+  .home-head {
+    padding-top: 0;
+  }
+  .home-head__mark {
     display: none; /* the rail already carries the wordmark */
   }
 }

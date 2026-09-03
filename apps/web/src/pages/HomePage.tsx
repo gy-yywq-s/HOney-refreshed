@@ -84,14 +84,16 @@ export function HomePage() {
 
   return (
     <div className="stack home">
-      {/* The brand bar leads the first screen (Gary 2026-09-02): wordmark
-          centred, then a rule that runs edge to edge — the reference build's
-          top bar, in this system's stroke. Hidden where the rail carries it. */}
-      <div className="home-brand">
-        <WordmarkHOney height={30} />
-      </div>
+      {/* The wordmark sits on the greeting line, at the right and small
+          (Gary 2026-09-03, the iPhone reference) — no brand bar. Hidden
+          where the rail already carries it. */}
       <header className="home-head">
-        <h1 className="home-head__hi">{lang === "zh" ? `你好，${me.displayName}` : `Hi, ${me.displayName}`}</h1>
+        <div className="home-head__row">
+          <h1 className="home-head__hi">{lang === "zh" ? `你好，${me.displayName}` : `Hi, ${me.displayName}`}</h1>
+          <span className="home-head__mark" aria-hidden="true">
+            <WordmarkHOney height={22} />
+          </span>
+        </div>
         <p className="home-head__date">{today}</p>
       </header>
 
