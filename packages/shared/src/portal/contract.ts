@@ -110,7 +110,8 @@ export type ConnectorError =
   | { kind: "credentialsRejected"; retryable: false }
   | { kind: "userActionRequired"; reason: "captcha" | "mfa" | "passwordChanged" | "unknown" }
   /** Well-formed envelope, but the portal refused the operation (NOT a schema problem). */
-  | { kind: "operationRejected"; endpoint: string; status?: number }
+  /** `reason` = the portal's own words for the refusal (its `message`), when it gave any. */
+  | { kind: "operationRejected"; endpoint: string; status?: number; reason?: string }
   | { kind: "schemaIncompatible"; endpoint: string };
 
 export interface PortalConnector {

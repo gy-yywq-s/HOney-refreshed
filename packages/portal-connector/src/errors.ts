@@ -42,12 +42,21 @@ export const userActionRequired = (
   reason: "captcha" | "mfa" | "passwordChanged" | "unknown",
 ) => new PortalError({ kind: "userActionRequired", reason });
 
-export const operationRejected = (endpoint: string, status?: number) =>
-  new PortalError(
-    status === undefined
-      ? { kind: "operationRejected", endpoint }
-      : { kind: "operationRejected", endpoint, status },
-  );
+export const operationRejected = (endpoint: string, status?: number, reason?: string) =>
+  new PortalError({
+    kind: "operationRejected",
+    endpoint,
+    ...(status === undefined ? {} : { status }),
+    ...(reason ? { reason } : {}),
+  });
+
+/** The portal's refusal text: its `message` when it is a short string (never a body dump). */
+export function refusalReason(env: { message?: unknown }): string | undefined {
+  const m = env.message;
+  if (typeof m !== "string") return undefined;
+  const text = m.trim();
+  return text && text.length <= 200 ? text : undefined;
+}
 
 export const schemaIncompatible = (endpoint: string) =>
   new PortalError({ kind: "schemaIncompatible", endpoint });

@@ -26,6 +26,7 @@ export interface OperationRow {
   upstream_finished_at: number | null;
   terminal_at: number | null;
   outcome_code: string | null;
+  outcome_detail: string | null;
   upstream_status: number | null;
   service_version: string;
 }
@@ -120,16 +121,16 @@ export class OperationStore {
     return Number(r.changes) === 1 ? "claimed" : "not_prepared";
   }
 
-  transition(id: string, state: OperationState, now: number, extra: { outcomeCode?: string; upstreamStatus?: number } = {}): void {
+  transition(id: string, state: OperationState, now: number, extra: { outcomeCode?: string; outcomeDetail?: string; upstreamStatus?: number } = {}): void {
     const stamp =
       state === "DISPATCHING" ? "dispatch_started_at = ?," : state === "WAITING_FOR_SCHOOL" ? "upstream_headers_at = ?," : isTerminal(state) ? "terminal_at = ?, upstream_finished_at = COALESCE(upstream_finished_at, ?)," : "";
     const stampArgs = state === "DISPATCHING" || state === "WAITING_FOR_SCHOOL" ? [now] : isTerminal(state) ? [now, now] : [];
     this.db
       .prepare(
-        `UPDATE access_operations SET state = ?, ${stamp} outcome_code = COALESCE(?, outcome_code), upstream_status = COALESCE(?, upstream_status),
-         upstream_status_class = COALESCE(?, upstream_status_class), updated_at = ? WHERE id = ?`,
+        `UPDATE access_operations SET state = ?, ${stamp} outcome_code = COALESCE(?, outcome_code), outcome_detail = COALESCE(?, outcome_detail),
+         upstream_status = COALESCE(?, upstream_status), upstream_status_class = COALESCE(?, upstream_status_class), updated_at = ? WHERE id = ?`,
       )
-      .run(state, ...stampArgs, extra.outcomeCode ?? null, extra.upstreamStatus ?? null, extra.upstreamStatus ? `${Math.floor(extra.upstreamStatus / 100)}xx` : null, now, id);
+      .run(state, ...stampArgs, extra.outcomeCode ?? null, extra.outcomeDetail?.slice(0, 200) ?? null, extra.upstreamStatus ?? null, extra.upstreamStatus ? `${Math.floor(extra.upstreamStatus / 100)}xx` : null, now, id);
   }
 
   status(row: OperationRow): OperationStatus {
@@ -146,7 +147,7 @@ export class OperationStore {
 
   /** Journal rows for the Dash/transcript: no subject, no secret. */
   recent(limit: number): Omit<OperationRow, "subject_hash">[] {
-    return (this.db.prepare(`SELECT id, kind, gate_key, permit_record_id, state, created_at, prepared_at, committed_at, dispatch_started_at, upstream_headers_at, upstream_finished_at, terminal_at, outcome_code, upstream_status, service_version FROM access_operations ORDER BY created_at DESC LIMIT ?`).all(limit) as Omit<OperationRow, "subject_hash">[]);
+    return (this.db.prepare(`SELECT id, kind, gate_key, permit_record_id, state, created_at, prepared_at, committed_at, dispatch_started_at, upstream_headers_at, upstream_finished_at, terminal_at, outcome_code, outcome_detail, upstream_status, service_version FROM access_operations ORDER BY created_at DESC LIMIT ?`).all(limit) as Omit<OperationRow, "subject_hash">[]);
   }
 
   isInFlight(state: OperationState): boolean {

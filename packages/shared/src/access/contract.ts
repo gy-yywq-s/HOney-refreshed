@@ -85,6 +85,8 @@ export interface AccessProgressEvent {
   etaLowMs?: number;
   etaHighMs?: number;
   message: string;
+  /** The school's own words when it declined (its portal `message`), shown to the student verbatim. */
+  detail?: string;
   terminal: boolean;
 }
 

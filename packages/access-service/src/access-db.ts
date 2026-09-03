@@ -36,6 +36,7 @@ const SCHEMA = `
     upstream_finished_at INTEGER,
     terminal_at INTEGER,
     outcome_code TEXT,
+    outcome_detail TEXT,                    -- the school's short refusal text (never a body dump)
     upstream_status INTEGER,
     upstream_status_class TEXT,
     service_version TEXT NOT NULL,
@@ -59,5 +60,8 @@ export function openAccessDatabase(path: string): DatabaseSyncType {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL");
   db.exec(SCHEMA);
+  // Additive column for journals created before the refusal text existed.
+  const columns = (db.prepare("PRAGMA table_info(access_operations)").all() as { name: string }[]).map((c) => c.name);
+  if (!columns.includes("outcome_detail")) db.exec("ALTER TABLE access_operations ADD COLUMN outcome_detail TEXT");
   return db;
 }

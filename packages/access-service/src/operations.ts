@@ -287,7 +287,7 @@ export class AccessEngine {
     // Finished before this process's memory (restart): synthesize the terminal event from the journal.
     const row = this.deps.store.get(operationId)!;
     const stage = stageOf(row);
-    ch.push({ stage, elapsedMs: (row.terminal_at ?? row.created_at) - row.created_at, message: PROGRESS_COPY[stage], terminal: isTerminal(row.state) });
+    ch.push({ stage, elapsedMs: (row.terminal_at ?? row.created_at) - row.created_at, message: PROGRESS_COPY[stage], ...(row.outcome_detail ? { detail: row.outcome_detail } : {}), terminal: isTerminal(row.state) });
     ch.close();
     return ch;
   }
@@ -331,6 +331,7 @@ export class AccessEngine {
     const result = await pending;
     const now = this.now();
     let stage: ProgressStage;
+    let detail: string | undefined;
     if (result.ok) {
       this.deps.store.transition(row.id, "CONFIRMED", now, { outcomeCode: "confirmed" });
       this.deps.latency.record(kind, true, now - startedAt);
@@ -342,7 +343,9 @@ export class AccessEngine {
       const e = result.error;
       switch (e.kind) {
         case "operationRejected":
-          this.deps.store.transition(row.id, "REJECTED", now, { outcomeCode: "portal_rejected", ...(e.info.kind === "operationRejected" && e.info.status !== undefined ? { upstreamStatus: e.info.status } : {}) });
+          // The school's own words travel to the student (and the journal) verbatim.
+          detail = e.info.kind === "operationRejected" ? e.info.reason : undefined;
+          this.deps.store.transition(row.id, "REJECTED", now, { outcomeCode: "portal_rejected", ...(detail ? { outcomeDetail: detail } : {}), ...(e.info.kind === "operationRejected" && e.info.status !== undefined ? { upstreamStatus: e.info.status } : {}) });
           stage = "rejected";
           break;
         case "sessionExpired":
@@ -362,7 +365,7 @@ export class AccessEngine {
       this.deps.store.transition(row.id, "OUTCOME_UNKNOWN", now, { outcomeCode: "unexpected_error" });
       stage = "outcome_unknown";
     }
-    this.emit(row.id, { stage, elapsedMs: elapsed(), message: PROGRESS_COPY[stage], terminal: true });
+    this.emit(row.id, { stage, elapsedMs: elapsed(), message: PROGRESS_COPY[stage], ...(detail ? { detail } : {}), terminal: true });
   }
 
   status(cap: VerifiedCapability, operationId: string): OperationStatus {

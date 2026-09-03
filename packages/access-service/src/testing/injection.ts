@@ -167,7 +167,7 @@ export async function runInjections(): Promise<InjectionResult[]> {
     const op = JSON.parse((await prepareOpen(h, cap)).body) as PreparedOpenOperation;
     const c = await commit(h, cap, op);
     const j = journal(h, op.operationId);
-    record({ name: "school rejects", injected: "portal answers status:1 'no permission'", expected: "stream ends rejected; journal REJECTED/portal_rejected; 1 door request", observed: `${c.status} ${terminal(c.events)?.stage}`, ...j, doorRequests: h.portal.state.doorRequestCount, studentSaw: terminal(c.events)?.message ?? "", pass: terminal(c.events)?.stage === "rejected" && j.journalState === "REJECTED" && h.portal.state.doorRequestCount === 1 });
+    record({ name: "school rejects", injected: "portal answers status:1 'no permission'", expected: "stream ends rejected WITH the school's words; journal REJECTED/portal_rejected; 1 door request", observed: `${c.status} ${terminal(c.events)?.stage} detail=${JSON.stringify(terminal(c.events)?.detail)}`, ...j, doorRequests: h.portal.state.doorRequestCount, studentSaw: `${terminal(c.events)?.message ?? ""} — ${terminal(c.events)?.detail ?? ""}`, pass: terminal(c.events)?.stage === "rejected" && terminal(c.events)?.detail === "no permission" && j.journalState === "REJECTED" && h.portal.state.doorRequestCount === 1 });
   });
 
   // 7. Portal hangs past the timeout: outcome unknown, never retried.

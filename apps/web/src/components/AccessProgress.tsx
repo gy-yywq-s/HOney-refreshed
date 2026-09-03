@@ -75,7 +75,20 @@ export function AccessProgress({
           </li>
         )}
       </ol>
-      <p className="access-progress__line">{failure ? t(failure) : terminal ? t(terminal.message) : last ? t(last.message) : t("Checking your permit and the gate with the school…")}</p>
+      {settled && tone !== "ok" ? (
+        // A failure is unmistakable: a full banner with what happened and, when the school gave a reason, its own words.
+        <div role="alert" className={`banner banner--${tone === "danger" ? "danger" : "warning"} access-progress__failure`}>
+          <strong className="access-progress__headline">{failure ? t("Not sent") : t(STAGE_LABEL[terminal!.stage])}</strong>
+          <span>{failure ? t(failure) : t(terminal!.message)}</span>
+          {terminal?.detail && (
+            <span className="access-progress__detail">
+              {t("The school said:")} “{terminal.detail}”
+            </span>
+          )}
+        </div>
+      ) : (
+        <p className="access-progress__line">{terminal ? t(terminal.message) : last ? t(last.message) : t("Checking your permit and the gate with the school…")}</p>
+      )}
       <p className="caption">
         {elapsedLabel(elapsed)}
         {!settled && etaLabel && ` · ${t(etaLabel)}`}
