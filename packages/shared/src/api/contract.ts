@@ -175,10 +175,19 @@ export interface CardPurchase {
   at: number;
 }
 
+export interface CardTopUp {
+  id: string;
+  amount: number;
+  /** The school's own word for the state ("成功"). */
+  state: string;
+  at: number;
+}
+
 export interface CardResponse {
   status: SchoolReadStatus;
   card: CampusCard | null;
   purchases: CardPurchase[];
+  topUps: CardTopUp[];
 }
 
 export interface StudentWarning {

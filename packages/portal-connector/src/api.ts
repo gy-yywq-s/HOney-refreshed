@@ -1,6 +1,7 @@
 import type {
   CampusCardWire,
   CardConsumeWire,
+  CardRechargeWire,
   DoorOptionWire,
   ExitPermitWire,
   LessonTableWire,
@@ -187,6 +188,14 @@ export class PortalApi {
   cardConsume(token: string, cardNo: string, limit = 60): Promise<CardConsumeWire[]> {
     const path = `/api/card/card-consume-record?cardNo=${encodeURIComponent(cardNo)}&page=1&limit=${Math.min(Math.max(limit, 1), 200)}`;
     return this.rows<CardConsumeWire>(token, path);
+  }
+
+  /**
+   * GET /api/card/recharge-record — top-ups on one card. Addressed by card_id
+   * (the portal's own web app does the same); cardNo answers 500.
+   */
+  cardRecharges(token: string, cardId: string): Promise<CardRechargeWire[]> {
+    return this.rows<CardRechargeWire>(token, `/api/card/recharge-record?card_id=${encodeURIComponent(cardId)}`);
   }
 
   /** GET /api/students/get_my_warning — the student's own disciplinary records. */

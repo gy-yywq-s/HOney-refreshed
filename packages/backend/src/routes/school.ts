@@ -21,13 +21,18 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
   app.get("/api/school/card", { preHandler: ctx.requireAuth }, async (req, reply): Promise<CardResponse> => {
     void reply.header("cache-control", "no-store");
     const token = tokenFor(ctx.userOf(req).honey_id);
-    if (!token) return { status: "portal_reconnect_required", card: null, purchases: [] };
+    if (!token) return { status: "portal_reconnect_required", card: null, purchases: [], topUps: [] };
     try {
       const cards = await ctx.connector.api.cardList(token);
       const first = cards[0];
-      if (!first) return { status: "ok", card: null, purchases: [] };
+      if (!first) return { status: "ok", card: null, purchases: [], topUps: [] };
       // The card is addressed by NUMBER upstream: cardId answers 500.
-      const purchases = await ctx.connector.api.cardConsume(token, first.cardNo).catch(() => []);
+      // Spending is addressed by card NUMBER, top-ups by card ID — the two
+      // endpoints disagree upstream, and each 500s on the other's key.
+      const [purchases, topUps] = await Promise.all([
+        ctx.connector.api.cardConsume(token, first.cardNo).catch(() => []),
+        ctx.connector.api.cardRecharges(token, first.cardId).catch(() => []),
+      ]);
       return {
         status: "ok",
         card: {
@@ -50,13 +55,21 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
             at: parsePortalTime(p.debitTime.slice(0, 19)) ?? 0,
           }))
           .sort((a, b) => b.at - a.at),
+        topUps: topUps
+          .map((r) => ({
+            id: r.trade_number,
+            amount: Number(r.amount) || 0,
+            state: r.status_str,
+            at: parsePortalTime(r.create_time) ?? 0,
+          }))
+          .sort((a, b) => b.at - a.at),
       };
     } catch (e) {
       if (isExpired(e)) {
         ctx.accounts.markPortalExpired(ctx.userOf(req).honey_id);
-        return { status: "portal_reconnect_required", card: null, purchases: [] };
+        return { status: "portal_reconnect_required", card: null, purchases: [], topUps: [] };
       }
-      return { status: "unavailable", card: null, purchases: [] };
+      return { status: "unavailable", card: null, purchases: [], topUps: [] };
     }
   });
 

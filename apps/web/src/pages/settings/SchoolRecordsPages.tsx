@@ -11,6 +11,7 @@ import { useApi } from "../../lib/useApi";
 import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime } from "../../lib/format";
 import { useLang, useT } from "../../lib/i18n";
+import { usePortalEntry } from "../../lib/portalEntry";
 
 type Bi = { en: string; zh: string };
 
@@ -49,6 +50,10 @@ export function CampusCardPage() {
   const t = useT();
   const card = useApi<CardResponse>(() => api.schoolCard(), []);
   const data = card.data;
+  // Topping up happens in the school's own system (it ends in an Alipay
+  // window). HOney hands the student over already signed in and takes no
+  // part in the payment itself (Gary 2026-09-03).
+  const portal = usePortalEntry();
 
   return (
     <div className="stack">
@@ -67,6 +72,13 @@ export function CampusCardPage() {
               {L({ en: "General", zh: "自充值" })} {yuan(data.card.general)} · {L({ en: "Subsidy", zh: "补助" })}{" "}
               {yuan(data.card.subsidy)}
             </span>
+            {!portal.needsLogin && (
+              <div className="card-actions">
+                <a className="btn btn--primary" href={portal.href} target="_blank" rel="noopener noreferrer">
+                  {L({ en: "Top up in the school portal", zh: "去学校门户充值" })}
+                </a>
+              </div>
+            )}
           </section>
 
           <section className="rowlist" aria-label="Spending">
@@ -90,10 +102,26 @@ export function CampusCardPage() {
               ))
             )}
           </section>
+          {data.topUps.length > 0 && (
+            <section className="rowlist" aria-label="Top-ups">
+              <h2 className="overline">{L({ en: "Top-ups", zh: "充值记录" })}</h2>
+              {data.topUps.map((r) => (
+                <div className="row" key={r.id}>
+                  <span className="row__main">
+                    <span className="row__title">{yuan(r.amount)}</span>
+                    <span className="row__sub">
+                      {formatShortDate(r.at)} · {formatTime(r.at)}
+                    </span>
+                  </span>
+                  <span className="row__value cardrow__amount">{r.state}</span>
+                </div>
+              ))}
+            </section>
+          )}
           <p className="text-4">
             {L({
-              en: "Read from the school's card system when you open this page. HOney keeps no copy. Topping up is done in the school portal.",
-              zh: "打开本页时才从学校的一卡通系统读取，HOney 不留副本。充值请在学校门户里进行。",
+              en: "Read from the school's card system when you open this page — HOney keeps no copy. Paying happens in the school's own system, never here.",
+              zh: "打开本页时才从学校的一卡通系统读取，HOney 不留副本。付款始终在学校自己的系统里完成，不经过这里。",
             })}
           </p>
         </>

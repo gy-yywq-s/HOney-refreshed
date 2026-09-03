@@ -125,6 +125,23 @@ export interface CardConsumeWire {
   debitTime: string;
 }
 
+/**
+ * GET /api/card/recharge-record?card_id= — top-ups on one card. The portal's
+ * own web app addresses this one by card_id (its bundle, 2026-09-03); cardNo
+ * answers 500 here, the mirror image of the consume endpoint.
+ */
+export interface CardRechargeWire {
+  cardNo: string;
+  personName: string;
+  /** Yuan, as a string upstream. */
+  amount: string;
+  status: number;
+  status_str: string;
+  trade_number: string;
+  create_time: string;
+  update_time: string;
+}
+
 /** GET /api/students/get_my_warning — this student's disciplinary records. */
 export interface StudentWarningWire {
   record_id: number;
