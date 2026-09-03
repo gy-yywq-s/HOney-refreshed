@@ -57,14 +57,12 @@ function useRowsThatFit(active: boolean, total: number): { bodyRef: RefObject<HT
     }
     const measure = () => {
       const row = body.querySelector<HTMLElement>(".access-permit");
-      const button = body.querySelector<HTMLElement>(".access-permits__more");
       if (!row) return;
       const rowH = row.getBoundingClientRect().height;
       const list = body.querySelector<HTMLElement>(".rowlist");
       const gap = list ? parseFloat(getComputedStyle(list).rowGap || "0") || 0 : 0;
-      const buttonH = button ? button.getBoundingClientRect().height + gap : 0;
       const available = body.clientHeight;
-      const n = Math.max(1, Math.floor((available - buttonH + gap) / (rowH + gap)));
+      const n = Math.max(1, Math.floor((available + gap) / (rowH + gap)));
       setFit(Math.min(n, total));
     };
     measure();
@@ -216,15 +214,23 @@ export function AccessPage() {
 
           <section className="access-section" aria-label={t("Permits")}>
             {/* The header row is the fold: collapsed by default so the whole screen fits without scrolling. */}
-            <button className="access-fold" aria-expanded={permitsOpen} onClick={() => setPermitsOpen((v) => !v)}>
-              <h2 className="overline">{t("Permits")}</h2>
-              <span className="access-fold__summary">
-                {boot.permitsFresh ? (openable.length > 0 ? `${openable.length} ${t("usable now")} · ${permits.length}` : `${permits.length}`) : t("unavailable")}
-              </span>
-              <span className={`access-fold__chevron${permitsOpen ? " is-open" : ""}`} aria-hidden="true">
-                <ChevronRightIcon />
-              </span>
-            </button>
+            <div className="access-fold">
+              <button className="access-fold__toggle" aria-expanded={permitsOpen} onClick={() => setPermitsOpen((v) => !v)}>
+                <h2 className="overline">{t("Permits")}</h2>
+                <span className="access-fold__summary">
+                  {boot.permitsFresh ? (openable.length > 0 ? `${openable.length} ${t("usable now")} · ${permits.length}` : `${permits.length}`) : t("unavailable")}
+                </span>
+                <span className={`access-fold__chevron${permitsOpen ? " is-open" : ""}`} aria-hidden="true">
+                  <ChevronRightIcon />
+                </span>
+              </button>
+              {/* Show all / fewer lives in the header row so it is never clipped by the fitted list. */}
+              {permitsOpen && (permits.length > visiblePermits.length || showAll) && (
+                <button className="btn btn--ghost btn--small access-fold__more" onClick={() => setShowAll((v) => !v)}>
+                  {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length}`}
+                </button>
+              )}
+            </div>
             {permitsOpen && (
               <div className="access-permits__body" ref={bodyRef}>
                 {!boot.permitsFresh && (
@@ -239,11 +245,6 @@ export function AccessPage() {
                     ))}
                   </div>
                 )}
-                {permits.length > visiblePermits.length || showAll ? (
-                  <button className="btn btn--ghost btn--small access-permits__more" onClick={() => setShowAll((v) => !v)}>
-                    {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length} ${t("permits")}`}
-                  </button>
-                ) : null}
               </div>
             )}
           </section>

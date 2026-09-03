@@ -138,12 +138,22 @@
   gap: var(--sp-2);
   width: 100%;
   min-height: 44px;
+}
+.access-fold__toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
   padding: var(--sp-1) 0;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+.access-fold__more {
+  flex: none;
 }
 .access-fold .overline {
   margin: 0;
