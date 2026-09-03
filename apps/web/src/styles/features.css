@@ -1447,9 +1447,11 @@
   gap: var(--sp-3);
   margin-top: var(--sp-3);
   padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
   border-radius: var(--radius-field);
-  background: var(--cell);
+  /* A light wash of the accent and a soft shadow: it reads as the entry, not a plain field (Gary 2026-09-03). */
+  background: color-mix(in srgb, var(--accent) 7%, var(--cell));
+  box-shadow: var(--shadow-card);
   color: var(--ink-2);
   text-decoration: none;
   font-size: var(--fs-secondary);

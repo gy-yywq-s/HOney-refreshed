@@ -63,6 +63,23 @@
   flex-direction: column;
   gap: var(--sp-1);
   padding: var(--sp-3) var(--sp-4);
+  box-shadow: var(--shadow-card);
+}
+/* The title sits close to the apply card. */
+.access > .page-head {
+  margin-bottom: calc(-1 * var(--sp-2));
+}
+/* "Show all N" between Permits and School access: plain text, no border, no pill. */
+.access-more {
+  align-self: flex-start;
+  margin: calc(-1 * var(--sp-2)) 0;
+  padding: var(--sp-1) 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  cursor: pointer;
 }
 .access-apply .field__label {
   font-size: var(--fs-micro);
@@ -152,9 +169,7 @@
   text-align: left;
   cursor: pointer;
 }
-.access-fold__more {
-  flex: none;
-}
+
 .access-fold .overline {
   margin: 0;
 }

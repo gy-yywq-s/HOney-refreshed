@@ -224,12 +224,6 @@ export function AccessPage() {
                   <ChevronRightIcon />
                 </span>
               </button>
-              {/* Show all / fewer lives in the header row so it is never clipped by the fitted list. */}
-              {permitsOpen && (permits.length > visiblePermits.length || showAll) && (
-                <button className="btn btn--ghost btn--small access-fold__more" onClick={() => setShowAll((v) => !v)}>
-                  {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length}`}
-                </button>
-              )}
             </div>
             {permitsOpen && (
               <div className="access-permits__body" ref={bodyRef}>
@@ -248,6 +242,13 @@ export function AccessPage() {
               </div>
             )}
           </section>
+
+          {/* "Show all N" sits between Permits and School access: plain text, never clipped by the fitted list. */}
+          {permitsOpen && (permits.length > visiblePermits.length || showAll) && (
+            <button className="access-more" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length}`}
+            </button>
+          )}
 
           <section className="access-section" aria-label={t("School access")}>
             <div className="access-dock__head">
