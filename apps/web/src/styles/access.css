@@ -7,6 +7,31 @@
   flex-direction: column;
   gap: var(--sp-2);
 }
+
+/* Fit mode (permits fold open, not "show all"): the screen is a frame —
+   apply card · permits (takes what is left) · dock — and the permits list
+   shows exactly the rows that fit on this phone (useRowsThatFit). */
+.view > .access--fit {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.access--fit > .access-section:has(.access-permits__body) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.access-permits__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.access--fit .access-permits__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.access-permits__more {
+  align-self: flex-start;
+}
 .access-section .overline {
   margin: 0;
 }
@@ -29,7 +54,21 @@
 .access-apply {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+}
+.access-apply .field__label {
+  font-size: var(--fs-micro);
+  margin-bottom: 2px;
+}
+.access-apply .input,
+.access-apply input[type="time"],
+.access-apply .access-apply__submit {
+  min-height: 40px;
+  height: 40px;
+}
+.access-apply .section-title {
+  font-size: var(--fs-secondary);
 }
 .access-apply__row {
   display: grid;

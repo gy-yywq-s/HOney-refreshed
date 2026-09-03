@@ -356,6 +356,8 @@ const ZH: Record<string, string> = {
   "The school lists no gates for your account.": "学校没有为你的账户列出校门。",
   "Your permits couldn't be read just now.": "刚才没能读取你的出门申请。",
   "Web Access is paused. You can look, but nothing can be opened from here right now.": "Web Access 已暂停。现在可以查看，但无法从这里开门。",
+  "Checking with the school": "正在向学校核对",
+  "Checking your permit and the gate with the school…": "正在向学校核对你的申请和校门…",
   "Accepted": "已接受",
   "Sending": "发送中",
   "Waiting for the school": "等待学校确认",

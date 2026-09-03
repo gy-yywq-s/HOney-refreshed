@@ -15,6 +15,8 @@ interface ModalProps {
   children: ReactNode;
   /** id of the element that describes the dialog (its first sentence). */
   describedBy?: string | undefined;
+  /** false while something physical is in flight: no ×, no backdrop/Escape/drag dismiss. */
+  dismissible?: boolean;
 }
 
 function reducedMotion(): boolean {
@@ -30,7 +32,7 @@ function reducedMotion(): boolean {
  * exit. Focus starts on the dialog and returns to the opener; the app
  * behind is inert.
  */
-export function Modal({ title, onClose, children, describedBy }: ModalProps) {
+export function Modal({ title, onClose, children, describedBy, dismissible = true }: ModalProps) {
   const shellRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [closing, setClosing] = useState(false);
@@ -38,11 +40,13 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
   // not re-run the focus/inert effect — its cleanup moves focus.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const dismissibleRef = useRef(dismissible);
+  dismissibleRef.current = dismissible;
   const closingRef = useRef(false);
 
   // One exit for every closer: animate out, then let the owner unmount.
   const requestClose = useCallback(() => {
-    if (closingRef.current) return;
+    if (closingRef.current || !dismissibleRef.current) return;
     closingRef.current = true;
     if (reducedMotion()) {
       onCloseRef.current();
@@ -65,7 +69,11 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     const shell = shellRef.current;
-    shell?.focus();
+    // Focus AFTER the sheet has arrived, and never let focus scroll: iOS
+    // Safari otherwise scrolls the viewport to a sheet that is still
+    // translated off-screen, so the whole page jumps up and settles back
+    // with the sheet left short of the bottom edge (Gary's device round).
+    const focusTimer = window.setTimeout(() => shell?.focus({ preventScroll: true }), reducedMotion() ? 0 : 380);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         requestClose();
@@ -90,9 +98,10 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
     const root = document.getElementById("root");
     root?.setAttribute("inert", "");
     return () => {
+      window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", onKey);
       root?.removeAttribute("inert");
-      opener?.focus?.();
+      opener?.focus?.({ preventScroll: true });
     };
   }, [requestClose]);
 
@@ -110,7 +119,7 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
     let dragging = false;
     let dy = 0;
     const onStart = (e: TouchEvent) => {
-      if (!sheet() || closingRef.current || shell.scrollTop > 0) return;
+      if (!sheet() || closingRef.current || !dismissibleRef.current || shell.scrollTop > 0) return;
       const t = e.touches[0]!;
       startY = lastY = t.clientY;
       startT = lastT = Date.now();
@@ -170,9 +179,11 @@ export function Modal({ title, onClose, children, describedBy }: ModalProps) {
         <span className="modal__grab" aria-hidden="true" />
         <div className="modal__head">
           <h2 className="modal__title">{title}</h2>
-          <button className="modal__close" onClick={requestClose} aria-label="Close">
-            &times;
-          </button>
+          {dismissible && (
+            <button className="modal__close" onClick={requestClose} aria-label="Close">
+              &times;
+            </button>
+          )}
         </div>
         {children}
       </div>

@@ -1,37 +1,78 @@
 // Scroll model: FRAMED_SCROLL (§16.14.2).
 // /access — Web Access (spec Part II), laid out as the iPhone's Access
-// screen: the apply-for-a-permit card, the permits list (status chip, Choose
+// screen: the apply-for-a-permit card, the permits fold (status chip, Choose
 // gate for an openable one, withdraw for a pending one), then the "School
-// access" dock — Day student · Exit permit — which opens the gate picker
-// (every gate the school lists) and one explicit confirmation before the
-// physical request. The last bootstrap is shown at once while a fresh one
-// loads; physical authority always comes from a fresh prepare.
+// access" dock — Day student · Exit permit. Every physical action runs in
+// ONE sheet: choose (permit →) gate → confirm → progress; the progress view
+// appears the instant the student confirms, and the sheet cannot be
+// dismissed while the school is being asked. The last bootstrap is shown
+// at once while a fresh one loads; physical authority always comes from a
+// fresh prepare.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { Link } from "react-router-dom";
 import { displayReason, displayStatus, isOpenable, openablePermits, permitTone, quickPermitDraft, sortedForList, type AccessBootstrap, type AccessProgressEvent, type AccessRouteKind, type Door, type Permit, type PreparedOpenOperation } from "@honey/shared/access";
 import { AccessProgress } from "../components/AccessProgress";
-import { ConfirmDialog, Modal } from "../components/Modal";
-import { accessClient, AccessClientError, describeAccessFailure, type AccessFailure } from "../lib/access/client";
+import { Modal } from "../components/Modal";
 import { ChevronRightIcon } from "../components/icons";
+import { accessClient, AccessClientError, describeAccessFailure, type AccessFailure } from "../lib/access/client";
 import { permitWindow, permitWindowFromTimes, toTimeInput } from "../lib/access/format";
 import { useT } from "../lib/i18n";
 import { Skeleton } from "../lib/motion";
 
 type Route = { kind: AccessRouteKind; permit: Permit | null };
-type Pending = { kind: "open"; door: Door; route: Route } | { kind: "withdraw"; permit: Permit } | { kind: "apply"; startTime: string; endTime: string; note: string };
-type Running = { title: string; op: PreparedOpenOperation; events: AccessProgressEvent[]; startedAt: number };
+type Action = { kind: "open"; route: Route; door: Door | null } | { kind: "withdraw"; permit: Permit } | { kind: "apply"; startTime: string; endTime: string; note: string };
+type Step = "permit" | "gate" | "confirm" | "running";
+interface Flow {
+  action: Action;
+  step: Step;
+  /** The run, from the moment Confirm was pressed. */
+  run?: { startedAt: number; op: PreparedOpenOperation | null; events: AccessProgressEvent[]; failure: string | null };
+}
 
 const COLLAPSED_PERMITS = 3;
 const FOLD_KEY = "honey.access.permitsOpen";
 
-/** The permits fold: closed by default (the first screen holds everything); remembered per device. */
+/** The permits fold: open by default (the list takes exactly the space that fits); remembered per device. */
 function readFold(): boolean {
   try {
-    return localStorage.getItem(FOLD_KEY) === "open";
+    return localStorage.getItem(FOLD_KEY) !== "closed";
   } catch {
-    return false;
+    return true;
   }
+}
+
+/**
+ * How many permit rows fit between the apply card and the dock on THIS
+ * phone: the list body is measured, and the count re-derives on resize.
+ */
+function useRowsThatFit(active: boolean, total: number): { bodyRef: RefObject<HTMLDivElement>; fit: number | null } {
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    if (!active || !body) {
+      setFit(null);
+      return;
+    }
+    const measure = () => {
+      const row = body.querySelector<HTMLElement>(".access-permit");
+      const button = body.querySelector<HTMLElement>(".access-permits__more");
+      if (!row) return;
+      const rowH = row.getBoundingClientRect().height;
+      const list = body.querySelector<HTMLElement>(".rowlist");
+      const gap = list ? parseFloat(getComputedStyle(list).rowGap || "0") || 0 : 0;
+      const buttonH = button ? button.getBoundingClientRect().height + gap : 0;
+      const available = body.clientHeight;
+      const n = Math.max(1, Math.floor((available - buttonH + gap) / (rowH + gap)));
+      setFit(Math.min(n, total));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(body);
+    return () => ro.disconnect();
+  }, [active, total]);
+  return { bodyRef, fit };
 }
 
 export function AccessPage() {
@@ -39,14 +80,11 @@ export function AccessPage() {
   const [boot, setBoot] = useState<AccessBootstrap | null>(() => accessClient.cachedBootstrap());
   const [refreshing, setRefreshing] = useState(false);
   const [failure, setFailure] = useState<AccessFailure | null>(null);
-  const [notice, setNotice] = useState<{ tone: "warning" | "success"; text: string } | null>(null);
-  const [pickGate, setPickGate] = useState<Route | null>(null);
-  const [choosePermit, setChoosePermit] = useState(false);
-  const [pending, setPending] = useState<Pending | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [running, setRunning] = useState<Running | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [flow, setFlow] = useState<Flow | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [permitsOpen, setPermitsOpenState] = useState(() => readFold());
+  const [now, setNow] = useState(Date.now());
   const setPermitsOpen = (update: (v: boolean) => boolean) =>
     setPermitsOpenState((v) => {
       const next = update(v);
@@ -57,7 +95,6 @@ export function AccessPage() {
       }
       return next;
     });
-  const [now, setNow] = useState(Date.now());
 
   const reload = useCallback(async () => {
     setFailure(null);
@@ -82,8 +119,11 @@ export function AccessPage() {
   const permits = boot ? sortedForList(boot.permits) : [];
   const openable = boot ? openablePermits(boot.permits, now) : [];
   const enabled = boot?.enabled ?? false;
-  const canAct = enabled && !busy;
-  const visiblePermits = showAll ? permits : permits.slice(0, COLLAPSED_PERMITS);
+  const canAct = enabled && !flow;
+  // Fit mode: the open fold shows exactly the rows that fit above the dock; Show all lets the page scroll.
+  const fitMode = !!boot && permitsOpen && !showAll;
+  const { bodyRef, fit } = useRowsThatFit(fitMode, permits.length);
+  const visiblePermits = showAll ? permits : permits.slice(0, fitMode ? (fit ?? COLLAPSED_PERMITS) : COLLAPSED_PERMITS);
 
   const permitSubtitle = !boot
     ? t("Checking permits…")
@@ -97,69 +137,58 @@ export function AccessPage() {
 
   function beginGateFlow(route: Route) {
     if (!boot || !boot.doorsFresh || boot.doors.length === 0) {
-      setNotice({ tone: "warning", text: t("Gate names are unavailable. Refresh Access and try again.") });
+      setNotice(t("Gate names are unavailable. Refresh Access and try again."));
       return;
     }
-    setPickGate(route);
+    setNotice(null);
+    setFlow({ action: { kind: "open", route, door: null }, step: "gate" });
   }
 
   function beginPermitSelection() {
     if (!boot?.permitsFresh) {
-      setNotice({ tone: "warning", text: t("Permits are not available yet. Refresh Access and try again.") });
+      setNotice(t("Permits are not available yet. Refresh Access and try again."));
       return;
     }
     if (openable.length === 0) {
-      setNotice({ tone: "warning", text: t("No approved, unused exit permit covers right now. Apply for one first.") });
+      setNotice(t("No approved, unused exit permit covers right now. Apply for one first."));
       return;
     }
     if (openable.length === 1) beginGateFlow({ kind: "exit_permit", permit: openable[0]! });
-    else setChoosePermit(true);
+    else {
+      setNotice(null);
+      setFlow({ action: { kind: "open", route: { kind: "exit_permit", permit: null }, door: null }, step: "permit" });
+    }
   }
 
-  async function start(p: Pending) {
-    setBusy(true);
-    setNotice(null);
+  /** Confirm pressed: the progress view takes over at once; prepare + commit follow. */
+  async function run(action: Action) {
+    const startedAt = Date.now();
+    setFlow({ action, step: "running", run: { startedAt, op: null, events: [], failure: null } });
+    const patch = (update: (r: NonNullable<Flow["run"]>) => NonNullable<Flow["run"]>) => setFlow((f) => (f && f.run ? { ...f, run: update(f.run) } : f));
     try {
       let op: PreparedOpenOperation;
-      let title: string;
-      if (p.kind === "open") {
-        op = await accessClient.prepareOpen({ route: p.route.kind, gateKey: p.door.key, ...(p.route.permit ? { permitRecordId: p.route.permit.recordId } : {}) });
-        title = `${t("Opening")} ${p.door.displayName}`;
-      } else if (p.kind === "withdraw") {
-        op = await accessClient.prepareWithdraw(p.permit.recordId);
-        title = t("Withdrawing the request");
+      if (action.kind === "open") {
+        op = await accessClient.prepareOpen({ route: action.route.kind, gateKey: action.door!.key, ...(action.route.permit ? { permitRecordId: action.route.permit.recordId } : {}) });
+      } else if (action.kind === "withdraw") {
+        op = await accessClient.prepareWithdraw(action.permit.recordId);
       } else {
-        op = await accessClient.preparePermit({ startTime: p.startTime, endTime: p.endTime, note: p.note });
-        title = t("Applying for a permit");
+        op = await accessClient.preparePermit({ startTime: action.startTime, endTime: action.endTime, note: action.note });
       }
-      setPending(null);
-      setRunning({ title, op, events: [], startedAt: Date.now() });
-      await accessClient.commit(op, (event) => setRunning((r) => (r && r.op.operationId === op.operationId ? { ...r, events: [...r.events, event] } : r)));
+      patch((r) => ({ ...r, op }));
+      await accessClient.commit(op, (event) => patch((r) => ({ ...r, events: [...r.events, event] })));
     } catch (e) {
-      setNotice({ tone: "warning", text: describeAccessFailure(e instanceof AccessClientError ? e.code : "network").text });
-      setPending(null);
-      setRunning(null);
-    } finally {
-      setBusy(false);
+      const code = e instanceof AccessClientError ? e.code : "network";
+      patch((r) => ({ ...r, failure: describeAccessFailure(code).text }));
     }
   }
 
   function finish() {
-    setRunning(null);
+    setFlow(null);
     void reload();
   }
 
-  if (running) {
-    return (
-      <div className="stack access">
-        <h1 className="page-title">{t("Access")}</h1>
-        <AccessProgress title={running.title} events={running.events} etaLabel={running.op.etaLabel} startedAt={running.startedAt} onDone={finish} />
-      </div>
-    );
-  }
-
   return (
-    <div className="stack access">
+    <div className={fitMode ? "stack access access--fit" : "stack access"}>
       <div className="page-head page-head--tools">
         <h1 className="page-title">{t("Access")}</h1>
         <button className="iconbtn" aria-label={t("Refresh Access")} disabled={refreshing} onClick={() => void reload()}>
@@ -169,8 +198,8 @@ export function AccessPage() {
 
       {failure && <FailureBanner code={failure} onRetry={() => void reload()} />}
       {notice && (
-        <div role="alert" className={`banner banner--${notice.tone}`}>
-          {t(notice.text)}
+        <div role="alert" className="banner banner--warning">
+          {t(notice)}
         </div>
       )}
       {boot && !enabled && <div className="banner banner--warning">{t("Web Access is paused. You can look, but nothing can be opened from here right now.")}</div>}
@@ -183,7 +212,7 @@ export function AccessPage() {
 
       {boot && (
         <>
-          <ApplyCard disabled={!canAct} onApply={(d) => setPending({ kind: "apply", ...d })} etaLabel={boot.eta.permit} />
+          <ApplyCard disabled={!canAct} onApply={(d) => setFlow({ action: { kind: "apply", ...d }, step: "confirm" })} etaLabel={boot.eta.permit} />
 
           <section className="access-section" aria-label={t("Permits")}>
             {/* The header row is the fold: collapsed by default so the whole screen fits without scrolling. */}
@@ -197,7 +226,7 @@ export function AccessPage() {
               </span>
             </button>
             {permitsOpen && (
-              <>
+              <div className="access-permits__body" ref={bodyRef}>
                 {!boot.permitsFresh && (
                   <div className="banner banner--warning">{t("The permit list could not be refreshed. It may be out of date and cannot open a gate until it is refreshed.")}</div>
                 )}
@@ -206,16 +235,16 @@ export function AccessPage() {
                 ) : (
                   <div className="rowlist">
                     {visiblePermits.map((p) => (
-                      <PermitRow key={p.recordId} permit={p} now={now} actionable={canAct && boot.permitsFresh} onChooseGate={() => beginGateFlow({ kind: "exit_permit", permit: p })} onWithdraw={() => setPending({ kind: "withdraw", permit: p })} />
+                      <PermitRow key={p.recordId} permit={p} now={now} actionable={canAct && boot.permitsFresh} onChooseGate={() => beginGateFlow({ kind: "exit_permit", permit: p })} onWithdraw={() => setFlow({ action: { kind: "withdraw", permit: p }, step: "confirm" })} />
                     ))}
                   </div>
                 )}
-                {permits.length > COLLAPSED_PERMITS && (
-                  <button className="btn btn--ghost btn--small" onClick={() => setShowAll((v) => !v)}>
+                {permits.length > visiblePermits.length || showAll ? (
+                  <button className="btn btn--ghost btn--small access-permits__more" onClick={() => setShowAll((v) => !v)}>
                     {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length} ${t("permits")}`}
                   </button>
-                )}
-              </>
+                ) : null}
+              </div>
             )}
           </section>
 
@@ -249,42 +278,54 @@ export function AccessPage() {
         </>
       )}
 
-      {pickGate && boot && (
-        <Modal title={t("Choose gate")} onClose={() => setPickGate(null)}>
-          <p className="overline">{pickGate.kind === "day_student" ? t("Day student access") : t("Exit permit access")}</p>
-          <div className="rowlist">
-            {boot.doors.map((door) => (
-              <button
-                key={door.key}
-                className="row row--actions"
-                onClick={() => {
-                  setPickGate(null);
-                  setPending({ kind: "open", door, route: pickGate });
-                }}
-              >
-                <span className="row__main">
-                  <span className="row__title">{door.displayName}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-          <p className="caption">{t("You will confirm before the gate opens.")}</p>
-        </Modal>
+      {flow && boot && (
+        <FlowSheet
+          flow={flow}
+          doors={boot.doors}
+          openable={openable}
+          now={now}
+          etaLabel={flow.action.kind === "open" ? boot.eta.openGate : boot.eta.permit}
+          onStep={(next) => setFlow(next)}
+          onConfirm={() => void run(flow.action)}
+          onClose={() => setFlow(null)}
+          onDone={finish}
+        />
       )}
+    </div>
+  );
+}
 
-      {choosePermit && (
-        <Modal title={t("Choose permit")} onClose={() => setChoosePermit(false)}>
+/** The one sheet a physical action lives in: permit → gate → confirm → progress. */
+function FlowSheet({ flow, doors, openable, now, etaLabel, onStep, onConfirm, onClose, onDone }: { flow: Flow; doors: Door[]; openable: Permit[]; now: number; etaLabel: string; onStep: (next: Flow) => void; onConfirm: () => void; onClose: () => void; onDone: () => void }) {
+  const t = useT();
+  const { action, step } = flow;
+  const running = step === "running";
+  const settled = !!flow.run && (!!flow.run.failure || !!flow.run.events.at(-1)?.terminal);
+
+  const title = (() => {
+    if (step === "permit") return t("Choose permit");
+    if (step === "gate") return t("Choose gate");
+    if (action.kind === "open") return running ? `${t("Opening")} ${action.door?.displayName ?? ""}` : `${t("Open")} ${action.door?.displayName ?? ""}?`;
+    if (action.kind === "withdraw") return running ? t("Withdrawing the request") : t("Withdraw this permit request?");
+    return running ? t("Applying for a permit") : t("Apply for this permit?");
+  })();
+
+  const confirmBody = (() => {
+    if (action.kind === "open") return `${action.route.kind === "day_student" ? t("Day student") : `${t("Exit permit")} · ${displayReason(action.route.permit!)}`}. ${t("This opens a physical gate. Only do this when you are there.")}`;
+    if (action.kind === "withdraw") return `${displayReason(action.permit)} · ${permitWindow(action.permit.start, action.permit.end, now)}. ${t("The request is deleted on the school portal. You can apply again any time.")}`;
+    return `${action.startTime.slice(0, 16)} → ${action.endTime.slice(0, 16)} · ${action.note}. ${t("This sends a request to the school.")}`;
+  })();
+
+  const confirmLabel = action.kind === "open" ? `${t("Open")} ${action.door?.displayName ?? ""}` : action.kind === "withdraw" ? t("Withdraw request") : t("Apply for permit");
+
+  return (
+    <Modal title={title} onClose={onClose} dismissible={!running || settled} describedBy={step === "confirm" ? "access-confirm-body" : undefined}>
+      {step === "permit" && action.kind === "open" && (
+        <>
           <p className="caption">{t("Select the permit to use for this gate opening.")}</p>
           <div className="rowlist">
             {openable.map((p) => (
-              <button
-                key={p.recordId}
-                className="row row--actions"
-                onClick={() => {
-                  setChoosePermit(false);
-                  beginGateFlow({ kind: "exit_permit", permit: p });
-                }}
-              >
+              <button key={p.recordId} className="row row--actions" onClick={() => onStep({ action: { ...action, route: { kind: "exit_permit", permit: p } }, step: "gate" })}>
                 <span className="row__main">
                   <span className="row__title">{displayReason(p)}</span>
                   <span className="row__sub">{permitWindow(p.start, p.end, now)}</span>
@@ -292,41 +333,45 @@ export function AccessPage() {
               </button>
             ))}
           </div>
-        </Modal>
+        </>
       )}
 
-      {pending?.kind === "open" && (
-        <ConfirmDialog
-          title={`${t("Open")} ${pending.door.displayName}?`}
-          body={`${pending.route.kind === "day_student" ? t("Day student") : `${t("Exit permit")} · ${displayReason(pending.route.permit!)}`}. ${t("This opens a physical gate. Only do this when you are there.")}`}
-          confirmLabel={`${t("Open")} ${pending.door.displayName}`}
-          busy={busy}
-          onClose={() => setPending(null)}
-          onConfirm={() => void start(pending)}
-        />
+      {step === "gate" && action.kind === "open" && (
+        <>
+          <p className="overline">{action.route.kind === "day_student" ? t("Day student access") : t("Exit permit access")}</p>
+          <div className="rowlist">
+            {doors.map((door) => (
+              <button key={door.key} className="row row--actions" onClick={() => onStep({ action: { ...action, door }, step: "confirm" })}>
+                <span className="row__main">
+                  <span className="row__title">{door.displayName}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="caption">{t("You will confirm before the gate opens.")}</p>
+        </>
       )}
-      {pending?.kind === "withdraw" && (
-        <ConfirmDialog
-          title={t("Withdraw this permit request?")}
-          body={`${displayReason(pending.permit)} · ${permitWindow(pending.permit.start, pending.permit.end, now)}. ${t("The request is deleted on the school portal. You can apply again any time.")}`}
-          confirmLabel={t("Withdraw request")}
-          danger
-          busy={busy}
-          onClose={() => setPending(null)}
-          onConfirm={() => void start(pending)}
-        />
+
+      {step === "confirm" && (
+        <>
+          <p className="muted" id="access-confirm-body">
+            {confirmBody}
+          </p>
+          <div className="modal__actions modal__actions--row">
+            <button className="btn btn--ghost" onClick={onClose}>
+              {t("Cancel")}
+            </button>
+            <button className={action.kind === "withdraw" ? "btn btn--danger" : "btn btn--primary"} onClick={onConfirm}>
+              {confirmLabel}
+            </button>
+          </div>
+        </>
       )}
-      {pending?.kind === "apply" && (
-        <ConfirmDialog
-          title={t("Apply for this permit?")}
-          body={`${pending.startTime.slice(0, 16)} → ${pending.endTime.slice(0, 16)} · ${pending.note}. ${t("This sends a request to the school.")}`}
-          confirmLabel={t("Apply for permit")}
-          busy={busy}
-          onClose={() => setPending(null)}
-          onConfirm={() => void start(pending)}
-        />
+
+      {step === "running" && flow.run && (
+        <AccessProgress title={title} events={flow.run.events} etaLabel={etaLabel} startedAt={flow.run.startedAt} failure={flow.run.failure} onDone={onDone} />
       )}
-    </div>
+    </Modal>
   );
 }
 
