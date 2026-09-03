@@ -327,7 +327,7 @@ function EntityImport({ onDone }: { onDone: () => void }) {
       <div className="card">
         <p className="caption">
           One per line, as <code>type,name</code> — e.g. <code>dish,Braised beef noodles</code> or{" "}
-          <code>room,Library</code>. The result is a union with organic entities, deduped by name.
+          <code>room,Library</code>. Merged with the entities the timetable already produced, deduped by name.
         </p>
         <textarea
           className="input"
