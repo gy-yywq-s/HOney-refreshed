@@ -19,8 +19,23 @@
 }
 .access-apply__row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--sp-2);
+}
+/* Native date-time fields have an intrinsic width; keep them inside their column. */
+.access-apply .field {
+  min-width: 0;
+}
+.access-apply .input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+@media (max-width: 400px) {
+  .access-apply__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .access-permit__actions {

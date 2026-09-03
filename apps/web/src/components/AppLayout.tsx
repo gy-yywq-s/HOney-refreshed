@@ -6,6 +6,7 @@ import { useRetryFocus } from "../lib/useRetryFocus";
 import { useT } from "../lib/i18n";
 import { Skeleton } from "../lib/motion";
 import { api } from "../api/client";
+import { accessClient } from "../lib/access/client";
 import { useAuth } from "../auth/AuthContext";
 import type { Me } from "../api/types";
 
@@ -53,6 +54,14 @@ function AppLayout() {
   const parent = parentOf(location.pathname, location.search);
   const parentRef = useRef(parent);
   parentRef.current = parent;
+
+  // Warm the Access tab once per session (its bootstrap reads the school
+  // portal, ~2–3 s): the first tap then shows content at once. Read-only —
+  // no physical operation is ever prepared here.
+  useEffect(() => {
+    if (!me?.connection.connected || accessClient.cachedBootstrap()) return;
+    void accessClient.bootstrap().catch(() => undefined);
+  }, [me?.connection.connected]);
 
   const [back, setBack] = useState<StackEntry | null>(null);
   useEffect(() => {
