@@ -87,6 +87,13 @@
   color: inherit;
   text-decoration: none;
 }
+/* Idle (nothing running): the same light accent wash the composer prompt
+   wears, so the card is not a plain white slab (Gary 2026-09-03). While a
+   lesson runs the base stays plain and the progress wash alone paints it —
+   the two never stack. */
+.nextlesson:not(.nextlesson--live) {
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-solid));
+}
 @media (hover: hover) {
   .nextlesson:hover {
     text-decoration: none;
@@ -1601,9 +1608,11 @@
   padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--cell);
-  box-shadow: var(--shadow-card);
-  color: inherit;
+  /* Grey and quiet, still light (Gary 2026-09-03): the soft wash, the tiny
+     field shadow, secondary ink. */
+  background: var(--soft);
+  box-shadow: var(--shadow-field);
+  color: var(--ink-2);
   text-decoration: none;
   white-space: nowrap;
 }

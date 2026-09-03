@@ -130,7 +130,7 @@ export function HomePage() {
           </div>
         ) : next ? (
           <Link
-            className="card card--hero nextlesson"
+            className={isNow ? "card card--hero nextlesson nextlesson--live" : "card card--hero nextlesson"}
             to={`/timetable?date=${new Date(next.startsAt).toLocaleDateString("en-CA")}`}
             aria-label={cardName}
           >
