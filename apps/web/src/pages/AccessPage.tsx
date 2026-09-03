@@ -13,6 +13,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
 import { Link } from "react-router-dom";
 import { displayReason, displayStatus, isOpenable, openablePermits, permitTone, quickPermitDraft, sortedForList, type AccessBootstrap, type AccessProgressEvent, type AccessRouteKind, type Door, type Permit, type PreparedOpenOperation } from "@honey/shared/access";
 import { AccessProgress } from "../components/AccessProgress";
+import { ChevronDownIcon, ChevronUpIcon } from "../components/icons";
 import { Modal } from "../components/Modal";
 import { accessClient, AccessClientError, describeAccessFailure, type AccessFailure } from "../lib/access/client";
 import { permitWindow, permitWindowFromTimes, toTimeInput } from "../lib/access/format";
@@ -198,6 +199,11 @@ export function AccessPage() {
               <span className="access-fold__summary">
                 {boot.permitsFresh ? (openable.length > 0 ? `${openable.length} ${t("usable now")} · ${permits.length}` : `${permits.length}`) : t("unavailable")}
               </span>
+              {showAll && (
+                <button type="button" className="access-fold__collapse" onClick={() => setShowAll(false)} aria-label={t("Show fewer")}>
+                  <ChevronUpIcon size={18} />
+                </button>
+              )}
             </div>
             {(
               <div className="access-permits__body" ref={bodyRef}>
@@ -213,19 +219,19 @@ export function AccessPage() {
                     ))}
                   </div>
                 )}
-                {(permits.length > visiblePermits.length || showAll) && (
-                  <button className="access-more" onClick={() => setShowAll((v) => !v)}>
-                    {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length}`}
+                {permits.length > visiblePermits.length && !showAll && (
+                  <button type="button" className="access-more" onClick={() => setShowAll(true)}>
+                    {`${t("Show all")} ${permits.length}`}
+                    <ChevronDownIcon size={16} />
                   </button>
                 )}
               </div>
             )}
           </section>
 
-          <section className="access-section" aria-label={t("School access")}>
+          <section className="access-section access-section--dock" aria-label={t("School access")}>
             <div className="access-dock__head">
               <h2 className="overline">{t("School access")}</h2>
-              <span className="access-dock__note">{t("Sent directly to the school")}</span>
             </div>
             <div className="access-dock">
               <button className="access-action" disabled={!canAct || !boot.identity.dayStudent} onClick={() => beginGateFlow({ kind: "day_student", permit: null })}>
@@ -234,7 +240,6 @@ export function AccessPage() {
                 </span>
                 <span className="access-action__text">
                   <span className="access-action__title">{t("Day student")}</span>
-                  <span className="access-action__sub">{boot.identity.dayStudent ? t("Open without an exit permit") : t("Not a day-student account")}</span>
                 </span>
               </button>
               <button className="access-action" disabled={!canAct} onClick={beginPermitSelection}>
@@ -247,7 +252,10 @@ export function AccessPage() {
                 </span>
               </button>
             </div>
-            <p className="caption">{t(boot.eta.openGate)}</p>
+            {/* The ETA lives in the progress sheet; here the student learns that HOney relays the request (Gary 2026-09-03). */}
+            <p className="caption access-dock__how">
+              {t("HOney sends the request to the school for you.")} <Link to="/access/how">{t("How it works")}</Link>
+            </p>
           </section>
         </>
       )}

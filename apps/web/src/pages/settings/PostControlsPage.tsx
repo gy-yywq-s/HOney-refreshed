@@ -114,6 +114,17 @@ export function PostControlsPage() {
       <h1 className="page-title">{t("Post controls")}</h1>
       {feedbackEl}
 
+      {/* The mechanism, explained (Gary 2026-09-03): one row, in every state. */}
+      <section className="rowlist" aria-label="How it works">
+        <Link className="row" to="/settings/post-controls/how">
+          <span className="row__main">
+            <span className="row__title">{t("How post controls work")}</span>
+            <span className="row__sub">{t("One root on your device · blind tokens · an encrypted backup")}</span>
+          </span>
+          <ChevronRightIcon size={18} />
+        </Link>
+      </section>
+
       {status.kind === "unsupported" && (
         <div className="banner banner--warning">{t("This browser cannot keep post controls. Use Safari, Chrome or the installed HOney app.")}</div>
       )}

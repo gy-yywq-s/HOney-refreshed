@@ -58,6 +58,23 @@ export function ChevronRightIcon(p: IconProps) {
   );
 }
 
+/** A plain chevron (no stem) — the fold/unfold glyph. */
+export function ChevronDownIcon(p: IconProps) {
+  return (
+    <Glyph {...p}>
+      <path d="m5 9 7 7 7-7" />
+    </Glyph>
+  );
+}
+
+export function ChevronUpIcon(p: IconProps) {
+  return (
+    <Glyph {...p}>
+      <path d="m5 15 7-7 7 7" />
+    </Glyph>
+  );
+}
+
 export function CloseIcon(p: IconProps) {
   return (
     <Glyph {...p}>

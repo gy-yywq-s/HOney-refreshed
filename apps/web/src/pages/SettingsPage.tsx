@@ -36,6 +36,46 @@ const SURFACE_LABEL: Record<string, string> = { stone: "Stone", white: "White", 
 export const SAVED_LOGIN_CAVEAT =
   "Your school login is encrypted and kept only on this device, and the key that unlocks it is here too — a browser is less protected than a phone’s secure storage.";
 
+type Bi = { en: string; zh: string };
+const PRIVACY_LEAD: Bi = {
+  en: "The plain version: HOney checks you actually have the relevant experience, published posts are not attached to your school account, and your device holds the control needed to remove your own post. The detail, honestly:",
+  zh: "简单说：HOney 会核实你确实有相关经历；发布出去的帖子不和你的学校账户挂钩；删除自己帖子所需的控制权在你的设备上。下面是坦白的细节：",
+};
+const PRIVACY_CLAIMS: { head: Bi; body: Bi }[] = [
+  {
+    head: { en: "Posts are stored by a separate service with no account database.", zh: "帖子由一个没有账户数据库的独立服务保存。" },
+    body: {
+      en: "The publish request carries no HOney session; what it carries is a blind token the account service signed without seeing, bound only to the class or entity you may write about. Neither service can answer who wrote a post — including for admins. The words themselves can still make you recognisable to people who know the situation.",
+      zh: "发布请求不带 HOney 会话；它带的是一个账户服务在看不见内容的情况下签出的盲签令牌，只绑定你可以写的那门课或那个实体。两个服务都回答不了“谁写了这条帖子”——管理员也不行。但你写的内容本身仍可能让知情的人认出你。",
+    },
+  },
+  {
+    head: { en: "Your control is one root on your device.", zh: "你的控制权是设备上的一个根。" },
+    body: {
+      en: "It derives a stable posting identity per school year (so the post service can keep one post per lesson per student without knowing the student) and a separate control key for every post. Only the root can list or remove your posts; an encrypted backup restores it through a passkey, another signed-in device or 12 recovery words — the server cannot read it.",
+      zh: "它推导出每学年一个的稳定发帖身份（这样帖子服务能做到每人每节课一条帖子，却不知道这个人是谁），以及每条帖子各自的控制钥匙。只有根能列出或删除你的帖子；加密备份可以通过通行密钥、另一台已登录的设备或 12 个恢复词恢复它——服务器读不了这份备份。",
+    },
+  },
+  {
+    head: { en: "Public dates are coarse.", zh: "公开的日期是粗粒度的。" },
+    body: { en: "Posts show a calendar day only; exact timestamps are never published.", zh: "帖子只显示日期，精确时间从不公开。" },
+  },
+  {
+    head: { en: "How moderation handles your text.", zh: "审核如何处理你的文字。" },
+    body: {
+      en: "When you run the pre-publish check, obvious rule-breaking wording is caught on the HOney server directly. Otherwise the draft text — the text only, never your identity — is sent once to an external moderation model (via OpenRouter) and judged transiently; HOney stores neither the text nor the verdict at check time. The external provider processes the text under its own retention policy, so don't put things in a draft you wouldn't run through a moderation service.",
+      zh: "你运行发布前检查时，明显违规的措辞会直接在 HOney 服务器上被拦下。否则草稿文字——只有文字，从不包含你的身份——会被一次性发送给外部审核模型（经由 OpenRouter）做临时判断；检查时 HOney 既不保存文字也不保存结论。外部服务商按它自己的保留政策处理这些文字，所以不要在草稿里写你不愿交给审核服务的内容。",
+    },
+  },
+  {
+    head: { en: "Private notes stay on this device.", zh: "私人笔记只留在这台设备上。" },
+    body: {
+      en: "They are scrambled at rest, so a casual look at browser storage won't read them — but the key sits on this device too. That protects against casual dumps, not against scripts running on this site or someone with full access to this browser. Treat them as private-on-this-device.",
+      zh: "它们在存储时是加扰的，随手翻看浏览器存储读不出来——但钥匙也在这台设备上。这能防住随意的导出，防不住在本站运行的脚本或完全掌握这个浏览器的人。把它们当作“仅在本机私密”。",
+    },
+  },
+];
+
 export function SettingsPage() {
   const { section: sectionParam } = useParams();
   const section = (sectionParam && sectionParam in SECTIONS ? sectionParam : null) as Section | null;
@@ -53,6 +93,7 @@ export function SettingsPage() {
   const { me, refreshMe, signOut } = useAuth();
   const navigate = useNavigate();
   const lang = useLang();
+  const L = (b: Bi) => (lang === "zh" ? b.zh : b.en);
   const textSize = useTextSize();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ tone: "success" | "danger"; text: string } | null>(
@@ -369,51 +410,27 @@ export function SettingsPage() {
 
       {section === "privacy" && (
         <>
-          <p className="muted">
-            The plain version: HOney checks you actually have the relevant experience, published
-            posts are not attached to your school account, and your device holds the control needed
-            to remove your own post. The detail, honestly:
-          </p>
+          {/* Bilingual (Gary 2026-09-03): the plain version, then the claims. */}
+          <p className="muted">{L(PRIVACY_LEAD)}</p>
           <ul className="privacy-list muted">
-            <li>
-              <strong>Posts are stored by a separate service with no account database.</strong> The
-              publish request carries no HOney session; what it carries is a blind token the account
-              service signed without seeing, bound only to the class or entity you may write about.
-              Neither service can answer who wrote a post — including for admins. The words
-              themselves can still make you recognisable to people who know the situation.
-            </li>
-            <li>
-              <strong>Your control is one root on your device.</strong> It derives a stable posting
-              identity per school year (so the post service can keep one post per lesson per
-              student without knowing the student) and a separate control key for every post.
-              Only the root can list or remove your posts; an encrypted backup restores it through
-              a passkey, another signed-in device or 12 recovery words — the server cannot read it.
-            </li>
-            <li>
-              <strong>Public dates are coarse.</strong> Posts show a calendar day only; exact
-              timestamps are never published.
-            </li>
-            <li>
-              <strong>How moderation handles your text.</strong> When you run the pre-publish check,
-              obvious rule-breaking wording is caught on the HOney server directly. Otherwise the
-              draft text — the text only, never your identity — is sent once to an external
-              moderation model (via OpenRouter) and judged transiently; HOney stores neither the
-              text nor the verdict at check time. The external provider processes the text under
-              its own retention policy, so don't put things in a draft you wouldn't run through a
-              moderation service.
-            </li>
-            <li>
-              <strong>Private notes stay on this device.</strong> They are scrambled at rest, so a
-              casual look at browser storage won't read them — but the key sits on this device too.
-              That protects against casual dumps, not against scripts running on this site or someone
-              with full access to this browser. Treat them as private-on-this-device.
-            </li>
+            {PRIVACY_CLAIMS.map((c) => (
+              <li key={c.head.en}>
+                <strong>{L(c.head)}</strong> {L(c.body)}
+              </li>
+            ))}
           </ul>
           <section className="rowlist" aria-label="Post controls">
             <Link className="row" to="/settings/post-controls">
               <span className="row__main">
                 <span className="row__title">{t("Post controls")}</span>
                 <span className="row__sub">{t("Passkey, recovery words, another device")}</span>
+              </span>
+              <ChevronRightIcon size={18} />
+            </Link>
+            <Link className="row" to="/settings/post-controls/how">
+              <span className="row__main">
+                <span className="row__title">{t("How post controls work")}</span>
+                <span className="row__sub">{t("One root on your device · blind tokens · an encrypted backup")}</span>
               </span>
               <ChevronRightIcon size={18} />
             </Link>

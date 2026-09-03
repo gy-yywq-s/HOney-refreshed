@@ -66,18 +66,41 @@
 .access > .page-head {
   margin-bottom: calc(-1 * var(--sp-2));
 }
-/* "Show all N" between Permits and School access: plain text, no border, no pill. */
+/* "Show all N ⌄" between Permits and School access: centred plain text with a
+   plain chevron — no border, no pill (Gary 2026-09-03). */
 .access-more {
-  align-self: flex-start;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   flex: none;
   margin: 0;
-  padding: var(--sp-1) 0;
+  padding: var(--sp-1) var(--sp-2);
   border: 0;
   background: none;
   color: var(--accent);
   font-size: var(--fs-caption);
   font-weight: 600;
   cursor: pointer;
+}
+/* Expanded: the fold-up chevron sits at the right end of the Permits header. */
+.access-fold__collapse {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+/* The School-access dock sits a little closer to the list above it. */
+.access-section--dock {
+  margin-top: calc(-1 * var(--sp-2));
+}
+.access-dock__how a {
+  color: var(--accent);
+  font-weight: 600;
 }
 .access-apply .input,
 .access-apply input[type="time"],
@@ -147,7 +170,7 @@
 /* The permits header: label + summary (the list beneath is never folded away). */
 .access-fold {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--sp-2);
   min-height: 24px;
 }
@@ -170,10 +193,6 @@
   display: flex;
   align-items: baseline;
   gap: var(--sp-2);
-}
-.access-dock__note {
-  font-size: var(--fs-micro);
-  color: var(--muted);
 }
 .access-dock {
   display: grid;

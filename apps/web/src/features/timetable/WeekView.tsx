@@ -5,7 +5,7 @@
 // <table> so screen readers get row/column headers for free.
 
 import type { Lesson } from "../../api/types";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { compactLessonTitle, lessonTitle, roomLabel } from "../../lib/displayNames";
 import { BANDS, PERIODS, minuteLabel, minuteOfDay, overlapsSlot } from "../../lib/periodCatalog";
 import { formatDayTitle, formatTime, shiftIsoDate } from "../../lib/format";
@@ -40,8 +40,47 @@ function usePhoneColumns(): boolean {
   return narrow;
 }
 
+/**
+ * The matrix fills the visible height (Gary 2026-09-03: 周课表稍微填满一点屏幕):
+ * the period rows share whatever the scroll region leaves below the day
+ * header, measured on this device — never a per-model guess — and clamped
+ * so a small phone keeps readable cells and a tall one does not balloon.
+ */
+const CELL_MIN = 56;
+const CELL_MAX = 104;
+function useFillingCells(tableRef: React.RefObject<HTMLTableElement | null>): number | null {
+  const [cell, setCell] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const scroller = table?.closest<HTMLElement>(".main");
+    if (!table || !scroller) return;
+    const measure = () => {
+      const s = scroller.getBoundingClientRect();
+      const padBottom = parseFloat(getComputedStyle(scroller).paddingBottom) || 0;
+      const top = table.getBoundingClientRect().top - s.top + scroller.scrollTop;
+      const available = scroller.clientHeight - padBottom - top;
+      const head = table.tHead?.getBoundingClientRect().height ?? 0;
+      const breaks = Array.from(table.querySelectorAll<HTMLElement>(".week__break")).reduce((n, r) => n + r.getBoundingClientRect().height, 0);
+      const periods = table.querySelectorAll(".week__row").length || 1;
+      const next = Math.floor((available - head - breaks) / periods);
+      setCell(Math.max(CELL_MIN, Math.min(CELL_MAX, next)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(scroller);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [tableRef]);
+  return cell;
+}
+
 export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onSelect, today, now }: WeekViewProps) {
   const phone = usePhoneColumns();
+  const tableRef = useRef<HTMLTableElement>(null);
+  const cell = useFillingCells(tableRef);
   const cellName = (lesson: Lesson) => compactLessonTitle(lesson, phone);
   // Mon–Fri always; Saturday/Sunday only when the imported week has a lesson
   // there (Gary 2026-09-02) — then the matrix scrolls sideways.
@@ -77,9 +116,13 @@ export function WeekView({ monday, days, loading, error, onRetry, onOpenDay, onS
         </div>
       )}
       <table
+        ref={tableRef}
         className="week__table"
         aria-busy={loading || undefined}
-        style={dates.length > 5 ? { minWidth: 32 + dates.length * COLUMN_PX } : undefined}
+        style={{
+          ...(dates.length > 5 ? { minWidth: 32 + dates.length * COLUMN_PX } : {}),
+          ...(cell ? ({ "--week-cell": `${cell}px` } as React.CSSProperties) : {}),
+        }}
       >
         <thead>
           <tr>
