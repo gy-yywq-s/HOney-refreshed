@@ -29,6 +29,7 @@ import type {
   HistoryResponse,
   NoticesResponse,
   CardResponse,
+  CardTopUpResponse,
   WarningsResponse,
   WeekendResponse,
   KillSwitchName,
@@ -197,6 +198,11 @@ export class ApiClient {
   // The student's own records at the school — read live, never stored.
   schoolCard(): Promise<CardResponse> {
     return this.request("GET", "/api/school/card");
+  }
+
+  /** Ask the school to open a top-up order; paying happens on its payment page. */
+  schoolCardTopUp(amount: number): Promise<CardTopUpResponse> {
+    return this.request("POST", "/api/school/card/topup", { amount });
   }
 
   schoolWarnings(): Promise<WarningsResponse> {

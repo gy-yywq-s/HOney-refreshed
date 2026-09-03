@@ -4,6 +4,7 @@
 // with the student's own portal session and shows the school's own words.
 // Bilingual chrome; the school's wording is never translated.
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import type { CardResponse, SchoolReadStatus, WarningsResponse, WeekendResponse } from "../../api/types";
@@ -12,6 +13,7 @@ import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime } from "../../lib/format";
 import { useLang, useT } from "../../lib/i18n";
 import { usePortalEntry } from "../../lib/portalEntry";
+import { Modal } from "../../components/Modal";
 
 type Bi = { en: string; zh: string };
 
@@ -54,6 +56,7 @@ export function CampusCardPage() {
   // window). HOney hands the student over already signed in and takes no
   // part in the payment itself (Gary 2026-09-03).
   const portal = usePortalEntry();
+  const [topUp, setTopUp] = useState(false);
 
   return (
     <div className="stack">
@@ -72,13 +75,16 @@ export function CampusCardPage() {
               {L({ en: "General", zh: "自充值" })} {yuan(data.card.general)} · {L({ en: "Subsidy", zh: "补助" })}{" "}
               {yuan(data.card.subsidy)}
             </span>
-            {!portal.needsLogin && (
-              <div className="card-actions">
-                <a className="btn btn--primary" href={portal.href} target="_blank" rel="noopener noreferrer">
-                  {L({ en: "Top up in the school portal", zh: "去学校门户充值" })}
+            <div className="card-actions">
+              <button className="btn btn--primary" onClick={() => setTopUp(true)}>
+                {L({ en: "Top up", zh: "充值" })}
+              </button>
+              {!portal.needsLogin && (
+                <a className="btn btn--ghost" href={portal.href} target="_blank" rel="noopener noreferrer">
+                  {L({ en: "Open the school portal", zh: "打开学校门户" })}
                 </a>
-              </div>
-            )}
+              )}
+            </div>
           </section>
 
           <section className="rowlist" aria-label="Spending">
@@ -128,7 +134,157 @@ export function CampusCardPage() {
       ) : data ? (
         <StateNote status={data.status} empty={{ en: "No card is registered to you.", zh: "你名下没有一卡通。" }} />
       ) : null}
+      {topUp && (
+        <TopUpSheet
+          onClose={() => setTopUp(false)}
+          onPaid={() => {
+            setTopUp(false);
+            card.reload();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+const PRESETS = [10, 20, 50, 100, 200];
+
+/**
+ * Top up: HOney asks the school to open an order and then hands the student to
+ * the school's payment page (Alipay). No money moves in HOney, and an order
+ * nobody pays simply stays unpaid — so this asks for an amount, not for a
+ * confirmation ritual.
+ */
+function TopUpSheet({ onClose, onPaid }: { onClose: () => void; onPaid: () => void }) {
+  const L = useL();
+  const t = useT();
+  const [amount, setAmount] = useState(50);
+  const [custom, setCustom] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  async function go() {
+    const value = custom.trim() ? Number(custom) : amount;
+    if (!Number.isFinite(value) || value <= 0) {
+      setError(L({ en: "Choose an amount.", zh: "请选择金额。" }));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    // The window must be opened by the tap itself, or the browser blocks it;
+    // the school's answer fills it in when it arrives.
+    const win = window.open("", "_blank");
+    try {
+      const res = await api.schoolCardTopUp(value);
+      if (res.status !== "ok") {
+        win?.close();
+        setError(
+          res.status === "refused"
+            ? res.reason
+            : res.status === "portal_reconnect_required"
+              ? L({ en: "HOney needs the school connection for this.", zh: "这里需要学校连接。" })
+              : L({ en: "The school could not be reached just now.", zh: "现在连不上学校系统。" }),
+        );
+        return;
+      }
+      if (res.payUrl) {
+        if (win) win.location.href = res.payUrl;
+        else window.location.href = res.payUrl;
+        setSent(true);
+        return;
+      }
+      if (res.formHtml && win) {
+        // A payment form is the other shape gateways use: it has to be posted.
+        win.document.write(`<!doctype html><meta charset="utf-8"><body>${res.formHtml}<script>document.forms[0].submit()<\/script></body>`);
+        win.document.close();
+        setSent(true);
+        return;
+      }
+      win?.close();
+      setError(
+        res.message ||
+          L({
+            en: "The school opened the order but did not say where to pay. Open the school portal and finish it there.",
+            zh: "学校已经开单，但没有给出付款地址。请到学校门户里完成付款。",
+          }),
+      );
+    } catch {
+      win?.close();
+      setError(L({ en: "Could not reach HOney. Try again.", zh: "连不上 HOney，请重试。" }));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title={L({ en: "Top up the card", zh: "一卡通充值" })} onClose={onClose}>
+      {sent ? (
+        <>
+          <p>
+            {L({
+              en: "The school opened the order and the payment page is in the other tab. The balance here updates once the school records the payment.",
+              zh: "学校已经开单，付款页面在另一个标签里。学校记录到付款后，这里的余额才会更新。",
+            })}
+          </p>
+          <div className="card-actions">
+            <button className="btn btn--primary" onClick={onPaid}>
+              {t("Done")}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-4">
+            {L({
+              en: "HOney only asks the school to open the order. You pay on the school's own payment page — an order you do not pay stays unpaid.",
+              zh: "HOney 只负责让学校开一张单。付款在学校自己的支付页面完成——没付的单子就一直是未付。",
+            })}
+          </p>
+          <div className="topup__amounts">
+            {PRESETS.map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={!custom.trim() && amount === v ? "btn btn--small btn--pill-ok" : "btn btn--small"}
+                onClick={() => {
+                  setAmount(v);
+                  setCustom("");
+                }}
+              >
+                ¥{v}
+              </button>
+            ))}
+          </div>
+          <div className="field">
+            <label className="field__label" htmlFor="topup-custom">
+              {L({ en: "Or another amount", zh: "或输入其他金额" })}
+            </label>
+            <input
+              id="topup-custom"
+              className="input"
+              type="number"
+              inputMode="decimal"
+              min="1"
+              max="1000"
+              step="1"
+              value={custom}
+              placeholder="¥"
+              onChange={(e) => setCustom(e.target.value)}
+            />
+          </div>
+          {error && <div role="alert" className="banner banner--danger">{error}</div>}
+          <div className="card-actions">
+            <button className="btn btn--primary" disabled={busy} onClick={() => void go()}>
+              {busy ? t("Checking…") : L({ en: "Continue to pay", zh: "去付款" })}
+            </button>
+            <button className="btn btn--ghost" disabled={busy} onClick={onClose}>
+              {L({ en: "Cancel", zh: "取消" })}
+            </button>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }
 

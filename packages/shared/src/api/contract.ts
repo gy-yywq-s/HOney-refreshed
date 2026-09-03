@@ -221,6 +221,22 @@ export interface WeekendResponse {
   selectableDays: string[];
 }
 
+/**
+ * POST /api/school/card/topup — asks the school to open a top-up order and
+ * says where to pay it. No money moves in HOney: paying happens afterwards in
+ * Alipay, on the school's own payment page. An order nobody pays stays unpaid.
+ */
+export interface CardTopUpRequest {
+  /** Yuan. */
+  amount: number;
+}
+
+export type CardTopUpResponse =
+  | { status: "ok"; payUrl: string | null; formHtml: string | null; message: string }
+  | { status: "portal_reconnect_required" }
+  | { status: "refused"; reason: string }
+  | { status: "unavailable" };
+
 export type SyncStatus = "ok" | "portal_reconnect_required" | "no_consent";
 
 export interface SyncResponse {

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { AppContext } from "../context.js";
-import type { CardResponse, WarningsResponse, WeekendResponse } from "@honey/shared/api";
+import type { CardResponse, CardTopUpResponse, WarningsResponse, WeekendResponse } from "@honey/shared/api";
 import { parsePortalTime } from "@honey/shared/access";
 
 // The student's own records at the school (Gary 2026-09-03: campus card,
@@ -70,6 +70,39 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
         return { status: "portal_reconnect_required", card: null, purchases: [], topUps: [] };
       }
       return { status: "unavailable", card: null, purchases: [], topUps: [] };
+    }
+  });
+
+  /**
+   * Open a top-up order for the student's card. HOney does not take payment:
+   * the school answers with where to pay, and the student pays there. Sending
+   * this twice opens two orders and costs nothing — an unpaid order is just
+   * unpaid — so it needs no confirmation gate; the amount is bounded because a
+   * typo should not create an order for a fortune.
+   */
+  app.post<{ Body: { amount?: number } }>("/api/school/card/topup", { preHandler: ctx.requireAuth }, async (req, reply): Promise<CardTopUpResponse> => {
+    void reply.header("cache-control", "no-store");
+    const user = ctx.userOf(req);
+    const token = tokenFor(user.honey_id);
+    if (!token) return { status: "portal_reconnect_required" };
+    const amount = Math.round(Number(req.body?.amount ?? 0) * 100) / 100;
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1000) {
+      return { status: "refused", reason: "Choose an amount between ¥1 and ¥1000." };
+    }
+    try {
+      const cards = await ctx.connector.api.cardList(token);
+      const card = cards[0];
+      if (!card) return { status: "refused", reason: "No card is registered to you." };
+      const started = await ctx.connector.api.startRecharge(token, card.cardId, amount);
+      return { status: "ok", payUrl: started.payUrl, formHtml: started.formHtml, message: started.message };
+    } catch (e) {
+      if (isExpired(e)) {
+        ctx.accounts.markPortalExpired(user.honey_id);
+        return { status: "portal_reconnect_required" };
+      }
+      const info = e instanceof Error && "info" in e ? (e as { info: { kind: string; reason?: string } }).info : null;
+      if (info?.kind === "operationRejected") return { status: "refused", reason: info.reason ?? "The school refused the top-up." };
+      return { status: "unavailable" };
     }
   });
 

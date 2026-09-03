@@ -218,6 +218,35 @@ export class PortalApi {
     return Array.isArray(days) ? days.filter((d): d is string => typeof d === "string") : [];
   }
 
+  /**
+   * POST /api/card/do-recharge — asks the school to OPEN a top-up order and
+   * hand back where to pay it. No money moves here: the student pays in
+   * Alipay afterwards, or never (an unpaid order simply stays unpaid). The
+   * portal's own web app sends exactly `{ card_id, amount }`.
+   *
+   * What comes back was not observable without creating an order, so this
+   * reads the envelope tolerantly: the first http(s) URL anywhere in the
+   * answer is the place to pay, and a payment FORM (the other common
+   * gateway shape) is handed back as markup for the client to submit.
+   */
+  async startRecharge(token: string, cardId: string, amount: number): Promise<{ payUrl: string | null; formHtml: string | null; message: string }> {
+    const path = "/api/card/do-recharge";
+    const resp = await this.http.request({ method: "POST", path, token, jsonBody: { card_id: cardId, amount }, mutation: true });
+    const env = asEnvelope(this.http.triage(resp, path), path);
+    const message = typeof env.message === "string" ? env.message : "";
+    if (env.status !== 0) {
+      throw operationRejected(path, typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
+    }
+    const serialized = JSON.stringify(env.data ?? null);
+    const url = /https?:\/\/[^"'\\ ]+/.exec(serialized ?? "");
+    const form = /<form[\s\S]*<\/form>/i.exec(typeof env.data === "string" ? env.data : serialized ?? "");
+    return {
+      payUrl: url ? url[0].replace(/\\\//g, "/") : null,
+      formHtml: form ? form[0].replace(/\\"/g, '"').replace(/\\\//g, "/") : null,
+      message,
+    };
+  }
+
   /** GET /api/user/get_door_list — NON-standard: success is status===1, doors in `message`. */
   async doorList(token: string): Promise<DoorOptionWire[]> {
     const resp = await this.http.request({ method: "GET", path: "/api/user/get_door_list", token });
