@@ -25,7 +25,9 @@
 /* The permits section takes only its measured rows; the leftover sits
    below the dock, above the nav (Gary 2026-09-03: the dock hugs Show all). */
 .access--fit > .access-section:has(.access-permits__body) {
-  flex: 0 0 auto;
+  /* Never grows (the spacer takes the slack); shrinks only when even one
+     row cannot fit — a short browser viewport — so the dock stays on screen. */
+  flex: 0 1 auto;
   min-height: 0;
 }
 .access--fit::after {
@@ -38,7 +40,7 @@
   gap: var(--sp-2);
 }
 .access--fit .access-permits__body {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   min-height: 0;
   overflow: hidden;
 }

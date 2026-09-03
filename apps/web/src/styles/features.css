@@ -877,12 +877,17 @@
   min-height: 0;
   margin-bottom: 0;
 }
+/* The subject of the post is an object — a card that sits on the page
+   (Gary 2026-09-03: 有那种是对象的即视感), the same card as Access's apply. */
 .compose-target {
   display: flex;
   flex-direction: column;
   gap: var(--sp-1);
-  padding: var(--sp-3) 0 var(--sp-3);
-  border-bottom: 1px solid var(--line);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
 }
 .compose-target__label {
   font-family: var(--display);
@@ -896,6 +901,7 @@
   min-height: 120px;
   line-height: 1.55;
   border-radius: 14px;
+  box-shadow: var(--shadow-card);
 }
 .compose-actions {
   display: flex;
@@ -1693,7 +1699,7 @@
     font-size: var(--fs-title-sm);
   }
   .compose-target {
-    padding: var(--sp-1) 0 var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
   }
   .compose-target__label {
     font-size: var(--fs-title-sm);
