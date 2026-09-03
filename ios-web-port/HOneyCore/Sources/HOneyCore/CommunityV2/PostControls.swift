@@ -42,6 +42,16 @@ public struct LocalVaultState: Codable, Sendable, Equatable {
     public var rWrapped: String
     public var payloadIv: String
     public var payloadCiphertext: String
+
+    public init(vaultId: String, revision: Int, wrappers: [VaultWrapper], rIv: String, rWrapped: String, payloadIv: String, payloadCiphertext: String) {
+        self.vaultId = vaultId
+        self.revision = revision
+        self.wrappers = wrappers
+        self.rIv = rIv
+        self.rWrapped = rWrapped
+        self.payloadIv = payloadIv
+        self.payloadCiphertext = payloadCiphertext
+    }
 }
 
 public protocol PostControlStorage: Sendable {
