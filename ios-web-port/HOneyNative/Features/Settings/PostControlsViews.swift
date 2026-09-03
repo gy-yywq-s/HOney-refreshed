@@ -174,7 +174,7 @@ struct PostControlsView: View {
                 switch model.status {
                 case nil:
                     LoadingPlaceholder(lines: 3)
-                case .none:
+                case .some(.none):
                     Text("One control root on this iPhone signs every experience you share and lets you remove it later. It is created the first time you share; you can also set it up now.")
                         .hfont(.body).foregroundStyle(theme.muted).fixedSize(horizontal: false, vertical: true)
                     Button(L10n.t("Set up post controls")) { Task { await model.create() } }.buttonStyle(.webBlockPrimary).disabled(model.busy != nil)
