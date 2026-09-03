@@ -2,6 +2,7 @@ import type {
   DoorOptionWire,
   ExitPermitWire,
   LessonTableWire,
+  SchoolNoticeWire,
   WeeklyLessonWire,
 } from "@honey/shared";
 import {
@@ -137,6 +138,24 @@ export class PortalApi {
     const rows = (env.data as { rows?: unknown }).rows;
     if (!Array.isArray(rows)) throw schemaIncompatible("/api/exit/get_student_list");
     return rows as ExitPermitWire[];
+  }
+
+  /**
+   * GET /api/notice/get_notice_list — the school's notices ({ rows, total },
+   * unpaginated: page/limit are ignored upstream). A safe read; the portal's
+   * own words are passed through untouched.
+   */
+  async noticeList(token: string): Promise<SchoolNoticeWire[]> {
+    const resp = await this.http.request({ method: "GET", path: "/api/notice/get_notice_list", token });
+    const env = asEnvelope(this.http.triage(resp, "/api/notice/get_notice_list"), "/api/notice/get_notice_list");
+    if (env.status !== 0 || env.data === null || typeof env.data !== "object") {
+      throw schemaIncompatible("/api/notice/get_notice_list");
+    }
+    const rows = (env.data as { rows?: unknown }).rows;
+    if (!Array.isArray(rows)) throw schemaIncompatible("/api/notice/get_notice_list");
+    return (rows as SchoolNoticeWire[]).filter(
+      (r) => r && typeof r.id === "number" && typeof r.title === "string" && typeof r.content === "string",
+    );
   }
 
   /** GET /api/user/get_door_list — NON-standard: success is status===1, doors in `message`. */

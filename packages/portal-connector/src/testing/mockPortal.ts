@@ -183,6 +183,40 @@ export function makeMockPortal(overrides?: Partial<MockPortalState>): {
     return { status: 0, message: "ok", data };
   });
 
+  // The school's notices, in the live shape captured 2026-09-03: plain text
+  // content with newlines, no per-student read flag, no paging.
+  app.get("/api/notice/get_notice_list", async (req, reply) => {
+    const tok = authed(req as never);
+    if (!tok) return reply.code(401).send(unauthorized);
+    return {
+      status: 0,
+      message: "",
+      data: {
+        rows: [
+          {
+            id: 12,
+            title: "Fire drill",
+            content: "Line 1\nLine 2",
+            campus_id: 1,
+            operator_id: 634,
+            create_time: "2026-09-02 10:22:19",
+            update_time: "2026-09-02 10:22:19",
+          },
+          {
+            id: 11,
+            title: "Holiday",
+            content: "One paragraph.",
+            campus_id: 1,
+            operator_id: 634,
+            create_time: "2026-08-28 10:21:42",
+            update_time: "2026-08-29 09:00:00",
+          },
+        ],
+        total: 2,
+      },
+    };
+  });
+
   app.get("/api/exit/get_student_list", async (req, reply) => {
     const tok = authed(req as never);
     if (!tok) return reply.code(401).send(unauthorized);

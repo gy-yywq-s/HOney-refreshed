@@ -9,6 +9,7 @@ import { ensureSchool, openDatabase } from "./db/database.js";
 import { makeAuthHelpers, type AppContext } from "./context.js";
 import { AccountService } from "./services/accounts.js";
 import { ImportService } from "./services/importer.js";
+import { NoticeService } from "./services/notices.js";
 import { TimetableService } from "./services/timetable.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerDataRoutes } from "./routes/data.js";
@@ -82,7 +83,8 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
   const portalApi = new PortalApi(new PortalHttp({ baseUrl: config.portalBaseUrl }));
   const accounts = new AccountService(db, config);
   const entities = new EntityDirectory(db, profile);
-  const importer = new ImportService(db, accounts, portalApi, profile);
+  const notices = new NoticeService(db, profile.id, profile.sourceSystem);
+  const importer = new ImportService(db, accounts, portalApi, profile, notices);
   const timetable = new TimetableService(db);
   const settings = new SettingsService(db);
   const eligibility = new EligibilityService(db, entities, settings, config.sealKey);
@@ -106,6 +108,7 @@ export function buildApp(opts: BuildAppOptions = {}): FastifyInstance & { ctx: A
     accounts,
     importer,
     timetable,
+    notices,
     profile,
     entities,
     settings,

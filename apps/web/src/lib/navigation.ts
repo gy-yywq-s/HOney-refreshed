@@ -23,6 +23,8 @@ const NODES: RouteNode[] = [
   { pattern: "/timetable", title: "Timetable", parent: null },
   { pattern: "/history", title: "History", parent: "/timetable" },
   { pattern: "/history/lesson/:id", title: "Lesson", parent: "/history" },
+  { pattern: "/notices", title: "From school", parent: "/home" },
+  { pattern: "/notices/:id", title: "Notice", parent: "/notices" },
   { pattern: "/experiences", title: "Experiences", parent: null },
   { pattern: "/experiences/explore", title: "Explore", parent: "/experiences" },
   { pattern: "/experiences/mine", title: "Your notes & posts", parent: "/experiences" },

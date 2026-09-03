@@ -5,6 +5,7 @@ import type { HOneyConfig } from "./config.js";
 import type { AccountService, HOneyUserRow } from "./services/accounts.js";
 import type { ImportService } from "./services/importer.js";
 import type { TimetableService } from "./services/timetable.js";
+import type { NoticeService } from "./services/notices.js";
 import type { EntityDirectory } from "./school/directory.js";
 import type { SchoolProfile } from "./school/types.js";
 import type { SettingsService } from "./experiences/settings.js";
@@ -27,6 +28,8 @@ export interface AppContext {
   accounts: AccountService;
   importer: ImportService;
   timetable: TimetableService;
+  /** The school's own notices, as published on the portal (read-only for HOney). */
+  notices: NoticeService;
   /** The school profile: curated, deterministic canonicalization knowledge. */
   profile: SchoolProfile;
   entities: EntityDirectory;

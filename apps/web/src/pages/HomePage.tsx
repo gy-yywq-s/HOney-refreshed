@@ -19,7 +19,7 @@ import { ReconnectDialog } from "../components/ReconnectDialog";
 import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
-import { formatDayBucket, formatDayTitle, formatRemaining, formatTime } from "../lib/format";
+import { formatDayBucket, formatDayTitle, formatRelativeDay, formatRemaining, formatTime } from "../lib/format";
 import { lessonTitle, roomLabel } from "../lib/displayNames";
 import { ChevronRightIcon, PenIcon } from "../components/icons";
 import { WordmarkHOney } from "../components/Wordmark";
@@ -27,6 +27,7 @@ import { useLang, useT } from "../lib/i18n";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
 import { usePortalEntry } from "../lib/portalEntry";
+import { useReadNotices } from "../lib/noticesRead";
 
 /** Running as the installed (standalone) app, not in a browser tab. */
 function isStandalone(): boolean {
@@ -45,8 +46,17 @@ export function HomePage() {
   const portal = usePortalEntry();
   const [portalLogin, setPortalLogin] = useState(false);
   const standalone = isStandalone();
+  const notices = useApi(() => api.notices(20), [], "notices");
+  const readNotices = useReadNotices();
 
   if (!me) return null;
+
+  // The unread ones, newest first — at most two, a glimpse and not a feed.
+  // With nothing unread the newest notice still shows, quietly, so Home never
+  // hides that the school has said something.
+  const allNotices = notices.data?.notices ?? [];
+  const unreadNotices = allNotices.filter((n) => !readNotices.has(n.id));
+  const homeNotices = unreadNotices.length > 0 ? unreadNotices.slice(0, 2) : allNotices.slice(0, 1);
 
   const next = data?.nextLesson ?? null;
   // Legacy behavior kept: a running lesson fills the focal object with an
@@ -178,6 +188,36 @@ export function HomePage() {
         )}
       </section>
 
+      {/* What the school itself published (Gary 2026-09-03: 上home). The newest
+          unread ones, in the school's own words; everything else is one tap
+          away. Read/unread is a fact of this device only. */}
+      {homeNotices.length > 0 && (
+        <section className="home-notices home-zone" aria-label="From school">
+          <div className="home-notices__head">
+            <span className="eyebrow">{t("From school")}</span>
+            <Link className="home-notices__all" to="/notices">
+              {t("All notices")}
+            </Link>
+          </div>
+          <ul className="home-notices__list">
+            {homeNotices.map((n) => (
+              <li key={n.id}>
+                <Link className="home-notices__row" to={`/notices/${n.id}`}>
+                  <span className="home-notices__main">
+                    <span className="home-notices__title">
+                      {!readNotices.has(n.id) && <span className="notice-row__dot" aria-hidden="true" />}
+                      {n.title}
+                    </span>
+                    <span className="caption">{formatRelativeDay(n.postedAt)}</span>
+                  </span>
+                  <ChevronRightIcon size={16} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="home-voices home-zone" aria-label="Related to you">
         <div className="home-voices__head">
           <span className="eyebrow">{t("Related to you")}</span>
@@ -227,23 +267,19 @@ export function HomePage() {
           /* HOney cannot enter signed in and nothing here can renew: ask for
              the school login once (kept on this device), never land the
              student on the portal's own login page. */
-          <button type="button" className="portal-row" onClick={() => setPortalLogin(true)}>
-            <img className="portal-row__icon" src="/oasis.png" alt="" width="22" height="22" />
-            <span className="portal-row__title">School Portal</span>
-            <span className="caption">{t("Sign in once to open")}</span>
+          <button type="button" className="portal-link" onClick={() => setPortalLogin(true)}>
+            <img className="portal-link__icon" src="/oasis.png" alt="" width="16" height="16" />
+            <span>{t("School Portal")}</span>
+            <span className="portal-link__note">{t("Sign in once")}</span>
           </button>
         ) : (
-          <a className="portal-row" href={portal.href} target="_blank" rel="noopener noreferrer">
-            <img className="portal-row__icon" src="/oasis.png" alt="" width="22" height="22" />
-            <span className="portal-row__title">School Portal</span>
-            {/* In the installed app the row says what it does: it enters the
-                portal signed in, here — not a jump to the outside (Gary 2026-09-03). */}
-            <span className="caption">
-              {standalone ? t("Signed in · no login needed") : (
-                <>
-                  {t("Open the official site")} <span aria-hidden="true">&#8599;</span>
-                </>
-              )}
+          <a className="portal-link" href={portal.href} target="_blank" rel="noopener noreferrer">
+            <img className="portal-link__icon" src="/oasis.png" alt="" width="16" height="16" />
+            <span>{t("School Portal")}</span>
+            {/* In the installed app it says what it does: it enters the portal
+                signed in, here — not a jump to the outside (Gary 2026-09-03). */}
+            <span className="portal-link__note">
+              {standalone ? t("Signed in") : <span aria-hidden="true">&#8599;</span>}
             </span>
           </a>
         )}

@@ -27,6 +27,7 @@ import type {
   EntityType,
   HistoryParams,
   HistoryResponse,
+  NoticesResponse,
   KillSwitchName,
   LoginInput,
   LoginResponse,
@@ -188,6 +189,11 @@ export class ApiClient {
 
   directory(): Promise<DirectoryResponse> {
     return this.request("GET", "/api/directory");
+  }
+
+  /** The school's own notices, newest first (Gary 2026-09-03). */
+  notices(limit?: number): Promise<NoticesResponse> {
+    return this.request("GET", limit ? `/api/notices?limit=${limit}` : "/api/notices");
   }
 
   // ---- The public entity directory (posts themselves live in the Community process) ----

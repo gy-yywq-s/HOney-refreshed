@@ -94,6 +94,24 @@ export interface DoorOptionWire {
   value: string;
 }
 
+/**
+ * GET /api/notice/get_notice_list → { rows, total } (captured 2026-09-03 from
+ * the live portal with the authorized test account; page/limit are ignored —
+ * the whole list arrives at once). `content` is plain text with newlines, not
+ * HTML. There is no per-student read flag: /api/user/get_dashboard_notice
+ * gives only an `unread_count`, never which ones, so HOney keeps "read" on the
+ * device.
+ */
+export interface SchoolNoticeWire {
+  id: number;
+  title: string;
+  content: string;
+  campus_id: number;
+  operator_id: number;
+  create_time: string;
+  update_time: string;
+}
+
 /** Commuter (day-student) direct-open sentinel used as record_id. */
 export const COMMUTER_RECORD_ID = -2 as const;
 

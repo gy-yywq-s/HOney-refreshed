@@ -118,6 +118,29 @@ export interface DirectoryResponse {
   rooms: DirectoryEntry[];
 }
 
+/**
+ * A notice the school published on the portal (GET /api/notice/get_notice_list,
+ * captured 2026-09-03: id · title · content · campus_id · create_time ·
+ * operator_id · update_time — plain text with newlines, no HTML, no per-student
+ * read flag, no attachments). HOney stores the school's words verbatim and
+ * never translates them; "read" is a per-device fact and stays on the device.
+ */
+export interface SchoolNotice {
+  id: string;
+  title: string;
+  /** The school's own text, plain, newlines preserved. */
+  body: string;
+  postedAt: number;
+  /** When the school last edited it (equals postedAt when never edited). */
+  updatedAt: number;
+}
+
+export interface NoticesResponse {
+  notices: SchoolNotice[];
+  /** When HOney last read the portal's notice list. */
+  fetchedAt: number | null;
+}
+
 export type SyncStatus = "ok" | "portal_reconnect_required" | "no_consent";
 
 export interface SyncResponse {

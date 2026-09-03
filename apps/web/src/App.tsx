@@ -14,6 +14,7 @@ import { ExperiencesFeedPage } from "./pages/experiences/FeedPage";
 import { ExperiencesExplorePage } from "./pages/experiences/ExplorePage";
 import { ExperiencesWhyPage } from "./pages/experiences/WhyPage";
 import { ExperiencesMinePage } from "./pages/experiences/MinePage";
+import { NoticesPage } from "./pages/NoticesPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
@@ -37,6 +38,8 @@ export function App() {
               <Route path="/home" element={<HomePage />} />
               <Route path="/timetable" element={<TimetablePage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/notices" element={<NoticesPage />} />
+              <Route path="/notices/:id" element={<NoticesPage />} />
               {/* Deep-link reserved by spec §6.3; renders the list for now. */}
               <Route path="/history/lesson/:id" element={<HistoryPage />} />
               <Route path="/experiences" element={<ExperiencesFeedPage />} />

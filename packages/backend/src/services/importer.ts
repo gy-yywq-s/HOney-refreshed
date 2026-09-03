@@ -5,6 +5,7 @@ import { portalWeekIndex } from "@honey/shared";
 import type { AccountService } from "./accounts.js";
 import { SchoolImportService } from "../school/import.js";
 import type { SchoolProfile } from "../school/types.js";
+import type { NoticeService } from "./notices.js";
 
 // Timetable import (Band 4 → Band 3 handoff): pulls upstream weeks with the
 // stored portal token and hands the normalized lessons to the canonical
@@ -31,6 +32,7 @@ export class ImportService {
     private readonly accounts: AccountService,
     private readonly api: PortalApi,
     profile: SchoolProfile,
+    private readonly notices: NoticeService | null = null,
     private readonly now: () => Date = () => new Date(),
   ) {
     this.school = new SchoolImportService(db, profile, () => this.now().getTime());
@@ -82,6 +84,17 @@ export class ImportService {
     }
 
     const counts = this.upsertLessons(honeyId, lessons);
+    // The school's notices ride along on the same sync (Gary 2026-09-03).
+    // They are campus-wide, not this student's data, and a notice failure
+    // must never cost the student their timetable: it is swallowed here and
+    // the previously stored list keeps being served.
+    if (this.notices) {
+      try {
+        this.notices.upsert(await retrySafeRead(() => this.api.noticeList(conn.token)));
+      } catch {
+        /* keep the stored notices */
+      }
+    }
     this.accounts.markSynced(honeyId);
     return { ...counts, status: "ok" };
   }

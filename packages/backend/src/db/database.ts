@@ -354,6 +354,25 @@ const MIGRATIONS: string[] = [
      AND (ends_at - starts_at) % 5400000 = 0;
   UPDATE lesson_instances SET slot_ends_at = ends_at WHERE slot_ends_at IS NULL;
   `,
+  // 007 — school notices (Gary 2026-09-03: 上home). The portal publishes them
+  // campus-wide with no per-student read flag (its dashboard endpoint returns
+  // only a count), so the row is school data and "read" stays on the device.
+  // The school's text is stored verbatim, never translated, never rewritten.
+  `
+  CREATE TABLE school_notices (
+    id TEXT PRIMARY KEY,
+    school_id TEXT NOT NULL REFERENCES schools(id),
+    source_system TEXT NOT NULL,
+    source_notice_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    posted_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    fetched_at INTEGER NOT NULL,
+    UNIQUE (school_id, source_system, source_notice_id)
+  ) STRICT;
+  CREATE INDEX idx_notices_posted ON school_notices(posted_at DESC);
+  `,
 ];
 
 export class SchemaEpochError extends Error {

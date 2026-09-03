@@ -8,6 +8,7 @@ import type {
   NextLessonResponse,
   HistoryResponse,
   DirectoryResponse,
+  NoticesResponse,
 } from "@honey/shared/api";
 
 // Data surface (spec §14.3): UI-agnostic domain queries. Screens compose these;
@@ -127,6 +128,20 @@ export function registerDataRoutes(app: FastifyInstance, ctx: AppContext): void 
     if (order === "asc" || order === "desc") opts.order = order;
     return { lessons: ctx.timetable.history(user.honey_id, opts) };
   });
+
+  // The school's own notices (Gary 2026-09-03). Campus-wide school data, kept
+  // verbatim; "read" is a per-device fact and is never sent here.
+  app.get<{ Querystring: { limit?: string } }>(
+    "/api/notices",
+    { preHandler: ctx.requireAuth },
+    async (req): Promise<NoticesResponse> => {
+      const limit = req.query.limit ? Number(req.query.limit) : 50;
+      return {
+        notices: ctx.notices.list(Number.isFinite(limit) ? limit : 50),
+        fetchedAt: ctx.notices.fetchedAt(),
+      };
+    },
+  );
 
   app.get("/api/directory", { preHandler: ctx.requireAuth }, async (req): Promise<DirectoryResponse> => {
     const user = ctx.userOf(req);

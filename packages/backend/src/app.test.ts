@@ -172,6 +172,29 @@ describe("consent & import", () => {
     expect(c.statusCode).toBe(200);
   });
 
+  it("sync also pulls the school's notices; /api/notices serves them newest first, verbatim", async () => {
+    const { session } = await login();
+    const auth = { authorization: `Bearer ${session.accessToken}` };
+    await app.inject({ method: "POST", url: "/api/sync", headers: auth });
+
+    const res = await app.inject({ method: "GET", url: "/api/notices", headers: auth });
+    const body = res.json() as {
+      notices: { id: string; title: string; body: string; postedAt: number; updatedAt: number }[];
+      fetchedAt: number | null;
+    };
+    expect(body.notices.map((n) => n.id)).toEqual(["12", "11"]);
+    // The school's own text, its line breaks kept, nothing rewritten.
+    expect(body.notices[0]!.body).toBe("Line 1\nLine 2");
+    // An edited notice keeps both facts.
+    expect(body.notices[1]!.updatedAt).toBeGreaterThan(body.notices[1]!.postedAt);
+    expect(body.fetchedAt).not.toBeNull();
+
+    // Re-syncing is idempotent: the same notices, never duplicates.
+    await app.inject({ method: "POST", url: "/api/sync", headers: auth });
+    const again = await app.inject({ method: "GET", url: "/api/notices", headers: auth });
+    expect((again.json() as { notices: unknown[] }).notices).toHaveLength(2);
+  });
+
   it("expired portal token → sync reports portal_reconnect_required; /api/portal/token repairs it", async () => {
     const { session, honeyId } = await login();
     const auth = { authorization: `Bearer ${session.accessToken}` };
