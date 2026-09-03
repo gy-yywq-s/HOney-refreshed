@@ -7,7 +7,6 @@ import { Suspense, lazy } from "react";
 // Admin console: code-split — students never download it (design-is r1).
 const DashPage = lazy(() => import("./pages/DashPage").then((m) => ({ default: m.DashPage })));
 import { AccessPage } from "./pages/AccessPage";
-import { NewPermitPage } from "./pages/access/NewPermitPage";
 import { ExperiencesComposePage } from "./pages/experiences/ComposePage";
 import { ExperienceEntityPage } from "./pages/experiences/EntityPage";
 import { ExperiencesFeedPage } from "./pages/experiences/FeedPage";
@@ -57,7 +56,6 @@ export function App() {
               <Route path="/experiences/place/:id" element={<ExperienceEntityPage kind="room" />} />
               <Route path="/experiences/food/:id" element={<ExperienceEntityPage kind="dish" />} />
               <Route path="/access" element={<AccessPage />} />
-              <Route path="/access/permits/new" element={<NewPermitPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/settings/post-controls" element={<PostControlsPage />} />
               <Route path="/settings/post-controls/recovery-words" element={<RecoveryWordsPage />} />

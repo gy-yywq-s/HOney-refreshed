@@ -71,6 +71,7 @@ class AccessClient {
 
   forget(): void {
     this.capability = null;
+    this.lastBootstrap = null;
   }
 
   private async cap(): Promise<string> {
@@ -108,8 +109,18 @@ class AccessClient {
     return (await res.json()) as T;
   }
 
-  bootstrap(): Promise<AccessBootstrap> {
-    return this.call("GET", "/access/bootstrap");
+  private lastBootstrap: { value: AccessBootstrap; at: number } | null = null;
+
+  /** The last bootstrap this session, if fresh enough to show while a new one loads. */
+  cachedBootstrap(maxAgeMs = 10 * 60_000): AccessBootstrap | null {
+    if (!this.lastBootstrap || Date.now() - this.lastBootstrap.at > maxAgeMs) return null;
+    return this.lastBootstrap.value;
+  }
+
+  async bootstrap(): Promise<AccessBootstrap> {
+    const value = await this.call<AccessBootstrap>("GET", "/access/bootstrap");
+    this.lastBootstrap = { value, at: Date.now() };
+    return value;
   }
 
   prepareOpen(input: Omit<PrepareOpenInput, "clientNonce">): Promise<PreparedOpenOperation> {

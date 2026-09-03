@@ -1,22 +1,92 @@
-/* Web Access (spec Part II). Built only from the app's existing tokens and
-   row/card/chip vocabulary; the progress list is the one new shape. */
+/* Web Access (spec Part II), laid out as the iPhone's Access screen: the
+   apply card, the permits section, the School-access dock. Built only from
+   the app's existing tokens and row/card/chip vocabulary. */
 
-.access-route {
-  margin-top: var(--sp-2);
+.access-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.access-section .overline {
+  margin: 0;
 }
 
-.access-permit__now {
-  margin-left: var(--sp-1);
+.access-apply__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.access-apply__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
 }
 
-.access-new-permit {
-  margin-top: var(--sp-2);
-  text-decoration: none;
-  color: inherit;
+.access-permit__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
 }
-.access-new-permit[aria-disabled="true"] {
+
+.access-dock__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+.access-dock__note {
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+.access-dock {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+.access-action {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 82px;
+  padding: var(--sp-3);
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.access-action:disabled {
   opacity: 0.55;
-  pointer-events: none;
+  cursor: default;
+}
+.access-action__glyph {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.access-action__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.access-action__title {
+  font-size: var(--fs-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.access-action__sub {
+  font-size: var(--fs-micro);
+  color: var(--muted);
 }
 
 .access-failure {

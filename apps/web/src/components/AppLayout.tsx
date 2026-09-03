@@ -236,8 +236,8 @@ function AppLayout() {
         </div>
       </main>
 
-      {/* Mobile shell (≤960px): floating pill nav, 4 slots, sliding active pill. */}
-      <nav className="mobile-nav" aria-label="Primary, mobile">
+      {/* Mobile shell (≤960px): floating pill nav, one slot per tab, sliding active pill. */}
+      <nav className="mobile-nav" aria-label="Primary, mobile" style={{ "--tabs": MOBILE_TABS.length } as CSSProperties}>
         <span
           className="mobile-nav__pill"
           data-off={mobileIndex < 0 ? "true" : "false"}

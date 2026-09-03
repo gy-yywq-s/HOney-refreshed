@@ -35,7 +35,6 @@ const NODES: RouteNode[] = [
   { pattern: "/experiences/place/:id", title: "Place", parent: "/experiences" },
   { pattern: "/experiences/food/:id", title: "Food", parent: "/experiences" },
   { pattern: "/access", title: "Access", parent: null },
-  { pattern: "/access/permits/new", title: "Request an exit permit", parent: "/access" },
   { pattern: "/settings", title: "Settings", parent: null },
   { pattern: "/settings/account", title: "Account", parent: "/settings" },
   { pattern: "/settings/connection", title: "School connection", parent: "/settings" },

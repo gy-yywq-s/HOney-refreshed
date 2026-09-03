@@ -933,7 +933,7 @@
     min-height: 54px;
     padding: var(--sp-1);
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(var(--tabs, 5), minmax(0, 1fr)); /* one column per tab (AppLayout sets --tabs) */
     gap: var(--sp-1);
     border: 1px solid var(--line);
     border-radius: 22px;
@@ -949,7 +949,7 @@
     top: 4px;
     bottom: 4px;
     left: 4px;
-    width: calc((100% - 8px - 12px) / 4);
+    width: calc((100% - 8px - (var(--tabs, 5) - 1) * 4px) / var(--tabs, 5));
     border-radius: 18px;
     background: var(--accent-tint);
     transform: translateX(calc(var(--active, 0) * (100% + 4px)));
@@ -975,7 +975,15 @@
     font-size: var(--fs-micro);
     line-height: 1;
     font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
     transition: color var(--dur-fast) var(--ease);
+  }
+  .mobile-nav__item > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   @media (hover: hover) {
     .mobile-nav__item:hover {
