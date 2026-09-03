@@ -9,7 +9,7 @@
 // at once while a fresh one loads; physical authority always comes from a
 // fresh prepare.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { Link } from "react-router-dom";
 import { displayReason, displayStatus, isOpenable, openablePermits, permitTone, quickPermitDraft, sortedForList, type AccessBootstrap, type AccessProgressEvent, type AccessRouteKind, type Door, type Permit, type PreparedOpenOperation } from "@honey/shared/access";
 import { AccessProgress } from "../components/AccessProgress";
@@ -18,7 +18,7 @@ import { Modal } from "../components/Modal";
 import { accessClient, AccessClientError, describeAccessFailure, type AccessFailure } from "../lib/access/client";
 import { permitWindow, permitWindowFromTimes, toTimeInput } from "../lib/access/format";
 import { useT } from "../lib/i18n";
-import { Skeleton } from "../lib/motion";
+import { Skeleton, useHeightTransition } from "../lib/motion";
 
 type Route = { kind: AccessRouteKind; permit: Permit | null };
 type Action = { kind: "open"; route: Route; door: Door | null } | { kind: "withdraw"; permit: Permit } | { kind: "apply"; startTime: string; endTime: string; note: string };
@@ -115,6 +115,9 @@ export function AccessPage() {
   const fitMode = !!boot && !showAll;
   const { bodyRef, fit } = useRowsThatFit(fitMode, permits.length);
   const visiblePermits = showAll ? permits : permits.slice(0, fitMode ? (fit ?? COLLAPSED_PERMITS) : COLLAPSED_PERMITS);
+  // The header row folds only when there is something to fold or to reveal.
+  const canFold = showAll || permits.length > visiblePermits.length;
+  const listRef = useHeightTransition<HTMLDivElement>(visiblePermits.length);
 
   const permitSubtitle = !boot
     ? t("Checking permits…")
@@ -206,15 +209,32 @@ export function AccessPage() {
           <ApplyCard disabled={!canAct} onApply={(d) => setFlow({ action: { kind: "apply", ...d }, step: "confirm" })} etaLabel={boot.eta.permit} />
 
           <section className="access-section" aria-label={t("Permits")}>
-            <div className="access-fold">
+            {/* The whole header row folds the list (Gary 2026-09-03: 那一行都
+                该点击到了就算收起) — and opens it again when there is more. */}
+            <div
+              className={canFold ? "access-fold access-fold--tap" : "access-fold"}
+              {...(canFold
+                ? {
+                    role: "button",
+                    tabIndex: 0,
+                    "aria-expanded": showAll,
+                    onClick: () => setShowAll((v) => !v),
+                    onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      e.preventDefault();
+                      setShowAll((v) => !v);
+                    },
+                  }
+                : {})}
+            >
               <h2 className="overline">{t("Permits")}</h2>
               <span className="access-fold__summary">
                 {boot.permitsFresh ? (openable.length > 0 ? `${openable.length} ${t("usable now")} · ${permits.length}` : `${permits.length}`) : t("unavailable")}
               </span>
-              {showAll && (
-                <button type="button" className="access-fold__collapse" onClick={() => setShowAll(false)} aria-label={t("Show fewer")}>
-                  <ChevronUpIcon size={18} />
-                </button>
+              {canFold && (
+                <span className="access-fold__collapse" aria-hidden="true">
+                  {showAll ? <ChevronUpIcon size={18} /> : <ChevronDownIcon size={18} />}
+                </span>
               )}
             </div>
             {(
@@ -225,7 +245,9 @@ export function AccessPage() {
                 {visiblePermits.length === 0 ? (
                   <p className="caption">{boot.permitsFresh ? t("No permits.") : t("Permits unavailable.")}</p>
                 ) : (
-                  <div className="rowlist">
+                  /* Growing and shrinking is animated from the measured
+                     heights, so rows are never "suddenly there". */
+                  <div className="rowlist" ref={listRef}>
                     {visiblePermits.map((p) => (
                       <PermitRow key={p.recordId} permit={p} now={now} actionable={canAct && boot.permitsFresh} onChooseGate={() => beginGateFlow({ kind: "exit_permit", permit: p })} onWithdraw={() => setFlow({ action: { kind: "withdraw", permit: p }, step: "confirm" })} />
                     ))}

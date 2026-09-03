@@ -84,57 +84,10 @@ export function ExperiencePost({ exp }: { exp: PublicExperienceV2 }) {
   const [busy, setBusy] = useState(false);
   const [pendingValue, setPendingValue] = useState<1 | -1 | 0>(0);
   const [note, setNote] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [reporting, setReporting] = useState(false);
+  const [options, setOptions] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const t = useT();
   const moreBtnRef = useRef<HTMLButtonElement>(null);
-  const overflowRef = useRef<HTMLDivElement>(null);
-  const firstItemRef = useRef<HTMLButtonElement>(null);
-  const menuId = `post-menu-${exp.id}`;
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    firstItemRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMenuOpen(false);
-        moreBtnRef.current?.focus();
-      }
-    };
-    const onPointer = (e: PointerEvent) => {
-      const target = e.target as Element | null;
-      if (overflowRef.current?.contains(target)) return;
-      setMenuOpen(false);
-      if (!target?.closest('button, a, input, textarea, select, [tabindex]:not([tabindex="-1"])')) {
-        setTimeout(() => moreBtnRef.current?.focus(), 0);
-      }
-    };
-    const onArrow = (e: KeyboardEvent) => {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-      const items = Array.from(overflowRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
-      if (items.length === 0) return;
-      e.preventDefault();
-      const i = items.indexOf(document.activeElement as HTMLElement);
-      const next = e.key === "ArrowDown" ? (i + 1) % items.length : (i - 1 + items.length) % items.length;
-      items[next]?.focus();
-    };
-    const onFocusOut = (e: FocusEvent) => {
-      const next = e.relatedTarget as Node | null;
-      if (next && !overflowRef.current?.contains(next)) setMenuOpen(false);
-    };
-    const group = overflowRef.current;
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("keydown", onArrow);
-    document.addEventListener("pointerdown", onPointer);
-    group?.addEventListener("focusout", onFocusOut);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("keydown", onArrow);
-      document.removeEventListener("pointerdown", onPointer);
-      group?.removeEventListener("focusout", onFocusOut);
-    };
-  }, [menuOpen]);
 
   const parts = contextParts(exp);
   const mine = myPosts.has(exp.id);
@@ -241,44 +194,28 @@ export function ExperiencePost({ exp }: { exp: PublicExperienceV2 }) {
           </>
         )}
         <span className="post__spacer" />
-        <div className="post__overflow" ref={overflowRef}>
-          <button
-            type="button"
-            className="react-btn react-btn--more"
-            ref={moreBtnRef}
-            aria-label={t("More options")}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            aria-controls={menuId}
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            ···
-          </button>
-          {menuOpen && (
-            <div className="post__menu" role="menu" id={menuId} aria-label="Post options">
-              <button
-                type="button"
-                role="menuitem"
-                ref={firstItemRef}
-                onClick={() => {
-                  moreBtnRef.current?.focus();
-                  setMenuOpen(false);
-                  setReporting(true);
-                }}
-              >
-                {t("Report")}
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Post options open as a sheet, not a floating menu (Gary 2026-09-03:
+            report 选项打不开) — one surface, no outside-click listeners, and
+            the same grammar as every other sheet in the app. */}
+        <button
+          type="button"
+          className="react-btn react-btn--more"
+          ref={moreBtnRef}
+          aria-label={t("More options")}
+          aria-haspopup="dialog"
+          aria-expanded={options}
+          onClick={() => setOptions(true)}
+        >
+          ···
+        </button>
       </div>
       {note && <div className="caption post__note" role="status">{note}</div>}
-      {reporting && me && (
-        <PostReportDialog
+      {options && me && (
+        <PostOptionsSheet
           account={me.honeyId}
           experienceId={exp.id}
           onClose={() => {
-            setReporting(false);
+            setOptions(false);
             moreBtnRef.current?.focus();
           }}
         />
@@ -297,54 +234,74 @@ const REPORT_OPTIONS: { value: string; label: string }[] = [
   { value: "other_rule", label: "Another community-rule problem" },
 ];
 
-function PostReportDialog({ account, experienceId, onClose }: { account: string; experienceId: string; onClose: () => void }) {
+/**
+ * The post's options, as one sheet (Gary 2026-09-03: the floating menu could
+ * not be opened on a phone). Step 1 is what you can do with this post; step 2
+ * is the report's categories — no free text is ever collected, and the report
+ * carries no account: it is signed by this device's reactor key, which
+ * Community only knows as a tag.
+ */
+function PostOptionsSheet({ account, experienceId, onClose }: { account: string; experienceId: string; onClose: () => void }) {
+  const [step, setStep] = useState<"options" | "report" | "done">("options");
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   async function send(category: string) {
     setBusy(true);
     setError(null);
     try {
       await reportPost(account, experienceId, category);
-      setDone(true);
+      setStep("done");
     } catch (err) {
       setError(
         err instanceof ApiError && err.code === "report_rate_limited"
           ? "You have reported a lot recently — please wait a while."
-          : err instanceof PostControlsUnavailable
-            ? "Restore your post controls in Settings to report."
-            : "Could not send that report. Please try again.",
+          : err instanceof ApiError && err.code === "reports_disabled"
+            ? "Reporting is paused right now."
+            : err instanceof PostControlsUnavailable
+              ? "This browser cannot report."
+              : "Could not send that report. Please try again.",
       );
     } finally {
       setBusy(false);
     }
   }
 
+  const title = step === "report" ? t("Report this experience") : step === "done" ? t("Report sent") : t("Post options");
+
   return (
-    <Modal title="Report this experience" onClose={onClose} describedBy={done ? undefined : "report-dialog-body"}>
-      {done ? (
-        <>
-          <p>Thanks. The post gets re-checked automatically under the current community rules — reports flag a rule problem; they are never a vote.</p>
-          <div className="card-actions">
-            <button className="btn btn--primary" onClick={onClose}>
-              Done
-            </button>
-          </div>
-        </>
-      ) : (
+    <Modal title={title} onClose={onClose} describedBy={step === "report" ? "report-dialog-body" : undefined}>
+      {step === "options" && (
+        <div className="report-options">
+          <button className="btn btn--ghost btn--block" onClick={() => setStep("report")}>
+            {t("Report this experience")}
+          </button>
+        </div>
+      )}
+      {step === "report" && (
         <>
           <p className="text-4" id="report-dialog-body">
-            Disagreeing is not a report — use the reaction for that. Reports are for rule problems only, and no free text is collected.
+            {t("Disagreeing is not a report — use the reaction for that. Reports are for rule problems only, and no free text is collected.")}
           </p>
           <div className="report-options">
             {REPORT_OPTIONS.map((o) => (
               <button key={o.value} className="btn btn--ghost btn--block" disabled={busy} onClick={() => void send(o.value)}>
-                {o.label}
+                {t(o.label)}
               </button>
             ))}
           </div>
           {error && <div role="alert" className="banner banner--danger">{error}</div>}
+        </>
+      )}
+      {step === "done" && (
+        <>
+          <p>{t("Thanks. The post gets re-checked automatically under the current community rules — reports flag a rule problem; they are never a vote.")}</p>
+          <div className="card-actions">
+            <button className="btn btn--primary" onClick={onClose}>
+              {t("Done")}
+            </button>
+          </div>
         </>
       )}
     </Modal>

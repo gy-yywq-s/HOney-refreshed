@@ -4,7 +4,7 @@
 // scroll-reveal component are gone. Everything checks
 // prefers-reduced-motion and stays transform/opacity-only.
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 export function prefersReducedMotion(): boolean {
@@ -38,4 +38,42 @@ export function Skeleton({ lines = 2 }: { lines?: number }) {
       ))}
     </div>
   );
+}
+
+/**
+ * A list that grows and shrinks in front of you rather than jumping (Gary
+ * 2026-09-03: show all 和收起都要渐进). The element keeps its own layout —
+ * only the transition between the old height and the new one is animated,
+ * both measured, so nothing is guessed or hard-coded. Under reduced motion
+ * the change is instant.
+ */
+export function useHeightTransition<T extends HTMLElement>(dep: unknown) {
+  const ref = useRef<T>(null);
+  const previous = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const next = el.scrollHeight;
+    const from = previous.current;
+    previous.current = next;
+    if (from === null || from === next || prefersReducedMotion()) return;
+    el.style.overflow = "hidden";
+    el.style.height = `${from}px`;
+    void el.getBoundingClientRect().height; // commit the start height
+    el.style.transition = "height 0.28s cubic-bezier(0.32, 0.72, 0, 1)";
+    el.style.height = `${next}px`;
+    const done = () => {
+      el.style.transition = "";
+      el.style.height = "";
+      el.style.overflow = "";
+      el.removeEventListener("transitionend", done);
+    };
+    el.addEventListener("transitionend", done);
+    const fallback = window.setTimeout(done, 420);
+    return () => {
+      window.clearTimeout(fallback);
+      el.removeEventListener("transitionend", done);
+    };
+  }, [dep]);
+  return ref;
 }

@@ -91,16 +91,20 @@
   font-weight: 600;
   cursor: pointer;
 }
-/* Expanded: the fold-up chevron sits at the right end of the Permits header. */
+/* The chevron sits at the right end of the Permits header; the whole row is
+   the control (Gary 2026-09-03). */
 .access-fold__collapse {
   margin-left: auto;
-  padding: 0;
-  border: 0;
-  background: none;
   color: var(--accent);
   display: inline-flex;
   align-items: center;
+}
+.access-fold--tap {
   cursor: pointer;
+  /* A comfortable row to hit without adding height to the section. */
+  min-height: 44px;
+  margin-block: -10px;
+  -webkit-tap-highlight-color: transparent;
 }
 /* The School-access dock sits a little closer to the list above it. */
 .access-section--dock {

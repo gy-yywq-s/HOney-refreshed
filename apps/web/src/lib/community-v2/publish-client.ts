@@ -199,11 +199,36 @@ function registeredEpochs(): Set<string> {
   }
 }
 
+/**
+ * The reactor secret is this DEVICE's own, and deliberately NOT derived from
+ * the post-control root (Gary 2026-09-03: 不用 postcontrol). Two consequences:
+ * reacting and reporting work on a device that has no post controls, or has
+ * not restored them; and nothing links a reaction or a report to the person's
+ * posts, even to someone holding the root. It never leaves the device — only
+ * the public key is registered, against a blind membership token.
+ */
+const REACTOR_SECRET_KEY = "honey.reactor.secret";
+function reactorSecret(account: string): Uint8Array {
+  const key = `${REACTOR_SECRET_KEY}.${account}`;
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) return fromBase64Url(stored);
+  } catch {
+    /* fall through: a fresh secret is made below */
+  }
+  const secret = randomBytes(32);
+  try {
+    localStorage.setItem(key, toBase64Url(secret));
+  } catch {
+    /* a device that cannot store one registers a new reactor each time */
+  }
+  return secret;
+}
+
 async function reactorFor(account: string): Promise<{ privateKey: Uint8Array; publicKey: string; schoolId: string; academicYear: string }> {
-  const roots = await ensureRoots(account);
   const session = await communitySession();
   const epoch = { schoolId: session.scope.schoolId, academicYear: session.scope.academicYear };
-  const key = reactionKeyPair(roots.active, epoch);
+  const key = reactionKeyPair(reactorSecret(account), epoch);
   const publicKey = toBase64Url(key.publicKey);
   const mark = `${epoch.schoolId}\0${epoch.academicYear}\0${publicKey}`;
   const known = registeredEpochs();
