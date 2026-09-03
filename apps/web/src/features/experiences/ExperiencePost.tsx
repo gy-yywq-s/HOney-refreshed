@@ -211,24 +211,35 @@ export function ExperiencePost({ exp }: { exp: PublicExperienceV2 }) {
       )}
 
       <div className="post__actions">
-        <button
-          type="button"
-          className={myValue === 1 ? "react-btn react-btn--on" : "react-btn"}
-          title={REACTION_EXPLAINER}
-          aria-pressed={myValue === 1}
-          aria-label={t("This resonates with me")}
-          aria-disabled={pendingValue === 1 || undefined}
-          onClick={() => void react(1)}
-        >
-          <ResonanceIcon />
-          {counts && <span className="react-btn__count">{counts.likes}</span>}
-        </button>
-        {/* Disagreement is not a down-vote (Gary 2026-09-03: down 去掉):
-            a different experience is written down, not scored. */}
-        <Link className="react-btn react-btn--write" to={composeHref(exp)}>
-          <PenIcon size={16} />
-          <span className="react-btn__label">{t("Write your own")}</span>
-        </Link>
+        {/* Your own words: the count is there to read, but you cannot resonate
+            with yourself and there is nothing to answer (Gary 2026-09-03). */}
+        {mine ? (
+          <span className="react-btn react-btn--static" title={REACTION_EXPLAINER}>
+            <ResonanceIcon />
+            {counts && <span className="react-btn__count">{counts.likes}</span>}
+          </span>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={myValue === 1 ? "react-btn react-btn--on" : "react-btn"}
+              title={REACTION_EXPLAINER}
+              aria-pressed={myValue === 1}
+              aria-label={t("This resonates with me")}
+              aria-disabled={pendingValue === 1 || undefined}
+              onClick={() => void react(1)}
+            >
+              <ResonanceIcon />
+              {counts && <span className="react-btn__count">{counts.likes}</span>}
+            </button>
+            {/* Disagreement is not a down-vote (Gary 2026-09-03: down 去掉):
+                a different experience is written down, not scored. */}
+            <Link className="react-btn react-btn--write" to={composeHref(exp)}>
+              <PenIcon size={16} />
+              <span className="react-btn__label">{t("Write your own")}</span>
+            </Link>
+          </>
+        )}
         <span className="post__spacer" />
         <div className="post__overflow" ref={overflowRef}>
           <button

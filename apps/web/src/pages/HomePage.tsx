@@ -275,13 +275,13 @@ export function HomePage() {
              student on the portal's own login page. */
           <button type="button" className="portal-link" onClick={() => setPortalLogin(true)}>
             <img className="portal-link__icon" src="/oasis.png" alt="" width="16" height="16" />
-            <span>{t("School Portal")}</span>
+            <span className="portal-link__label">{t("School Portal")}</span>
             <span className="portal-link__note">{t("Sign in once")}</span>
           </button>
         ) : (
           <a className="portal-link" href={portal.href} target="_blank" rel="noopener noreferrer">
             <img className="portal-link__icon" src="/oasis.png" alt="" width="16" height="16" />
-            <span>{t("School Portal")}</span>
+            <span className="portal-link__label">{t("School Portal")}</span>
             {/* In the installed app it says what it does: it enters the portal
                 signed in, here — not a jump to the outside (Gary 2026-09-03). */}
             <span className="portal-link__note">

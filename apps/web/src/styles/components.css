@@ -1113,13 +1113,20 @@
       opacity 0.2s var(--ease);
   }
   /* The handle and the title stay put while the notice scrolls under them:
-     the height control must never scroll out of reach. */
-  .modal--sheet .modal__grab,
-  .modal--sheet .modal__head {
+     the height control must never scroll out of reach. One opaque block,
+     bled out to the sheet's edges so no line shows through or beside it. */
+  .modal--sheet .modal__sticky {
     position: sticky;
-    top: 0;
-    z-index: 1;
+    top: calc(-1 * var(--sp-3));
+    z-index: 2;
+    margin: calc(-1 * var(--sp-3)) calc(-1 * var(--sp-4)) 0;
+    padding: var(--sp-3) var(--sp-4) var(--sp-2);
     background: var(--surface-solid);
+    border-radius: 20px 20px 0 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal--sheet .modal__head {
+    margin-bottom: 0;
   }
   .modal--sheet .modal__grab {
     /* The handle spans the sheet so the pull-up gesture is easy to find. */

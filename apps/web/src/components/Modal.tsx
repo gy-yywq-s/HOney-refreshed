@@ -225,23 +225,28 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
-        {expandable ? (
-          <button
-            type="button"
-            className="modal__grab modal__grab--control"
-            aria-label={detent === "medium" ? "Expand" : "Collapse"}
-            onClick={() => setDetent((d) => (d === "medium" ? "large" : "medium"))}
-          />
-        ) : (
-          <span className="modal__grab" aria-hidden="true" />
-        )}
-        <div className="modal__head">
-          <h2 className="modal__title">{title}</h2>
-          {dismissible && (
-            <button className="modal__close" onClick={requestClose} aria-label="Close">
-              &times;
-            </button>
+        {/* Handle + title are one block: on a reading sheet it stays at the
+            top while the text scrolls UNDER it, so it must be opaque across
+            the whole width (Gary 2026-09-03). */}
+        <div className="modal__sticky">
+          {expandable ? (
+            <button
+              type="button"
+              className="modal__grab modal__grab--control"
+              aria-label={detent === "medium" ? "Expand" : "Collapse"}
+              onClick={() => setDetent((d) => (d === "medium" ? "large" : "medium"))}
+            />
+          ) : (
+            <span className="modal__grab" aria-hidden="true" />
           )}
+          <div className="modal__head">
+            <h2 className="modal__title">{title}</h2>
+            {dismissible && (
+              <button className="modal__close" onClick={requestClose} aria-label="Close">
+                &times;
+              </button>
+            )}
+          </div>
         </div>
         {children}
       </div>

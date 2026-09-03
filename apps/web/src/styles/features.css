@@ -1300,6 +1300,11 @@
   color: var(--accent);
   font-weight: 700;
 }
+/* On your own post the count is a reading, not a control (Gary 2026-09-03:
+   自己不能给自己共鸣). */
+.post__actions .react-btn--static {
+  cursor: default;
+}
 /* Disagreement is written, not scored: the second action is the composer
    (Gary 2026-09-03: down 去掉，换成 write down your own experience). */
 .post__actions .react-btn--write {
@@ -1803,7 +1808,9 @@ p.notice-doc__source {
   box-shadow: none;
   font: inherit;
   font-size: var(--fs-caption);
-  color: var(--muted);
+  /* Small and marginal, but unmistakably a link (Gary 2026-09-03: 要看起来
+     是链接): the accent, with the name underlined. */
+  color: var(--accent);
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
@@ -1820,13 +1827,17 @@ p.notice-doc__source {
 :root[data-surface="night"] .portal-link__icon {
   filter: invert(1);
 }
+.portal-link__label {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
 .portal-link__note {
-  color: var(--ink-3, var(--muted));
-  opacity: 0.85;
+  color: var(--muted);
 }
 @media (hover: hover) {
-  .portal-link:hover {
-    color: var(--ink-2);
+  .portal-link:hover .portal-link__label {
+    text-decoration-thickness: 2px;
   }
 }
 
