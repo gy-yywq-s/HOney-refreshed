@@ -81,6 +81,7 @@ public enum SubmitErrorCopy {
         "body_invalid": "The text is empty or longer than 5000 characters.",
         "rating_invalid": "Stars are whole numbers from 1 to 5.",
         "lesson_not_yours": "That lesson isn't in your imported history, so this account can't review it. Pick a lesson from your own History.",
+        "lesson_not_started": "This lesson hasn't started yet. You can share what it was like once it has begun.",
         "entity_unknown": "This entry is no longer listed.",
         "entity_frozen": "New experiences for this entry are paused by the moderators right now.",
         "standalone_closed": "Reviews for this entry are closed right now.",
