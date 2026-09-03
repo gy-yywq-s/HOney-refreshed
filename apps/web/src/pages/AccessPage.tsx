@@ -352,8 +352,8 @@ function ApplyCard({ disabled, onApply, etaLabel }: { disabled: boolean; onApply
     >
       <div className="access-apply__head">
         <h2 className="section-title">{t("Apply for a permit")}</h2>
-        <span className="caption">
-          {t("Today")} · {t(etaLabel)}
+        <span className="caption" title={t(etaLabel)}>
+          {t("Today")}
         </span>
       </div>
       <div className="access-apply__row">
