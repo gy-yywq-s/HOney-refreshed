@@ -69,7 +69,8 @@
 /* "Show all N" between Permits and School access: plain text, no border, no pill. */
 .access-more {
   align-self: flex-start;
-  margin: calc(-1 * var(--sp-2)) 0;
+  flex: none;
+  margin: 0;
   padding: var(--sp-1) 0;
   border: 0;
   background: none;

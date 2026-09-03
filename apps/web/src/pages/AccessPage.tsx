@@ -50,7 +50,9 @@ function useRowsThatFit(active: boolean, total: number): { bodyRef: RefObject<HT
       const rowH = row.getBoundingClientRect().height;
       const list = body.querySelector<HTMLElement>(".rowlist");
       const gap = list ? parseFloat(getComputedStyle(list).rowGap || "0") || 0 : 0;
-      const available = body.clientHeight;
+      const more = body.querySelector<HTMLElement>(".access-more");
+      const moreH = more ? more.getBoundingClientRect().height + gap : 0;
+      const available = body.clientHeight - moreH;
       const n = Math.max(1, Math.floor((available + gap) / (rowH + gap)));
       setFit(Math.min(n, total));
     };
@@ -211,16 +213,14 @@ export function AccessPage() {
                     ))}
                   </div>
                 )}
+                {(permits.length > visiblePermits.length || showAll) && (
+                  <button className="access-more" onClick={() => setShowAll((v) => !v)}>
+                    {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length}`}
+                  </button>
+                )}
               </div>
             )}
           </section>
-
-          {/* "Show all N" sits between Permits and School access: plain text, never clipped by the fitted list. */}
-          {(permits.length > visiblePermits.length || showAll) && (
-            <button className="access-more" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? t("Show fewer") : `${t("Show all")} ${permits.length}`}
-            </button>
-          )}
 
           <section className="access-section" aria-label={t("School access")}>
             <div className="access-dock__head">
