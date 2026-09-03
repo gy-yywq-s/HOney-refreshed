@@ -8,7 +8,7 @@ const FOCUSABLE =
 const CLOSE_MS = 320; // matches the sheet's transition; the fallback if transitionend never fires
 const DISMISS_PX = 110; // damped drag that commits a dismiss
 const DISMISS_VELOCITY = 0.6; // px/ms — a flick commits too
-const EXPAND_PX = 40; // a pull up that takes a reading sheet to full height
+const EXPAND_PX = 56; // a pull up on the handle that takes a reading sheet to full height
 
 interface ModalProps {
   title: string;
@@ -132,12 +132,20 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
     let lastT = 0;
     let dragging = false;
     let dy = 0;
+    // On a reading sheet the two gestures must not fight: the TEXT scrolls
+    // normally, and the sheet's own height is changed from its handle/header
+    // alone (Gary 2026-09-03: 拉上去的时候很怪 — dragging the text flipped the
+    // sheet between its heights and threw the reading position away).
+    const fromHandle = (target: EventTarget | null) =>
+      target instanceof Element && target.closest(".modal__grab, .modal__head") !== null;
     const onStart = (e: TouchEvent) => {
       if (!sheet() || closingRef.current) return;
-      // A pull UP is available even when the sheet cannot be dismissed; a
-      // pull DOWN needs the sheet's own content to be at its top.
       if (!dismissibleRef.current && !expandableRef.current) return;
-      if (shell.scrollTop > 0 && !(expandableRef.current && detentRef.current === "medium")) return;
+      if (expandableRef.current) {
+        if (!fromHandle(e.target)) return;
+      } else if (shell.scrollTop > 0) {
+        return;
+      }
       const t = e.touches[0]!;
       startY = lastY = t.clientY;
       startT = lastT = Date.now();
@@ -156,7 +164,7 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
         if (!(expandableRef.current && detentRef.current === "medium")) dy = 0;
         return;
       }
-      if (shell.scrollTop > 0) return;
+      if (!expandableRef.current && shell.scrollTop > 0) return;
       if (e.cancelable) e.preventDefault(); // the sheet moves, not its content
       shell.dataset.dragging = "";
       shell.style.transform = `translateY(${dy}px)`;
@@ -217,7 +225,16 @@ export function Modal({ title, onClose, children, describedBy, dismissible = tru
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="modal__grab" aria-hidden="true" />
+        {expandable ? (
+          <button
+            type="button"
+            className="modal__grab modal__grab--control"
+            aria-label={detent === "medium" ? "Expand" : "Collapse"}
+            onClick={() => setDetent((d) => (d === "medium" ? "large" : "medium"))}
+          />
+        ) : (
+          <span className="modal__grab" aria-hidden="true" />
+        )}
         <div className="modal__head">
           <h2 className="modal__title">{title}</h2>
           {dismissible && (

@@ -1112,6 +1112,34 @@
       max-height 0.32s cubic-bezier(0.32, 0.72, 0, 1),
       opacity 0.2s var(--ease);
   }
+  /* The handle and the title stay put while the notice scrolls under them:
+     the height control must never scroll out of reach. */
+  .modal--sheet .modal__grab,
+  .modal--sheet .modal__head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--surface-solid);
+  }
+  .modal--sheet .modal__grab {
+    /* The handle spans the sheet so the pull-up gesture is easy to find. */
+    width: auto;
+    height: auto;
+    margin: 0 0 var(--sp-2);
+    padding: var(--sp-2) 0;
+    background: var(--surface-solid);
+    border: 0;
+    cursor: pointer;
+  }
+  .modal--sheet .modal__grab::after {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 5px;
+    margin: 0 auto;
+    border-radius: 99px;
+    background: var(--line);
+  }
   .modal--sheet-medium {
     max-height: 58dvh;
   }
