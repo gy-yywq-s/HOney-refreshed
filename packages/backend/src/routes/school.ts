@@ -9,6 +9,9 @@ import { parsePortalTime } from "@honey/shared/access";
 // portal token and hands them straight back. Nothing here mutates anything
 // upstream — every call is a GET.
 
+/** The amounts the school's own recharge form offers (its select, 2026-09-03). */
+const TOP_UP_AMOUNTS = [100, 200, 300, 500, 1000];
+
 /** A dead portal session is a state, not an error: the client reconnects. */
 function isExpired(e: unknown): boolean {
   const kind = e instanceof Error && "info" in e ? (e as { info: { kind: string } }).info.kind : "";
@@ -85,15 +88,36 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
     const user = ctx.userOf(req);
     const token = tokenFor(user.honey_id);
     if (!token) return { status: "portal_reconnect_required" };
-    const amount = Math.round(Number(req.body?.amount ?? 0) * 100) / 100;
-    if (!Number.isFinite(amount) || amount <= 0 || amount > 1000) {
-      return { status: "refused", reason: "Choose an amount between ¥1 and ¥1000." };
+    // The school's own recharge form offers exactly these five amounts
+    // (Gary's screenshots of My Cards, 2026-09-03) — HOney offers the same.
+    const amount = Math.round(Number(req.body?.amount ?? 0));
+    if (!TOP_UP_AMOUNTS.includes(amount)) {
+      return { status: "refused", reason: "Choose one of the amounts the school offers." };
     }
     try {
       const cards = await ctx.connector.api.cardList(token);
       const card = cards[0];
       if (!card) return { status: "refused", reason: "No card is registered to you." };
       const started = await ctx.connector.api.startRecharge(token, card.cardId, amount);
+      // What the school answers with was never observable without opening an
+      // order, so the SHAPE is journalled on the first real attempt (Gary
+      // 2026-09-03: 兼容两种，记 log，我试了你再改). Keys and value kinds only;
+      // a payment URL is reduced to its origin, path and parameter NAMES.
+      let where = "none";
+      if (started.payUrl) {
+        try {
+          const u = new URL(started.payUrl);
+          where = `${u.origin}${u.pathname} (params: ${[...u.searchParams.keys()].join(",") || "-"})`;
+        } catch {
+          where = "unparseable-url";
+        }
+      } else if (started.formHtml) {
+        where = `form action=${/action="([^"]*)"/i.exec(started.formHtml)?.[1] ?? "?"}`;
+      }
+      // eslint-disable-next-line no-console
+      console.log(
+        `[honey-card] do-recharge answered: amount=${amount} message=${JSON.stringify(started.message.slice(0, 120))} pay=${where} shape=${started.shape}`,
+      );
       return { status: "ok", payUrl: started.payUrl, formHtml: started.formHtml, message: started.message };
     } catch (e) {
       if (isExpired(e)) {

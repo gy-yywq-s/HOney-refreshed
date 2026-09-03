@@ -227,9 +227,12 @@ export interface WeekendResponse {
  * Alipay, on the school's own payment page. An order nobody pays stays unpaid.
  */
 export interface CardTopUpRequest {
-  /** Yuan. */
+  /** Yuan — one of CARD_TOP_UP_AMOUNTS. */
   amount: number;
 }
+
+/** The amounts the school's own recharge form offers (2026-09-03). */
+export const CARD_TOP_UP_AMOUNTS: readonly number[] = [100, 200, 300, 500, 1000];
 
 export type CardTopUpResponse =
   | { status: "ok"; payUrl: string | null; formHtml: string | null; message: string }

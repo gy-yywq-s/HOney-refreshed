@@ -229,7 +229,7 @@ export class PortalApi {
    * answer is the place to pay, and a payment FORM (the other common
    * gateway shape) is handed back as markup for the client to submit.
    */
-  async startRecharge(token: string, cardId: string, amount: number): Promise<{ payUrl: string | null; formHtml: string | null; message: string }> {
+  async startRecharge(token: string, cardId: string, amount: number): Promise<{ payUrl: string | null; formHtml: string | null; message: string; shape: string }> {
     const path = "/api/card/do-recharge";
     const resp = await this.http.request({ method: "POST", path, token, jsonBody: { card_id: cardId, amount }, mutation: true });
     const env = asEnvelope(this.http.triage(resp, path), path);
@@ -237,13 +237,15 @@ export class PortalApi {
     if (env.status !== 0) {
       throw operationRejected(path, typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
     }
-    const serialized = JSON.stringify(env.data ?? null);
-    const url = /https?:\/\/[^"'\\ ]+/.exec(serialized ?? "");
-    const form = /<form[\s\S]*<\/form>/i.exec(typeof env.data === "string" ? env.data : serialized ?? "");
+    const serialized = JSON.stringify(env.data ?? null) ?? "";
+    const url = /https?:\/\/[^"'\\ ]+/.exec(serialized);
+    const form = /<form[\s\S]*<\/form>/i.exec(typeof env.data === "string" ? env.data : serialized);
     return {
       payUrl: url ? url[0].replace(/\\\//g, "/") : null,
       formHtml: form ? form[0].replace(/\\"/g, '"').replace(/\\\//g, "/") : null,
       message,
+      /** Keys + value kinds only — no values: enough to learn the layout. */
+      shape: envelopeShape((env.data && typeof env.data === "object" ? env.data : { data: env.data }) as Record<string, unknown>),
     };
   }
 

@@ -14,6 +14,7 @@ import { formatShortDate, formatTime } from "../../lib/format";
 import { useLang, useT } from "../../lib/i18n";
 import { usePortalEntry } from "../../lib/portalEntry";
 import { Modal } from "../../components/Modal";
+import { CARD_TOP_UP_AMOUNTS } from "@honey/shared/api";
 
 type Bi = { en: string; zh: string };
 
@@ -147,7 +148,8 @@ export function CampusCardPage() {
   );
 }
 
-const PRESETS = [10, 20, 50, 100, 200];
+// The school's own recharge form offers exactly these (Gary's screenshots).
+const PRESETS = CARD_TOP_UP_AMOUNTS;
 
 /**
  * Top up: HOney asks the school to open an order and then hands the student to
@@ -158,18 +160,13 @@ const PRESETS = [10, 20, 50, 100, 200];
 function TopUpSheet({ onClose, onPaid }: { onClose: () => void; onPaid: () => void }) {
   const L = useL();
   const t = useT();
-  const [amount, setAmount] = useState(50);
-  const [custom, setCustom] = useState("");
+  const [amount, setAmount] = useState(PRESETS[0] ?? 100);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
   async function go() {
-    const value = custom.trim() ? Number(custom) : amount;
-    if (!Number.isFinite(value) || value <= 0) {
-      setError(L({ en: "Choose an amount.", zh: "请选择金额。" }));
-      return;
-    }
+    const value = amount;
     setBusy(true);
     setError(null);
     // The window must be opened by the tap itself, or the browser blocks it;
@@ -241,42 +238,24 @@ function TopUpSheet({ onClose, onPaid }: { onClose: () => void; onPaid: () => vo
               zh: "HOney 只负责让学校开一张单。付款在学校自己的支付页面完成——没付的单子就一直是未付。",
             })}
           </p>
+          {/* Every amount the school offers, all of them visible. */}
           <div className="topup__amounts">
             {PRESETS.map((v) => (
               <button
                 key={v}
                 type="button"
-                className={!custom.trim() && amount === v ? "btn btn--small btn--pill-ok" : "btn btn--small"}
-                onClick={() => {
-                  setAmount(v);
-                  setCustom("");
-                }}
+                aria-pressed={amount === v}
+                className={amount === v ? "btn btn--small btn--pill-ok" : "btn btn--small"}
+                onClick={() => setAmount(v)}
               >
                 ¥{v}
               </button>
             ))}
           </div>
-          <div className="field">
-            <label className="field__label" htmlFor="topup-custom">
-              {L({ en: "Or another amount", zh: "或输入其他金额" })}
-            </label>
-            <input
-              id="topup-custom"
-              className="input"
-              type="number"
-              inputMode="decimal"
-              min="1"
-              max="1000"
-              step="1"
-              value={custom}
-              placeholder="¥"
-              onChange={(e) => setCustom(e.target.value)}
-            />
-          </div>
           {error && <div role="alert" className="banner banner--danger">{error}</div>}
           <div className="card-actions">
             <button className="btn btn--primary" disabled={busy} onClick={() => void go()}>
-              {busy ? t("Checking…") : L({ en: "Continue to pay", zh: "去付款" })}
+              {busy ? t("Checking…") : `${L({ en: "Continue to pay", zh: "去付款" })} ¥${amount}`}
             </button>
             <button className="btn btn--ghost" disabled={busy} onClick={onClose}>
               {L({ en: "Cancel", zh: "取消" })}
