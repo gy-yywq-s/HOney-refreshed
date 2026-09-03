@@ -1712,8 +1712,9 @@
 .notice-doc__title {
   font-size: calc(clamp(24px, 3vw, 30px) * var(--text-scale));
 }
-.notice-doc__meta {
-  /* The date is not part of the headline (Gary 2026-09-03: 离标题远一点). */
+/* The date is not part of the headline (Gary 2026-09-03: 离标题远一点).
+   Typed to beat `p.caption { margin-block: 0 }`. */
+p.notice-doc__meta {
   margin-top: var(--sp-3);
 }
 .notice-doc__body {
@@ -1728,7 +1729,7 @@
 }
 /* Where the school's words end and HOney's note begins (Gary 2026-09-03:
    要明显一点和上面内容区分开来). */
-.notice-doc__source {
+p.notice-doc__source {
   margin-top: var(--sp-6);
   padding-top: var(--sp-4);
   border-top: 1px solid var(--line);
