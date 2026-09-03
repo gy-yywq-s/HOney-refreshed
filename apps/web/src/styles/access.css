@@ -104,7 +104,7 @@
 }
 /* The School-access dock sits a little closer to the list above it. */
 .access-section--dock {
-  margin-top: calc(-1 * var(--sp-2));
+  margin-top: calc(-1 * var(--sp-3));
 }
 .access-dock__how a {
   color: var(--accent);

@@ -1356,18 +1356,24 @@
 }
 
 /* DOCUMENT pages (Why this space exists, privacy): natural long reading. */
+/* Rhythm (Gary 2026-09-03): paragraphs clearly apart, headings close to
+   their text, nothing cavernous — 12 between paragraphs, 24 before a heading. */
 .doc {
   max-width: 640px;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: var(--sp-1);
 }
 .doc section {
-  margin: 0 0 var(--sp-3);
+  margin: 0;
 }
 .doc h2 {
   font-size: var(--fs-reading);
-  margin: var(--sp-4) 0 var(--sp-2);
+  margin: var(--sp-2) 0 var(--sp-1);
+}
+.doc p,
+.doc ul {
+  margin: 0 0 var(--sp-3);
 }
 .doc p,
 .doc li {
