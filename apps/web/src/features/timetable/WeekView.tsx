@@ -62,7 +62,8 @@ function useFillingCells(tableRef: React.RefObject<HTMLTableElement | null>): nu
       const head = table.tHead?.getBoundingClientRect().height ?? 0;
       const breaks = Array.from(table.querySelectorAll<HTMLElement>(".week__break")).reduce((n, r) => n + r.getBoundingClientRect().height, 0);
       const periods = table.querySelectorAll(".week__row").length || 1;
-      const next = Math.floor((available - head - breaks) / periods);
+      // 4px: sub-pixel rounding across the rows — the last row must never tip the region into a scroll.
+      const next = Math.floor((available - head - breaks - 4) / periods);
       setCell(Math.max(CELL_MIN, Math.min(CELL_MAX, next)));
     };
     measure();
