@@ -79,10 +79,6 @@
   font-weight: 600;
   cursor: pointer;
 }
-.access-apply .field__label {
-  font-size: var(--fs-micro);
-  margin-bottom: 2px;
-}
 .access-apply .input,
 .access-apply input[type="time"],
 .access-apply .access-apply__submit {
@@ -110,6 +106,8 @@
   display: flex;
   align-items: center;
   gap: var(--sp-1);
+  font-size: var(--fs-micro);
+  margin-bottom: 2px;
 }
 .access-apply .input {
   display: block;
