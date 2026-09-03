@@ -1,0 +1,10 @@
+{
+  "suite": "RSAPBSSA-SHA384-PSS-Randomized",
+  "keyId": "issuer-fixture",
+  "publicKey": {
+    "kty": "RSA",
+    "n": "yGVsSCvi7A0oPm3B4sxBNv8vJb7l6Q9Vh4S3pJqXzFixture",
+    "e": "AQAB",
+    "alg": "PS384"
+  }
+}

@@ -43,6 +43,14 @@ Older docs that conflict with this hierarchy (`decisions-2026-09-01.md`,
 `legacy-design-audit.md`, `design/legacy-port-map.md`, `design/web-style.md`)
 are historical experiment records — see their headers.
 
+## Web Access (2026-09-03)
+
+Implemented per the 2026-09-03 spec Part II — `docs/architecture/web-access.md`. The Dash
+switch is **OFF**; the failure-injection transcript is
+`docs/status/web-access-failure-injection-2026-09-03.md` (11/11). The controlled real-gate
+verification (§26.3: switch on → one confirmed open at a real gate → switch off, journal +
+screenshot recorded here) is Gary's physical step and has **not** been done yet.
+
 ## Recorded risk acceptances (dev stage)
 
 - **Web HOney session tokens live in localStorage** (review v3 §12.15D wants

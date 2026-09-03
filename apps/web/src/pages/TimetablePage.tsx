@@ -10,7 +10,7 @@ import { PullToHistory } from "../components/PullToHistory";
 import { useSyncHandler } from "../lib/refresh";
 import { apiCache, useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
-import { parseCourseName, roomLabel } from "../lib/displayNames";
+import { lessonTitle, roomLabel } from "../lib/displayNames";
 import { BANDS, PERIODS, minuteOfDay, overlapsSlot, periodLabelFor } from "../lib/periodCatalog";
 import { WeekView } from "../features/timetable/WeekView";
 import { t, useT } from "../lib/i18n";
@@ -523,7 +523,7 @@ function DayTimeline({
             >
               <span className="lesson-block__body">
                 <span className="lesson-block__row">
-                  <span className="lesson-block__subject">{lesson.subjectName}</span>
+                  <span className="lesson-block__subject">{lessonTitle(lesson)}</span>
                   {lesson.roomName && (
                     <span className="lesson-block__room">{lesson.roomName}</span>
                   )}
@@ -585,10 +585,14 @@ function LessonDetail({
   /** From the Week overview: the semantic-zoom step down to the day. */
   onOpenDay?: () => void;
 }) {
-  const course = lesson.courseName ? parseCourseName(lesson.courseName, lesson.teacherName) : null;
-  const extra = course && course.meta ? course.meta : null;
+  // Canonical from the server: the course students mean ("AL ECON U4") is
+  // the title; its Subject ("Economics") and the operational section
+  // ("2026 Autumn · Prep Class") are details.
+  const subject = lesson.courseName && lesson.courseName !== lesson.subjectName ? lesson.subjectName : null;
+  const section = lesson.classSectionName;
+  const extra = subject || section;
   return (
-    <Modal title={lesson.subjectName} onClose={onClose} describedBy="lesson-dialog-body">
+    <Modal title={lessonTitle(lesson)} onClose={onClose} describedBy="lesson-dialog-body">
       <p className="sr-only" id="lesson-dialog-body">
         {[
           `${formatShortDate(lesson.startsAt)}, ${formatTime(lesson.startsAt)} to ${formatTime(lesson.endsAt)}`,
@@ -633,20 +637,26 @@ function LessonDetail({
           </Link>
         )}
       </div>
-      {(extra || (lesson.topicName && lesson.topicName !== lesson.subjectName)) && (
+      {(extra || lesson.topicName) && (
         <details className="disclosure">
           <summary>{t("More lesson details")}</summary>
           <dl className="kv">
-            {lesson.topicName && lesson.topicName !== lesson.subjectName && (
+            {lesson.topicName && (
               <>
                 <dt>Topic</dt>
                 <dd>{lesson.topicName}</dd>
               </>
             )}
-            {extra && (
+            {subject && (
               <>
-                <dt>Course</dt>
-                <dd>{extra}</dd>
+                <dt>Subject</dt>
+                <dd>{subject}</dd>
+              </>
+            )}
+            {section && (
+              <>
+                <dt>Class</dt>
+                <dd>{section}</dd>
               </>
             )}
           </dl>

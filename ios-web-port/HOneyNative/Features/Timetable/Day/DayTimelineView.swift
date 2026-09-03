@@ -165,7 +165,7 @@ struct LessonBlock: View {
         Button(action: tap) {
             VStack(alignment: .leading, spacing: placed.compact ? 0 : HSpace.x1) {
                 HStack(alignment: .firstTextBaseline, spacing: HSpace.x2) {
-                    Text(lesson.subjectName)
+                    Text(lesson.title)
                         .font(ramp.font(placed.compact ? .microSemibold : .secondarySemibold))
                         .foregroundStyle(ink)
                         .lineLimit(1)
@@ -206,7 +206,7 @@ struct LessonBlock: View {
     private func accessibility(_ lesson: Lesson) -> String {
         [
             live ? L10n.t("Now") : nil,
-            lesson.subjectName,
+            lesson.title,
             "\(Formatters.time(lesson.startsAt)) to \(Formatters.time(lesson.endsAt))",
             lesson.teacherName,
             DisplayNames.roomLabel(lesson.roomName),

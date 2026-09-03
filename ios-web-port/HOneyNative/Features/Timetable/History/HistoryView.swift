@@ -68,7 +68,7 @@ struct HistoryView: View {
                                     } label: {
                                         HStack(alignment: .center, spacing: HSpace.x3) {
                                             VStack(alignment: .leading, spacing: HSpace.x1) {
-                                                Text(lesson.subjectName).font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
+                                                Text(lesson.title).font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
                                                 let who = [lesson.teacherName, DisplayNames.roomLabel(lesson.roomName)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
                                                 if !who.isEmpty {
                                                     Text(who).font(ramp.font(.caption)).foregroundStyle(theme.muted)

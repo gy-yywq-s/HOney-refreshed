@@ -247,9 +247,8 @@ struct ExploreView: View {
     }
 
     private func row(_ entity: EntityRef, mark: Bool) -> some View {
-        let title = DisplayNames.entityTitle(type: entity.type, name: entity.name)
-        let meta = DisplayNames.entityMeta(type: entity.type, name: entity.name)
-        let caption = [meta, mark ? L10n.t("from your classes") : ""].filter { !$0.isEmpty }.joined(separator: " · ")
+        let title = entity.name
+        let caption = mark ? L10n.t("from your classes") : ""
         return Button {
             if let route = ExperienceDisplay.route(for: entity) {
                 if case .entity(let type, let id) = route {
@@ -276,7 +275,8 @@ struct ExploreView: View {
                 ForEach(search.experiences) { exp in
                     ExperiencePostRow(
                         exp: exp,
-                        reaction: feed?.reactions[exp.id] ?? ReactionState(exp),
+                        reaction: feedModel().reactionState(for: exp),
+                        name: feedModel().name,
                         onReact: { value in Task { await feedModel().react(exp, value: value) } },
                         onReport: { category in await feedModel().report(exp, category: category) },
                         openEntity: { route in nav.push(route) }

@@ -1,17 +1,21 @@
 import type { DatabaseSync } from "node:sqlite";
 
-// Read-side queries over the normalized store (Band 3). History is a VIEW over
+// Read-side queries over the canonical store (Band 3). History is a VIEW over
 // lesson_instances ⋈ user_lesson_exposures — never a separate source of truth
-// (spec §13.3). All results are scoped to the requesting user's exposure.
+// (spec §13.3). All results are scoped to the requesting user's exposure and
+// carry canonical names only: no read path re-parses a portal string.
 
 export interface LessonView {
   id: string;
+  subjectId: string | null;
   subjectName: string;
+  courseId: string | null;
+  courseName: string | null;
+  classSectionId: string | null;
+  classSectionName: string | null;
   topicName: string | null;
   teacherId: string | null;
   teacherName: string | null;
-  courseId: string | null;
-  courseName: string | null;
   roomId: string | null;
   roomName: string | null;
   startsAt: number;
@@ -25,16 +29,18 @@ export interface NextLessonView extends LessonView {
 }
 
 const LESSON_SELECT = `
-  SELECT li.id, li.subject_name AS subjectName, li.topic_name AS topicName,
+  SELECT li.id, li.subject_id AS subjectId, li.subject_name AS subjectName,
+         li.course_id AS courseId, c.display_name AS courseName,
+         li.class_section_id AS classSectionId, cs.section_name AS classSectionName,
+         li.topic_name AS topicName,
          li.teacher_id AS teacherId, t.display_name AS teacherName,
-         li.course_id AS courseId, c.name AS courseName,
-         li.room_id AS roomId,
-         CASE WHEN r.name IS NULL OR lower(trim(r.name)) IN ('not selected', '') THEN NULL ELSE r.name END AS roomName,
+         li.room_id AS roomId, r.display_name AS roomName,
          li.starts_at AS startsAt, li.ends_at AS endsAt
   FROM user_lesson_exposures e
   JOIN lesson_instances li ON li.id = e.lesson_instance_id
   LEFT JOIN teachers t ON t.id = li.teacher_id
   LEFT JOIN courses c ON c.id = li.course_id
+  LEFT JOIN class_sections cs ON cs.id = li.class_section_id
   LEFT JOIN rooms r ON r.id = li.room_id
   WHERE e.honey_id = ?`;
 
@@ -93,15 +99,17 @@ export class TimetableService {
       params.push(opts.courseId);
     }
     if (opts.q) {
-      clauses.push("(li.subject_name LIKE ? OR li.topic_name LIKE ? OR t.display_name LIKE ? OR c.name LIKE ?)");
+      clauses.push(
+        "(li.subject_name LIKE ? OR li.topic_name LIKE ? OR t.display_name LIKE ? OR c.display_name LIKE ? OR c.canonical_code LIKE ?)",
+      );
       const like = `%${opts.q}%`;
-      params.push(like, like, like, like);
+      params.push(like, like, like, like, like);
     }
     const order = opts.order === "asc" ? "ASC" : "DESC";
     const limit = Math.min(Math.max(opts.limit ?? 100, 1), 500);
     return this.db
       .prepare(`${LESSON_SELECT} AND ${clauses.join(" AND ")} ORDER BY li.starts_at ${order} LIMIT ${limit}`)
-      .all(...([honeyId, ...params.slice(1)] as (string | number)[])) as unknown as LessonView[];
+      .all(...params) as unknown as LessonView[];
   }
 
   /** Derived count for selection UX ("42 lessons with Ms X") — spec §9.3 allows it. */
@@ -114,7 +122,7 @@ export class TimetableService {
     return row.n;
   }
 
-  /** Directory of entities this user has actually encountered (for filters). */
+  /** Directory of canonical entities this user has actually encountered (for filters). */
   directory(honeyId: string): {
     teachers: { id: string; name: string }[];
     courses: { id: string; name: string }[];
@@ -128,16 +136,16 @@ export class TimetableService {
       .all(honeyId) as unknown as { id: string; name: string }[];
     const courses = this.db
       .prepare(
-        `SELECT DISTINCT c.id, c.name FROM user_lesson_exposures e
-         JOIN courses c ON c.id = e.course_id WHERE e.honey_id = ? ORDER BY c.name`,
+        `SELECT DISTINCT c.id, c.display_name AS name FROM user_lesson_exposures e
+         JOIN courses c ON c.id = e.course_id WHERE e.honey_id = ? ORDER BY c.display_name`,
       )
       .all(honeyId) as unknown as { id: string; name: string }[];
     const rooms = this.db
       .prepare(
-        `SELECT DISTINCT r.id, r.name FROM user_lesson_exposures e
+        `SELECT DISTINCT r.id, r.display_name AS name FROM user_lesson_exposures e
          JOIN lesson_instances li ON li.id = e.lesson_instance_id
          JOIN rooms r ON r.id = li.room_id
-         WHERE e.honey_id = ? AND lower(trim(r.name)) NOT IN ('not selected', '') ORDER BY r.name`,
+         WHERE e.honey_id = ? ORDER BY r.display_name`,
       )
       .all(honeyId) as unknown as { id: string; name: string }[];
     return { teachers, courses, rooms };

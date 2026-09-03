@@ -5,20 +5,20 @@
 // How anonymity works, Appearance — so no policy paragraph sits beside a
 // routine control. The hierarchy bar carries the way back.
 
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { apiCache } from "../lib/useApi";
 import { api, describeApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import { ConfirmDialog } from "../components/Modal";
+import { ConfirmDialog, Modal } from "../components/Modal";
 import { ThemeControls } from "../components/ThemeControls";
 import { ReconnectDialog } from "../components/ReconnectDialog";
 import { ChevronRightIcon } from "../components/icons";
 import { portalCredentials } from "../lib/portalCredentials";
 import { timeAgo } from "../lib/format";
-import { ownershipKeys } from "../lib/ownershipKeys";
+import { clearChecklist, deleteAccountAfterContent, deletePublicContent, readChecklist, type DeletionOutcome } from "../lib/community-v2/account-deletion";
 import { ACCENT_OPTIONS, getAccent, getSurface } from "../lib/theme";
-import { setLang, t, useLang } from "../lib/i18n";
+import { setLang, t, useLang, useT } from "../lib/i18n";
 import { TEXT_SIZES, setTextSize, useTextSize } from "../lib/textSize";
 
 type PendingConfirm = "disconnect" | "delete-data" | "delete-account" | null;
@@ -147,7 +147,14 @@ export function SettingsPage() {
           <h2 className="overline">{t("Experiences & privacy")}</h2>
           <Link className="row" to="/experiences/mine">
             <span className="row__main">
-              <span className="row__title">{t("Your notes & post controls")}</span>
+              <span className="row__title">{t("Your notes & posts")}</span>
+            </span>
+            <ChevronRightIcon size={18} />
+          </Link>
+          <Link className="row" to="/settings/post-controls">
+            <span className="row__main">
+              <span className="row__title">{t("Post controls")}</span>
+              <span className="row__sub">{t("Passkey, recovery words, another device")}</span>
             </span>
             <ChevronRightIcon size={18} />
           </Link>
@@ -227,14 +234,15 @@ export function SettingsPage() {
             </div>
           </section>
           <section className="rowlist rowlist--danger" aria-label="Delete account">
-            <h2 className="overline">Delete account</h2>
+            <h2 className="overline">Delete account and public content</h2>
             <p className="caption">
-              Deletes your HOney account, your imported lessons and the school login saved on this
-              device. Shared teacher, course, room and lesson entries stay. Published Experiences
-              stay — they carry no author ID and are controlled only by the keys on your devices.
+              Removes every public post your post controls can prove are yours (each with its own
+              control key — no account lookup exists), then the encrypted backup, your imported
+              lessons, the school login saved on this device, and the account. Shared teacher,
+              course, room and lesson entries stay.
             </p>
             <button className="btn btn--danger" onClick={() => setConfirm("delete-account")}>
-              {t("Delete account…")}
+              {t("Delete account and public content…")}
             </button>
           </section>
         </>
@@ -368,15 +376,18 @@ export function SettingsPage() {
           </p>
           <ul className="privacy-list muted">
             <li>
-              <strong>Published posts are stored without an author ID.</strong> The publish request
-              carries no ordinary account identity, so the stored post has nothing that says who
-              wrote it — HOney provides no normal author lookup, for anyone, including admins. The
-              words themselves can still make you recognisable to people who know the situation.
+              <strong>Posts are stored by a separate service with no account database.</strong> The
+              publish request carries no HOney session; what it carries is a blind token the account
+              service signed without seeing, bound only to the class or entity you may write about.
+              Neither service can answer who wrote a post — including for admins. The words
+              themselves can still make you recognisable to people who know the situation.
             </li>
             <li>
-              <strong>Your control is an ownership key.</strong> Each publish returns a one-time
-              ownership key stored only in this browser; the server keeps only a hash. Presenting the
-              key is the only way to find or remove your post.
+              <strong>Your control is one root on your device.</strong> It derives a stable posting
+              identity per school year (so the post service can keep one post per lesson per
+              student without knowing the student) and a separate control key for every post.
+              Only the root can list or remove your posts; an encrypted backup restores it through
+              a passkey, another signed-in device or 12 recovery words — the server cannot read it.
             </li>
             <li>
               <strong>Public dates are coarse.</strong> Posts show a calendar day only; exact
@@ -398,11 +409,14 @@ export function SettingsPage() {
               with full access to this browser. Treat them as private-on-this-device.
             </li>
           </ul>
-          <section className="rowlist" aria-label="Post controls on this device">
-            <h2 className="overline" id="keys" tabIndex={-1}>
-              Post controls on this device
-            </h2>
-            <KeyManagement onFeedback={setFeedback} />
+          <section className="rowlist" aria-label="Post controls">
+            <Link className="row" to="/settings/post-controls">
+              <span className="row__main">
+                <span className="row__title">{t("Post controls")}</span>
+                <span className="row__sub">{t("Passkey, recovery words, another device")}</span>
+              </span>
+              <ChevronRightIcon size={18} />
+            </Link>
           </section>
         </>
       )}
@@ -491,21 +505,7 @@ export function SettingsPage() {
         />
       )}
       {confirm === "delete-account" && (
-        <ConfirmDialog
-          title="Delete your HOney account?"
-          body="This permanently removes your account and your imported lessons; shared teacher, course, room and lesson entries stay, and published experiences stay (they carry no author ID). The school login saved on this device is cleared. This cannot be undone."
-          confirmLabel="Delete account"
-          danger
-          busy={busyKey === "delete-account"}
-          onClose={() => setConfirm(null)}
-          onConfirm={() =>
-            void run("delete-account", async () => {
-              await api.deleteAccount();
-              portalCredentials.clear(); // the saved school login goes with the account — after the delete succeeded
-              navigate("/login", { replace: true });
-            })
-          }
-        />
+        <DeleteAccountFlow account={me.honeyId} onClose={() => setConfirm(null)} onDeleted={() => navigate("/login", { replace: true })} />
       )}
       {showReconnect && (
         <ReconnectDialog
@@ -536,66 +536,91 @@ function Switch({ on, label, onChange }: { on: boolean; label: string; onChange:
   );
 }
 
-function KeyManagement({
-  onFeedback,
-}: {
-  onFeedback: (f: { tone: "success" | "danger"; text: string } | null) => void;
-}) {
-  const [count, setCount] = useState(() => ownershipKeys.count());
-  const fileRef = useRef<HTMLInputElement>(null);
+/**
+ * Delete account and public content (spec §40.4): revoke every post the
+ * device's roots can prove, verify, then the vault and the account. When the
+ * roots are not on this device nothing is deleted — the student can restore
+ * them first or explicitly delete the account alone, knowing what stays.
+ */
+function DeleteAccountFlow({ account, onClose, onDeleted }: { account: string; onClose: () => void; onDeleted: () => void }) {
+  const t = useT();
+  const [step, setStep] = useState<"confirm" | "working" | "locked" | "partial" | "done">("confirm");
+  const [outcome, setOutcome] = useState<DeletionOutcome | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const resumed = readChecklist();
 
-  function exportKeys() {
-    const blob = new Blob([ownershipKeys.exportJson()], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "HOney-ownership-keys.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function importKeys(file: File) {
+  async function start(contentFirst: boolean) {
+    setStep("working");
+    setError(null);
     try {
-      const added = ownershipKeys.importJson(await file.text());
-      setCount(ownershipKeys.count());
-      onFeedback({
-        tone: "success",
-        text: added > 0 ? `Imported ${added} new ownership key${added > 1 ? "s" : ""}.` : "No new keys — everything in that file is already here.",
-      });
-    } catch {
-      onFeedback({ tone: "danger", text: "That file is not a HOney ownership-key export." });
+      if (contentFirst) {
+        const result = await deletePublicContent(account);
+        setOutcome(result);
+        if (result.kind === "vault_locked") {
+          setStep("locked");
+          return;
+        }
+        if (result.kind === "partial") {
+          setStep("partial");
+          return;
+        }
+      }
+      await deleteAccountAfterContent(account);
+      setStep("done");
+      onDeleted();
+    } catch (err) {
+      setError(describeApiError(err));
+      setStep("confirm");
     }
   }
 
+  const body = (() => {
+    if (step === "locked") {
+      return (
+        <>
+          <p className="muted">{t("Your public posts cannot be found from the account: only your post controls can list them, and this device does not hold them.")}</p>
+          <p className="muted">{t("Restore them first (passkey, another signed-in device or recovery words), then delete. Or delete the account alone — the posts stay, still unattributed, controllable only from a device that restores the backup.")}</p>
+          <div className="modal__actions modal__actions--row">
+            <Link className="btn btn--primary" to="/settings/post-controls" onClick={onClose}>{t("Restore post controls")}</Link>
+            <button className="btn btn--danger-outline" onClick={() => void start(false)}>{t("Delete account only")}</button>
+          </div>
+        </>
+      );
+    }
+    if (step === "partial" && outcome?.kind === "partial") {
+      const c = outcome.checklist;
+      return (
+        <>
+          <p className="muted">
+            {t("Removed")} {c.postsRevoked} {t("of")} {c.postsFound}. {c.failedPosts.length} {t("could not be removed yet, so the account was not deleted. Your progress is kept on this device.")}
+          </p>
+          <div className="modal__actions modal__actions--row">
+            <button className="btn btn--primary" onClick={() => void start(true)}>{t("Try the rest again")}</button>
+            <button className="btn btn--danger-outline" onClick={() => void start(false)}>{t("Delete account without them")}</button>
+          </div>
+        </>
+      );
+    }
+    return (
+      <>
+        <p className="muted" id="confirm-dialog-body">
+          {t("Every public post your post controls can prove is yours is removed first, one by one, then the encrypted backup, your imported lessons and the account. The school login saved on this device is cleared. This cannot be undone.")}
+        </p>
+        {resumed && !outcome && <p className="caption">{t("An earlier attempt was interrupted; it continues from where it stopped.")}</p>}
+        {error && <div role="alert" className="banner banner--danger">{error}</div>}
+        <div className="modal__actions modal__actions--row">
+          <button className="btn btn--ghost" onClick={() => { clearChecklist(); onClose(); }} disabled={step === "working"}>Cancel</button>
+          <button className="btn btn--danger" onClick={() => void start(true)} disabled={step === "working"}>
+            {step === "working" ? t("Working…") : t("Delete account and public content")}
+          </button>
+        </div>
+      </>
+    );
+  })();
+
   return (
-    <div className="row row--stack">
-      <span className="row__main">
-        <span className="row__title">Ownership keys on this device</span>
-        <span className="row__sub">
-          {count === 0
-            ? "None yet — keys appear here when you publish an experience."
-            : `${count} key${count > 1 ? "s" : ""}. Export a backup before clearing site data or switching browsers.`}
-        </span>
-      </span>
-      <span className="row__actions">
-        <button className="btn btn--ghost btn--small" onClick={exportKeys} disabled={count === 0}>
-          Export
-        </button>
-        <button className="btn btn--ghost btn--small" onClick={() => fileRef.current?.click()}>
-          Import…
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          style={{ display: "none" }}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void importKeys(file);
-            e.target.value = "";
-          }}
-        />
-      </span>
-    </div>
+    <Modal title={t("Delete account and public content?")} onClose={onClose} describedBy="confirm-dialog-body">
+      {body}
+    </Modal>
   );
 }

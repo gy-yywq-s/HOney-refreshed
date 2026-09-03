@@ -3,8 +3,12 @@
 // (The stream's post card lives in features/experiences/ExperiencePost.)
 
 import { useMemo } from "react";
+import type { PublicExperienceV2 } from "@honey/shared/community-v2";
 import { api, ApiError } from "../../api/client";
+import { community } from "../../api/community";
 import type { DirectoryResponse, EntityRef } from "../../api/types";
+import { communitySession } from "../../lib/community-v2/publish-client";
+import { nameExperiences } from "../../lib/entityNames";
 import { useApi } from "../../lib/useApi";
 
 // ---------------------------------------------------------------------------
@@ -64,6 +68,16 @@ export function describeCheckReasons(reasons: string[] | undefined): string[] {
 export const SUBMIT_ERROR_COPY: Record<string, string> = {
   publications_disabled:
     "Publishing is paused for everyone right now. You can still save this privately and publish once posting reopens.",
+  issuer_unavailable: "Publishing is not available right now (the eligibility service is starting). Please try again in a moment.",
+  issuance_rate_limited: "You have asked to share about this many times today. Please try again tomorrow.",
+  token_invalid: "The eligibility check did not go through. Please try again.",
+  token_expired: "The eligibility check is too old. Please try again.",
+  token_used: "This share attempt was already used. Please try again.",
+  token_scope_mismatch: "The share target changed under the check. Please try again.",
+  already_posted: "You've already shared an experience for this. Remove it in Your notes & posts if you want to write a new one.",
+  temporarily_suspended: "Sharing is paused for a while after repeated rule problems.",
+  envelope_invalid: "Something about this share was malformed. Please try again.",
+  signature_invalid: "This device's post controls could not sign the share. Check Settings › Post controls.",
   body_invalid: "The text is empty or longer than 5000 characters.",
   rating_invalid: "Stars are whole numbers from 1 to 5.",
   lesson_not_yours:
@@ -189,17 +203,31 @@ export function useNames(enabled = true) {
 }
 
 // ---------------------------------------------------------------------------
-// "From your classes" — a backend domain query (audit §4.2). The server knows
-// the caller's verified exposure; the client no longer fetches the newest feed
-// and filters it. Still chronological and unranked.
+// "From your classes" — the identity-free Community query scoped by the
+// viewer's canonical exposure (from Core). Chronological and unranked; names
+// joined from the directory on the client.
 // ---------------------------------------------------------------------------
 
 export function useFromYourClasses(limit = 100) {
-  const feed = useApi(() => api.fromMyClasses({ limit }), [limit], `experiences:from-my-classes:${limit}`);
+  const feed = useApi(
+    async () => {
+      const s = await communitySession();
+      const res = await community.fromMyClasses({ exposure: { teachers: s.scope.teachers, courses: s.scope.courses, lessons: s.scope.lessons }, limit });
+      return { experiences: await nameExperiences(res.experiences) };
+    },
+    [limit],
+    `community:from-my-classes:${limit}`,
+  );
   return {
     experiences: feed.data?.experiences ?? null,
     loading: feed.loading,
     error: feed.error,
   };
+}
+
+/** Find mode: published experiences that mention the words (names joined). */
+export async function searchExperiences(q: string): Promise<{ q: string; experiences: PublicExperienceV2[] }> {
+  const res = await community.search(q);
+  return { q: res.q, experiences: await nameExperiences(res.experiences) };
 }
 

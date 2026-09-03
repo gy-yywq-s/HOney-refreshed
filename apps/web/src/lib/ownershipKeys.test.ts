@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OwnershipKeyStore, PrivateNoteStore } from "./ownershipKeys";
+import { PrivateNoteStore } from "./ownershipKeys";
 import type { StorageLike } from "./ownershipKeys";
 
 function memoryStorage(): StorageLike & { dump(): string } {
@@ -11,42 +11,6 @@ function memoryStorage(): StorageLike & { dump(): string } {
     dump: () => [...map.values()].join("\n"),
   };
 }
-
-describe("OwnershipKeyStore", () => {
-  it("round-trips add/list/remove through versioned JSON", () => {
-    const storage = memoryStorage();
-    const store = new OwnershipKeyStore(storage);
-
-    expect(store.list()).toEqual([]);
-    store.add({ key: "ok-1", experienceId: "e-1" });
-    store.add({ key: "ok-2", experienceId: "e-2" });
-
-    const listed = store.list();
-    expect(listed.map((k) => k.key)).toEqual(["ok-1", "ok-2"]);
-    expect(listed[0]).toMatchObject({ experienceId: "e-1", kind: "public" });
-    expect(typeof listed[0]!.createdAt).toBe("number");
-
-    // A fresh store instance over the same storage sees the same keys.
-    expect(new OwnershipKeyStore(storage).count()).toBe(2);
-
-    store.remove("ok-1");
-    expect(store.list().map((k) => k.key)).toEqual(["ok-2"]);
-  });
-
-  it("export/import merges without duplicating keys and rejects junk", () => {
-    const a = new OwnershipKeyStore(memoryStorage());
-    a.add({ key: "ok-1", experienceId: "e-1" });
-    a.add({ key: "ok-2", experienceId: "e-2" });
-
-    const b = new OwnershipKeyStore(memoryStorage());
-    b.add({ key: "ok-2", experienceId: "e-2" });
-
-    expect(b.importJson(a.exportJson())).toBe(1); // only ok-1 is new
-    expect(b.count()).toBe(2);
-    expect(() => b.importJson('{"hello":"world"}')).toThrow();
-    expect(b.count()).toBe(2);
-  });
-});
 
 describe("PrivateNoteStore", () => {
   it("round-trips notes and never stores the body in plaintext", async () => {

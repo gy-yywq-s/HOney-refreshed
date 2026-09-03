@@ -1,0 +1,24 @@
+[Unit]
+Description=HOney edge - same-origin reverse proxy (public :8871 -> core/community/access)
+After=network.target
+
+[Service]
+Type=simple
+User=honey
+Group=honey
+WorkingDirectory=/home/honey/app
+Environment=EDGE_PORT=8871
+Environment=CORE_PORT=8872
+Environment=COMMUNITY_PORT=8873
+Environment=ACCESS_PORT=8874
+ExecStart=/usr/bin/node packages/edge/dist/server.js
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+InaccessiblePaths=-/home/honey/data -/home/honey/.secrets
+
+[Install]
+WantedBy=multi-user.target

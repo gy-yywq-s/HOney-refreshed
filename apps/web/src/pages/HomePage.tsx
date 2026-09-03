@@ -20,7 +20,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
 import { formatDayBucket, formatDayTitle, formatRemaining, formatTime } from "../lib/format";
-import { roomLabel } from "../lib/displayNames";
+import { lessonTitle, roomLabel } from "../lib/displayNames";
 import { ChevronRightIcon, PenIcon } from "../components/icons";
 import { WordmarkHOney } from "../components/Wordmark";
 import { useLang, useT } from "../lib/i18n";
@@ -68,7 +68,7 @@ export function HomePage() {
   const stateLabel = isNow ? t("Now") : t("Next lesson");
   const cardName = next
     ? [
-        `${stateLabel}: ${next.subjectName}`,
+        `${stateLabel}: ${lessonTitle(next)}`,
         `${formatTime(next.startsAt)} to ${formatTime(next.endsAt)}`,
         next.teacherName,
         roomLabel(next.roomName),
@@ -140,7 +140,7 @@ export function HomePage() {
                 </span>
               )}
             </div>
-            <div className="nextlesson__subject">{next.subjectName}</div>
+            <div className="nextlesson__subject">{lessonTitle(next)}</div>
             <div className="nextlesson__details">
               <span className="nextlesson__time">
                 {formatTime(next.startsAt)}–{formatTime(next.endsAt)}

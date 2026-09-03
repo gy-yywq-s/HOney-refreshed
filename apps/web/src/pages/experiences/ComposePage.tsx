@@ -14,7 +14,7 @@ import { useApi } from "../../lib/useApi";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime, formatRemaining, formatRelativeDay } from "../../lib/format";
-import { entityTitle, roomLabel } from "../../lib/displayNames";
+import { lessonTitle, roomLabel } from "../../lib/displayNames";
 import { ChevronRightIcon } from "../../components/icons";
 import { t, useT } from "../../lib/i18n";
 import { privateNotes } from "../../lib/ownershipKeys";
@@ -75,7 +75,7 @@ export function ExperiencesComposePage() {
     if (effectiveLessonId) {
       const lesson: Lesson | undefined = history.data?.lessons.find((l) => l.id === effectiveLessonId);
       return {
-        label: lesson ? lesson.subjectName : "A lesson from your history",
+        label: lesson ? lessonTitle(lesson) : "A lesson from your history",
         ...(lesson
           ? {
               detail: [
@@ -100,7 +100,7 @@ export function ExperiencesComposePage() {
       return {
         // Never flash the raw key while the registry loads (r2 visual); an
         // unknown key after load is handled below (no editor).
-        label: entity ? entityTitle(entity.type, entity.name) : "Loading…",
+        label: entity ? entity.name : "Loading…",
         detail:
           type === "room" ? "Place" : type === "dish" ? "Food" : type === "course" ? "Course" : "Teacher",
         entityKey: effectiveEntityKey,
@@ -189,13 +189,13 @@ export function ExperiencesComposePage() {
         <h1 className="page-title">{t("Shared.")}</h1>
         <section className="card card--hero">
           <p>
-            Your school identity is not shown with this Experience — it is stored without an author
-            field, and the publish request carried no ordinary account identity.
+            Your school identity is not attached to this Experience — the request that published it
+            carried no HOney session, only a blind proof that you may write about this.
           </p>
           <p className="text-3">
-            This browser keeps a one-time ownership key so you can manage or remove the post later.
-            Keep it: what you wrote may still make you recognisable to people who know the
-            situation.
+            Your post controls on this device can list or remove it later (Settings › Post
+            controls keeps them backed up). What you wrote may still make you recognisable to
+            people who know the situation.
           </p>
           <div className="card-actions">
             <Link className="btn btn--primary" to="/experiences/mine">
@@ -402,7 +402,7 @@ export function ExperiencesComposePage() {
                     to={`/experiences/compose?lessonId=${encodeURIComponent(l.id)}`}
                   >
                     <span className="entity-row__main">
-                      <span className="entity-row__title">{l.subjectName}</span>
+                      <span className="entity-row__title">{lessonTitle(l)}</span>
                       <span className="caption">
                         {[formatRelativeDay(l.startsAt), l.teacherName, roomLabel(l.roomName)]
                           .filter(Boolean)
@@ -493,6 +493,11 @@ export function ExperiencesComposePage() {
                 )}
                 {notice.suggestKeepPrivate && (
                   <p className="text-4 compose-notice-alt">You can keep it as a private note instead.</p>
+                )}
+                {notice.restoreLink && (
+                  <p className="text-4 compose-notice-alt">
+                    <Link to="/settings/post-controls">{t("Restore post controls")}</Link>
+                  </p>
                 )}
               </div>
             </div>

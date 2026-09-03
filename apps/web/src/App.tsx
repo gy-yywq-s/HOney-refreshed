@@ -6,6 +6,8 @@ import { Suspense, lazy } from "react";
 
 // Admin console: code-split — students never download it (design-is r1).
 const DashPage = lazy(() => import("./pages/DashPage").then((m) => ({ default: m.DashPage })));
+import { AccessPage } from "./pages/AccessPage";
+import { NewPermitPage } from "./pages/access/NewPermitPage";
 import { ExperiencesComposePage } from "./pages/experiences/ComposePage";
 import { ExperienceEntityPage } from "./pages/experiences/EntityPage";
 import { ExperiencesFeedPage } from "./pages/experiences/FeedPage";
@@ -17,6 +19,10 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { PostControlsPage } from "./pages/settings/PostControlsPage";
+import { RecoveryWordsPage } from "./pages/settings/RecoveryWordsPage";
+import { PairDevicePage } from "./pages/settings/PairDevicePage";
+import { RotateRootPage } from "./pages/settings/RotateRootPage";
 import { TimetablePage } from "./pages/TimetablePage";
 
 export function App() {
@@ -50,7 +56,13 @@ export function App() {
               {/* Legacy aliases from the placeholder era — bookmarks keep working. */}
               <Route path="/experiences/place/:id" element={<ExperienceEntityPage kind="room" />} />
               <Route path="/experiences/food/:id" element={<ExperienceEntityPage kind="dish" />} />
+              <Route path="/access" element={<AccessPage />} />
+              <Route path="/access/permits/new" element={<NewPermitPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings/post-controls" element={<PostControlsPage />} />
+              <Route path="/settings/post-controls/recovery-words" element={<RecoveryWordsPage />} />
+              <Route path="/settings/post-controls/pair" element={<PairDevicePage />} />
+              <Route path="/settings/post-controls/replace-root" element={<RotateRootPage />} />
               <Route path="/settings/:section" element={<SettingsPage />} />
               <Route
                 path="/dash"

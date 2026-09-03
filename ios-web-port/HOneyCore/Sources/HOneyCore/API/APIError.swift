@@ -9,10 +9,17 @@ import Foundation
 public struct APIError: Error, Sendable, Equatable, CustomStringConvertible {
     public let status: Int
     public let code: String
+    /// The raw error body when the server sent one (a vault conflict carries its current record).
+    public let body: Data?
 
-    public init(status: Int, code: String) {
+    public init(status: Int, code: String, body: Data? = nil) {
         self.status = status
         self.code = code
+        self.body = body
+    }
+
+    public static func == (lhs: APIError, rhs: APIError) -> Bool {
+        lhs.status == rhs.status && lhs.code == rhs.code
     }
 
     public static let networkError = APIError(status: 0, code: "network_error")
@@ -36,6 +43,6 @@ public struct APIError: Error, Sendable, Equatable, CustomStringConvertible {
         if (status == 502 || status == 503), code == "http_\(status)" {
             code = "portal_unavailable"
         }
-        return APIError(status: status, code: code)
+        return APIError(status: status, code: code, body: body.isEmpty ? nil : body)
     }
 }

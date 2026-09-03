@@ -3,26 +3,25 @@
 // restoration (leaving and returning lands the reader where they were —
 // §16.14 acceptance 14/15), and the quiet new-posts probe (§9.6C).
 //
+// v2: the stream comes from the identity-free Community process. "Your
+// classes" sends the viewer's canonical exposure ids (from Core) with the
+// request; Community never learns who asks. Names are joined client-side.
+//
 // Key discipline (code review 2026-09-01, H1): the hook stays MOUNTED when
 // FeedPage switches scope in place, so `key` can change without a remount.
-// All state is therefore tagged with the key it belongs to (stateKey ref):
-// snapshots are always written under the key the items came from, and a key
-// change re-seeds items/cursors synchronously before anything else runs —
-// no cross-scope items, no cross-scope cursors, no corrupted snapshots.
-//
-// Snapshot discipline (Gary bug report 2026-09-01, "feed shows nothing"):
-// only a state that completed a successful first load may be snapshotted.
-// The old code snapshotted the initial items=[] render; leaving the page
-// before page one arrived persisted { items: [], nextCursor: null }, and
-// every return restored an empty, end=true feed without ever refetching.
-// hasLoaded gates every snapshot write, and empty-item snapshots are
-// treated as absent on restore (a truly empty feed refetches — cheap and
-// self-healing).
+// All state is therefore tagged with the key it belongs to (stateKey ref).
+// Snapshot discipline (Gary bug report 2026-09-01): only a state that
+// completed a successful first load may be snapshotted.
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { api, describeApiError } from "../../api/client";
+import type { ExposureScope, FeedPageV2, FeedRequestV2, PublicExperienceV2 } from "@honey/shared/community-v2";
+import { describeApiError } from "../../api/client";
+import { community } from "../../api/community";
+import { communitySession } from "../../lib/community-v2/publish-client";
+import { nameExperiences } from "../../lib/entityNames";
 import { REFRESH_EVENT } from "../../lib/refresh";
-import type { FeedPage, FeedParams, FeedScope, PublicExperience } from "../../api/types";
+
+export type FeedScope = "my_classes" | "school";
 
 export interface FeedFilters {
   entityKey?: string;
@@ -32,7 +31,7 @@ export interface FeedFilters {
 }
 
 interface FeedSnapshot {
-  items: PublicExperience[];
+  items: PublicExperienceV2[];
   nextCursor: string | null;
   headCursor: string | null;
   scrollY: number;
@@ -54,12 +53,24 @@ function scroller(): { get(): number; set(y: number): void } {
 
 const UPDATE_POLL_MS = 60_000;
 
+async function exposure(scope: FeedScope): Promise<ExposureScope | undefined> {
+  if (scope === "school") return undefined;
+  const s = await communitySession();
+  return { teachers: s.scope.teachers, courses: s.scope.courses, lessons: s.scope.lessons };
+}
+
+async function fetchPage(req: FeedRequestV2): Promise<FeedPageV2> {
+  const exp = await exposure(req.scope);
+  const page = await community.feed({ ...req, ...(exp ? { exposure: exp } : {}) });
+  return { ...page, items: await nameExperiences(page.items) };
+}
+
 export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
   const key = keyOf(scope, filters);
   const stored = snapshots.get(key) ?? null;
   const restored = stored && stored.items.length > 0 ? stored : null;
 
-  const [items, setItems] = useState<PublicExperience[]>(restored?.items ?? []);
+  const [items, setItems] = useState<PublicExperienceV2[]>(restored?.items ?? []);
   const [loading, setLoading] = useState(restored === null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,17 +81,12 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
   });
   const [end, setEnd] = useState(restored !== null && restored.nextCursor === null);
   const busy = useRef(false);
-  // True once the CURRENT key's state completed a successful first load
-  // (page one applied, or restored from a loaded snapshot). Snapshots are
-  // written only while true.
   const hasLoaded = useRef(restored !== null);
-  // The key the CURRENT items/cursors belong to. Updated only in the
-  // key-switch layout effect below, so snapshot writes can never mislabel.
   const stateKey = useRef(key);
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
-  const applyPage = useCallback((page: FeedPage, mode: "replace" | "append") => {
+  const applyPage = useCallback((page: FeedPageV2, mode: "replace" | "append") => {
     setItems((prev) => {
       const base = mode === "replace" ? [] : prev;
       const seen = new Set(base.map((i) => i.id));
@@ -92,7 +98,7 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     hasLoaded.current = true;
   }, []);
 
-  const paramsRef = useRef<FeedParams>({ scope, ...filters });
+  const paramsRef = useRef<FeedRequestV2>({ scope, ...filters });
   paramsRef.current = { scope, ...filters };
 
   const loadFirst = useCallback(async () => {
@@ -100,8 +106,8 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     setLoading(true);
     setError(null);
     try {
-      const page = await api.feedPage(paramsRef.current);
-      if (stateKey.current !== forKey) return; // key switched mid-flight
+      const page = await fetchPage(paramsRef.current);
+      if (stateKey.current !== forKey) return;
       applyPage(page, "replace");
       setNewAvailable(false);
     } catch (err) {
@@ -118,7 +124,7 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     busy.current = true;
     setLoadingMore(true);
     try {
-      const page = await api.feedPage({ ...paramsRef.current, cursor });
+      const page = await fetchPage({ ...paramsRef.current, cursor });
       if (stateKey.current === forKey) applyPage(page, "append");
     } catch {
       /* quiet — the sentinel retries on the next real intersection change */
@@ -128,26 +134,16 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     }
   }, [applyPage]);
 
-  /** The banner action: back to the top of a fresh stream. */
   const jumpToNew = useCallback(async () => {
     scroller().set(0);
     await loadFirst();
   }, [loadFirst]);
 
   const writeSnapshot = useCallback((ofKey: string) => {
-    if (!hasLoaded.current) return; // never persist a never-loaded state
-    snapshots.set(ofKey, {
-      items: itemsRef.current,
-      nextCursor: cursors.current.next,
-      headCursor: cursors.current.head,
-      scrollY: scroller().get(),
-    });
+    if (!hasLoaded.current) return;
+    snapshots.set(ofKey, { items: itemsRef.current, nextCursor: cursors.current.next, headCursor: cursors.current.head, scrollY: scroller().get() });
   }, []);
 
-  // Key switch WITHOUT remount (in-place scope toggle): capture the outgoing
-  // key's state at its still-current scroll offset, then re-seed everything
-  // for the incoming key. Layout effect: runs before the passive effects
-  // below see the new key.
   useLayoutEffect(() => {
     if (stateKey.current === key) return;
     writeSnapshot(stateKey.current);
@@ -174,12 +170,9 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     }
   }, [key, loadFirst, writeSnapshot]);
 
-  // Mount: restore position or fetch page one. (Key switches are handled
-  // by the layout effect above; this runs once per mount.)
   useEffect(() => {
     const snap = snapshots.get(stateKey.current);
     if (snap && snap.items.length > 0) {
-      // Restore after paint; the list must exist before scrolling to it.
       requestAnimationFrame(() => scroller().set(snap.scrollY));
     } else {
       void loadFirst();
@@ -187,8 +180,6 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Keep the snapshot current + capture scroll on unmount — always under the
-  // key the state actually belongs to.
   useEffect(() => {
     writeSnapshot(stateKey.current);
     const ofKey = stateKey.current;
@@ -203,7 +194,9 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
       if (!head || document.hidden) return;
       const forKey = stateKey.current;
       try {
-        const res = await api.feedUpdates(paramsRef.current.scope, head);
+        const s = paramsRef.current.scope;
+        const exp = await exposure(s);
+        const res = await community.feedUpdates({ scope: s, head, ...(exp ? { exposure: exp } : {}) });
         if (res.newItemsAvailable && stateKey.current === forKey) setNewAvailable(true);
       } catch {
         /* quiet */
@@ -213,8 +206,6 @@ export function useFeedController(scope: FeedScope, filters: FeedFilters = {}) {
     return () => clearInterval(id);
   }, [key]);
 
-  // App-level refresh (pull-to-refresh emits REFRESH_EVENT): reload page
-  // one for the current key. The banner state resets — a refresh IS the jump.
   useEffect(() => {
     const onRefresh = () => {
       setNewAvailable(false);

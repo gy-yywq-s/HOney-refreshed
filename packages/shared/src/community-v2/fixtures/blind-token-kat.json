@@ -1,0 +1,23 @@
+{
+  "note": "Web-produced RSAPBSSA token under issuer-test.jwk.json; iOS verifies it (CommunityV2Tests.testWebIssuedTokenVerifiesHere).",
+  "keyId": "kat",
+  "info": {
+    "v": 2,
+    "schoolId": "huayaopudong",
+    "academicYear": "2026-27",
+    "scope": "lesson:tok_a1",
+    "contexts": {
+      "lessonId": "tok_a1",
+      "courseId": "c_al_econ_u4"
+    },
+    "provenance": "verified_lesson",
+    "week": 36
+  },
+  "message": "-5VtRPX2yw58rxDx7MOfDUa0tqPCzs3pcW022nySZbtcy0tGw6A1vuyMTbV2hDyZa5P_5MtWJFhLSPUYjM-KsQ",
+  "signature": "If5NIzqgYnpHpNTWSsgF5VSj1leDQreLGVS0zhh-fY19xoP4S_El9ikoy5BZdhHt-cBw__RNEKAYVO9yUVie-GPPz_cvuprIobK7Li5IXxpzUFZEdOjzEUHqmsDbtY2uMscwn8JL8N1ghEaX1bHBYTnTWdyguSK0RTq6h4wNVlYWPluuc5mvn0coHMamFvZ1Sq_jM9H3JpQbwDVqJNrAZcoTRJ_ikVy0E3aajciEFUr0h3uqcNHeYp_Z1Af2o6vbV9ZMO-P1AxbqPs7wDWQEKCVRZ49x6qpRreqJ_B1t1QepRbhEEsRtP8wron4sUK8XB-U7RmwSClOaEot4nVp_Dg",
+  "issuerPublicKey": {
+    "kty": "RSA",
+    "n": "rR9OhzZlqwDp-rcnrH-vx3zpcXS3dLn5pznCGyJC4_05PLAGXnwXCxkF3vyERXo14EVHfZGLXm-xG7SiXRl1eWLJLcUqlui8yaHoN6SX7wYYuv9nIxVs9G11dDqYIHcmJNqAdizpZiuFfuHIOdXxr6tF0B4QVHUq_YdLfAyW0bafqnLt3jx5uEPzrCAnLmdRO3XolppYgQNPCrL5T-f5AmE8EK317cX1NpD2vXrognkiGFCDiuVfM86NU18ZQe7Q4I77sYvrH5s88Y6dEhtMAD6Hr3ojbQDpUivdiXf1U5b7g1VV8ZwoU9FB4tPA_O-mdSHmWklvUYxUiaoptCiXCQ",
+    "e": "AQAB"
+  }
+}

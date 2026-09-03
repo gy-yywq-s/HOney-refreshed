@@ -46,9 +46,9 @@ struct ComposerView: View {
     @ViewBuilder
     private func content(_ model: ComposerViewModel) -> some View {
         if case .published = model.status {
-            outcome(title: L10n.t("Shared."), lead: ModerationCopy.sharedBody, note: "This iPhone keeps a one-time control key so you can manage or remove the post later. Keep it: what you wrote may still make you recognisable to people who know the situation.")
-        } else if case .publishedKeyUnsaved(_, let key, let journaled) = model.status {
-            keyUnsaved(model, key: key, journaled: journaled)
+            outcome(title: L10n.t("Shared."), lead: ModerationCopy.sharedBody, note: "The post's control key derives from the root on this iPhone, so you can manage or remove it later from Your notes & posts. What you wrote may still make you recognisable to people who know the situation.")
+        } else if case .postControlsRestoreNeeded = model.status {
+            restoreNeeded(model)
         } else if model.keptPrivate {
             outcome(
                 title: L10n.t(ModerationCopy.keptPrivateTitle),
@@ -125,28 +125,19 @@ struct ComposerView: View {
         }
     }
 
-    private func keyUnsaved(_ model: ComposerViewModel, key: String, journaled: Bool) -> some View {
+    /// A server vault exists that this iPhone has not restored: sharing waits, the draft stays.
+    private func restoreNeeded(_ model: ComposerViewModel) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: HSpace.x4) {
-                PageTitle(text: "Shared, but the control key was not stored")
+                PageTitle(text: L10n.t("Restore your post controls first"))
                 VStack(alignment: .leading, spacing: HSpace.x4) {
-                    Text(journaled
-                         ? "The post is already public. This iPhone could not put its control key in the Keychain yet, but the key is kept in HOney's protected recovery file and will be stored again on the next launch. Copy it too, to be safe."
-                         : ModerationCopy.keyUnsavedBody)
+                    Text(ModerationCopy.restoreNeeded)
                         .hfont(.body)
                         .foregroundStyle(theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(key)
-                        .font(.system(.footnote, design: .monospaced))
-                        .foregroundStyle(theme.ink)
-                        .textSelection(.enabled)
-                        .padding(HSpace.x3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(theme.soft, in: RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
                     VStack(spacing: HSpace.x2) {
-                        Button("Try storing again") { Task { await model.retryStoringKey() } }.buttonStyle(.webBlockPrimary)
-                        Button("Copy key") { UIPasteboard.general.string = key }.buttonStyle(.webBlockGhost)
-                        Button(L10n.t("Done")) { nav.pop() }.buttonStyle(.webBlockGhost)
+                        Button(L10n.t("Open Post controls")) { nav.push(.settingsPostControls) }.buttonStyle(.webBlockPrimary)
+                        Button(L10n.t("Back to the draft")) { model.backToEditing() }.buttonStyle(.webBlockGhost)
                     }
                 }
                 .webCard(hero: true)

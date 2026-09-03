@@ -67,18 +67,22 @@ struct AccountScope: Equatable {
     let displayName: String
 }
 
-/// What account deletion actually managed to clear (review §4.16).
+/// What account deletion actually managed to do (review §4.16; spec §40.4):
+/// public content is removed by proof first, then the account, then what
+/// the student asked to erase locally.
 struct DeletionReport: Equatable {
     var serverDeleted = false
     var portalSecretsCleared = true
     var notesCleared: Bool?
-    var keysCleared: Bool?
+    var postsFound = 0
+    var postsRevoked = 0
+    /// Why nothing was deleted: the vault is locked here, or posts could not be removed.
+    var publicContentBlocked: String?
 
     var failures: [String] {
         var out: [String] = []
         if !portalSecretsCleared { out.append("the school login kept on this iPhone") }
         if notesCleared == false { out.append("private notes") }
-        if keysCleared == false { out.append("post control keys") }
         return out
     }
 }
@@ -88,7 +92,6 @@ struct DeletionReport: Equatable {
 final class AppEnvironment {
     let config: AppConfig
     let api: APIClient
-    let publication: PublicationAPIClient
     let portalAPI: PortalAPI
     let portalCoordinator: PortalSessionCoordinator
     let portalVault: SecretPortalVault
@@ -96,11 +99,15 @@ final class AppEnvironment {
     let timetable: TimetableRepository
     let notes: PrivateNoteStore
     let drafts: ComposerDraftStore
-    let journal: PublicationJournal
     let prefs: Preferences
     let navigator: Navigator
     let portal: PortalController
-    let keys: SecretOwnershipKeyStore
+    /// Anonymous Control v2: the identity-free Community client, the post
+    /// controls on this iPhone, the publication flow and account deletion.
+    let community: CommunityAPIClient
+    let postControls: PostControls
+    let publish: PublishClient
+    let deletion: AccountDeletion
 
     private(set) var phase: AuthPhase = .loading
     private(set) var me: Me?
@@ -133,7 +140,6 @@ final class AppEnvironment {
         let portalAPI = PortalAPI(baseURL: config.portalBaseURL, transport: portalTransport ?? URLSessionTransport(configuration: portalConfig))
         let portalCoordinator = PortalSessionCoordinator(api: portalAPI, sessions: portalVault, credentials: portalVault, binding: portalVault)
         self.api = api
-        self.publication = PublicationAPIClient(baseURL: config.honeyBaseURL, transport: transport ?? URLSessionTransport.identityFree())
         self.portalVault = portalVault
         self.portalAPI = portalAPI
         self.portalCoordinator = portalCoordinator
@@ -141,10 +147,16 @@ final class AppEnvironment {
         self.timetable = TimetableRepository(provider: api)
         self.notes = PrivateNoteStore(directory: storageDirectory, writeOptions: writeOptions)
         self.drafts = ComposerDraftStore(directory: storageDirectory, writeOptions: writeOptions)
-        self.journal = PublicationJournal(directory: storageDirectory, writeOptions: writeOptions)
-        self.keys = SecretOwnershipKeyStore(store: secrets, account: SecretOwnershipKeyStore.signedOutAccount)
         self.navigator = Navigator()
         self.portal = PortalController(api: api, coordinator: portalCoordinator, home: config.portalHome)
+        // Community never sees the HOney session: its own transport keeps no cookies or credentials.
+        let community = CommunityAPIClient(baseURL: config.honeyBaseURL, transport: transport ?? URLSessionTransport.identityFree())
+        let postControls = PostControls(api: api, storage: SecretPostControlStore(store: secrets))
+        let publish = PublishClient(api: api, community: community, controls: postControls, memory: prefs)
+        self.community = community
+        self.postControls = postControls
+        self.publish = publish
+        self.deletion = AccountDeletion(publish: publish, controls: postControls, store: prefs)
     }
 
     static func live() -> AppEnvironment {
@@ -174,11 +186,9 @@ final class AppEnvironment {
         scope = next
         self.me = me
         cachedMe = me
-        keys.setAccount(me.honeyId)
         drafts.setAccount(me.honeyId)
         prefs.setAccount(me.honeyId)
         await notes.setAccount(me.honeyId)
-        await journal.setAccount(me.honeyId)
         portalVault.setAccount(me.honeyId, expectedName: me.displayName)
         await portalCoordinator.accountChanged()
         portal.reset()
@@ -191,11 +201,9 @@ final class AppEnvironment {
         scope = nil
         me = nil
         cachedMe = nil
-        keys.setAccount(SecretOwnershipKeyStore.signedOutAccount)
         drafts.setAccount(nil)
         prefs.setAccount(nil)
         await notes.setAccount(nil)
-        await journal.setAccount(nil)
         portalVault.setAccount(nil, expectedName: nil)
         await portalCoordinator.accountChanged()
         portal.reset()
@@ -238,7 +246,6 @@ final class AppEnvironment {
             guard epoch == accountEpoch || scope == nil else { return }
             await activate(me)
             phase = .signedIn(me)
-            await recoverPublications()
         } catch let error as APIError where error.status == 401 {
             await sessionLost()
         } catch {
@@ -282,11 +289,33 @@ final class AppEnvironment {
         phase = .signedOut
     }
 
-    /// Deletes the account server-side, then clears what the student asked
-    /// for locally and reports exactly what could not be cleared.
+    /// "Delete account and public content" (spec §40.4): every post the
+    /// roots on this iPhone control is revoked by proof and the encrypted
+    /// vault deleted BEFORE Core deletes the account; then the local stores
+    /// the student asked for are cleared, and exactly what could not be
+    /// cleared is reported. When the vault is locked on this device or some
+    /// posts could not be revoked, NOTHING is deleted and the report says why.
     func deleteAccount(eraseLocalData: Bool) async throws -> DeletionReport {
+        guard let account = scope?.honeyId else { throw APIError.notAuthenticated }
+        var report = DeletionReport()
+        switch try await deletion.deletePublicContent(account: account) {
+        case .vaultLocked:
+            report.publicContentBlocked = "Your post controls exist but are not on this iPhone. Restore them first (Settings › Post controls), or nothing public can be removed."
+            return report
+        case .partial(let checklist):
+            report.postsFound = checklist.postsFound
+            report.postsRevoked = checklist.postsRevoked
+            report.publicContentBlocked = checklist.failedPosts.isEmpty
+                ? "The encrypted backup could not be deleted. Nothing else was changed; try again."
+                : "\(checklist.failedPosts.count) post\(checklist.failedPosts.count == 1 ? "" : "s") could not be removed. Nothing else was changed; try again."
+            return report
+        case .done(let checklist):
+            report.postsFound = checklist.postsFound
+            report.postsRevoked = checklist.postsRevoked
+        }
         try await api.deleteAccount()
-        var report = DeletionReport(serverDeleted: true)
+        await deletion.markAccountDeleted()
+        report.serverDeleted = true
         do {
             try await portalCoordinator.forgetEverything()
         } catch {
@@ -299,12 +328,6 @@ final class AppEnvironment {
             } catch {
                 report.notesCleared = false
             }
-            var keysOK = true
-            for key in (try? keys.list()) ?? [] {
-                do { try keys.remove(key: key.key) } catch { keysOK = false }
-            }
-            try? await journal.clearAll()
-            report.keysCleared = keysOK
         }
         await deactivate()
         if !report.failures.isEmpty {
@@ -323,21 +346,6 @@ final class AppEnvironment {
         guard case .signedIn = phase else { return }
         await refreshMe()
         await portal.prewarm()
-    }
-
-    /// Control keys journaled at publish time but not yet in the Keychain
-    /// (the app died, or the Keychain refused): try again on every launch.
-    func recoverPublications() async {
-        let pending = (try? await journal.pending()) ?? []
-        for record in pending {
-            do {
-                try keys.add(key: record.ownershipKey, experienceId: record.experienceId)
-                guard try keys.list().contains(where: { $0.experienceId == record.experienceId }) else { continue }
-                try? await journal.remove(experienceId: record.experienceId)
-            } catch {
-                // Keep the journal entry; the next launch tries again.
-            }
-        }
     }
 
     /// The Reconnect / Save-login sheet's work: the school login is proven

@@ -1,8 +1,8 @@
 // How anonymity works (SettingsPage.tsx privacy section; fidelity spec v2
-// §15): the muted lead paragraph, the five claims as a bulleted list with a
-// bold first sentence, then the "Post controls on this device" row group
-// with small ghost Export / Import. Only claims the current server protocol
-// supports, with the native storage story instead of browser caveats.
+// §15; Anonymous Control v2 spec §41): the muted lead paragraph, the claims
+// as a bulleted list with a bold first sentence, then the row to Post
+// controls and the private-notes bundle import. Only claims the current
+// protocol supports, with the native storage story.
 
 import SwiftUI
 import UniformTypeIdentifiers
@@ -10,22 +10,23 @@ import HOneyCore
 
 struct HowAnonymityWorksView: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(Navigator.self) private var nav
     @Environment(\.theme) private var theme
     @Environment(\.hType) private var ramp
-    @State private var keyCount = 0
-    @State private var exportURL: URL?
     @State private var importing = false
     @State private var feedback: (tone: BannerTone, text: String)?
 
     private let claims: [(String, String)] = [
-        ("Published posts are stored without an author ID.",
-         "The publish request carries no ordinary account identity, so the stored post has nothing that says who wrote it — HOney provides no normal author lookup, for anyone, including admins. The words themselves can still make you recognisable to people who know the situation."),
-        ("Your control is a key on this iPhone.",
-         "Each publish returns a one-time control key stored in this iPhone's Keychain; the server keeps only a hash. Presenting the key is the only way to find or remove your post. Deleting or reinstalling the app removes local control unless you export the keys first."),
+        ("Published posts carry no account.",
+         "A post is signed by a posting key that this iPhone derives from a control root it generated; the HOney server that knows your account never sees the post, and the process that stores posts has no account database at all. The words themselves can still make you recognisable to people who know the situation."),
+        ("Eligibility is proven without being tracked.",
+         "Before you share, HOney checks that you actually had the class or place and issues a blind token: it signs something it cannot read, so it cannot later tell which post came from which check."),
+        ("Your control is a root on this iPhone.",
+         "Every post gets its own control key derived from the root. The root lives in this iPhone's Keychain; an encrypted backup (the Control Vault) lets you restore it with your recovery words or from another device. HOney stores only ciphertext it cannot open."),
         ("Public dates are coarse.",
          "Posts show a calendar day only; exact timestamps are never published."),
         ("How moderation handles your text.",
-         "When you run the pre-publish check, obvious rule-breaking wording is caught on the HOney server directly. Otherwise the draft text — the text only, never your identity — is sent once to an external moderation model and judged transiently; HOney stores neither the text nor the verdict at check time. The external provider processes the text under its own retention policy, so don't put things in a draft you wouldn't run through a moderation service."),
+         "When you run the pre-publish check, obvious rule-breaking wording is caught directly. Otherwise the draft text — the text only, never your identity — is sent once to an external moderation model and judged transiently; HOney stores neither the text nor the verdict at check time."),
         ("Private notes stay on this iPhone.",
          "They live in protected app storage, encrypted by the device while it is locked, and never leave the phone. Your school login (when you keep it) and your HOney session live in the Keychain, on this device only — nothing here syncs through iCloud Keychain."),
     ]
@@ -55,30 +56,19 @@ struct HowAnonymityWorksView: View {
                 .padding(.leading, HSpace.x4)
                 .padding(.bottom, HSpace.x3)
 
-                RowList(label: L10n.t("Post controls on this iPhone"), first: false) {
+                RowList(label: L10n.t("Post controls"), first: false) {
+                    Button { nav.push(.settingsPostControls) } label: {
+                        SettingsRow(title: L10n.t("Post controls"), sub: L10n.t("Recovery words · another device · replace the root"))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                RowList(label: L10n.t("Private notes")) {
                     VStack(alignment: .leading, spacing: HSpace.x3) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Control keys on this iPhone").font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
-                            Text(keyCount == 0
-                                 ? "None yet — keys appear here when you publish an experience."
-                                 : "\(keyCount) key\(keyCount > 1 ? "s" : ""). Export a backup before deleting the app or moving to a new phone.")
-                                .font(ramp.font(.caption))
-                                .lineSpacing(ramp.lineSpacing(.caption))
-                                .foregroundStyle(theme.muted)
-                        }
-                        HStack(spacing: HSpace.x2) {
-                            if let exportURL {
-                                ShareLink(item: exportURL) { Text("Export") }
-                                    .buttonStyle(.webSmallGhost)
-                                    .disabled(keyCount == 0)
-                            } else {
-                                Button("Export") {}.buttonStyle(.webSmallGhost).disabled(true)
-                            }
-                            Button("Import…") { importing = true }.buttonStyle(.webSmallGhost)
-                        }
-                        Text("Import accepts a HOney key export from the Web app or a device bundle with notes and keys.")
+                        Text("Import a HOney notes bundle exported from another device. Post controls never travel as a file — restore them above.")
                             .font(ramp.font(.caption))
                             .foregroundStyle(theme.muted)
+                        Button("Import notes…") { importing = true }.buttonStyle(.webSmallGhost)
                     }
                     .padding(.vertical, HSpace.x3)
                 }
@@ -88,18 +78,9 @@ struct HowAnonymityWorksView: View {
             .padding(.bottom, HSpace.x4)
         }
         .webScreen(title: L10n.t("How anonymity works"))
-        .task { refresh() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json, .plainText]) { result in
             Task { await importFile(result) }
         }
-    }
-
-    private func refresh() {
-        keyCount = env.keys.count()
-        exportURL = nil
-        guard let data = try? env.keys.exportJSON() else { return }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("HOney-ownership-keys.json")
-        if (try? data.write(to: url, options: [.atomic, .completeFileProtection])) != nil { exportURL = url }
     }
 
     private func importFile(_ result: Result<URL, Error>) async {
@@ -111,18 +92,15 @@ struct HowAnonymityWorksView: View {
             return
         }
         guard let bundle = try? TransferBundle.decode(data) else {
-            feedback = (.danger, "That file is not a HOney key export or device bundle.")
+            feedback = (.danger, "That file is not a HOney notes bundle.")
             return
         }
         if let hint = bundle.accountHint, let me = env.me, hint != me.honeyId {
             feedback = (.warning, "That bundle was exported from a different HOney account; nothing was imported.")
             return
         }
-        let report = await bundle.apply(keys: env.keys, notes: env.notes)
-        var parts: [String] = []
-        parts.append(report.keysAdded == 0 ? "No new keys" : "Imported \(report.keysAdded) new key\(report.keysAdded > 1 ? "s" : "")")
-        if !bundle.privateNotes.isEmpty { parts.append("\(report.notesAdded) note\(report.notesAdded == 1 ? "" : "s") added") }
-        feedback = (report.failures.isEmpty ? .success : .warning, (parts + report.failures).joined(separator: ". ") + ".")
-        refresh()
+        let report = await bundle.apply(notes: env.notes)
+        let added = "\(report.notesAdded) note\(report.notesAdded == 1 ? "" : "s") added"
+        feedback = (report.failures.isEmpty ? .success : .warning, ([added] + report.failures).joined(separator: ". ") + ".")
     }
 }

@@ -34,6 +34,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@honey/shared/api": fileURLToPath(new URL("../../packages/shared/src/api/contract.ts", import.meta.url)),
+      "@honey/shared/community-v2": fileURLToPath(new URL("../../packages/shared/src/community-v2/index.ts", import.meta.url)),
+      "@honey/shared/access": fileURLToPath(new URL("../../packages/shared/src/access/index.ts", import.meta.url)),
       "@honey/shared": fileURLToPath(new URL("../../packages/shared/src/index.ts", import.meta.url)),
     },
   },

@@ -7,6 +7,10 @@
 // completion can never evict a newer request (review 11d42e3 §4.4), and a
 // successfully loaded EMPTY feed is a result that restores for a while
 // instead of refetching on every visit (§4.5).
+//
+// v2: pages come from Community (identity-free). "My classes" travels as
+// the viewer's canonical exposure in the request body; the viewer's own
+// reactions are remembered on the device, never in the page.
 
 import Foundation
 
@@ -25,8 +29,8 @@ public struct FeedKey: Sendable, Hashable, Equatable {
         self.roomId = roomId
     }
 
-    public func params(cursor: String? = nil, limit: Int? = nil) -> FeedParams {
-        FeedParams(scope: scope, cursor: cursor, limit: limit, entityKey: entityKey, teacherId: teacherId, courseId: courseId, roomId: roomId)
+    public func request(exposure: ExposureScope?, cursor: String? = nil, limit: Int? = nil) -> FeedRequestV2 {
+        FeedRequestV2(scope: scope, exposure: scope == .myClasses ? exposure : nil, cursor: cursor, limit: limit, entityKey: entityKey, teacherId: teacherId, courseId: courseId, roomId: roomId)
     }
 
     /// The main Stream (no entity filters): the only key the new-posts
@@ -37,7 +41,7 @@ public struct FeedKey: Sendable, Hashable, Equatable {
 }
 
 public struct FeedState: Sendable, Equatable {
-    public var items: [PublicExperience] = []
+    public var items: [PublicExperienceV2] = []
     public var nextCursor: String?
     public var headCursor: String?
     /// True once page one applied — only then is the state worth restoring.
@@ -49,7 +53,7 @@ public struct FeedState: Sendable, Equatable {
 
     public init() {}
 
-    mutating func apply(_ page: FeedPage, mode: ApplyMode, now: Date) {
+    mutating func apply(_ page: FeedPageV2, mode: ApplyMode, now: Date) {
         var base = mode == .replace ? [] : items
         var seen = Set(base.map(\.id))
         for item in page.items where !seen.contains(item.id) {
@@ -65,6 +69,8 @@ public struct FeedState: Sendable, Equatable {
 
     enum ApplyMode { case replace, append }
 }
+
+public typealias FeedFetch = @Sendable (FeedRequestV2) async throws -> FeedPageV2
 
 public actor FeedStore {
     private struct Inflight {
@@ -99,12 +105,12 @@ public actor FeedStore {
     }
 
     /// Page one. Concurrent callers for the same key share one request.
-    public func loadFirst(_ key: FeedKey, using fetch: @escaping @Sendable (FeedParams) async throws -> FeedPage) async throws -> FeedState {
+    public func loadFirst(_ key: FeedKey, exposure: ExposureScope?, using fetch: @escaping FeedFetch) async throws -> FeedState {
         if let existing = inflightFirst[key] { return try await existing.task.value }
         let generation = bump(key)
         let id = UUID()
         let task = Task<FeedState, Error> {
-            let page = try await fetch(key.params())
+            let page = try await fetch(key.request(exposure: exposure))
             return try self.applyFirst(page, key: key, generation: generation)
         }
         inflightFirst[key] = Inflight(id: id, task: task)
@@ -115,7 +121,7 @@ public actor FeedStore {
         return try await task.value
     }
 
-    private func applyFirst(_ page: FeedPage, key: FeedKey, generation: Int) throws -> FeedState {
+    private func applyFirst(_ page: FeedPageV2, key: FeedKey, generation: Int) throws -> FeedState {
         guard generations[key] == generation else { throw CancellationError() }
         var state = FeedState()
         state.apply(page, mode: .replace, now: now())
@@ -125,12 +131,12 @@ public actor FeedStore {
 
     /// The next page, if there is one and none is in flight. Returns the
     /// merged state, or nil when nothing was fetched.
-    public func loadMore(_ key: FeedKey, using fetch: @escaping @Sendable (FeedParams) async throws -> FeedPage) async throws -> FeedState? {
+    public func loadMore(_ key: FeedKey, exposure: ExposureScope?, using fetch: @escaping FeedFetch) async throws -> FeedState? {
         guard let current = states[key], let cursor = current.nextCursor, !loadingMore.contains(key) else { return nil }
         let generation = generations[key] ?? 0
         loadingMore.insert(key)
         defer { loadingMore.remove(key) }
-        let page = try await fetch(key.params(cursor: cursor))
+        let page = try await fetch(key.request(exposure: exposure, cursor: cursor))
         guard generations[key] == generation, var state = states[key] else { throw CancellationError() }
         state.apply(page, mode: .append, now: now())
         states[key] = state
@@ -144,11 +150,10 @@ public actor FeedStore {
 
     /// A reaction result from the server is authoritative everywhere the
     /// post appears (stream, entity page, search).
-    public func applyReaction(experienceId: String, value: Int, counts: ReactionCounts?) {
+    public func applyReaction(experienceId: String, counts: ReactionCounts?) {
         for (key, var state) in states {
             var changed = false
             for i in state.items.indices where state.items[i].id == experienceId {
-                state.items[i].myReaction = value
                 state.items[i].reactions = counts
                 changed = true
             }
@@ -185,8 +190,9 @@ public struct ReactionState: Sendable, Equatable {
         self.counts = counts
     }
 
-    public init(_ exp: PublicExperience) {
-        self.init(myValue: exp.myReaction ?? 0, counts: exp.reactions)
+    /// `myValue` comes from the device's own memory (the page carries none).
+    public init(_ exp: PublicExperienceV2, myValue: Int) {
+        self.init(myValue: myValue, counts: exp.reactions)
     }
 
     public var busy: Bool { pending != 0 }
@@ -204,7 +210,7 @@ public struct ReactionState: Sendable, Equatable {
         return previous
     }
 
-    public mutating func accept(_ result: ReactResponse) {
+    public mutating func accept(_ result: ReactResponseV2) {
         myValue = result.value
         counts = result.reactions
         pending = 0

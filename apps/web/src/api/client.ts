@@ -5,44 +5,40 @@
 
 import { portalCredentials } from "../lib/portalCredentials";
 import type {
+  CommunityScope,
+  EligibilityInfo,
+  EligibilityIssued,
+  EligibilityRequest,
+  IssuerDescriptor,
+  PairingDelivery,
+  PairingOffer,
+  VaultPutRequest,
+  VaultPutResponse,
+  VaultRecord,
+} from "@honey/shared/community-v2";
+import type { AccessAdminStatus, AccessSessionResponse } from "@honey/shared/access";
+import type {
   AdminImportResult,
   AdminLlmTestResponse,
   AdminOverview,
   AdminReportsResponse,
-  CheckExperienceInput,
-  CheckExperienceResponse,
   DirectoryResponse,
   EntitiesResponse,
   EntityType,
-  ExperienceEligibilityInput,
-  ExperienceEligibilityResponse,
-  ExperiencesFeedParams,
-  ExperiencesFeedResponse,
-  FeedPage,
-  FeedParams,
-  FeedScope,
-  FeedUpdatesResponse,
-  FromMyClassesParams,
   HistoryParams,
   HistoryResponse,
   KillSwitchName,
   LoginInput,
   LoginResponse,
   Me,
-  MyExperiencesResponse,
   NextLessonResponse,
-  PublishExperienceInput,
-  PublishExperienceResponse,
-  ReactResponse,
-  ReportCategory,
   SessionTokens,
   StandaloneMode,
   SyncResponse,
   PortalEntryResponse,
   TimetableResponse,
-  SearchResponse,
-  EntityStats,
   TimetableRangeResponse,
+  UnresolvedLabel,
 } from "./types";
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -63,12 +59,15 @@ const SESSION_KEY = "HOney.session";
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
+  /** The parsed error body, when the server sent one (e.g. a vault conflict's current record). */
+  readonly body: unknown;
 
-  constructor(status: number, code: string, message?: string) {
+  constructor(status: number, code: string, message?: string, body?: unknown) {
     super(message ?? code);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
+    this.body = body;
   }
 }
 
@@ -191,7 +190,7 @@ export class ApiClient {
     return this.request("GET", "/api/directory");
   }
 
-  // ---- Experiences (community) ----
+  // ---- The public entity directory (posts themselves live in the Community process) ----
 
   entities(type?: EntityType, q?: string): Promise<EntitiesResponse> {
     const query = new URLSearchParams();
@@ -201,91 +200,25 @@ export class ApiClient {
     return this.request("GET", qs ? `/api/entities?${qs}` : "/api/entities");
   }
 
-  experiencesFeed(params: ExperiencesFeedParams = {}): Promise<ExperiencesFeedResponse> {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== "") query.set(key, String(value));
-    }
-    const qs = query.toString();
-    return this.request("GET", qs ? `/api/experiences?${qs}` : "/api/experiences");
-  }
+  // ---- Web Access (Core only issues the capability; the Access Service does the rest) ----
 
-  /** Cursor-paged social stream (review v3 §12.6). Cursors are opaque — pass back verbatim. */
-  /** Find mode: entities + published experiences matching the words. */
-  search(q: string): Promise<SearchResponse> {
-    return this.request("GET", `/api/experiences/search?q=${encodeURIComponent(q)}`);
-  }
-
-  /** Descriptive counts for an entity page — never a score. */
-  entityStats(entityKey: string): Promise<EntityStats> {
-    return this.request("GET", `/api/experiences/stats?entityKey=${encodeURIComponent(entityKey)}`);
-  }
-
-  feedPage(params: FeedParams): Promise<FeedPage> {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== "") query.set(key, String(value));
-    }
-    return this.request("GET", `/api/experiences/feed?${query.toString()}`);
-  }
-
-  /** Quiet new-content probe — never moves the reader (§9.6C). */
-  feedUpdates(scope: FeedScope, head: string): Promise<FeedUpdatesResponse> {
-    const query = new URLSearchParams({ scope, head });
-    return this.request("GET", `/api/experiences/feed/updates?${query.toString()}`);
-  }
-
-  /** Domain query (audit §4.2): posts relevant to my verified exposure. */
-  fromMyClasses(params: FromMyClassesParams = {}): Promise<ExperiencesFeedResponse> {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== "") query.set(key, String(value));
-    }
-    const qs = query.toString();
-    return this.request(
-      "GET",
-      qs ? `/api/experiences/from-my-classes?${qs}` : "/api/experiences/from-my-classes",
-    );
-  }
-
-  // ---- Publication flow: eligibility → check → publish (contract §Experiences) ----
-
-  /** Step 1: authenticated, single-use, scope-bound eligibility token. */
-  experienceEligibility(
-    input: ExperienceEligibilityInput,
-  ): Promise<ExperienceEligibilityResponse> {
-    return this.request("POST", "/api/experiences/eligibility", input);
-  }
-
-  /** Step 2: synchronous moderation preflight. The draft is NEVER persisted. */
-  checkExperience(input: CheckExperienceInput): Promise<CheckExperienceResponse> {
-    return this.request("POST", "/api/experiences/check", input);
-  }
-
-  /** Step 3: publish. No session auth — the eligibility token + pass are the only proof. */
-  publishExperience(input: PublishExperienceInput): Promise<PublishExperienceResponse> {
-    return this.request("POST", "/api/experiences/publish", input, { auth: false });
-  }
-
-  /** Own submissions, proved by client-held keys (any status). */
-  myExperiences(keys: string[]): Promise<MyExperiencesResponse> {
-    return this.request("POST", "/api/experiences/mine", { keys });
-  }
-
-  revokeExperience(ownershipKey: string): Promise<{ ok: boolean }> {
-    return this.request("POST", "/api/experiences/revoke", { ownershipKey });
-  }
-
-  reactToExperience(id: string, value: 1 | -1 | 0): Promise<ReactResponse> {
-    return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/react`, { value });
-  }
-
-  /** Reports are category-only (audit §3.9): the backend rejects any free text. */
-  reportExperience(id: string, category: ReportCategory): Promise<{ ok: boolean }> {
-    return this.request("POST", `/api/experiences/${encodeURIComponent(id)}/report`, { category });
+  accessSession(): Promise<AccessSessionResponse> {
+    return this.request("POST", "/api/access/session");
   }
 
   // ---- Admin dash (isAdmin only) ----
+
+  adminAccessStatus(): Promise<{ reachable: boolean; status: AccessAdminStatus | null }> {
+    return this.request("GET", "/api/admin/access");
+  }
+
+  adminSetAccessEnabled(on: boolean): Promise<{ ok: boolean; enabled: boolean }> {
+    return this.request("POST", "/api/admin/access/enabled", { on });
+  }
+
+  adminUnresolvedLabels(): Promise<{ labels: UnresolvedLabel[] }> {
+    return this.request("GET", "/api/admin/import/unresolved");
+  }
 
   adminOverview(): Promise<AdminOverview> {
     return this.request("GET", "/api/admin/overview");
@@ -333,6 +266,73 @@ export class ApiClient {
 
   adminSetCooldownHours(hours: number): Promise<{ ok: boolean }> {
     return this.request("POST", "/api/admin/cooldown-hours", { hours });
+  }
+
+  // ---- Anonymous Control v2: issuer, scope, Control Vault, pairing relay ----
+
+  communityIssuer(): Promise<IssuerDescriptor> {
+    return this.request("GET", "/api/community/issuer", undefined, { auth: false });
+  }
+
+  communityScope(): Promise<CommunityScope> {
+    return this.request("GET", "/api/community/scope");
+  }
+
+  /** Issuance step 1: the metadata the issuer would bind for this target (standing checked; nothing signed or counted). */
+  communityEligibilityInfo(input: { lessonId?: string; entityKey?: string; schoolMember?: boolean }): Promise<{ ok: true; info: EligibilityInfo }> {
+    return this.request("POST", "/api/community/eligibility/info", input);
+  }
+
+  /** Issuance step 2: the server signs a blinded message it never sees unblinded. */
+  communityEligibility(input: EligibilityRequest & { schoolMember?: boolean }): Promise<EligibilityIssued> {
+    return this.request("POST", "/api/community/eligibility", input);
+  }
+
+  /** 404 → ApiError(404, "no_vault"). */
+  vault(): Promise<VaultRecord> {
+    return this.request("GET", "/api/vault");
+  }
+
+  /** CAS write; a 409 comes back as a value, not an error, so callers can merge. */
+  async vaultPut(input: VaultPutRequest): Promise<VaultPutResponse> {
+    try {
+      return await this.request<VaultPutResponse>("PUT", "/api/vault", input);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409 && err.body && typeof err.body === "object" && "current" in err.body) {
+        return err.body as VaultPutResponse;
+      }
+      throw err;
+    }
+  }
+
+  vaultDelete(): Promise<{ ok: boolean }> {
+    return this.request("DELETE", "/api/vault");
+  }
+
+  vaultPairingOffer(recipientPublicKey: string): Promise<PairingOffer> {
+    return this.request("POST", "/api/vault/pairing", { recipientPublicKey });
+  }
+
+  vaultPairingRead(pairingId: string): Promise<PairingOffer> {
+    return this.request("GET", `/api/vault/pairing/${encodeURIComponent(pairingId)}`);
+  }
+
+  vaultPairingDeliver(pairingId: string, enc: string, ciphertext: string): Promise<{ ok: boolean }> {
+    return this.request("POST", `/api/vault/pairing/${encodeURIComponent(pairingId)}/deliver`, { enc, ciphertext });
+  }
+
+  /** null while the signed-in device has not delivered yet. */
+  async vaultPairingClaim(pairingId: string): Promise<PairingDelivery | null> {
+    try {
+      return await this.request<PairingDelivery>("GET", `/api/vault/pairing/${encodeURIComponent(pairingId)}/delivery`);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    }
+  }
+
+  vaultHandoff(recipientPublicKey: string, enc: string, ciphertext: string): Promise<PairingOffer> {
+    return this.request("POST", "/api/vault/handoff", { recipientPublicKey, enc, ciphertext });
   }
 
   disconnectSchool(): Promise<void> {
@@ -443,8 +443,10 @@ export class ApiClient {
 
 async function toApiError(res: Response): Promise<ApiError> {
   let code = `http_${res.status}`;
+  let body: unknown;
   try {
     const data = (await res.json()) as { error?: unknown };
+    body = data;
     if (typeof data.error === "string") code = data.error;
   } catch {
     // Non-JSON error body; fall back to the status code.
@@ -452,7 +454,7 @@ async function toApiError(res: Response): Promise<ApiError> {
   if ((res.status === 502 || res.status === 503) && code === `http_${res.status}`) {
     code = "portal_unavailable";
   }
-  return new ApiError(res.status, code);
+  return new ApiError(res.status, code, undefined, body);
 }
 
 /** Maps API failures to user-facing copy. */

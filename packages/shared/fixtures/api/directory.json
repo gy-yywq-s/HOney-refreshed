@@ -19,16 +19,16 @@
   ],
   "courses": [
     {
-      "id": "c_55566",
-      "name": "Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明"
+      "id": "c_al_econ_u4",
+      "name": "AL ECON U4"
     },
     {
-      "id": "c_55738",
-      "name": "CIE Chinese Language & Literature 2026秋CIEAL中文备考班 赵流畅"
+      "id": "c_al_chin",
+      "name": "AL CHIN"
     },
     {
-      "id": "c_56081",
-      "name": "IELTS-Speaking 2026秋IELTS Speaking强化班 Jennifer Anne Whitcombe-Rasmussen"
+      "id": "c_ielts_speaking",
+      "name": "IELTS Speaking"
     }
   ],
   "rooms": [

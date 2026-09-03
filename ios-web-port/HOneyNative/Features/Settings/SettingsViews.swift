@@ -46,7 +46,8 @@ struct SettingsRootView: View {
                     StayConnectedRow(stayConnected: $stayConnected, showSaveLogin: $showSaveLogin)
                 }
                 RowList(label: L10n.t("Experiences & privacy")) {
-                    Button { nav.push(.mine) } label: { SettingsRow(title: L10n.t("Your notes & post controls")) }.buttonStyle(.plain)
+                    Button { nav.push(.mine) } label: { SettingsRow(title: L10n.t("Your notes & posts")) }.buttonStyle(.plain)
+                    Button { nav.push(.settingsPostControls) } label: { SettingsRow(title: L10n.t("Post controls"), sub: L10n.t("Recovery words · another device · replace the root")) }.buttonStyle(.plain)
                     Button { nav.push(.settingsPrivacy) } label: { SettingsRow(title: L10n.t("How anonymity works")) }.buttonStyle(.plain)
                 }
                 RowList(label: L10n.t("Appearance")) {
@@ -131,8 +132,8 @@ struct AccountView: View {
                         Button(L10n.t("Sign out")) { Task { await env.signOut() } }.buttonStyle(.webSmallDangerOutline)
                     }
                 }
-                RowList(label: "Delete account") {
-                    Text("Deletes your HOney account, your imported lessons and the school login saved on this iPhone. Shared teacher, course, room and lesson entries stay. Published Experiences stay — they carry no author ID and are controlled only by the keys on your devices. Private notes and control keys on this iPhone are kept unless you choose to erase them.")
+                RowList(label: "Delete account and public content") {
+                    Text("Removes every experience your post controls on this iPhone can prove is yours, deletes the encrypted backup of those controls, then deletes your HOney account, your imported lessons and the school login saved here. Shared teacher, course, room and lesson entries stay. Private notes on this iPhone are kept unless you choose to erase them.")
                         .hfont(.caption)
                         .foregroundStyle(theme.muted)
                         .padding(.top, HSpace.x1)
@@ -147,13 +148,13 @@ struct AccountView: View {
         .webScreen(title: L10n.t("Account"))
         .sheet(isPresented: $confirmDelete) {
             WebSheet(title: "Delete your HOney account?", onClose: { confirmDelete = false }) {
-                Text("This permanently removes your account and imported lessons. Published experiences stay (they carry no author ID). The school login saved on this iPhone is cleared. This cannot be undone.")
+                Text("Your public experiences are removed first, by proof from this iPhone's post controls; if that cannot complete, nothing is deleted and you are told why. Then the account and imported lessons go, and the school login saved on this iPhone is cleared. This cannot be undone.")
                     .hfont(.body)
                     .foregroundStyle(theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 SheetActions {
-                    Button("Delete account, keep notes and keys on this iPhone") { confirmDelete = false; delete(erase: false) }.buttonStyle(.webBlockDanger)
-                    Button("Delete account and erase local notes and keys") { confirmDelete = false; delete(erase: true) }.buttonStyle(.webBlockDanger)
+                    Button("Delete account and public content, keep private notes") { confirmDelete = false; delete(erase: false) }.buttonStyle(.webBlockDanger)
+                    Button("Delete account, public content and private notes") { confirmDelete = false; delete(erase: true) }.buttonStyle(.webBlockDanger)
                     Button(L10n.t("Cancel")) { confirmDelete = false }.buttonStyle(.webBlockGhost)
                 }
             }
@@ -164,7 +165,12 @@ struct AccountView: View {
     private func delete(erase: Bool) {
         busy = true
         Task {
-            do { _ = try await env.deleteAccount(eraseLocalData: erase) } catch { self.error = APIErrorCopy.describe(error) }
+            do {
+                let report = try await env.deleteAccount(eraseLocalData: erase)
+                if let blocked = report.publicContentBlocked { self.error = blocked }
+            } catch {
+                self.error = APIErrorCopy.describe(error)
+            }
             busy = false
         }
     }

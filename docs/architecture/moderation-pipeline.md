@@ -1,5 +1,11 @@
 # The Moderation Pipeline
 
+> **Where it runs (2026-09-02):** inside the identity-free Community process
+> (`packages/community-service/src/moderation/`), on the check route that receives a blind
+> eligibility token and a signed envelope — never an account, never an authorTag. The layers, the
+> deterministic policy engine and the corpus are unchanged; the content-bound pass now also binds
+> the posting and control public keys, the post nonce and the token hash (`passes.ts`).
+
 **This is the load-bearing subsystem of Experiences.** Every public word passes through it
 exactly once; nothing publishes without its signed pass; when it cannot decide, nothing
 publishes at all. It has to be *fast* (publication must feel instant), *deterministic where it

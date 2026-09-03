@@ -115,7 +115,7 @@ struct HomeView: View {
             } else {
                 let shown = Array(model.previews.prefix(previewCount))
                 ForEach(Array(shown.enumerated()), id: \.element.id) { index, exp in
-                    ExperiencePreviewRow(exp: exp, lineLimit: lineLimit) {
+                    ExperiencePreviewRow(exp: exp, name: model.name, lineLimit: lineLimit) {
                         nav.experiencesIntent = ExperiencesIntent(scope: .myClasses, anchorId: exp.id)
                         nav.go(.experiences)
                     }
@@ -305,7 +305,8 @@ private struct HeroCard<Content: View>: View {
 struct ExperiencePreviewRow: View {
     @Environment(\.theme) private var theme
     @Environment(\.hType) private var ramp
-    let exp: PublicExperience
+    let exp: PublicExperienceV2
+    let name: NameResolver
     var lineLimit = 3
     let open: () -> Void
 
@@ -318,7 +319,7 @@ struct ExperiencePreviewRow: View {
                     .foregroundStyle(theme.ink)
                     .lineLimit(lineLimit)
                     .multilineTextAlignment(.leading)
-                let caption = ExperienceDisplay.previewCaption(exp)
+                let caption = ExperienceDisplay.previewCaption(exp, name: name)
                 if !caption.isEmpty {
                     Text(caption).font(ramp.font(.caption)).foregroundStyle(theme.muted).lineLimit(2)
                 }

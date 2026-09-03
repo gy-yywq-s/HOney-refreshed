@@ -50,3 +50,14 @@ post control keys live in the Keychain (this device only, no iCloud Keychain).
 Private notes and composer drafts live in Application Support with complete
 file protection, per HOney account. The publish call goes through a separate
 client on an ephemeral, cookie-less session and never carries the session.
+
+## Anonymous Control v2 and canonical school data (2026-09-03)
+
+`integration/product-v2` (spec 3e44152e groups 1–4) is merged in. The wire is the canonical
+contract (`Lesson.subjectName/courseName/classSectionName`; titles are `lesson.title`) and the
+identity-free Community v2 protocol. `HOneyCore/Sources/HOneyCore/CommunityV2/` is the Swift
+implementation (key hierarchy, Control Vault, wrappers, recovery words, pairing, partially-blind
+RSA client over BigInt) — see `docs/architecture/anonymous-control-v2.md` § iOS. Dependencies:
+swift-crypto, attaswift/BigInt (resolved through HOneyCore's Package.swift; the app target links
+them transitively). The v1 ownership-key store, publication journal and key export/import are gone:
+post controls travel through the vault (recovery words · another device), never as a file.

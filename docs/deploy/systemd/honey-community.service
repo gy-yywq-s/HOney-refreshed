@@ -1,0 +1,23 @@
+[Unit]
+Description=HOney Community - identity-free post service (loopback :8873)
+After=network.target
+
+[Service]
+Type=simple
+User=honey
+Group=honey
+WorkingDirectory=/home/honey/app
+EnvironmentFile=/home/honey/.secrets/community.env
+ExecStart=/usr/bin/node packages/community-service/dist/server.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/honey/data
+ProtectHome=read-only
+# The other services' databases are hidden from this process.
+InaccessiblePaths=-/home/honey/data/honey.db -/home/honey/data/honey.db-wal -/home/honey/data/honey.db-shm -/home/honey/data/vault.db -/home/honey/data/vault.db-wal -/home/honey/data/vault.db-shm -/home/honey/.secrets/honey.env -/home/honey/.secrets/school-test-account.env -/home/honey/.secrets/openrouter.env
+
+[Install]
+WantedBy=multi-user.target

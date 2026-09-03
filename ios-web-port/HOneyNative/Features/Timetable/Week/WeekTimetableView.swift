@@ -43,7 +43,7 @@ struct WeekTimetableView: View {
                             if index > 0 { HairlineDivider() }
                             Button { model.selectedLesson = item.lesson } label: {
                                 EntityRow(
-                                    title: item.lesson.subjectName,
+                                    title: item.lesson.title,
                                     caption: [Formatters.dayTitle(item.date), Formatters.timeRange(item.lesson.startsAt, item.lesson.endsAt), DisplayNames.roomLabel(item.lesson.roomName)]
                                         .filter { !$0.isEmpty }.joined(separator: " · "),
                                     showsDisclosure: false
@@ -180,7 +180,7 @@ struct WeekCell: View {
             if let first = cell.first {
                 Button(action: tap) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(DisplayNames.shortSubjectName(first.subjectName))
+                        Text(DisplayNames.compactLessonTitle(first, phone: true))
                             .font(ramp.font(.captionSemibold))
                             .foregroundStyle(isNow ? theme.surface : theme.ink)
                             .lineLimit(2)
@@ -219,7 +219,7 @@ struct WeekCell: View {
     private func label(_ first: Lesson) -> String {
         [
             "\(Formatters.dayTitle(cell.date)), Period \(cell.band.periodNumber ?? 0)",
-            first.subjectName,
+            first.title,
             "\(Formatters.time(first.startsAt)) to \(Formatters.time(first.endsAt))",
             first.teacherName,
             DisplayNames.roomLabel(first.roomName),

@@ -160,6 +160,9 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext): void 
 
   app.delete("/api/account", { preHandler: ctx.requireAuth }, async (req) => {
     const user = ctx.userOf(req);
+    // The encrypted vault and any pairing go with the account; Core never
+    // learns which posts they controlled (the client revokes those first).
+    ctx.vault.delete(user.honey_id);
     ctx.accounts.deleteAccount(user.honey_id);
     return { ok: true };
   });

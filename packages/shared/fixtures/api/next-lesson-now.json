@@ -1,12 +1,15 @@
 {
   "nextLesson": {
     "id": "1322902",
+    "subjectId": "s_activity",
     "subjectName": "Activity",
-    "topicName": "Activity",
+    "courseId": "c_activity",
+    "courseName": "Activity",
+    "classSectionId": "sec_activity_2026a",
+    "classSectionName": "2026 Autumn · Activity",
+    "topicName": null,
     "teacherId": "t_9e75caffc183",
     "teacherName": "活动课老师",
-    "courseId": "c_55456",
-    "courseName": "Activity 2026年秋活动课 活动课老师",
     "roomId": "r_df12aeba9bb9",
     "roomName": null,
     "startsAt": 1788337800000,

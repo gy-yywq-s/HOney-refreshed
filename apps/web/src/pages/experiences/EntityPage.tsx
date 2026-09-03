@@ -7,7 +7,7 @@
 import { useEffect } from "react";
 import { useRetryFocus } from "../../lib/useRetryFocus";
 import { useApi } from "../../lib/useApi";
-import { api } from "../../api/client";
+import { community } from "../../api/community";
 import { recentContexts } from "../../lib/recentContexts";
 import { Link, useParams } from "react-router-dom";
 import { ExperiencePost } from "../../features/experiences/ExperiencePost";
@@ -50,7 +50,7 @@ export function ExperienceEntityPage({ kind }: { kind: EntityPageKind }) {
 
   const landing = useRetryFocus<HTMLDivElement>(feed.loading || namesLoading);
   // Descriptive counts only (review §8.3): "18 experiences across 3 courses".
-  const stats = useApi(() => api.entityStats(entityKey), [entityKey], `stats:${entityKey}`);
+  const stats = useApi(() => community.stats(entityKey), [entityKey], `community:stats:${entityKey}`);
 
   // Delisted entries (deduped rooms, placeholders) stay reachable by URL
   // but must not offer a composer that the server will refuse (r2). A

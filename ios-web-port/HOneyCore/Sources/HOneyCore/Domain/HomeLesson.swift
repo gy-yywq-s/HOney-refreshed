@@ -55,14 +55,14 @@ public struct HomeLessonPresentation: Sendable, Equatable {
         progress = isNow
             ? min(1, max(0, Double(nowMs - lesson.startsAt) / Double(max(1, lesson.endsAt - lesson.startsAt))))
             : nil
-        subject = lesson.subjectName
+        subject = lesson.title
         timeRange = Formatters.timeRange(lesson.startsAt, lesson.endsAt)
         teacher = lesson.teacherName
         let roomText = DisplayNames.roomLabel(lesson.roomName)
         room = roomText.isEmpty ? nil : roomText
         isoDate = Formatters.toIsoDate(start)
         accessibilityLabel = [
-            "\(stateLabel): \(lesson.subjectName)",
+            "\(stateLabel): \(lesson.title)",
             "\(Formatters.time(lesson.startsAt)) to \(Formatters.time(lesson.endsAt))",
             lesson.teacherName,
             room,

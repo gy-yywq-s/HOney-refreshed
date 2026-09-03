@@ -1,33 +1,19 @@
-// Device-held stores for the Experiences anonymity model.
+// Private notes — spec §7.4 (first-class private note) + §25.1 ("web may use
+// device/browser local encrypted storage where practical"). Notes never leave
+// the browser and are encrypted at rest with AES-GCM.
 //
-// 1. Ownership keys — the ONLY proof of authorship for anonymous posts. The
-//    server keeps a hash; the key itself lives here and nowhere else. Losing
-//    this storage (clearing site data) permanently removes the user's control
-//    over those posts — the UI warns about this everywhere it matters.
+// (Control of PUBLIC posts no longer lives here: Anonymous Control v2 derives
+// per-post control keys from one root kept in lib/community-v2/local-store.)
 //
-// 2. Private notes — spec §7.4 (first-class private note) + §25.1 ("web may
-//    use device/browser local encrypted storage where practical"). Notes never
-//    leave the browser and are encrypted at rest with AES-GCM.
-//
-// Honest threat model
-// -------------------
-// Ownership keys must be readable by this code without user interaction, so
-// they sit in plain localStorage: anyone with full access to this browser
-// profile — or same-origin script injection — can read them. That is an
-// accepted trade-off: the keys prove control of *anonymous* posts, they do
-// not identify the user.
-//
-// Private notes are AES-GCM encrypted, but the random 256-bit key is stored
-// in the SAME localStorage (there is no practical way to keep a secret from
-// same-origin code in a plain web app without a user passphrase, which the
-// spec does not ask for). What the encryption actually buys:
-//   - note text does not appear in plaintext in storage dumps, disk backups,
-//     or naive string-scraping of the browser profile;
-//   - casual inspection (dev-tools shoulder-surfing, sync'd storage viewers)
-//     shows ciphertext, not a student's unpublished thoughts.
-// It does NOT defend against an attacker who can read all of localStorage.
+// Honest threat model: private notes are AES-GCM encrypted, but the random
+// 256-bit key is stored in the SAME localStorage (a plain web app cannot keep
+// a secret from same-origin code without a user passphrase, which the product
+// does not ask for). What the encryption buys: note text does not appear in
+// plaintext in storage dumps, disk backups, or naive string-scraping of the
+// browser profile; casual inspection shows ciphertext, not a student's
+// unpublished thoughts. It does NOT defend against an attacker who can read
+// all of localStorage.
 
-const KEYS_STORAGE_KEY = "HOney.experiences.keys";
 const NOTES_STORAGE_KEY = "HOney.experiences.notes";
 const NOTES_CRYPTOKEY_KEY = "HOney.experiences.notesKey";
 const STORE_VERSION = 1;
@@ -36,15 +22,6 @@ export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
-}
-
-export interface StoredOwnershipKey {
-  /** The ownership key returned once at submit time. */
-  key: string;
-  experienceId: string;
-  createdAt: number;
-  /** Reserved for future kinds; today every key controls a public submission. */
-  kind: "public";
 }
 
 export interface PrivateNoteTarget {
@@ -74,11 +51,6 @@ export interface PrivateNote {
   updatedAt: number;
 }
 
-interface KeysFile {
-  version: number;
-  keys: StoredOwnershipKey[];
-}
-
 function memoryStorage(): StorageLike {
   const map = new Map<string, string>();
   return {
@@ -105,82 +77,6 @@ function fromBase64(b64: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
-function isStoredKey(value: unknown): value is StoredOwnershipKey {
-  if (typeof value !== "object" || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.key === "string" &&
-    v.key.length > 0 &&
-    typeof v.experienceId === "string" &&
-    typeof v.createdAt === "number" &&
-    v.kind === "public"
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Ownership keys (plain, versioned JSON)
-// ---------------------------------------------------------------------------
-
-export class OwnershipKeyStore {
-  constructor(private readonly storage: StorageLike = defaultStorage()) {}
-
-  list(): StoredOwnershipKey[] {
-    const raw = this.storage.getItem(KEYS_STORAGE_KEY);
-    if (!raw) return [];
-    try {
-      const parsed = JSON.parse(raw) as KeysFile;
-      if (parsed.version !== STORE_VERSION || !Array.isArray(parsed.keys)) return [];
-      return parsed.keys.filter(isStoredKey);
-    } catch {
-      return [];
-    }
-  }
-
-  count(): number {
-    return this.list().length;
-  }
-
-  add(entry: { key: string; experienceId: string }): void {
-    const keys = this.list().filter((k) => k.key !== entry.key);
-    keys.push({ ...entry, createdAt: Date.now(), kind: "public" });
-    this.write(keys);
-  }
-
-  remove(key: string): void {
-    this.write(this.list().filter((k) => k.key !== key));
-  }
-
-  /** Serialized store for download/backup (same shape as the storage file). */
-  exportJson(): string {
-    return JSON.stringify({ version: STORE_VERSION, keys: this.list() }, null, 2);
-  }
-
-  /**
-   * Merge keys from an exported file into this store (dedup by key).
-   * Returns the number of newly added keys; throws on unreadable input.
-   */
-  importJson(json: string): number {
-    const parsed = JSON.parse(json) as Partial<KeysFile>;
-    if (parsed.version !== STORE_VERSION || !Array.isArray(parsed.keys)) {
-      throw new Error("not a HOney ownership-key export");
-    }
-    const incoming = parsed.keys.filter(isStoredKey);
-    const current = this.list();
-    const have = new Set(current.map((k) => k.key));
-    const added = incoming.filter((k) => !have.has(k.key));
-    if (added.length > 0) this.write([...current, ...added]);
-    return added.length;
-  }
-
-  private write(keys: StoredOwnershipKey[]): void {
-    this.storage.setItem(KEYS_STORAGE_KEY, JSON.stringify({ version: STORE_VERSION, keys }));
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Private notes (AES-GCM encrypted at rest; never sent anywhere)
-// ---------------------------------------------------------------------------
-
 interface NotesBlob {
   version: number;
   /** base64 12-byte IV, fresh per write. */
@@ -202,11 +98,7 @@ export class PrivateNoteStore {
       const blob = JSON.parse(raw) as NotesBlob;
       if (blob.version !== STORE_VERSION) return [];
       const key = await this.key();
-      const plain = await this.cryptoObj.subtle.decrypt(
-        { name: "AES-GCM", iv: fromBase64(blob.iv) },
-        key,
-        fromBase64(blob.data),
-      );
+      const plain = await this.cryptoObj.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(blob.iv) }, key, fromBase64(blob.data));
       const notes = JSON.parse(new TextDecoder().decode(plain)) as PrivateNote[];
       return Array.isArray(notes) ? notes : [];
     } catch {
@@ -252,16 +144,8 @@ export class PrivateNoteStore {
   private async write(notes: PrivateNote[]): Promise<void> {
     const key = await this.key();
     const iv = this.cryptoObj.getRandomValues(new Uint8Array(12));
-    const data = await this.cryptoObj.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      key,
-      new TextEncoder().encode(JSON.stringify(notes)),
-    );
-    const blob: NotesBlob = {
-      version: STORE_VERSION,
-      iv: toBase64(iv),
-      data: toBase64(new Uint8Array(data)),
-    };
+    const data = await this.cryptoObj.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(notes)));
+    const blob: NotesBlob = { version: STORE_VERSION, iv: toBase64(iv), data: toBase64(new Uint8Array(data)) };
     this.storage.setItem(NOTES_STORAGE_KEY, JSON.stringify(blob));
   }
 
@@ -269,22 +153,14 @@ export class PrivateNoteStore {
   private async key(): Promise<CryptoKey> {
     let raw = this.storage.getItem(NOTES_CRYPTOKEY_KEY);
     if (!raw) {
-      const generated = await this.cryptoObj.subtle.generateKey(
-        { name: "AES-GCM", length: 256 },
-        true,
-        ["encrypt", "decrypt"],
-      );
+      const generated = await this.cryptoObj.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
       const exported = await this.cryptoObj.subtle.exportKey("raw", generated);
       raw = toBase64(new Uint8Array(exported));
       this.storage.setItem(NOTES_CRYPTOKEY_KEY, raw);
     }
-    return this.cryptoObj.subtle.importKey("raw", fromBase64(raw), { name: "AES-GCM" }, false, [
-      "encrypt",
-      "decrypt",
-    ]);
+    return this.cryptoObj.subtle.importKey("raw", fromBase64(raw), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
   }
 }
 
-/** App-wide singletons (localStorage-backed in the browser). */
-export const ownershipKeys = new OwnershipKeyStore();
+/** App-wide singleton (localStorage-backed in the browser). */
 export const privateNotes = new PrivateNoteStore();
