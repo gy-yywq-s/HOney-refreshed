@@ -11,6 +11,13 @@
 /* Fit mode (permits fold open, not "show all"): the screen is a frame —
    apply card · permits (takes what is left) · dock — and the permits list
    shows exactly the rows that fit on this phone (useRowsThatFit). */
+/* The view is normally content-sized; in fit mode it is exactly the region
+   (the +1px keeps iOS's rubber band for pull-to-refresh) so the permits body
+   can shrink instead of pushing the dock below the fold. */
+.view:has(> .access--fit) {
+  height: calc(100% + 1px);
+  max-height: calc(100% + 1px);
+}
 .view > .access--fit {
   flex: 1 1 auto;
   min-height: 0;
