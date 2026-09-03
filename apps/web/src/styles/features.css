@@ -222,6 +222,17 @@
   flex-direction: column;
   min-height: 0;
 }
+/* Anything that sits between the sticky day bar and the canvas keeps clear
+   of it: the first hour label rides half a line above the grid, so without
+   this gap a banner and "09:00" collide (Gary 2026-09-03: 这个重合了). */
+.timetable-screen > .banner,
+.timetable-screen > .sync-line {
+  margin-bottom: var(--sp-3);
+}
+.timetable-screen > .sync-line {
+  margin-top: 0;
+  color: var(--muted);
+}
 .timetable-screen {
   /* FRAMED_SCROLL: this screen is a flex column filling .view, so the day
      canvas can actually stretch (its flex:1 was inert without this —

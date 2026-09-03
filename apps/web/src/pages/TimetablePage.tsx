@@ -149,6 +149,13 @@ export function TimetablePage() {
     }
   }
 
+  // The "Synced · N lessons" line is a receipt, not a state: it goes by itself.
+  useEffect(() => {
+    if (syncFeedback?.kind !== "result" || syncFeedback.result.status !== "ok") return;
+    const timer = window.setTimeout(() => setSyncFeedback(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [syncFeedback]);
+
   const isToday = date === todayIsoDate();
   // The pull's second stage (phones) is this screen's own sync.
   useSyncHandler(() => {
@@ -266,10 +273,15 @@ export function TimetablePage() {
       {syncFeedback?.kind === "error" && (
         <div role="alert" className="banner banner--danger">{syncFeedback.message}</div>
       )}
-      {syncFeedback?.kind === "result" && syncFeedback.result.status === "ok" && (
-        <div role="status" className="banner banner--success">
-          Synced {syncFeedback.result.lessons} lessons from the school portal.
-        </div>
+      {/* Syncing says so WHILE it runs, in one line — not a banner that
+          arrives seconds later (Gary 2026-09-03). The result line clears
+          itself; only a problem stays as a banner. */}
+      {(syncBusy || (syncFeedback?.kind === "result" && syncFeedback.result.status === "ok")) && (
+        <p className="caption sync-line" role="status">
+          {syncBusy
+            ? t("Syncing with the school…")
+            : `${t("Synced")} · ${syncFeedback?.kind === "result" ? syncFeedback.result.lessons : 0} ${t("lessons")}`}
+        </p>
       )}
       {syncFeedback?.kind === "result" &&
         syncFeedback.result.status === "portal_reconnect_required" && (
