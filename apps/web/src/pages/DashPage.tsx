@@ -117,7 +117,10 @@ export function DashPage() {
       <section className="rowlist" aria-label="System">
         <h2 className="overline">System</h2>
         <SystemRow label="Policy version" value={overview.data ? `v${overview.data.policyVersion}` : "…"} />
-        <SystemRow label="Moderation model" value={overview.data ? (overview.data.llm.configured ? overview.data.llm.model : "Not configured — nothing publishes") : "…"} />
+        <SystemRow
+          label="Moderation model"
+          value={overview.data ? (overview.data.llm.configured ? (CURATED_LLM_MODELS.find((m) => m.id === overview.data!.llm.model)?.label ?? overview.data.llm.model) : "Not configured — nothing publishes") : "…"}
+        />
         <SystemRow label="Blind-eligibility issuer" value={overview.data ? (overview.data.issuerReady ? "Key loaded" : "No key — students cannot share") : "…"} />
         <SystemRow label="Community process" value={overview.data ? (overview.data.communityReachable ? "Reachable" : "Unreachable") : "…"} />
       </section>
