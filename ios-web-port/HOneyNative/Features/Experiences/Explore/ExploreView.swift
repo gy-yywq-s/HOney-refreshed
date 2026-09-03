@@ -275,8 +275,8 @@ struct ExploreView: View {
                 ForEach(search.experiences) { exp in
                     ExperiencePostRow(
                         exp: exp,
-                        reaction: feedModel().reactionState(for: exp),
-                        name: feedModel().name,
+                        reaction: feed?.reactionState(for: exp) ?? ReactionState(exp, myValue: env.prefs.myReaction(exp.id)),
+                        name: feed?.name ?? { _ in nil },
                         onReact: { value in Task { await feedModel().react(exp, value: value) } },
                         onReport: { category in await feedModel().report(exp, category: category) },
                         openEntity: { route in nav.push(route) }
