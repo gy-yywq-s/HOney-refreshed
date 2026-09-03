@@ -377,7 +377,9 @@ export function ExperiencesComposePage() {
       <h1 className="page-title">{target ? t("Share an experience") : t("What is this about?")}</h1>
 
       {target ? (
-        <section className="compose-target" aria-label="What this is about">
+        /* About/Change name and swap the card, so they sit above it, not
+           inside it (Gary 2026-09-03). */
+        <section className="compose-about" aria-label="What this is about">
           <div className="compose-target__row">
             <span className="eyebrow">{t("About")}</span>
             {!noteId && (
@@ -386,8 +388,10 @@ export function ExperiencesComposePage() {
               </Link>
             )}
           </div>
-          <strong className="compose-target__label">{target.label}</strong>
-          {target.detail && <span className="text-3">{target.detail}</span>}
+          <div className="compose-target">
+            <strong className="compose-target__label">{target.label}</strong>
+            {target.detail && <span className="text-3">{target.detail}</span>}
+          </div>
         </section>
       ) : (
         /* The target picker (review v1.1 §7): plain rows, one tap to the

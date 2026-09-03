@@ -736,13 +736,24 @@
   margin: 0;
   padding: 0;
 }
+/* Every past lesson is one tap from the composer (Gary 2026-09-03): the row
+   itself is the link, a chevron at the right says so — no pill button. */
 .history-row {
+  border-top: 1px solid var(--line);
+}
+.history-row__link {
   display: flex;
   align-items: center;
   gap: var(--sp-4);
   min-height: 56px;
   padding: var(--sp-3) 0;
-  border-top: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+.history-row__chev {
+  flex: none;
+  display: inline-flex;
+  color: var(--muted);
 }
 .day-group__list > .history-row:first-child {
   border-top: 0;
@@ -878,19 +889,31 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+  /* Room between the object card and the question about it, and between the
+     question and the sheet you write on (Gary 2026-09-03). */
+  margin-top: var(--sp-5);
 }
 .compose-editor > .field {
   flex: 1 1 auto;
   min-height: 0;
   margin-bottom: 0;
+  gap: var(--sp-3);
 }
 /* The subject of the post is an object — a card that sits on the page
-   (Gary 2026-09-03: 有那种是对象的即视感), the same card as Access's apply. */
-.compose-target {
+   (Gary 2026-09-03: 有那种是对象的即视感), the same card as Access's apply.
+   Its own header (About · Change) names and swaps the card from outside it,
+   sitting close above (Gary 2026-09-03: 怎么会到卡片里面呢). */
+.compose-about {
   display: flex;
   flex-direction: column;
   gap: var(--sp-1);
-  padding: var(--sp-3) var(--sp-4);
+  margin-top: var(--sp-3);
+}
+.compose-target {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-2) var(--sp-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
   background: var(--card);
@@ -898,8 +921,9 @@
 }
 .compose-target__label {
   font-family: var(--display);
-  font-size: calc(clamp(22px, 3vw, 30px) * var(--text-scale));
-  letter-spacing: -0.03em;
+  font-size: calc(clamp(19px, 2.2vw, 23px) * var(--text-scale));
+  line-height: 1.25;
+  letter-spacing: -0.02em;
   color: var(--ink);
 }
 .compose-textarea {
@@ -996,7 +1020,7 @@
   .filters .input[type="search"] {
     grid-column: 1 / -1;
   }
-  .history-row {
+  .history-row__link {
     gap: var(--sp-3);
   }
 
@@ -2059,7 +2083,8 @@ button.row {
   letter-spacing: -0.01em;
 }
 .picker__hint {
-  margin: 0 0 var(--sp-3);
+  /* A breath under the question before the answer starts (Gary 2026-09-03). */
+  margin: var(--sp-3) 0 var(--sp-3);
 }
 .picker .overline {
   margin: var(--sp-3) 0 0;
@@ -2075,11 +2100,12 @@ button.row {
 .compose-target__change {
   font-size: var(--fs-caption);
   font-weight: 600;
+  /* A 44px tap zone that does not add 44px of header (Gary 2026-09-03). */
   min-height: 44px;
   display: inline-flex;
   align-items: center;
   padding: 0 var(--sp-2);
-  margin-right: calc(-1 * var(--sp-2));
+  margin: -13px calc(-1 * var(--sp-2)) -13px 0;
 }
 .compose-draft {
   color: var(--ink-3, var(--ink-2));

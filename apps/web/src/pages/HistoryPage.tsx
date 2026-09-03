@@ -1,6 +1,6 @@
 // Scroll model: FRAMED_SCROLL (§16.14.7) — filters frame; the lesson list scrolls.
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Lesson } from "../api/types";
 import { useApi } from "../lib/useApi";
@@ -8,6 +8,7 @@ import { useRetryFocus } from "../lib/useRetryFocus";
 import { formatDayTitle, formatRelativeDay, formatTime, todayIsoDate, shiftIsoDate } from "../lib/format";
 import { lessonTitle, roomLabel } from "../lib/displayNames";
 import { t, useT } from "../lib/i18n";
+import { ChevronRightIcon } from "../components/icons";
 import { staggerStyle , Skeleton } from "../lib/motion";
 
 interface DayGroup {
@@ -37,8 +38,8 @@ function groupByDay(lessons: Lesson[]): DayGroup[] {
 
 export function HistoryPage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  // ?select=1: rows become pickable (used by the Experiences composer).
+  // Every row leads to the composer — History IS the picker (Gary 2026-09-03);
+  // ?select=1 only says why you are here, when you arrived from the composer.
   const selectMode = searchParams.get("select") === "1";
   useT();
 
@@ -134,21 +135,22 @@ export function HistoryPage() {
             <ul className="day-group__list">
               {group.lessons.map((lesson, rowIndex) => (
                 <li className="history-row stagger" style={staggerStyle(rowIndex)} key={lesson.id}>
-                  <span className="history-row__body">
-                    <span>{lessonTitle(lesson)}</span>
-                    <span className="caption">
-                      {[lesson.teacherName, roomLabel(lesson.roomName)].filter(Boolean).join(" · ")}
+                  <Link
+                    className="history-row__link"
+                    to={`/experiences/compose?lessonId=${lesson.id}`}
+                    aria-label={`${t("Share what this was like")} — ${lessonTitle(lesson)}`}
+                  >
+                    <span className="history-row__body">
+                      <span>{lessonTitle(lesson)}</span>
+                      <span className="caption">
+                        {[lesson.teacherName, roomLabel(lesson.roomName)].filter(Boolean).join(" · ")}
+                      </span>
                     </span>
-                  </span>
-                  <span className="history-row__time">{formatTime(lesson.startsAt)}</span>
-                  {selectMode && (
-                    <button
-                      className="btn btn--ghost btn--small"
-                      onClick={() => navigate(`/experiences/compose?lessonId=${lesson.id}`)}
-                    >
-                      {t("Select")}
-                    </button>
-                  )}
+                    <span className="history-row__time">{formatTime(lesson.startsAt)}</span>
+                    <span className="history-row__chev">
+                      <ChevronRightIcon size={18} />
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
