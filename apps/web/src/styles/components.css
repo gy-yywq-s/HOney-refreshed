@@ -782,9 +782,6 @@
   .main:has(> .view > .pagebar) {
     padding-top: 0;
   }
-  .main:has(> .view > .home > .home-brand) {
-    padding-top: 0; /* the brand bar sits under the status bar itself */
-  }
   .pagebar {
     position: sticky;
     top: 0;

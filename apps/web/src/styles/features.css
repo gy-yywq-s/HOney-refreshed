@@ -1363,9 +1363,6 @@
 
 /* Home (product-v2 §6.3): a quiet doorway — greeting, focal lesson, two
    voices, one share action, one portal row. */
-.home-head {
-  padding-top: calc(var(--inset-top) + var(--sp-2));
-}
 .home-head__row {
   display: flex;
   align-items: flex-start;
@@ -1377,9 +1374,6 @@
   padding-top: 4px;
 }
 @media (min-width: 961px) {
-  .home-head {
-    padding-top: 0;
-  }
   .home-head__mark {
     display: none; /* the rail already carries the wordmark */
   }
