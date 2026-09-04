@@ -101,7 +101,7 @@ struct ExploreView: View {
                     }
                 }
                 .accessibilityElement(children: .contain)
-                .accessibilityLabel("Category")
+                .accessibilityLabel(L10n.t("Category"))
             }
         }
         .pageInset()

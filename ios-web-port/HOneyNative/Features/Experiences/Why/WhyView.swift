@@ -40,14 +40,14 @@ struct WhyView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: HSpace.x2) {
-                PageTitle(text: "Why this space exists")
+                PageTitle(text: L10n.t("Why this space exists"))
                     .padding(.bottom, HSpace.x2)
                 ForEach(sections, id: \.0) { title, body in
                     DocSection(title: title) {
                         Text(body).hfont(.docBody).foregroundStyle(theme.ink)
                     }
                 }
-                DocSection(title: "How to read Experiences.") {
+                DocSection(title: L10n.t("How to read Experiences.")) {
                     VStack(alignment: .leading, spacing: HSpace.x1) {
                         ForEach(howToRead, id: \.self) { line in
                             HStack(alignment: .firstTextBaseline, spacing: HSpace.x2) {

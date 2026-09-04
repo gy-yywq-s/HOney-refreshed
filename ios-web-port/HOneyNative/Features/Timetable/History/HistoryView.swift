@@ -32,7 +32,7 @@ struct HistoryView: View {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                 PageTitle(text: "History").padding(.bottom, HSpace.x4)
                 if selectMode {
-                    InlineStatusBanner(text: "Pick the lesson your experience is about.", tone: .success)
+                    InlineStatusBanner(text: L10n.t("Pick the lesson your experience is about."), tone: .success)
                         .padding(.bottom, HSpace.x4)
                 }
                 Section {
@@ -41,7 +41,7 @@ struct HistoryView: View {
                     } else if let error {
                         InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { reload() }))
                     } else if groups.isEmpty {
-                        Text("No lessons match.")
+                        Text(L10n.t("No lessons match."))
                             .hfont(.body)
                             .foregroundStyle(theme.muted)
                             .frame(maxWidth: .infinity)
@@ -140,8 +140,8 @@ struct HistoryView: View {
                 .autocorrectionDisabled()
                 .accessibilityLabel(L10n.t("Search lessons…"))
             HStack(spacing: HSpace.x2) {
-                SelectField(label: "Filter by teacher", allLabel: "All teachers", selection: $teacherId, options: (directory?.teachers ?? []).map { ($0.id, $0.name) })
-                SelectField(label: "Filter by course", allLabel: "All courses", selection: $courseId, options: (directory?.courses ?? []).map { ($0.id, $0.name) })
+                SelectField(label: L10n.t("Filter by teacher"), allLabel: "All teachers", selection: $teacherId, options: (directory?.teachers ?? []).map { ($0.id, $0.name) })
+                SelectField(label: L10n.t("Filter by course"), allLabel: "All courses", selection: $courseId, options: (directory?.courses ?? []).map { ($0.id, $0.name) })
             }
         }
         .padding(.bottom, HSpace.x5)

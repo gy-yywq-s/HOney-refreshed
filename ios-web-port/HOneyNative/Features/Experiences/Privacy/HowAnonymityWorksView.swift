@@ -38,7 +38,7 @@ struct HowAnonymityWorksView: View {
                 if let feedback {
                     InlineStatusBanner(text: feedback.text, tone: feedback.tone)
                 }
-                Text("The plain version: HOney checks you actually have the relevant experience, published posts are not attached to your school account, and this iPhone holds the control needed to remove your own post. The detail, honestly:")
+                Text(L10n.t("The plain version: HOney checks you actually have the relevant experience, published posts are not attached to your school account, and this iPhone holds the control needed to remove your own post. The detail, honestly:"))
                     .hfont(.body)
                     .foregroundStyle(theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -65,10 +65,10 @@ struct HowAnonymityWorksView: View {
 
                 RowList(label: L10n.t("Private notes")) {
                     VStack(alignment: .leading, spacing: HSpace.x3) {
-                        Text("Import a HOney notes bundle exported from another device. Post controls never travel as a file — restore them above.")
+                        Text(L10n.t("Import a HOney notes bundle exported from another device. Post controls never travel as a file — restore them above."))
                             .font(ramp.font(.caption))
                             .foregroundStyle(theme.muted)
-                        Button("Import notes…") { importing = true }.buttonStyle(.webSmallGhost)
+                        Button(L10n.t("Import notes…")) { importing = true }.buttonStyle(.webSmallGhost)
                     }
                     .padding(.vertical, HSpace.x3)
                 }

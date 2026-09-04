@@ -190,7 +190,7 @@ struct ExperiencesFeedView: View {
                     }
                 )
             )
-            .accessibilityLabel("Feed scope")
+            .accessibilityLabel(L10n.t("Feed scope"))
         }
         .pageInset()
         .id("feed-top")
@@ -206,7 +206,7 @@ struct ExperiencesFeedView: View {
 
     @ViewBuilder
     private var cultureParts: some View {
-        Text("Written by students, for students.")
+        Text(L10n.t("Written by students, for students."))
             .font(ramp.font(.secondarySemibold))
             .foregroundStyle(theme.ink)
         Button(L10n.t("Why this space exists")) { nav.push(.why) }

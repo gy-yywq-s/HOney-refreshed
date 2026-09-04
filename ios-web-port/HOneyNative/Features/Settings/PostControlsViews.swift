@@ -175,7 +175,7 @@ struct PostControlsView: View {
                 case nil:
                     LoadingPlaceholder(lines: 3)
                 case .some(.none):
-                    Text("One control root on this iPhone signs every experience you share and lets you remove it later. It is created the first time you share; you can also set it up now.")
+                    Text(L10n.t("One control root on this iPhone signs every experience you share and lets you remove it later. It is created the first time you share; you can also set it up now."))
                         .hfont(.body).foregroundStyle(theme.muted).fixedSize(horizontal: false, vertical: true)
                     Button(L10n.t("Set up post controls")) { Task { await model.create() } }.buttonStyle(.webBlockPrimary).disabled(model.busy != nil)
                     RowList(label: L10n.t("Already have post controls?")) {
@@ -191,7 +191,7 @@ struct PostControlsView: View {
                     }
                 case .localOnly:
                     Text(PostControlsCopy.createdLocal).hfont(.bodySemibold).foregroundStyle(theme.ink)
-                    Text("Not backed up yet. Set up your 12 recovery words so a new phone — or this one after a reinstall — can restore them.")
+                    Text(L10n.t("Not backed up yet. Set up your 12 recovery words so a new phone — or this one after a reinstall — can restore them."))
                         .hfont(.body).foregroundStyle(theme.muted).fixedSize(horizontal: false, vertical: true)
                     Button(L10n.t("Set up recovery words")) { nav.push(.settingsRecoveryWords) }.buttonStyle(.webBlockPrimary)
                     advanced(model)
@@ -220,7 +220,7 @@ struct PostControlsView: View {
         .honeyRefreshable { await model.load() }
         .sheet(isPresented: $confirmErase) {
             ConfirmSheet(
-                title: "Remove post controls from this iPhone?",
+                title: L10n.t("Remove post controls from this iPhone?"),
                 message: PostControlsCopy.eraseExplain,
                 confirmLabel: "Remove from this iPhone",
                 danger: true,
@@ -284,7 +284,7 @@ struct RecoveryWordsView: View {
                     restoreForm(model)
                 } else if done {
                     Text(L10n.t("Recovery words ready")).hfont(.bodySemibold).foregroundStyle(theme.ok)
-                    Text("The encrypted backup was saved and read back. Keep the words somewhere safe.").hfont(.body).foregroundStyle(theme.muted)
+                    Text(L10n.t("The encrypted backup was saved and read back. Keep the words somewhere safe.")).hfont(.body).foregroundStyle(theme.muted)
                     Button(L10n.t("Done")) { nav.pop() }.buttonStyle(.webBlockPrimary)
                 } else if let words, let quiz {
                     quizForm(words: words, quiz: quiz)
@@ -294,7 +294,7 @@ struct RecoveryWordsView: View {
                 } else {
                     Text(PostControlsCopy.wordsExplain).hfont(.body).foregroundStyle(theme.muted).fixedSize(horizontal: false, vertical: true)
                     if model.hasWords {
-                        Text("Words are already set up. Generating new ones replaces the old ones.").hfont(.caption).foregroundStyle(theme.muted)
+                        Text(L10n.t("Words are already set up. Generating new ones replaces the old ones.")).hfont(.caption).foregroundStyle(theme.muted)
                     }
                     Button(model.hasWords ? L10n.t("Generate new words") : L10n.t("Show my 12 words")) {
                         Task { words = await model.setupWords() }
@@ -333,7 +333,7 @@ struct RecoveryWordsView: View {
 
     private func quizForm(words: [String], quiz: (Int, Int)) -> some View {
         VStack(alignment: .leading, spacing: HSpace.x3) {
-            Text("Check two of them:").hfont(.body).foregroundStyle(theme.muted)
+            Text(L10n.t("Check two of them:")).hfont(.body).foregroundStyle(theme.muted)
             ForEach(0..<2, id: \.self) { i in
                 let position = i == 0 ? quiz.0 : quiz.1
                 VStack(alignment: .leading, spacing: HSpace.x1) {
@@ -357,10 +357,10 @@ struct RecoveryWordsView: View {
     private func restoreForm(_ model: PostControlsViewModel) -> some View {
         VStack(alignment: .leading, spacing: HSpace.x3) {
             if restored {
-                Text("Restored. Your post controls are on this iPhone.").hfont(.bodySemibold).foregroundStyle(theme.ok)
+                Text(L10n.t("Restored. Your post controls are on this iPhone.")).hfont(.bodySemibold).foregroundStyle(theme.ok)
                 Button(L10n.t("Done")) { nav.pop() }.buttonStyle(.webBlockPrimary)
             } else {
-                Text("Enter your 12 recovery words, in order, separated by spaces.").hfont(.body).foregroundStyle(theme.muted)
+                Text(L10n.t("Enter your 12 recovery words, in order, separated by spaces.")).hfont(.body).foregroundStyle(theme.muted)
                 TextField("", text: $input, axis: .vertical)
                     .lineLimit(3...6)
                     .textFieldStyle(WebFieldStyle())
@@ -420,7 +420,7 @@ struct PairDeviceView: View {
                 if let feedback = model.feedback { InlineStatusBanner(text: feedback.text, tone: feedback.tone) }
                 if receiving {
                     if restored {
-                        Text("Restored. Your post controls are on this iPhone.").hfont(.bodySemibold).foregroundStyle(theme.ok)
+                        Text(L10n.t("Restored. Your post controls are on this iPhone.")).hfont(.bodySemibold).foregroundStyle(theme.ok)
                         Button(L10n.t("Done")) { nav.pop() }.buttonStyle(.webBlockPrimary)
                     } else if let offer {
                         Text(PostControlsCopy.pairExplain).hfont(.body).foregroundStyle(theme.muted).fixedSize(horizontal: false, vertical: true)
@@ -431,15 +431,15 @@ struct PairDeviceView: View {
                             .padding(HSpace.x4)
                             .background(theme.soft, in: RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
                             .accessibilityLabel("Code \(offer.0.pairingId)")
-                        Text("Waiting for the other device… the code works for a few minutes.").hfont(.caption).foregroundStyle(theme.muted)
+                        Text(L10n.t("Waiting for the other device… the code works for a few minutes.")).hfont(.caption).foregroundStyle(theme.muted)
                     } else {
-                        Text("Get a code to show on the device that already has your post controls.").hfont(.body).foregroundStyle(theme.muted)
+                        Text(L10n.t("Get a code to show on the device that already has your post controls.")).hfont(.body).foregroundStyle(theme.muted)
                         Button(L10n.t("Get a code")) { Task { await begin(model) } }.buttonStyle(.webBlockPrimary).disabled(model.busy != nil)
                     }
                 } else {
-                    Text("On the new device, open Settings › Post controls › Another device and get a code. Enter it here to send your post controls to it, sealed so only that device can open them.")
+                    Text(L10n.t("On the new device, open Settings › Post controls › Another device and get a code. Enter it here to send your post controls to it, sealed so only that device can open them."))
                         .hfont(.body).foregroundStyle(theme.muted).fixedSize(horizontal: false, vertical: true)
-                    TextField("Code", text: $code).textFieldStyle(WebFieldStyle()).textInputAutocapitalization(.characters).autocorrectionDisabled()
+                    TextField(L10n.t("Code"), text: $code).textFieldStyle(WebFieldStyle()).textInputAutocapitalization(.characters).autocorrectionDisabled()
                     Button(L10n.t("Send post controls")) { Task { await model.deliver(code: code) } }
                         .buttonStyle(.webBlockPrimary)
                         .disabled(code.trimmingCharacters(in: .whitespaces).count < 6 || model.busy != nil)
@@ -489,7 +489,7 @@ struct ReplaceRootView: View {
                         PageTitle(text: L10n.t("Replace control root"))
                         if let feedback = model.feedback { InlineStatusBanner(text: feedback.text, tone: feedback.tone) }
                         Text(PostControlsCopy.replaceExplain).hfont(.body).foregroundStyle(theme.muted).fixedSize(horizontal: false, vertical: true)
-                        Text("Do this if you think the root on a device may have leaked. Posts already shared stay under your control through the retired root.")
+                        Text(L10n.t("Do this if you think the root on a device may have leaked. Posts already shared stay under your control through the retired root."))
                             .hfont(.caption).foregroundStyle(theme.muted).fixedSize(horizontal: false, vertical: true)
                         Button(L10n.t("Replace…")) { confirm = true }.buttonStyle(.webBlockDanger).disabled(model.busy != nil)
                     }
@@ -499,7 +499,7 @@ struct ReplaceRootView: View {
                 }
                 .sheet(isPresented: $confirm) {
                     ConfirmSheet(
-                        title: "Replace the control root?",
+                        title: L10n.t("Replace the control root?"),
                         message: PostControlsCopy.replaceExplain,
                         confirmLabel: "Replace",
                         danger: true,

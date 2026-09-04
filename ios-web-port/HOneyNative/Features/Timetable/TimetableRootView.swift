@@ -119,7 +119,7 @@ struct TimetableRootView: View {
                     options: [(TimetableViewMode.day, L10n.t("Day")), (TimetableViewMode.week, L10n.t("Week"))],
                     selection: Binding(get: { model.view }, set: { model.setView($0) })
                 )
-                .accessibilityLabel("Timetable view")
+                .accessibilityLabel(L10n.t("Timetable view"))
                 HStack(spacing: HSpace.x2) {
                     Spacer()
                     Menu {
@@ -138,7 +138,7 @@ struct TimetableRootView: View {
                             .fieldShadow(theme)
                             .contentShape(Rectangle())
                     }
-                    .accessibilityLabel("More")
+                    .accessibilityLabel(L10n.t("More"))
                 }
             }
             .padding(.bottom, HSpace.x1)
@@ -174,7 +174,7 @@ struct TimetableRootView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Pick a date")
+                .accessibilityLabel(L10n.t("Pick a date"))
                 .accessibilityAddTraits(.isHeader)
                 Button { model.step(1) } label: {
                     Text("›").font(ramp.font(.sectionTitle)).foregroundStyle(theme.ink2)
@@ -289,7 +289,7 @@ struct DatePickerSheet: View {
     }
 
     var body: some View {
-        WebSheet(title: "Pick a date", onClose: { dismiss() }) {
+        WebSheet(title: L10n.t("Pick a date"), onClose: { dismiss() }) {
             DatePicker("Date", selection: $date, displayedComponents: .date)
                 .datePickerStyle(.graphical)
                 .environment(\.calendar, Calendar.schoolLocal)

@@ -80,7 +80,7 @@ struct AccessView: View {
                         }
                         .buttonStyle(.webIcon)
                         .disabled(model.loading)
-                        .accessibilityLabel("Refresh Access")
+                        .accessibilityLabel(L10n.t("Refresh Access"))
                     }
                     if let banner = model.banner {
                         InlineStatusBanner(text: banner.text, tone: banner.tone, action: ("OK", { model.banner = nil }))
@@ -117,7 +117,7 @@ struct AccessView: View {
         .sheet(item: $confirm) { request in
             ConfirmSheet(
                 title: "Open \(request.door.displayName)?",
-                message: "This opens a physical gate. Only do this when you are there.",
+                message: L10n.t("This opens a physical gate. Only do this when you are there."),
                 confirmLabel: "Open \(request.door.displayName)",
                 onCancel: { confirm = nil },
                 onConfirm: {
@@ -127,8 +127,8 @@ struct AccessView: View {
             )
         }
         .sheet(isPresented: $choosePermit) {
-            WebSheet(title: "Choose permit", onClose: { choosePermit = false }) {
-                Text("Select the permit to use for this gate opening.")
+            WebSheet(title: L10n.t("Choose permit"), onClose: { choosePermit = false }) {
+                Text(L10n.t("Select the permit to use for this gate opening."))
                     .hfont(.body)
                     .foregroundStyle(theme.muted)
                     .padding(.bottom, HSpace.x2)
@@ -149,8 +149,8 @@ struct AccessView: View {
         }
         .sheet(isPresented: $quickApplyPrompt) {
             ConfirmSheet(
-                title: "No active permit",
-                message: "No approved, unused exit permit covers right now. Submit the start, end and reason shown in the draft first?",
+                title: L10n.t("No active permit"),
+                message: L10n.t("No approved, unused exit permit covers right now. Submit the start, end and reason shown in the draft first?"),
                 confirmLabel: "Apply with this draft",
                 onCancel: { quickApplyPrompt = false },
                 onConfirm: { quickApplyPrompt = false; Task { await model.applyPermit() } }
@@ -158,9 +158,9 @@ struct AccessView: View {
         }
         .sheet(item: $withdrawing) { permit in
             ConfirmSheet(
-                title: "Withdraw this permit request?",
-                message: "The request is deleted on the school portal. You can apply again any time.",
-                confirmLabel: "Withdraw request",
+                title: L10n.t("Withdraw this permit request?"),
+                message: L10n.t("The request is deleted on the school portal. You can apply again any time."),
+                confirmLabel: L10n.t("Withdraw request"),
                 danger: true,
                 onCancel: { withdrawing = nil },
                 onConfirm: { withdrawing = nil; Task { await model.deletePermit(permit) } }
@@ -173,13 +173,13 @@ struct AccessView: View {
     private func applyCard(_ model: AccessViewModel) -> some View {
         VStack(alignment: .leading, spacing: HSpace.x3) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Apply for a permit").font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
+                Text(L10n.t("Apply for a permit")).font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
                 Spacer()
                 Text(Formatters.shortDate(model.draft.start)).font(ramp.font(.caption)).foregroundStyle(theme.muted)
             }
             HStack(spacing: HSpace.x2) {
-                PermitFieldButton(title: "Start", value: Formatters.time(model.draft.start.epochMillis)) { editing = .start }
-                PermitFieldButton(title: "End", value: Formatters.time(model.draft.end.epochMillis), badge: model.draft.crossesMidnight ? "+1" : nil) { editing = .end }
+                PermitFieldButton(title: L10n.t("Start"), value: Formatters.time(model.draft.start.epochMillis)) { editing = .start }
+                PermitFieldButton(title: L10n.t("End"), value: Formatters.time(model.draft.end.epochMillis), badge: model.draft.crossesMidnight ? "+1" : nil) { editing = .end }
             }
             PermitFieldButton(title: "Reason", value: model.draft.cleanedReason) { editing = .reason }
             Button(model.working ? "Applying…" : "Apply for permit") { Task { await model.applyPermit() } }
@@ -200,10 +200,10 @@ struct AccessView: View {
                     togglePermitExpansion()
                 } label: {
                     HStack(spacing: HSpace.x2) {
-                        Text("Permits").sectionLabel()
+                        Text(L10n.t("Permits")).sectionLabel()
                         Spacer()
                         HStack(spacing: HSpace.x1) {
-                            Text("Show fewer")
+                            Text(L10n.t("Show fewer"))
                             Image(systemName: "chevron.up")
                         }
                         .font(ramp.font(.captionSemibold))
@@ -213,10 +213,10 @@ struct AccessView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Permits, show fewer")
+                .accessibilityLabel(L10n.t("Permits, show fewer"))
                 .accessibilityValue("Expanded")
             } else {
-                Text("Permits").sectionLabel()
+                Text(L10n.t("Permits")).sectionLabel()
             }
             if model.loading, permits.isEmpty {
                 LoadingPlaceholder(lines: 2)
@@ -273,7 +273,7 @@ struct AccessView: View {
 
     private func accessDock(_ model: AccessViewModel) -> some View {
         VStack(alignment: .leading, spacing: HSpace.x2) {
-            Text("School access").sectionLabel()
+            Text(L10n.t("School access")).sectionLabel()
             HStack(spacing: HSpace.x3) {
                 AccessActionCard(title: "Day student", symbol: "figure.walk.departure") {
                     beginGateFlow(model, route: .commuter)
@@ -379,20 +379,20 @@ struct PermitDraftEditor: View {
         WebSheet(title: field.title, onClose: { dismiss() }) {
             switch field {
             case .start:
-                DatePicker("Start", selection: $start, displayedComponents: .hourAndMinute)
+                DatePicker(L10n.t("Start"), selection: $start, displayedComponents: .hourAndMinute)
                     .datePickerStyle(.wheel).labelsHidden().frame(maxWidth: .infinity)
-                Text("The date stays on today; the end moves if it would fall before the start.").hfont(.caption).foregroundStyle(theme.muted)
+                Text(L10n.t("The date stays on today; the end moves if it would fall before the start.")).hfont(.caption).foregroundStyle(theme.muted)
             case .end:
-                DatePicker("End", selection: $end, displayedComponents: .hourAndMinute)
+                DatePicker(L10n.t("End"), selection: $end, displayedComponents: .hourAndMinute)
                     .datePickerStyle(.wheel).labelsHidden().frame(maxWidth: .infinity)
-                Text("An end earlier than the start counts as the next day (+1).").hfont(.caption).foregroundStyle(theme.muted)
+                Text(L10n.t("An end earlier than the start counts as the next day (+1).")).hfont(.caption).foregroundStyle(theme.muted)
             case .reason:
                 FieldLabel(text: "Reason")
                 TextField("", text: $reason)
                     .textFieldStyle(.web)
                     .submitLabel(.done)
                     .onSubmit { save() }
-                Text("Left empty, the reason is out.").hfont(.caption).foregroundStyle(theme.muted).padding(.top, HSpace.x2)
+                Text(L10n.t("Left empty, the reason is out.")).hfont(.caption).foregroundStyle(theme.muted).padding(.top, HSpace.x2)
             }
             SheetActions {
                 Button(L10n.t("Done")) { save() }.buttonStyle(.webBlockPrimary)
@@ -432,7 +432,7 @@ struct PermitRow: View {
                 VStack(alignment: .trailing, spacing: HSpace.x1) {
                     StatusChip(text: permit.displayStatus, ink: color, ground: color.opacity(0.1))
                     if openable {
-                        Button("Choose gate", action: chooseGate)
+                        Button(L10n.t("Choose gate"), action: chooseGate)
                             .buttonStyle(.webSmallPrimary)
                             .accessibilityHint("Choose a gate to open with this permit")
                     }
@@ -442,7 +442,7 @@ struct PermitRow: View {
             .frame(minHeight: HSize.row)
             .contextMenu {
                 if permit.status == .pending {
-                    Button("Withdraw request", systemImage: "xmark.circle", role: .destructive, action: withdraw)
+                    Button(L10n.t("Withdraw request"), systemImage: "xmark.circle", role: .destructive, action: withdraw)
                 }
             }
             .accessibilityElement(children: .combine)
@@ -502,7 +502,7 @@ struct GatePickerSheet: View {
     let choose: (PortalDoor) -> Void
 
     var body: some View {
-        WebSheet(title: "Choose gate", onClose: { dismiss() }) {
+        WebSheet(title: L10n.t("Choose gate"), onClose: { dismiss() }) {
             Text(route == .commuter ? "Day student access" : "Exit permit access").sectionLabel().padding(.bottom, HSpace.x1)
             VStack(spacing: 0) {
                 ForEach(Array(doors.enumerated()), id: \.element.id) { index, door in
@@ -513,7 +513,7 @@ struct GatePickerSheet: View {
                     .buttonStyle(.plain)
                 }
             }
-            Text("You will confirm before the gate opens.").hfont(.caption).foregroundStyle(theme.muted).padding(.top, HSpace.x3)
+            Text(L10n.t("You will confirm before the gate opens.")).hfont(.caption).foregroundStyle(theme.muted).padding(.top, HSpace.x3)
         }
         .presentationDetents([.medium, .large])
     }

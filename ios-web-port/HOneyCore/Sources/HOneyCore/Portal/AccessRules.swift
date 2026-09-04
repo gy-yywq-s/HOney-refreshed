@@ -68,19 +68,19 @@ public struct ExitPermit: Sendable, Equatable, Hashable, Identifiable {
     }
 
     /// "Exit" when the note is empty (the portal's default reason is 出门).
-    public var displayReason: String { note.isEmpty ? "Exit" : note }
+    public var displayReason: String { note.isEmpty ? L10n.t("Exit") : note }
 
     /// The chip text: the portal's own status name when it has one, with the
     /// consumed state winning over a stale "approved".
     public var displayStatus: String {
-        if isConsumed { return status == .opened && !statusName.isEmpty ? statusName : "Used" }
+        if isConsumed { return status == .opened && !statusName.isEmpty ? statusName : L10n.t("Used") }
         if !statusName.isEmpty { return statusName }
         switch status {
-        case .pending: return "Pending"
-        case .approved: return "Approved"
-        case .rejected: return "Rejected"
-        case .opened: return "Opened"
-        case .unknown: return "Unknown"
+        case .pending: return L10n.t("Pending")
+        case .approved: return L10n.t("Approved")
+        case .rejected: return L10n.t("Rejected")
+        case .opened: return L10n.t("Opened")
+        case .unknown: return L10n.t("Unknown")
         }
     }
 
@@ -131,8 +131,8 @@ public enum AccessRoute: Sendable, Equatable, Hashable, Identifiable {
 
     public var title: String {
         switch self {
-        case .commuter: return "Day student"
-        case .permit: return "Exit permit"
+        case .commuter: return L10n.t("Day student")
+        case .permit: return L10n.t("Exit permit")
         }
     }
 }
@@ -208,24 +208,24 @@ public struct PermitDraft: Sendable, Equatable {
 
 /// Copy for Access outcomes, one place.
 public enum AccessCopy {
-    public static func describe(_ error: Error, fallback: String = "Access is temporarily unavailable.") -> String {
+    public static func describe(_ error: Error, fallback: String = L10n.t("Access is temporarily unavailable.")) -> String {
         guard let portalError = error as? PortalError else { return fallback }
         switch portalError {
-        case .networkUnavailable: return "You appear to be offline."
+        case .networkUnavailable: return L10n.t("You appear to be offline.")
         case .timeout(let unknown):
             return unknown
-                ? "The request timed out. Check the gate physically before trying again."
-                : "The school portal did not answer in time."
-        case .serverUnavailable: return "The school portal is temporarily unavailable."
-        case .sessionExpired: return "Your school session expired. Try again."
-        case .credentialsRejected: return "Your school password may have changed. Update the school login in Settings."
-        case .userActionRequired: return "The school portal needs a manual sign-in. Open the School Portal, then try again."
-        case .noCredentials: return "Access needs your school login kept on this iPhone. Turn on Stay connected in Settings."
-        case .identityMismatch: return "That school login belongs to a different student than this HOney account. Sign in to HOney with the matching school account."
-        case .schemaIncompatible: return "The school portal changed and Access needs an update."
+                ? L10n.t("The request timed out. Check the gate physically before trying again.")
+                : L10n.t("The school portal did not answer in time.")
+        case .serverUnavailable: return L10n.t("The school portal is temporarily unavailable.")
+        case .sessionExpired: return L10n.t("Your school session expired. Try again.")
+        case .credentialsRejected: return L10n.t("Your school password may have changed. Update the school login in Settings.")
+        case .userActionRequired: return L10n.t("The school portal needs a manual sign-in. Open the School Portal, then try again.")
+        case .noCredentials: return L10n.t("Access needs your school login kept on this iPhone. Turn on Stay connected in Settings.")
+        case .identityMismatch: return L10n.t("That school login belongs to a different student than this HOney account. Sign in to HOney with the matching school account.")
+        case .schemaIncompatible: return L10n.t("The school portal changed and Access needs an update.")
         case .operationRejected(_, _, let message):
             if let message, !message.isEmpty { return message }
-            return "The school portal refused this action."
+            return L10n.t("The school portal refused this action.")
         }
     }
 }

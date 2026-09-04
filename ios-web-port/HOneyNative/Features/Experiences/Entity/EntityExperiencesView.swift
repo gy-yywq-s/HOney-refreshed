@@ -65,7 +65,7 @@ struct EntityExperiencesView: View {
         Group {
             if neverListed {
                 VStack(alignment: .leading, spacing: HSpace.x4) {
-                    PageTitle(text: "Nothing is listed at this address.")
+                    PageTitle(text: L10n.t("Nothing is listed at this address."))
                     Button(L10n.t("Find someone or something")) { nav.push(.explore) }.buttonStyle(.webPrimary)
                 }
                 .pageInset()
@@ -124,12 +124,12 @@ struct EntityExperiencesView: View {
                 PageTitle(text: name)
             }
             if listed {
-                Button("Share your experience") { nav.push(.compose(.entity(key: entityKey))) }
+                Button(L10n.t("Share your experience")) { nav.push(.compose(.entity(key: entityKey))) }
                     .buttonStyle(.webBlockPrimary)
             }
             if names.loaded, !listed {
                 VStack(alignment: .leading, spacing: HSpace.x1) {
-                    Text("This entry is no longer listed.").hfont(.body).foregroundStyle(theme.muted)
+                    Text(L10n.t("This entry is no longer listed.")).hfont(.body).foregroundStyle(theme.muted)
                     if let survivor {
                         Button("Open the current entry for \(survivor.name)") {
                             if let route = ExperienceDisplay.route(for: survivor) { nav.push(route) }

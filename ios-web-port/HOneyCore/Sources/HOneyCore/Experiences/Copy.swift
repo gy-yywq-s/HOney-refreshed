@@ -10,51 +10,51 @@ public enum APIErrorCopy {
         if let api = error as? APIError {
             switch api.code {
             case "school_credentials_rejected":
-                return "The school portal rejected that username or password."
+                return L10n.t("The school portal rejected that username or password.")
             case "portal_interactive_challenge":
-                return "The school portal is asking for an interactive verification. Sign in once on the portal website, then try again here."
+                return L10n.t("The school portal is asking for an interactive verification. Sign in once on the portal website, then try again here.")
             case "portal_unavailable":
-                return "The school portal is unreachable right now. Please try again in a few minutes."
+                return L10n.t("The school portal is unreachable right now. Please try again in a few minutes.")
             case "network_error":
-                return "Could not reach the HOney server. Check your connection and try again."
+                return L10n.t("Could not reach the HOney server. Check your connection and try again.")
             case "timeout":
-                return "The HOney server took too long to answer. Please try again."
+                return L10n.t("The HOney server took too long to answer. Please try again.")
             case "session_expired", "not_authenticated":
-                return "Your session has expired. Please sign in again."
+                return L10n.t("Your session has expired. Please sign in again.")
             default:
                 break
             }
             if api.status == 502 || api.status == 503 {
-                return "The school portal is unreachable right now. Please try again in a few minutes."
+                return L10n.t("The school portal is unreachable right now. Please try again in a few minutes.")
             }
-            return "Something went wrong (\(api.code))."
+            return L10n.t("Something went wrong ({}).", api.code)
         }
         if error is CancellationError { return "" }
-        return "Something went wrong. Please try again."
+        return L10n.t("Something went wrong. Please try again.")
     }
 }
 
 public enum ModerationCopy {
-    public static let editRequired = "This wording can’t be shared here yet. Remove the insult or private detail, then say what happened or how it felt. Nothing was kept — your draft is still here."
-    public static let outOfScope = "This sounds like something that needs real support or action, not a public post. HOney won’t publish it or send it to the school. You can keep it for yourself instead."
-    public static let blocked = "This can't be published under the community rules. Nothing was stored — your draft is still here if you want to reshape it."
-    public static let failedClosed = "HOney could not check this reliably. Nothing was published, and your words remain on this iPhone."
-    public static let failedClosedUnsaved = "HOney could not check this reliably. Nothing was published — and this iPhone could not save the draft either, so copy your words before leaving."
-    public static let draftNotSaved = "This iPhone could not save the draft. Your words are only in this editor until it can."
-    public static let restoreNeeded = "Your post controls exist, but not on this iPhone yet. Restore them in Settings › Post controls, then share. Your draft stays here."
-    public static let keptPrivateNeverSent = "This note stayed on this iPhone — it was never sent anywhere. You can edit, delete or share it later from Your notes & posts."
-    public static let keptPrivateAfterCheck = "It was not published. The text was processed once for the pre-publication check, then kept as a private note on this iPhone. You can edit, delete or share it later from Your notes & posts."
-    public static let cooldownSaveFailed = "Publishing can wait, but this iPhone could not save the note. Copy your words, or fix the storage problem and try Keep private again."
+    public static var editRequired: String { L10n.t("This wording can’t be shared here yet. Remove the insult or private detail, then say what happened or how it felt. Nothing was kept — your draft is still here.") }
+    public static var outOfScope: String { L10n.t("This sounds like something that needs real support or action, not a public post. HOney won’t publish it or send it to the school. You can keep it for yourself instead.") }
+    public static var blocked: String { L10n.t("This can't be published under the community rules. Nothing was stored — your draft is still here if you want to reshape it.") }
+    public static var failedClosed: String { L10n.t("HOney could not check this reliably. Nothing was published, and your words remain on this iPhone.") }
+    public static var failedClosedUnsaved: String { L10n.t("HOney could not check this reliably. Nothing was published — and this iPhone could not save the draft either, so copy your words before leaving.") }
+    public static var draftNotSaved: String { L10n.t("This iPhone could not save the draft. Your words are only in this editor until it can.") }
+    public static var restoreNeeded: String { L10n.t("Your post controls exist, but not on this iPhone yet. Restore them in Settings › Post controls, then share. Your draft stays here.") }
+    public static var keptPrivateNeverSent: String { L10n.t("This note stayed on this iPhone — it was never sent anywhere. You can edit, delete or share it later from Your notes & posts.") }
+    public static var keptPrivateAfterCheck: String { L10n.t("It was not published. The text was processed once for the pre-publication check, then kept as a private note on this iPhone. You can edit, delete or share it later from Your notes & posts.") }
+    public static var cooldownSaveFailed: String { L10n.t("Publishing can wait, but this iPhone could not save the note. Copy your words, or fix the storage problem and try Keep private again.") }
 
-    public static let nudgeQuestion = "This can be shared as it is. Is there anything that would help someone understand what you mean?"
-    public static let cooldownTitle = "Publishing can wait"
-    public static let cooldownNote = "This is a pause, not a judgment about your experience."
-    public static let sharedTitle = "Shared."
-    public static let sharedBody = "Your school identity is not shown with this public Experience. This iPhone keeps its control key so you can manage it later."
-    public static let keptPrivateTitle = "Kept private"
-    public static let keptPrivateBody = keptPrivateNeverSent
-    public static let privacyLine = "Public sharing runs a text check. Published Experiences are stored without an ordinary author field."
-    public static let keyUnsavedBody = "The post is already public, but this iPhone could not store its control key. Copy the key now — without it the post cannot be managed or removed later."
+    public static var nudgeQuestion: String { L10n.t("This can be shared as it is. Is there anything that would help someone understand what you mean?") }
+    public static var cooldownTitle: String { L10n.t("Publishing can wait") }
+    public static var cooldownNote: String { L10n.t("This is a pause, not a judgment about your experience.") }
+    public static var sharedTitle: String { L10n.t("Shared.") }
+    public static var sharedBody: String { L10n.t("Your school identity is not shown with this public Experience. This iPhone keeps its control key so you can manage it later.") }
+    public static var keptPrivateTitle: String { L10n.t("Kept private") }
+    public static var keptPrivateBody: String { keptPrivateNeverSent }
+    public static var privacyLine: String { L10n.t("Public sharing runs a text check. Published Experiences are stored without an ordinary author field.") }
+    public static var keyUnsavedBody: String { L10n.t("The post is already public, but this iPhone could not store its control key. Copy the key now — without it the post cannot be managed or removed later.") }
 
     /// Gate-prefixed check reason codes → the ONE boundary sentence shown.
     static let checkReasons: [String: String] = [
@@ -71,7 +71,7 @@ public enum ModerationCopy {
     ]
 
     public static func describeReasons(_ reasons: [String]) -> [String] {
-        reasons.compactMap { checkReasons[$0] }
+        reasons.compactMap { checkReasons[$0].map(L10n.t) }
     }
 }
 
@@ -105,12 +105,12 @@ public enum SubmitErrorCopy {
 
     public static func describe(_ error: Error) -> String {
         if let api = error as? APIError {
-            if let text = byCode[api.code] { return text }
+            if let text = byCode[api.code] { return L10n.t(text) }
             if api.code == "network_error" {
-                return "Could not reach the HOney server. Check your connection and try again."
+                return L10n.t("Could not reach the HOney server. Check your connection and try again.")
             }
         }
-        return "Something went wrong submitting this. Please try again."
+        return L10n.t("Something went wrong submitting this. Please try again.")
     }
 }
 
@@ -126,26 +126,26 @@ public enum MineStatusCopy {
 
     public static func meta(_ status: MineStatus) -> Meta {
         switch status {
-        case .published: return Meta(label: "Shared", tone: .ok, explain: "")
-        case .blocked: return Meta(label: "Hidden", tone: .danger, explain: "This was hidden after a re-check against the current community rules. You can remove it if you want to write a new one about this.")
+        case .published: return Meta(label: L10n.t("Shared"), tone: .ok, explain: "")
+        case .blocked: return Meta(label: L10n.t("Hidden"), tone: .danger, explain: L10n.t("This was hidden after a re-check against the current community rules. You can remove it if you want to write a new one about this."))
         case .unknown(let raw): return Meta(label: raw, tone: .muted, explain: "")
         }
     }
 
-    public static let removed = "Removed. The post is gone — you can write a new one about this any time."
-    public static let removeFailed = "Could not remove the post. Please try again."
-    public static let rootNotHere = "The post control that manages this post is not on this iPhone. Restore your post controls first (Settings › Post controls)."
+    public static var removed: String { L10n.t("Removed. The post is gone — you can write a new one about this any time.") }
+    public static var removeFailed: String { L10n.t("Could not remove the post. Please try again.") }
+    public static var rootNotHere: String { L10n.t("The post control that manages this post is not on this iPhone. Restore your post controls first (Settings › Post controls).") }
 }
 
 /// Post controls copy (Settings › Post controls; Web: PostControlsPage.tsx).
 public enum PostControlsCopy {
-    public static let createdLocal = "Post controls created on this device"
-    public static let ready = "Post controls are on this device and backed up."
-    public static let restoreNeeded = "Restore on this device"
-    public static let restoreExplain = "Your post controls exist, but not on this iPhone. Restore them with a passkey, another device, or your 12 recovery words."
-    public static let wordsExplain = "Write these 12 words down and keep them somewhere safe. They restore your post controls on a new device. HOney never sees them."
-    public static let wordsWrong = "Those words don't match. Check the spelling and the order."
-    public static let pairExplain = "On the device that already has your post controls, open Settings › Post controls › Another device and enter this code."
-    public static let replaceExplain = "Future posts will be signed by a new root. If saving the backup fails, nothing changes."
-    public static let eraseExplain = "Removes the post controls from this iPhone only. The encrypted backup stays; you can restore later with a passkey, another device or the recovery words."
+    public static var createdLocal: String { L10n.t("Post controls created on this device") }
+    public static var ready: String { L10n.t("Post controls are on this device and backed up.") }
+    public static var restoreNeeded: String { L10n.t("Restore on this device") }
+    public static var restoreExplain: String { L10n.t("Your post controls exist, but not on this iPhone. Restore them with a passkey, another device, or your 12 recovery words.") }
+    public static var wordsExplain: String { L10n.t("Write these 12 words down and keep them somewhere safe. They restore your post controls on a new device. HOney never sees them.") }
+    public static var wordsWrong: String { L10n.t("Those words don't match. Check the spelling and the order.") }
+    public static var pairExplain: String { L10n.t("On the device that already has your post controls, open Settings › Post controls › Another device and enter this code.") }
+    public static var replaceExplain: String { L10n.t("Future posts will be signed by a new root. If saving the backup fails, nothing changes.") }
+    public static var eraseExplain: String { L10n.t("Removes the post controls from this iPhone only. The encrypted backup stays; you can restore later with a passkey, another device or the recovery words.") }
 }

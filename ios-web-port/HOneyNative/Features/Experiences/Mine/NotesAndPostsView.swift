@@ -184,8 +184,8 @@ struct NotesAndPostsView: View {
         .honeyRefreshable { await model.load(reload: true) }
         .sheet(item: $revoking) { post in
             ConfirmSheet(
-                title: "Remove this post?",
-                message: "The post disappears for everyone and its text is deleted. You can write a new one about this later. This cannot be undone.",
+                title: L10n.t("Remove this post?"),
+                message: L10n.t("The post disappears for everyone and its text is deleted. You can write a new one about this later. This cannot be undone."),
                 confirmLabel: "Remove post",
                 danger: true,
                 busy: model.busyId == post.id,
@@ -198,8 +198,8 @@ struct NotesAndPostsView: View {
         }
         .sheet(item: $deleting) { note in
             ConfirmSheet(
-                title: "Delete this private note?",
-                message: "The note exists only on this device; deleting it cannot be undone.",
+                title: L10n.t("Delete this private note?"),
+                message: L10n.t("The note exists only on this device; deleting it cannot be undone."),
                 confirmLabel: "Delete note",
                 danger: true,
                 onCancel: { deleting = nil },
@@ -292,7 +292,7 @@ struct SharedRowView: View {
             if let body = exp.body {
                 Text(body).hfont(.reading).foregroundStyle(theme.ink).fixedSize(horizontal: false, vertical: true)
             } else {
-                Text("(no text)").hfont(.body).foregroundStyle(theme.muted)
+                Text(L10n.t("(no text)")).hfont(.body).foregroundStyle(theme.muted)
             }
             if !meta.explain.isEmpty { Text(meta.explain).hfont(.caption).foregroundStyle(theme.muted) }
             if let detail = exp.statusDetail, !detail.isEmpty { Text(detail).hfont(.caption).foregroundStyle(theme.muted) }

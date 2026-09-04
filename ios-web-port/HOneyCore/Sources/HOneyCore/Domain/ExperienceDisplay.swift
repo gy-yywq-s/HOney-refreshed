@@ -60,15 +60,15 @@ public enum ExperienceDisplay {
     /// One register for provenance everywhere (stream line and Mine chip).
     public static func provenanceLine(_ p: ExperienceProvenance) -> String {
         switch p {
-        case .verifiedLesson: return "from a class you’ve taken"
-        case .verifiedRetrospective: return "from someone who has taken this over time"
-        case .verifiedMember, .unknown: return "from a student here"
+        case .verifiedLesson: return L10n.t("from a class you’ve taken")
+        case .verifiedRetrospective: return L10n.t("from someone who has taken this over time")
+        case .verifiedMember, .unknown: return L10n.t("from a student here")
         }
     }
 
     public static func provenanceLabel(_ p: ExperienceProvenance) -> String {
         switch p {
-        case .unknown: return "Verified school member"
+        case .unknown: return L10n.t("Verified school member")
         default: return provenanceLine(p)
         }
     }
@@ -110,38 +110,41 @@ public enum ExperienceDisplay {
         }
     }
 
-    public static let reactionExplainer =
-        "Reactions show whether this matches the experience of students who have had the same class or place. They do not verify a post as fact."
+    public static var reactionExplainer: String {
+        L10n.t("Reactions show whether this matches the experience of students who have had the same class or place. They do not verify a post as fact.")
+    }
 
     /// Category-only reporting; disagreement is a reaction, not a report.
-    public static let reportOptions: [(category: ReportCategory, label: String)] = [
-        (.doxxing, "Private or identifying information"),
-        (.slur, "Targeted abuse or a slur"),
-        (.targetsStudent, "It is about a student"),
-        (.seriousAllegation, "A serious matter that should not be in the feed"),
-        (.notExperience, "Rumor, spam, or not a real experience"),
-        (.otherRule, "Another community-rule problem"),
-    ]
+    public static var reportOptions: [(category: ReportCategory, label: String)] {
+        [
+            (.doxxing, L10n.t("Private or identifying information")),
+            (.slur, L10n.t("Targeted abuse or a slur")),
+            (.targetsStudent, L10n.t("It is about a student")),
+            (.seriousAllegation, L10n.t("A serious matter that should not be in the feed")),
+            (.notExperience, L10n.t("Rumor, spam, or not a real experience")),
+            (.otherRule, L10n.t("Another community-rule problem")),
+        ]
+    }
 
     public static func reactionFailureNote(_ error: Error) -> String {
         if let api = error as? APIError {
             switch api.code {
-            case "reactions_disabled": return "Reactions are paused right now."
-            case "reactor_unknown", "reactor_not_registered", "not_eligible", "token_scope_mismatch": return "Reactions are open to students of this school."
+            case "reactions_disabled": return L10n.t("Reactions are paused right now.")
+            case "reactor_unknown", "reactor_not_registered", "not_eligible", "token_scope_mismatch": return L10n.t("Reactions are open to students of this school.")
             default: break
             }
         }
         if let e = error as? PublishError, e == .postControlsRestoreNeeded {
-            return "Restore your post controls in Settings to react."
+            return L10n.t("Restore your post controls in Settings to react.")
         }
-        return "Could not save that reaction. Please try again."
+        return L10n.t("Could not save that reaction. Please try again.")
     }
 
     public static func reportFailureNote(_ error: Error) -> String {
         if let api = error as? APIError, api.code == "report_rate_limited" {
-            return "You have reported a lot recently — please wait a while."
+            return L10n.t("You have reported a lot recently — please wait a while.")
         }
-        return "Could not send that report. Please try again."
+        return L10n.t("Could not send that report. Please try again.")
     }
 }
 
@@ -174,11 +177,11 @@ public enum AppRoute: Sendable, Equatable, Hashable {
     case settingsWeekend
     case settingsRecord
     case settingsLessonFeedback
+    /// Settings › Admin › Dash — the Web console shown in-app (admins only).
+    case settingsDash
 }
 
 public enum TimetableViewMode: String, Sendable, Equatable, Hashable, Codable {
-    /// Settings › Admin › Dash — the Web console shown in-app (admins only).
-    case settingsDash
     case day, week
 }
 

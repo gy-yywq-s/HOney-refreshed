@@ -71,19 +71,19 @@ struct LessonDetailSheet: View {
                     Grid(alignment: .leading, horizontalSpacing: HSpace.x4, verticalSpacing: HSpace.x2) {
                         if let topic {
                             GridRow {
-                                Text("Topic").font(ramp.font(.caption)).foregroundStyle(theme.muted)
+                                Text(L10n.t("Topic")).font(ramp.font(.caption)).foregroundStyle(theme.muted)
                                 Text(topic).font(ramp.font(.body)).foregroundStyle(theme.ink)
                             }
                         }
                         if let subject {
                             GridRow {
-                                Text("Subject").font(ramp.font(.caption)).foregroundStyle(theme.muted)
+                                Text(L10n.t("Subject")).font(ramp.font(.caption)).foregroundStyle(theme.muted)
                                 Text(subject).font(ramp.font(.body)).foregroundStyle(theme.ink)
                             }
                         }
                         if let section {
                             GridRow {
-                                Text("Class").font(ramp.font(.caption)).foregroundStyle(theme.muted)
+                                Text(L10n.t("Class")).font(ramp.font(.caption)).foregroundStyle(theme.muted)
                                 Text(section).font(ramp.font(.body)).foregroundStyle(theme.ink)
                             }
                         }

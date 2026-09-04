@@ -48,14 +48,14 @@ struct ComposerView: View {
     @ViewBuilder
     private func content(_ model: ComposerViewModel) -> some View {
         if case .published = model.status {
-            outcome(title: L10n.t("Shared."), lead: ModerationCopy.sharedBody, note: "The post's control key derives from the root on this iPhone, so you can manage or remove it later from Your notes & posts. What you wrote may still make you recognisable to people who know the situation.")
+            outcome(title: L10n.t("Shared."), lead: ModerationCopy.sharedBody, note: L10n.t("The post's control key derives from the root on this iPhone, so you can manage or remove it later from Your notes & posts. What you wrote may still make you recognisable to people who know the situation."))
         } else if case .postControlsRestoreNeeded = model.status {
             restoreNeeded(model)
         } else if model.keptPrivate {
             outcome(
                 title: L10n.t(ModerationCopy.keptPrivateTitle),
                 lead: model.keptAfterCheck ? ModerationCopy.keptPrivateAfterCheck : ModerationCopy.keptPrivateNeverSent,
-                note: "It lives in protected app storage on this iPhone. Deleting the app removes it unless you export first."
+                note: L10n.t("It lives in protected app storage on this iPhone. Deleting the app removes it unless you export first.")
             )
         } else if model.loading {
             VStack(alignment: .leading, spacing: HSpace.x4) {
@@ -301,7 +301,7 @@ struct ComposerView: View {
                 .padding(.leading, HSpace.x2)
             }
             if notice.suggestKeepPrivate {
-                Text("You can keep it as a private note instead.").hfont(.caption).foregroundStyle(theme.muted)
+                Text(L10n.t("You can keep it as a private note instead.")).hfont(.caption).foregroundStyle(theme.muted)
             }
             if notice.suggestSchoolReport {
                 Button(L10n.t("Send this to the school instead")) { tellSchool = true }
@@ -386,9 +386,9 @@ struct ComposerView: View {
             Text(L10n.t(ModerationCopy.cooldownNote)).hfont(.body).foregroundStyle(theme.muted)
         } actions: {
             if model.cooldownSaveFailed {
-                Button("Try keeping it again") { showCooldown = false; Task { await model.keepPrivate() } }.buttonStyle(.webBlockPrimary)
-                Button("Copy my words") { UIPasteboard.general.string = model.body }.buttonStyle(.webBlockGhost)
-                Button("Stay in the editor") { showCooldown = false }.buttonStyle(.webBlockGhost)
+                Button(L10n.t("Try keeping it again")) { showCooldown = false; Task { await model.keepPrivate() } }.buttonStyle(.webBlockPrimary)
+                Button(L10n.t("Copy my words")) { UIPasteboard.general.string = model.body }.buttonStyle(.webBlockGhost)
+                Button(L10n.t("Stay in the editor")) { showCooldown = false }.buttonStyle(.webBlockGhost)
             } else {
                 Button(L10n.t("OK")) {
                     showCooldown = false

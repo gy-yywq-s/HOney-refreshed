@@ -23,12 +23,12 @@ struct LoginView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     WordmarkView(height: 54)
                         .padding(.bottom, HSpace.x3)
-                    Text("Your school day, without the portal friction.")
+                    Text(L10n.t("Your school day, without the portal friction."))
                         .font(ramp.font(.reading))
                         .lineSpacing(max(0, 17 * 1.45 * ramp.scale - HOneyFont.uiFont(role: .reading, scale: ramp.scale).lineHeight))
                         .foregroundStyle(theme.ink)
                         .padding(.bottom, HSpace.x6)
-                    Text("Use your school account. HOney creates no separate password.")
+                    Text(L10n.t("Use your school account. HOney creates no separate password."))
                         .hfont(.body)
                         .foregroundStyle(theme.muted)
                         .padding(.bottom, HSpace.x6)
@@ -41,12 +41,12 @@ struct LoginView: View {
                             InlineStatusBanner(text: error, tone: .danger)
                         }
                         SchoolLoginFields(username: $username, password: $password, reading: true, onSubmit: submit)
-                        Button(busy ? "Signing in…" : "Continue with school account", action: submit)
+                        Button(busy ? L10n.t("Signing in…") : L10n.t("Continue with school account"), action: submit)
                             .buttonStyle(.webLoginPrimary)
                             .disabled(busy || username.isEmpty || password.isEmpty)
                     }
 
-                    Text("There is no separate sign-up — your school account is your HOney account, created on first sign-in. Your timetable and history come along with it, and again whenever you sync — Sync now in Settings, or Sync with school in the Timetable menu. HOney keeps your school login in this iPhone's Keychain so portal time-outs reconnect on their own; turn that off in Settings › School connection.")
+                    Text(L10n.t("There is no separate sign-up — your school account is your HOney account, created on first sign-in. Your timetable and history come along with it, and again whenever you sync — Sync now in Settings, or Sync with school in the Timetable menu. HOney keeps your school login in this iPhone's Keychain so portal time-outs reconnect on their own; turn that off in Settings › School connection."))
                         .hfont(.caption)
                         .foregroundStyle(theme.muted)
                         .padding(.top, HSpace.x4)

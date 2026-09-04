@@ -155,8 +155,8 @@ struct AccountView: View {
                         Button(L10n.t("Sign out")) { Task { await env.signOut() } }.buttonStyle(.webSmallDangerOutline)
                     }
                 }
-                RowList(label: "Delete account and public content") {
-                    Text("Removes every experience your post controls on this iPhone can prove is yours, deletes the encrypted backup of those controls, then deletes your HOney account, your imported lessons and the school login saved here. Shared teacher, course, room and lesson entries stay. Private notes on this iPhone are kept unless you choose to erase them.")
+                RowList(label: L10n.t("Delete account and public content")) {
+                    Text(L10n.t("Removes every experience your post controls on this iPhone can prove is yours, deletes the encrypted backup of those controls, then deletes your HOney account, your imported lessons and the school login saved here. Shared teacher, course, room and lesson entries stay. Private notes on this iPhone are kept unless you choose to erase them."))
                         .hfont(.caption)
                         .foregroundStyle(theme.muted)
                         .padding(.top, HSpace.x1)
@@ -170,14 +170,14 @@ struct AccountView: View {
         }
         .webScreen(title: L10n.t("Account"))
         .sheet(isPresented: $confirmDelete) {
-            WebSheet(title: "Delete your HOney account?", onClose: { confirmDelete = false }) {
-                Text("Your public experiences are removed first, by proof from this iPhone's post controls; if that cannot complete, nothing is deleted and you are told why. Then the account and imported lessons go, and the school login saved on this iPhone is cleared. This cannot be undone.")
+            WebSheet(title: L10n.t("Delete your HOney account?"), onClose: { confirmDelete = false }) {
+                Text(L10n.t("Your public experiences are removed first, by proof from this iPhone's post controls; if that cannot complete, nothing is deleted and you are told why. Then the account and imported lessons go, and the school login saved on this iPhone is cleared. This cannot be undone."))
                     .hfont(.body)
                     .foregroundStyle(theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 SheetActions {
-                    Button("Delete account and public content, keep private notes") { confirmDelete = false; delete(erase: false) }.buttonStyle(.webBlockDanger)
-                    Button("Delete account, public content and private notes") { confirmDelete = false; delete(erase: true) }.buttonStyle(.webBlockDanger)
+                    Button(L10n.t("Delete account and public content, keep private notes")) { confirmDelete = false; delete(erase: false) }.buttonStyle(.webBlockDanger)
+                    Button(L10n.t("Delete account, public content and private notes")) { confirmDelete = false; delete(erase: true) }.buttonStyle(.webBlockDanger)
                     Button(L10n.t("Cancel")) { confirmDelete = false }.buttonStyle(.webBlockGhost)
                 }
             }
@@ -233,21 +233,21 @@ struct SchoolConnectionView: View {
                 RowList {
                     StayConnectedRow(stayConnected: $stayConnected, showSaveLogin: $showSaveLogin)
                     DisclosureRow(summary: "How the saved login works") {
-                        Text("Sync now signs in again with your saved school login if the portal session expired. Your school login is kept in this iPhone's Keychain — on this device only, never in iCloud Keychain. Turn it off any time; you will re-enter your school password when the portal session ends.")
+                        Text(L10n.t("Sync now signs in again with your saved school login if the portal session expired. Your school login is kept in this iPhone's Keychain — on this device only, never in iCloud Keychain. Turn it off any time; you will re-enter your school password when the portal session ends."))
                             .hfont(.caption)
                             .foregroundStyle(theme.muted)
                     }
                 }
                 RowList(label: L10n.t("Imported data")) {
-                    SettingsRow(title: L10n.t("Timetable & lesson history"), sub: "Imported from the school portal when your account is created, and again whenever you sync — Sync now, or Sync with school in the Timetable menu.", trailing: .none)
+                    SettingsRow(title: L10n.t("Timetable & lesson history"), sub: L10n.t("Imported from the school portal when your account is created, and again whenever you sync — Sync now, or Sync with school in the Timetable menu."), trailing: .none)
                     DisclosureRow(summary: "What the import is used for") {
-                        Text("Your timetable and Now/Next on Home, your lesson history, and which classes count as yours when you share an Experience. Nothing is published from it.")
+                        Text(L10n.t("Your timetable and Now/Next on Home, your lesson history, and which classes count as yours when you share an Experience. Nothing is published from it."))
                             .hfont(.caption)
                             .foregroundStyle(theme.muted)
                     }
                 }
-                RowList(label: "Delete imported data") {
-                    Text("Removes your imported lessons — your timetable and history. Shared teacher, course, room and lesson entries stay. You can import again with Sync now.")
+                RowList(label: L10n.t("Delete imported data")) {
+                    Text(L10n.t("Removes your imported lessons — your timetable and history. Shared teacher, course, room and lesson entries stay. You can import again with Sync now."))
                         .hfont(.caption)
                         .foregroundStyle(theme.muted)
                         .padding(.top, HSpace.x1)
@@ -265,13 +265,13 @@ struct SchoolConnectionView: View {
         .sheet(isPresented: $showSaveLogin) { SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin } }
         .sheet(isPresented: $showReconnect) { SchoolLoginSheet(purpose: .reconnect) { sync() } }
         .sheet(isPresented: $confirmDisconnect) {
-            ConfirmSheet(title: "Disconnect school account?", message: "HOney will stop syncing until you reconnect. Imported data is kept.", confirmLabel: L10n.t("Disconnect"), busy: busy == "disconnect", onCancel: { confirmDisconnect = false }) {
+            ConfirmSheet(title: L10n.t("Disconnect school account?"), message: L10n.t("HOney will stop syncing until you reconnect. Imported data is kept."), confirmLabel: L10n.t("Disconnect"), busy: busy == "disconnect", onCancel: { confirmDisconnect = false }) {
                 confirmDisconnect = false
                 run("disconnect", "School account disconnected.") { try await env.api.disconnectSchool(); try await env.portalCoordinator.forgetEverything() }
             }
         }
         .sheet(isPresented: $confirmDeleteData) {
-            ConfirmSheet(title: "Delete imported data?", message: "Your imported lessons — timetable and history — are removed from HOney. Shared teacher, course, room and lesson entries stay. You can import again with Sync now.", confirmLabel: "Delete imported data", danger: true, busy: busy == "delete-data", onCancel: { confirmDeleteData = false }) {
+            ConfirmSheet(title: L10n.t("Delete imported data?"), message: L10n.t("Your imported lessons — timetable and history — are removed from HOney. Shared teacher, course, room and lesson entries stay. You can import again with Sync now."), confirmLabel: L10n.t("Delete imported data"), danger: true, busy: busy == "delete-data", onCancel: { confirmDeleteData = false }) {
                 confirmDeleteData = false
                 run("delete-data", "Imported data deleted.") { try await env.api.deleteImportedData(); await env.timetable.invalidateAll() }
             }
@@ -343,7 +343,7 @@ struct AppearanceView: View {
                         }
                     }
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel("Background surface")
+                    .accessibilityLabel(L10n.t("Background surface"))
                 }
                 themeSection(title: L10n.t("Accent")) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: HSpace.x2), count: 3), spacing: HSpace.x2) {
@@ -354,7 +354,7 @@ struct AppearanceView: View {
                         }
                     }
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel("Accent scheme")
+                    .accessibilityLabel(L10n.t("Accent scheme"))
                 }
                 RowList(label: L10n.t("Text size")) {
                     FlowLayout(spacing: HSpace.x2) {
@@ -373,7 +373,7 @@ struct AppearanceView: View {
                     }
                     .padding(.vertical, HSpace.x3)
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel("Language")
+                    .accessibilityLabel(L10n.t("Language"))
                 }
             }
             .pageInset()
@@ -430,7 +430,7 @@ struct SchoolLoginSheet: View {
                 .padding(.bottom, HSpace.x3)
             if let error { InlineStatusBanner(text: error, tone: .danger).padding(.bottom, HSpace.x3) }
             SchoolLoginFields(username: $username, password: $password, onSubmit: submit)
-            Button(busy ? "Signing in…" : (purpose == .save ? "Save login" : L10n.t("Reconnect"))) { submit() }
+            Button(busy ? L10n.t("Signing in…") : (purpose == .save ? "Save login" : L10n.t("Reconnect"))) { submit() }
                 .buttonStyle(.webBlockPrimary)
                 .disabled(busy || username.isEmpty || password.isEmpty)
         }
@@ -471,7 +471,7 @@ struct SchoolLoginFields: View {
     var body: some View {
         VStack(alignment: .leading, spacing: HSpace.x2) {
             VStack(alignment: .leading, spacing: HSpace.x2) {
-                FieldLabel(text: "School username")
+                FieldLabel(text: L10n.t("School username"))
                 TextField("", text: $username)
                     .textFieldStyle(.web)
                     .textContentType(.username)
@@ -484,7 +484,7 @@ struct SchoolLoginFields: View {
             }
             .padding(.bottom, HSpace.x1)
             VStack(alignment: .leading, spacing: HSpace.x2) {
-                FieldLabel(text: "Password")
+                FieldLabel(text: L10n.t("Password"))
                 SecureField("", text: $password)
                     .textFieldStyle(.web)
                     .textContentType(.password)
