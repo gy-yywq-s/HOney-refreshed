@@ -10,24 +10,38 @@ publication flow. The iOS lab lives on branch `lab/credential-image-sanitation`
 ```mermaid
 flowchart LR
   P[Photo] --> D[Analysis derivative<br/>≤768 px JPEG ≤200 KB]
-  D -->|image/jpeg body| C[Community<br/>POST /community/v2/image/classify]
-  C -->|VLM, one boolean| V{credential_like?}
+  D -->|one image/jpeg request| C[Community classifier<br/>one boolean + uncertainty]
   D --> L[On-device analysis<br/>multi-pass faces · barcodes · text]
-  V -->|no| F{Any face?}
-  F -->|no| CLEAN[CLEAN — original bytes]
-  F -->|yes| R[Sensitive regions]
-  V -->|yes| R[Sensitive regions<br/>faces · numbers · personal fields<br/>signatures · MRZ · codes]
-  L --> R
-  R -->|none / label without value| X[COULD_NOT_SANITIZE]
-  R --> S[Sanitize a copy<br/>blur portrait · mask number · mask code]
-  S --> VF[Verify: no code decodes,<br/>no masked value reads back]
-  VF -->|fails twice| X
+  C --> E{Fixed evidence<br/>plus coarse model hint}
+  L --> E
+  E -->|no face or credential evidence| CLEAN[CLEAN — original bytes]
+  E -->|resolved sensitive regions| R[Faces · unique numbers · address blocks<br/>birth data · contacts · signatures · MRZ · codes]
+  E -->|privacy remains unresolved| REVIEW[REVIEW_REQUIRED<br/>best guess + explicit confirmation]
+  R --> S[One rounded-blur pass]
+  S --> VF[Region-aware verification]
+  VF -->|verified within budget| OK[SANITIZED — new JPEG]
+  VF -->|warning or budget boundary| REVIEW
+  D -->|cannot decode or draw| X[COULD_NOT_SANITIZE]
   VF --> OK[SANITIZED — new JPEG]
 ```
 
 The model answers exactly one question — *is this a credential?* — and never
-supplies coordinates. Regions come from Apple Vision on the phone; the image
-that leaves the device is the small derivative, and only for that question.
+supplies coordinates or field types. Deterministic face/code/MRZ/label evidence
+can override a clean model verdict. Regions come from the fixed on-device
+pipeline; the image that leaves the device is the small derivative, once only.
+
+## Policy and hard gates
+
+The policy is harm-based: faces and information that uniquely identifies,
+locates, contacts or authenticates the individual must not be shown. Names,
+school/employer, class/department, sex/gender, nationality/citizenship,
+issue/expiry dates and generic document labels remain visible.
+
+- End-to-end target: about 3 seconds; hard limit 4.8 seconds and never 5 seconds or more.
+- Remote cost: exactly one existing classifier request per image, no model retry and no second model. This is 1x the original model-call cost and below the 3x ceiling.
+- Classifier deadline: 3.2 seconds, reserving the rest of the budget for local blur and verification.
+- A wider second blur is attempted only when at least 0.9 seconds of budget remains.
+- `REVIEW_REQUIRED` always includes the best-guess image. The user must explicitly confirm it before continuing. Only an undecodable/undrawable image becomes `COULD_NOT_SANITIZE`.
 
 ## Server route
 
@@ -55,9 +69,8 @@ expectation:
 
 Every model missed no credential; the differences are false positives and
 answer validity. Uncertain fixtures (booklet covers, a bare library card, a
-dorm pass table) are called credential-like by all — the device then reports
-`COULD_NOT_SANITIZE` because nothing sensitive can be located, which is the
-conservative answer the spec asks for.
+dorm pass table) now return their best guess as `REVIEW_REQUIRED` when fixed
+evidence cannot resolve whether unique information remains.
 
 ## On the device (iOS lab)
 
@@ -71,29 +84,30 @@ conservative answer the spec asks for.
 - Face privacy is unconditional. When the classifier says clean, any locally
   detected face is still blurred; only a clean image with no face returns the
   original bytes. Credential-only text and code rules remain classifier-gated.
-- Number regions: a label (`Student ID`, `Student No.`, `ID No.`, `Card No.`,
+- Unique-number regions: a label (`Student ID`, `Student No.`, `ID No.`, `Card No.`,
   `Staff No.`, `学号`, `學號`, `编号`, `证件号`, `卡号` …) followed by a value on
   the same line → the value's own sub-rectangle; a label alone → the id-like
-  line to its right or below; a label with no value anywhere →
-  `COULD_NOT_SANITIZE`. On a credential-like image, any standalone token with
+  line to its right or below; a label with no separable value uses a conservative
+  fixed field-band blur instead of blocking. On a credential-like image, any standalone token with
   five or more consecutive digits, or eight alphanumerics with four digits, is
-  hidden too (the "strongly associated with the layout" rule). Labelled address
-  lines, birth date/place, sex/gender, nationality/citizenship, phone, email,
-  guardian/parent/emergency contact, blood type, signatures and MRZ lines are
-  also hidden. Names, school names, class and validity dates remain visible.
+  hidden too (the "strongly associated with the layout" rule). Address text is
+  grouped into one continuous block until the next field boundary (up to eight
+  lines). Birth date/place, phone, email, guardian/parent/emergency contact,
+  blood type, signatures and MRZ lines are also hidden. Names, school/employer,
+  class/department, sex/gender, nationality/citizenship and validity dates remain visible.
 - Sanitize: every sensitive region uses the same strong Gaussian blur clipped
   to an adaptive rounded rectangle. There are no opaque number/code masks. The
   output is redrawn and encoded afresh (no EXIF carried over).
-- Verify: barcodes on the output must not decode and no masked value may be
-  recognised again; one retry with 25 % larger masks, then
-  `COULD_NOT_SANITIZE`.
-- Classifier unavailable: sensitive if any local signal fires (face, code,
-  label, long id), else `CLEAN` — recorded as `classifierUnavailable` in the
-  run record so the harness can count it.
+- Verify: barcodes on the output must not decode and no hidden value may be
+  recognised inside its own region. A wider retry runs only with budget headroom;
+  otherwise the current best guess becomes `REVIEW_REQUIRED`.
+- Classifier unavailable or uncertain does not automatically require review.
+  Fixed evidence resolves the result whenever possible; review is reserved for
+  genuinely unresolved privacy risk.
 
 Instrumentation per run (`SanitationRecord`): classifier verdict + latency,
-detectors used, regions by kind, sanitation latency, verification result,
-final outcome. The lab keeps before/after JPEGs per run under
+detectors used, regions by kind, classification/detection/sanitation and total
+latency, verification result, review reasons and final outcome. The lab keeps before/after JPEGs per run under
 `Documents/sanitation-lab/`.
 
 ## Disclosure

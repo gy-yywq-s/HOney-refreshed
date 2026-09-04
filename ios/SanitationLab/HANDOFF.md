@@ -45,6 +45,9 @@ What runs:
 | `…testFacesAreSanitizedEvenWhenClassifierSaysClean` | face privacy does not depend on credential classification | updated privacy rule |
 | `…testMainAndSecondaryCredentialPortraitsAreBothHidden` | main and pale secondary portraits are both detected | updated privacy rule |
 | `…testEveryRegionKindUsesTheSameRoundedBlur` | every sensitive kind uses strong rounded blur, never an opaque mask | updated presentation rule |
+| `…testDeterministicSignalsOverrideACleanModelVerdict` | fixed evidence, not the model, controls detailed sanitation | updated pipeline rule |
+| `…testLatencyAndModelCostHardGates` | ≤4.8 s production budget and exactly one model call | performance/cost gate |
+| `…testUncertainCleanVerdictReturnsBestGuessForConfirmation` | unresolved input returns a best guess with explicit confirmation | review rule |
 | `…testSyntheticCredentialsAreSanitizedWithTheRightRegions` | every must-hide box ≥60 % covered, every must-keep box pixel-identical (JPEG noise allowed), no code decodes on the output, values don't read back, new encoding | §9.3, §9.7–9.9 |
 | `…testEdgeAndRealCredentialsAreNeverReturnedClean` | the 4 edge + 28 real cards: outcome recorded; an expected credential never comes back CLEAN | §9.6 |
 | `…testClassifierDownFallsBackToLocalSignals` | classifier unavailable → QR decides; nothing local → CLEAN, recorded | fail-closed |
@@ -95,16 +98,15 @@ Run the **SanitationLab** app on an iPhone (automatic signing, personal team).
    `Processing your image… / Hiding sensitive parts.` with the dimmed
    preview → the sanitized preview + *Sensitive parts were hidden before
    sharing.* Check: all portraits (including pale secondary portraits), number,
-   code, address, birth data, sex/gender, nationality, contacts, signature and
-   MRZ use rounded blur; name and school remain readable.
-3. Something the pipeline cannot do (a card where the number is not labelled
-   and is short, or a booklet cover): expect *We couldn't safely hide the
-   sensitive parts in this image.* with **Try another photo** / **Remove
-   image** — and never the original shown as ready.
+   code, full address block, birth data, contacts, signature and MRZ use rounded
+   blur; name, school, sex/gender and nationality remain readable.
+3. If privacy cannot be fully resolved, expect `REVIEW_REQUIRED`: the best-guess
+   image remains visible with **I reviewed it — Use this image**, **Try another
+   photo**, and **Remove image**. Only an undecodable image uses the failure page.
 4. ⋯ menu → **Run the test set** with *Use the live classifier* ON: all 46
    fixtures through the real route on the phone. The header shows
-   `right/judged` and check p50/p90; each row shows outcome and
-   check/detect/hide ms; tap a row for before/after and the record.
+   `right/judged`, review count, and end-to-end p50/p90; each row shows outcome
+   and total/check/detect/hide ms; tap a row for before/after and the record.
 5. ⋯ menu → **Past runs**: every run's before/after/record is also written to
    the app's Documents (`sanitation-lab/<stamp>-<outcome>/`), reachable via
    Finder → iPhone → Files, or Xcode → Devices → download container.

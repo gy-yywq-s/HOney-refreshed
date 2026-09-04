@@ -48,6 +48,9 @@ Local evidence directory: `/Users/GaryS/Documents/HOney-labs/credential-sanitati
 - `synthetic-credentials.txt`, `edge-and-real.txt`, `device-synthetic-credentials.txt`, and `device-edge-and-real.txt`: compact per-fixture outcomes and timings.
 - `final-regression.xcresult.zip`: updated 23/23 stable regression result.
 - `dual-portrait-after.png`: visually reviewed output with both the main and pale secondary portraits blurred.
+- `review-final.xcresult.zip`: 27/27 stable best-guess/review and hard-gate regression.
+- `live-hardgate.xcresult.zip`: one-call live end-to-end hard-gate result.
+- `final-policy-r22-after.png`: final policy output used to verify signature, birth data and both portraits hidden while sex/gender and nationality remain visible.
 
 ## Follow-up implementation
 
@@ -60,3 +63,13 @@ The prototype was updated after the first run from direct phone feedback:
 - Post-blur OCR verification is region-aware, so the same word elsewhere on a card does not create a false leak. The short Chinese `出生：` label is covered.
 
 Focused verification: 16/16 unconditional-face and region tests passed; 17/17 personal-detail/real-card regression tests passed; the dedicated main-plus-secondary portrait fixture passed and its output was visually reviewed. The final stable regression suite passed 23/23 tests, excluding only the live network test and the documented legacy synthetic aggregate. The old aggregate still reports legacy failures because its portrait ground truth expects 60% of the entire photo frame while the updated policy intentionally blurs the face, and the simulator still misses fixture barcodes that the physical phone detects. `credential/student_card_angled` also retains its pre-existing rotated number-coordinate failure.
+
+## Best-guess review and hard-gate follow-up
+
+- The detailed pipeline is now fixed and harm-based. Faces plus information that uniquely identifies, locates, contacts or authenticates a person are hidden. Sex/gender and nationality/citizenship are explicitly preserved.
+- Address handling now emits one continuous block across aligned continuation lines until the next known field boundary, rather than one blur per line. Missing separable values use a conservative field-band blur.
+- The model remains one coarse `{ credentialLike, uncertain }` answer. Fixed labels, MRZ and codes can override a clean verdict; classifier uncertainty/unavailability alone does not force review when fixed evidence resolves the image.
+- `REVIEW_REQUIRED` returns the best-guess image and requires **I reviewed it — Use this image**. It replaces the old dead-end outcome for unresolved but readable images. `COULD_NOT_SANITIZE` remains only for undecodable/undrawable input.
+- Production hard gates are 4.8 seconds end-to-end and exactly one classifier call with no model retry. The classifier deadline is 3.2 seconds; a wider local retry runs only with at least 0.9 seconds of headroom. Model-call cost remains 1x the prior flow, below the 3x ceiling.
+- Stable regression: 27/27 passed. Across the 32 edge/real fixtures, end-to-end simulator latency was p50 1820 ms, p90 2143 ms, max 2574 ms. All 18 definite credentials were `SANITIZED`; definite-fixture review rate was 0. The nine review outcomes were all manifest-`UNCERTAIN` fixtures.
+- One live end-to-end `real/r22` run completed in 4660 ms with one model call, returned `SANITIZED`, and required no review. Visual review confirmed both portraits, unique number, birth date and signature were hidden while name, sex/gender and nationality remained visible.
