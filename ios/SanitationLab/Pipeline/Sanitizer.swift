@@ -2,8 +2,8 @@
 //  Sanitizer.swift
 //  SanitationLab — hides the regions on a COPY and checks its own work.
 //
-//  Portrait → strong Gaussian blur scaled to the face; number and code →
-//  opaque neutral mask. Verification re-runs the detectors on the output:
+//  Every sensitive region → the same strong, rounded Gaussian blur.
+//  Verification re-runs the detectors on the output:
 //  a code that still decodes or a value that still reads back is a failure.
 //
 
@@ -14,7 +14,6 @@ import Foundation
 import UIKit
 
 enum Sanitizer {
-    static let maskColor = UIColor(white: 0.55, alpha: 1)
     private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
     /// Draws the working image with every region hidden. `grow` inflates the
@@ -25,39 +24,40 @@ enum Sanitizer {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         format.opaque = true
+        var blurFailed = false
         let image = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
             UIImage(cgImage: cg).draw(in: bounds)
             for region in regions {
                 let rect = (grow > 0 ? SensitiveRegionFinder.pad(region.rect, by: grow, in: bounds) : region.rect).integral.intersection(bounds)
                 guard !rect.isEmpty else { continue }
-                switch region.kind {
-                case .portrait:
-                    if let blurred = blurredCrop(of: cg, rect: rect) {
-                        UIImage(cgImage: blurred).draw(in: rect)
-                    } else {
-                        maskColor.setFill()
-                        ctx.fill(rect)
-                    }
-                case .number, .code, .personalText, .signature:
-                    maskColor.setFill()
-                    ctx.fill(rect)
+                guard let blurred = blurredCrop(of: cg, rect: rect) else {
+                    blurFailed = true
+                    continue
                 }
+                ctx.cgContext.saveGState()
+                UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius(for: rect)).addClip()
+                UIImage(cgImage: blurred).draw(in: rect)
+                ctx.cgContext.restoreGState()
             }
         }
-        return image.cgImage
+        return blurFailed ? nil : image.cgImage
     }
 
-    /// Gaussian blur of one region, strong enough that the face is gone at any
-    /// zoom (radius grows with the region) but the area still reads as "a photo".
+    /// Gaussian blur strong enough for thin text as well as large portraits
+    /// and codes, while retaining the visual texture beneath the redaction.
     private static func blurredCrop(of cg: CGImage, rect: CGRect) -> CGImage? {
         guard let crop = cg.cropping(to: rect) else { return nil }
         let input = CIImage(cgImage: crop)
-        let radius = max(14, rect.width / 6)
+        let radius = max(16, min(64, min(rect.width, rect.height) * 0.30))
         let filter = CIFilter.gaussianBlur()
         filter.inputImage = input.clampedToExtent()
         filter.radius = Float(radius)
         guard let output = filter.outputImage?.cropped(to: input.extent) else { return nil }
         return ciContext.createCGImage(output, from: input.extent)
+    }
+
+    static func cornerRadius(for rect: CGRect) -> CGFloat {
+        max(7, min(24, min(rect.width, rect.height) * 0.22))
     }
 
     /// Re-detects on the output. Returns what is still readable.

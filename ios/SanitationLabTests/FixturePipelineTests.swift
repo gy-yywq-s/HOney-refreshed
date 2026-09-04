@@ -132,6 +132,31 @@ final class FixturePipelineTests: XCTestCase {
         }
     }
 
+    func testEveryRegionKindUsesTheSameRoundedBlur() throws {
+        let size = CGSize(width: 120, height: 120)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        let source = try XCTUnwrap(UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            UIColor.white.setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            for y in stride(from: 0, to: 120, by: 6) {
+                for x in stride(from: 0, to: 120, by: 6) where (x / 6 + y / 6).isMultiple(of: 2) {
+                    UIColor.black.setFill()
+                    ctx.fill(CGRect(x: x, y: y, width: 6, height: 6))
+                }
+            }
+        }.cgImage)
+        let rect = CGRect(x: 20, y: 20, width: 80, height: 80)
+
+        for kind in RegionKind.allCases {
+            let value = kind == .portrait || kind == .signature ? nil : "private-value"
+            let output = try XCTUnwrap(Sanitizer.sanitize(source, regions: [SensitiveRegion(kind: kind, rect: rect, value: value, detail: nil)]), kind.rawValue)
+            XCTAssertLessThan(Self.meanAbsDiff(source, output, in: CGRect(x: 20, y: 20, width: 4, height: 4)), 1, "\(kind.rawValue): rounded corner must leave the outer corner untouched")
+            XCTAssertGreaterThan(Self.meanAbsDiff(source, output, in: CGRect(x: 54, y: 54, width: 12, height: 12)), 20, "\(kind.rawValue): center must be strongly blurred")
+        }
+    }
+
     // MARK: - Helpers
 
     private func summary(_ run: SanitationRun) -> String {
