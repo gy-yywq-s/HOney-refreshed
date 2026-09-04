@@ -29,6 +29,8 @@ final class AccessViewModel {
     var banner: (tone: BannerTone, text: String)?
     var draft = PermitDraft.quick()
 
+    private let gate = LoadGate(maxAge: 30)
+
     init(env: AppEnvironment) { self.env = env }
 
     var permits: [ExitPermit] { authority.permits }
@@ -51,6 +53,7 @@ final class AccessViewModel {
         refreshTask?.cancel()
         refreshTask = nil
         authority.reset()
+        gate.invalidate()
         banner = nil
         permitsError = nil
         doorsError = nil
@@ -59,7 +62,12 @@ final class AccessViewModel {
 
     /// Single-flight refresh: appear, foreground, pull and post-action all
     /// share one round trip.
-    func refresh(keepBanner: Bool = false) async {
+    /// Access is live data, so the window is short — it only spares the
+    /// student a second spinner when they step in and straight back out
+    /// (Gary 2026-09-04). `force` is pull to refresh and every mutation.
+    func refresh(keepBanner: Bool = false, force: Bool = false) async {
+        if !force, gate.isFresh, !authority.permits.isEmpty || !authority.doors.isEmpty { return }
+        gate.markLoaded()
         if let refreshTask { await refreshTask.value; return }
         let gen = generation
         let task = Task { await self.performRefresh(keepBanner: keepBanner, generation: gen) }
@@ -132,7 +140,7 @@ final class AccessViewModel {
             let token = try await env.portalCoordinator.prepareForSensitiveAction()
             let result = try await env.portalAPI.addPermit(token: token, draft.request)
             banner = (.success, result.message.isEmpty ? "Permit submitted." : result.message)
-            await refresh(keepBanner: true)
+            await refresh(keepBanner: true, force: true)
             if permitsError != nil { banner = (.warning, "Permit submitted, but the permit list could not refresh.") }
         } catch {
             handle(error)
@@ -167,7 +175,7 @@ final class AccessViewModel {
         } catch {
             handle(error)
         }
-        await refresh(keepBanner: true)
+        await refresh(keepBanner: true, force: true)
     }
 
     /// Withdraw a pending permit request (explicit, confirmed, never retried).
@@ -182,7 +190,7 @@ final class AccessViewModel {
         } catch {
             handle(error)
         }
-        await refresh(keepBanner: true)
+        await refresh(keepBanner: true, force: true)
     }
 
     private func handle(_ error: Error) {

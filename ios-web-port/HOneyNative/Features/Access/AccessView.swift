@@ -51,14 +51,14 @@ struct AccessView: View {
             await model?.refresh()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await model?.refresh(keepBanner: true) } }
+            if phase == .active { Task { await model?.refresh(keepBanner: true, force: true) } }
         }
         .onChange(of: env.scope) { _, _ in
             model?.reset()
-            Task { await model?.refresh() }
+            Task { await model?.refresh(force: true) }
         }
         .sheet(isPresented: $showSchoolLogin) {
-            SchoolLoginSheet(purpose: .save) { Task { await model?.refresh() } }
+            SchoolLoginSheet(purpose: .save) { Task { await model?.refresh(force: true) } }
         }
     }
 
@@ -71,7 +71,7 @@ struct AccessView: View {
                 VStack(alignment: .leading, spacing: HSpace.x4) {
                     HStack(alignment: .center, spacing: HSpace.x3) {
                         PageTitle(text: "Access")
-                        Button { Task { await model.refresh(keepBanner: true) } } label: {
+                        Button { Task { await model.refresh(keepBanner: true, force: true) } } label: {
                             if model.loading {
                                 ProgressView().controlSize(.small)
                             } else {
@@ -103,7 +103,7 @@ struct AccessView: View {
                 .padding(.top, HSpace.x2)
                 .padding(.bottom, HSpace.x4)
             }
-            .honeyRefreshable { await refreshModel.refresh(keepBanner: true) }
+            .honeyRefreshable { await refreshModel.refresh(keepBanner: true, force: true) }
         }
         .sheet(item: $editing) { field in
             PermitDraftEditor(field: field, draft: $model.draft)
@@ -222,7 +222,7 @@ struct AccessView: View {
                 LoadingPlaceholder(lines: 2)
             } else {
                 if let stale = model.staleMessage, !model.needsSchoolLogin {
-                    InlineStatusBanner(text: stale + (permits.isEmpty ? "" : " The list below may be out of date and cannot open a gate until it is refreshed."), tone: .warning, action: (L10n.t("Try again"), { Task { await model.refresh(keepBanner: true) } }))
+                    InlineStatusBanner(text: stale + (permits.isEmpty ? "" : " The list below may be out of date and cannot open a gate until it is refreshed."), tone: .warning, action: (L10n.t("Try again"), { Task { await model.refresh(keepBanner: true, force: true) } }))
                 }
                 if visible.isEmpty {
                     Text(model.permitsUsable ? "No permits." : "Permits unavailable.").hfont(.body).foregroundStyle(theme.muted)

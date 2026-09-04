@@ -155,7 +155,15 @@ struct CampusCardView: View {
         }
         .honeyRefreshable { await load() }
         .webScreen(title: L10n.t("Campus card"))
-        .task { await load() }
+        .task {
+            // Paint what this screen last showed, then refresh behind it
+            // (Gary 2026-09-04) — a second visit no longer starts empty.
+            if data == nil, let cached: CardResponse = env.screens.value("school.card") {
+                data = cached
+                loading = false
+            }
+            await load()
+        }
         .sheet(isPresented: $topUp) {
             TopUpSheet(onClose: { topUp = false }) {
                 topUp = false
@@ -190,7 +198,9 @@ struct CampusCardView: View {
 
     private func load() async {
         do {
-            data = try await env.api.schoolCard()
+            let fresh = try await env.api.schoolCard()
+            data = fresh
+            env.screens.put(fresh, for: "school.card")
             error = nil
         } catch {
             if data == nil { self.error = APIErrorCopy.describe(error) }
@@ -384,7 +394,15 @@ struct WeekendStayView: View {
         }
         .honeyRefreshable { await load() }
         .webScreen(title: L10n.t("Weekend stay"))
-        .task { await load() }
+        .task {
+            // Paint what this screen last showed, then refresh behind it
+            // (Gary 2026-09-04) — a second visit no longer starts empty.
+            if data == nil, let cached: WeekendResponse = env.screens.value("school.weekend") {
+                data = cached
+                loading = false
+            }
+            await load()
+        }
         .sheet(item: $withdrawing) { stay in
             ConfirmSheet(title: L10n.t("Withdraw this weekend?"), message: stay.label.isEmpty ? stay.date : stay.label, confirmLabel: L10n.t("Withdraw"), danger: true, busy: busy, onCancel: { withdrawing = nil }) {
                 Task { await withdraw(stay) }
@@ -444,7 +462,9 @@ struct WeekendStayView: View {
 
     private func load() async {
         do {
-            data = try await env.api.schoolWeekend()
+            let fresh = try await env.api.schoolWeekend()
+            data = fresh
+            env.screens.put(fresh, for: "school.weekend")
             error = nil
         } catch {
             if data == nil { self.error = APIErrorCopy.describe(error) }
@@ -538,12 +558,22 @@ struct SchoolRecordView: View {
         }
         .honeyRefreshable { await load() }
         .webScreen(title: L10n.t("School record"))
-        .task { await load() }
+        .task {
+            // Paint what this screen last showed, then refresh behind it
+            // (Gary 2026-09-04) — a second visit no longer starts empty.
+            if data == nil, let cached: WarningsResponse = env.screens.value("school.warnings") {
+                data = cached
+                loading = false
+            }
+            await load()
+        }
     }
 
     private func load() async {
         do {
-            data = try await env.api.schoolWarnings()
+            let fresh = try await env.api.schoolWarnings()
+            data = fresh
+            env.screens.put(fresh, for: "school.warnings")
             error = nil
         } catch {
             if data == nil { self.error = APIErrorCopy.describe(error) }
@@ -596,7 +626,15 @@ struct LessonFeedbackView: View {
         }
         .honeyRefreshable { await load() }
         .webScreen(title: L10n.t("Lesson feedback"))
-        .task { await load() }
+        .task {
+            // Paint what this screen last showed, then refresh behind it
+            // (Gary 2026-09-04) — a second visit no longer starts empty.
+            if data == nil, let cached: FeedbackResponse = env.screens.value("school.feedback") {
+                data = cached
+                loading = false
+            }
+            await load()
+        }
         .sheet(item: $open) { item in
             FeedbackSheet(item: item, onClose: { open = nil }) { ok, text in
                 note = (ok ? .success : .danger, text)
@@ -608,7 +646,9 @@ struct LessonFeedbackView: View {
 
     private func load() async {
         do {
-            data = try await env.api.schoolFeedback()
+            let fresh = try await env.api.schoolFeedback()
+            data = fresh
+            env.screens.put(fresh, for: "school.feedback")
             error = nil
         } catch {
             if data == nil { self.error = APIErrorCopy.describe(error) }

@@ -99,6 +99,9 @@ final class AppEnvironment {
     let portalCoordinator: PortalSessionCoordinator
     let portalVault: SecretPortalVault
     let feedStore: FeedStore
+    /// What each screen last showed, so re-entering paints before it reloads
+    /// (Gary 2026-09-04). Process-lifetime only; cleared on account change.
+    let screens = ScreenCache()
     let timetable: TimetableRepository
     let notes: PrivateNoteStore
     let drafts: ComposerDraftStore
@@ -143,10 +146,10 @@ final class AppEnvironment {
         let portalAPI = PortalAPI(baseURL: config.portalBaseURL, transport: portalTransport ?? URLSessionTransport(configuration: portalConfig))
         let portalCoordinator = PortalSessionCoordinator(api: portalAPI, sessions: portalVault, credentials: portalVault, binding: portalVault)
         self.api = api
+        self.sessionStore = sessionStore
         self.portalVault = portalVault
         self.portalAPI = portalAPI
         self.portalCoordinator = portalCoordinator
-        self.sessionStore = sessionStore
         self.feedStore = FeedStore()
         self.timetable = TimetableRepository(provider: api)
         self.notes = PrivateNoteStore(directory: storageDirectory, writeOptions: writeOptions)
@@ -183,6 +186,7 @@ final class AppEnvironment {
         let next = AccountScope(honeyId: me.honeyId, displayName: me.displayName)
         if scope != next {
             accountEpoch += 1
+            screens.clear()
             await feedStore.invalidateAll()
             await timetable.invalidateAll()
             navigator.reset()
@@ -202,6 +206,7 @@ final class AppEnvironment {
     /// Unbind everything before the login screen appears.
     private func deactivate() async {
         accountEpoch += 1
+        screens.clear()
         scope = nil
         me = nil
         cachedMe = nil

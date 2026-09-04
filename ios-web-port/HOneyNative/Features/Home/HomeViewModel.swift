@@ -30,6 +30,11 @@ final class HomeViewModel {
     /// Bumped when this device reads a notice, so the rows re-render.
     private(set) var readVersion = 0
 
+    /// Re-entering Home within the window shows what is already there
+    /// instead of reloading it (Gary 2026-09-04); pull to refresh and any
+    /// explicit reload ignore the gate.
+    private let gate = LoadGate(maxAge: 90)
+
     init(env: AppEnvironment) {
         self.env = env
     }
@@ -37,6 +42,8 @@ final class HomeViewModel {
     var name: NameResolver { names.resolver }
 
     func load(reload: Bool = false) async {
+        if !reload, gate.isFresh, nextLesson != nil { return }
+        gate.markLoaded()
         async let lesson: Void = loadLesson(reload: reload)
         async let voices: Void = loadPreviews(reload: reload)
         async let school: Void = loadNotices()
