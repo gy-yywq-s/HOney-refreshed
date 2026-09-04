@@ -25,7 +25,11 @@ struct ExperiencesFeedView: View {
     @Environment(\.hType) private var ramp
     @State private var model: FeedViewModel?
     @State private var scope: FeedScope = .myClasses
-    @State private var scrolledID: String?
+    /// The rows on screen, kept by their own appear/disappear; the topmost
+    /// of them in feed order is the anchor remembered for this key.
+    @State private var visibleIDs: Set<String> = []
+    /// A jump the stream should make once it can (a deep link's anchor).
+    @State private var pendingJump: String?
 
     var body: some View {
         Group {
@@ -59,12 +63,29 @@ struct ExperiencesFeedView: View {
         }
         if let anchor = intent.anchorId, model.items.contains(where: { $0.id == anchor }) {
             model.restoreAnchorId = anchor
-            scrolledID = anchor
+            pendingJump = anchor
         }
     }
 
+    /// Root cause of the pull-to-refresh "flash back" (Gary 2026-09-05, two
+    /// recordings): this stream was the one surface bound to
+    /// `.scrollPosition(id:)`. That binding is not a one-off jump — SwiftUI
+    /// keeps it satisfied, re-anchoring the scroll offset whenever the layout
+    /// changes. A refresh changes the layout twice: the refresher shifts the
+    /// content by its header shim, and page one replaces the rows. Each time,
+    /// the anchored row was scrolled back to the top edge — once into the
+    /// status bar, once in a second step as the shim let go — on top of the
+    /// refresher's own settle. Timetable, which never anchors, settles in one
+    /// motion; the Web's feed does not anchor either.
+    ///
+    /// So the stream is not position-bound. It scrolls only when it means to
+    /// — restoring the remembered post on entry, a deep link's anchor, "New
+    /// experiences" — through a ScrollViewReader, and it remembers the anchor
+    /// from which rows are on screen, not from a binding the scroll view
+    /// writes into.
     private func stream(_ model: FeedViewModel) -> some View {
         GeometryReader { scrollGeo in
+            ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     header(model)
@@ -94,7 +115,11 @@ struct ExperiencesFeedView: View {
                             )
                             .pageInset()
                             .id(exp.id)
-                            .onAppear { Task { await model.loadMoreIfNeeded(current: exp) } }
+                            .onAppear {
+                                visibleIDs.insert(exp.id)
+                                Task { await model.loadMoreIfNeeded(current: exp) }
+                            }
+                            .onDisappear { visibleIDs.remove(exp.id) }
                         }
                         if model.loadingMore {
                             Text("…")
@@ -111,20 +136,23 @@ struct ExperiencesFeedView: View {
                         }
                     }
                 }
-                .frame(minHeight: scrollGeo.size.height, alignment: .top)
-                .scrollTargetLayout()
+                // Paddings inside the one-screen minimum, so one screen of
+                // content is one screen — not one screen plus 32 pt of
+                // nothing to scroll into (Gary 2026-09-05, every tab page).
                 .padding(.top, HSpace.x4)
                 .padding(.bottom, HSpace.x4)
+                .frame(minHeight: scrollGeo.size.height, alignment: .top)
             }
             .honeyRefreshable { await model.refresh() }
-            .scrollPosition(id: $scrolledID)
             .overlay(alignment: .top) {
                 if model.newAvailable {
                     // `.feed-new`: a sticky pill 8 pt under the top, never a scroll yank.
                     Button {
                         Task {
                             await model.jumpToNew()
-                            scrolledID = model.items.first?.id
+                            if let first = model.items.first?.id {
+                                withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(first, anchor: .top) }
+                            }
                         }
                     } label: {
                         Text(L10n.t("New experiences are available"))
@@ -140,21 +168,31 @@ struct ExperiencesFeedView: View {
                     .padding(.top, HSpace.x2)
                 }
             }
-            .onChange(of: scrolledID) { _, id in
-                if let id, model.items.contains(where: { $0.id == id }) {
-                    model.restoreAnchorId = id
+            .onChange(of: visibleIDs) { _, ids in
+                // The topmost row on screen, in feed order, is what "where I
+                // was" means; a deep link's anchor is not overwritten until
+                // the reader has actually scrolled away from it.
+                if pendingJump == nil, let top = model.items.first(where: { ids.contains($0.id) }) {
+                    model.restoreAnchorId = top.id
                 }
             }
             .onChange(of: model.loading) { _, loading in
                 // Page one arrived (or was restored): land on the remembered post.
                 if !loading, let anchor = model.restoreAnchorId, model.items.contains(where: { $0.id == anchor }) {
-                    scrolledID = anchor
+                    proxy.scrollTo(anchor, anchor: .top)
                 }
             }
+            .onChange(of: pendingJump) { _, anchor in
+                guard let anchor, model.items.contains(where: { $0.id == anchor }) else { return }
+                proxy.scrollTo(anchor, anchor: .top)
+                pendingJump = nil
+            }
             .onAppear {
-                if let anchor = model.restoreAnchorId, model.items.contains(where: { $0.id == anchor }) {
-                    scrolledID = anchor
+                if let anchor = pendingJump ?? model.restoreAnchorId, model.items.contains(where: { $0.id == anchor }) {
+                    proxy.scrollTo(anchor, anchor: .top)
+                    pendingJump = nil
                 }
+            }
             }
         }
     }
