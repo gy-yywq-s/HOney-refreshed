@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AppContext } from "../context.js";
-import type { KillSwitch, StandaloneMode } from "../experiences/settings.js";
+import { FEATURE_NAMES, type FeatureName, type KillSwitch, type StandaloneMode } from "../experiences/settings.js";
 
 // Admin dash API (Gary: studentId 0088 ⇒ admin). Core owns entities, invites,
 // standalone modes and the issuance switches; everything about posts —
@@ -44,7 +44,20 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: AppContext): void
       llm: community?.llm ?? { configured: false, model: "" },
       communityReachable: community !== null,
       issuerReady: ctx.issuer !== null,
+      features: {
+        lessonFeedback: ctx.settings.feature("lessonFeedback"),
+        schoolFeedback: ctx.settings.feature("schoolFeedback"),
+      },
     };
+  });
+
+  /** Product switches (Gary 2026-09-04): what the app shows, not what it allows. */
+  app.post<{ Body: { name?: string; on?: boolean } }>("/api/admin/feature", { preHandler: requireAdmin }, async (req, reply) => {
+    const { name, on } = req.body ?? {};
+    if (typeof name !== "string" || typeof on !== "boolean") return reply.code(400).send({ error: "name and on (boolean) required" });
+    if (!FEATURE_NAMES.includes(name as FeatureName)) return reply.code(400).send({ error: "unknown feature" });
+    ctx.settings.setFeature(name as FeatureName, on);
+    return { ok: true };
   });
 
   app.post<{ Body: { name?: string; on?: boolean } }>("/api/admin/kill-switch", { preHandler: requireAdmin }, async (req, reply) => {

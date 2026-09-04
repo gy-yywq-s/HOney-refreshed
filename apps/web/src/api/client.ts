@@ -31,6 +31,8 @@ import type {
   CardResponse,
   CardTopUpResponse,
   SchoolActionResponse,
+  FeatureFlags,
+  FeatureName,
   FeedbackResponse,
   FeedbackSubmission,
   WarningsResponse,
@@ -208,6 +210,15 @@ export class ApiClient {
     return this.request("POST", "/api/school/card/topup", { amount });
   }
 
+  features(): Promise<FeatureFlags> {
+    return this.request("GET", "/api/features");
+  }
+
+  /** The school's own feedback channel — not anonymous. */
+  schoolComplaint(text: string): Promise<SchoolActionResponse> {
+    return this.request("POST", "/api/school/complaint", { text });
+  }
+
   schoolFeedback(): Promise<FeedbackResponse> {
     return this.request("GET", "/api/school/feedback");
   }
@@ -273,6 +284,10 @@ export class ApiClient {
 
   adminSetKillSwitch(name: KillSwitchName, on: boolean): Promise<{ ok: boolean }> {
     return this.request("POST", "/api/admin/kill-switch", { name, on });
+  }
+
+  adminSetFeature(name: FeatureName, on: boolean): Promise<{ ok: boolean }> {
+    return this.request("POST", "/api/admin/feature", { name, on });
   }
 
   adminSetStandaloneMode(scope: string, mode: StandaloneMode): Promise<{ ok: boolean }> {

@@ -31,6 +31,8 @@ export interface ComposerNotice {
   text: string;
   reasons?: string[];
   suggestKeepPrivate?: boolean;
+  /** Out of scope here: the school's own feedback channel is the place. */
+  suggestSchoolReport?: boolean;
   /** The device has no post controls and a backup exists elsewhere: link to restore. */
   restoreLink?: boolean;
 }
@@ -150,7 +152,7 @@ export function useComposer(target: ComposerTarget | null, seed?: ComposerSeed) 
             break;
           case "out_of_scope":
             setStatus({ kind: "editing" });
-            setNotice({ tone: "warn", text: OUT_OF_SCOPE, reasons: check.reasons, suggestKeepPrivate: true });
+            setNotice({ tone: "warn", text: OUT_OF_SCOPE, reasons: check.reasons, suggestKeepPrivate: true, suggestSchoolReport: true });
             break;
           case "blocked_serious":
             setStatus({ kind: "editing" });

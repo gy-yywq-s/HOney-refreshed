@@ -20,6 +20,7 @@ import { t, useT } from "../../lib/i18n";
 import { privateNotes } from "../../lib/ownershipKeys";
 import type { PrivateNote } from "../../lib/ownershipKeys";
 import { StarInput, describeCheckReasons, useNames } from "./shared";
+import { SchoolFeedbackSheet } from "../../components/SchoolFeedbackSheet";
 import { useComposer } from "./useComposer";
 import type { ComposerSeed } from "./useComposer";
 import type { ComposerTarget } from "./useComposer";
@@ -42,6 +43,7 @@ export function ExperiencesComposePage() {
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [tellSchool, setTellSchool] = useState(false);
 
   useEffect(() => {
     if (!noteId) return;
@@ -374,6 +376,7 @@ export function ExperiencesComposePage() {
 
   return (
     <div className="compose-screen">
+      {tellSchool && <SchoolFeedbackSheet draft={body} onClose={() => setTellSchool(false)} />}
       <h1 className="page-title">{target ? t("Share an experience") : t("What is this about?")}</h1>
 
       {target ? (
@@ -517,6 +520,13 @@ export function ExperiencesComposePage() {
                 {notice.suggestKeepPrivate && (
                   <p className="text-4 compose-notice-alt">You can keep it as a private note instead.</p>
                 )}
+                {notice.suggestSchoolReport && (
+                  <p className="text-4 compose-notice-alt">
+                    <button type="button" className="linklike" onClick={() => setTellSchool(true)}>
+                      {t("Send this to the school instead")}
+                    </button>
+                  </p>
+                )}
                 {notice.restoreLink && (
                   <p className="text-4 compose-notice-alt">
                     <Link to="/settings/post-controls">{t("Restore post controls")}</Link>
@@ -568,6 +578,13 @@ export function ExperiencesComposePage() {
           <p className="text-4" style={{ marginBottom: 0 }}>
             {t("Public sharing runs a text check. Public Experiences are stored without an ordinary author field.")}{" "}
             <Link to="/settings/privacy">{t("How anonymity works")}</Link>
+          </p>
+          {/* Some things belong to the school, not here: its own feedback
+              channel, in one line, without moving anything (Gary 2026-09-04). */}
+          <p className="text-4 compose-toschool">
+            <button type="button" className="linklike" onClick={() => setTellSchool(true)}>
+              {t("Doesn't belong here? Tell the school")}
+            </button>
           </p>
         </section>
       )}

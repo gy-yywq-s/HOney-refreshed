@@ -20,6 +20,8 @@ import { timeAgo } from "../lib/format";
 import { clearChecklist, deleteAccountAfterContent, deletePublicContent, readChecklist, type DeletionOutcome } from "../lib/community-v2/account-deletion";
 import { ACCENT_OPTIONS, getAccent, getSurface } from "../lib/theme";
 import { setLang, t, useLang, useT } from "../lib/i18n";
+import { useFeatures } from "../lib/useFeatures";
+import { SchoolFeedbackSheet } from "../components/SchoolFeedbackSheet";
 import { TEXT_SIZES, setTextSize, useTextSize } from "../lib/textSize";
 
 type PendingConfirm = "disconnect" | "delete-data" | "delete-account" | null;
@@ -102,6 +104,8 @@ export function SettingsPage() {
   );
   const [confirm, setConfirm] = useState<PendingConfirm>(null);
   const [showReconnect, setShowReconnect] = useState<null | "reconnect" | "save">(null);
+  const features = useFeatures();
+  const [tellSchool, setTellSchool] = useState(false);
   // On by default, but the switch shows what is actually kept: a sign-in
   // from before the default flipped stored nothing, and an "on" switch over
   // an empty store left the portal asking for the login (Gary 2026-09-02).
@@ -203,13 +207,24 @@ export function SettingsPage() {
             </span>
             <ChevronRightIcon size={18} />
           </Link>
-          <Link className="row" to="/settings/feedback">
-            <span className="row__main">
-              <span className="row__title">{t("Lesson feedback")}</span>
-              <span className="row__sub">{t("Lessons waiting for yours")}</span>
-            </span>
-            <ChevronRightIcon size={18} />
-          </Link>
+          {features.lessonFeedback && (
+            <Link className="row" to="/settings/feedback">
+              <span className="row__main">
+                <span className="row__title">{t("Lesson feedback")}</span>
+                <span className="row__sub">{t("Lessons waiting for yours")}</span>
+              </span>
+              <ChevronRightIcon size={18} />
+            </Link>
+          )}
+          {features.schoolFeedback && (
+            <button className="row row--tap" onClick={() => setTellSchool(true)}>
+              <span className="row__main">
+                <span className="row__title">{t("Feedback to the school")}</span>
+                <span className="row__sub">{t("Goes to school staff, under your name")}</span>
+              </span>
+              <ChevronRightIcon size={18} />
+            </button>
+          )}
           <Link className="row" to="/settings/record">
             <span className="row__main">
               <span className="row__title">{t("School record")}</span>
@@ -275,7 +290,8 @@ export function SettingsPage() {
             </Link>
           </section>
         )}
-        {showReconnect && (
+        {tellSchool && <SchoolFeedbackSheet onClose={() => setTellSchool(false)} />}
+      {showReconnect && (
           <ReconnectDialog
             purpose={showReconnect}
             onClose={() => setShowReconnect(null)}

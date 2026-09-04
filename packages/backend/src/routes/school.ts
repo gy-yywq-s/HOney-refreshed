@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { AppContext } from "../context.js";
-import type { CardResponse, CardTopUpResponse, FeedbackResponse, FeedbackSubmission, SchoolActionResponse, WarningsResponse, WeekendResponse } from "@honey/shared/api";
+import type { CardResponse, CardTopUpResponse, FeatureFlags, FeedbackResponse, FeedbackSubmission, SchoolActionResponse, WarningsResponse, WeekendResponse } from "@honey/shared/api";
 import { parsePortalTime } from "@honey/shared/access";
 
 // The student's own records at the school (Gary 2026-09-03: campus card,
@@ -174,6 +174,28 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
   });
 
   /** Lessons still waiting for this student's feedback (the portal's own list). */
+  /** What the app shows (Dash owns the switches). */
+  app.get("/api/features", { preHandler: ctx.requireAuth }, async (): Promise<FeatureFlags> => ({
+    lessonFeedback: ctx.settings.feature("lessonFeedback"),
+    schoolFeedback: ctx.settings.feature("schoolFeedback"),
+  }));
+
+  /** The school's own feedback channel — NOT anonymous: it goes under the student's name. */
+  app.post<{ Body: { text?: string } }>("/api/school/complaint", { preHandler: ctx.requireAuth }, async (req, reply): Promise<SchoolActionResponse> => {
+    void reply.header("cache-control", "no-store");
+    const user = ctx.userOf(req);
+    const token = tokenFor(user.honey_id);
+    if (!token) return { status: "portal_reconnect_required" };
+    const text = String(req.body?.text ?? "").trim();
+    if (text.length < 4) return { status: "refused", reason: "Write what you want the school to know." };
+    try {
+      await ctx.connector.api.submitComplaint(token, text.slice(0, 2000));
+      return { status: "ok" };
+    } catch (e) {
+      return failure(e, user.honey_id);
+    }
+  });
+
   app.get("/api/school/feedback", { preHandler: ctx.requireAuth }, async (req, reply): Promise<FeedbackResponse> => {
     void reply.header("cache-control", "no-store");
     const user = ctx.userOf(req);

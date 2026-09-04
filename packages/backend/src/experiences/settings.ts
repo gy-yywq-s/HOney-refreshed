@@ -9,6 +9,15 @@ export type KillSwitch = "DISABLE_NEW_PUBLICATIONS" | "PRIVATE_NOTES_ONLY_MODE";
 
 export type StandaloneMode = "verified" | "open" | "invite" | "closed";
 
+export type FeatureName = "lessonFeedback" | "schoolFeedback";
+
+const FEATURE_DEFAULTS: Record<FeatureName, boolean> = {
+  lessonFeedback: false,
+  schoolFeedback: true,
+};
+
+export const FEATURE_NAMES: FeatureName[] = ["lessonFeedback", "schoolFeedback"];
+
 export class SettingsService {
   constructor(private readonly db: DatabaseSync) {}
 
@@ -32,6 +41,20 @@ export class SettingsService {
   }
   setFrozenEntity(entityKey: string, frozen: boolean): void {
     this.set(`freeze.${entityKey}`, frozen ? "1" : "0");
+  }
+
+  /**
+   * Product switches Dash owns (Gary 2026-09-04). `lessonFeedback` is the
+   * school's 评教 screen, off by default because Experiences covers the same
+   * ground; `schoolFeedback` is the standalone entry to the school's own
+   * feedback channel (the composer always offers it).
+   */
+  feature(name: FeatureName): boolean {
+    const stored = this.get(`feature.${name}`);
+    return stored === null ? FEATURE_DEFAULTS[name] : stored === "1";
+  }
+  setFeature(name: FeatureName, on: boolean): void {
+    this.set(`feature.${name}`, on ? "1" : "0");
   }
 
   /** Per entity type; a per-entity override wins over the type default. */

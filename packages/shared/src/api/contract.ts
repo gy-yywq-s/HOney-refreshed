@@ -240,6 +240,19 @@ export interface FeedbackSubmission {
   didNotUnderstand: boolean;
 }
 
+/**
+ * Product switches Dash owns. `lessonFeedback` shows the school's 评教 screen
+ * (off by default — Experiences covers the same ground); `schoolFeedback`
+ * shows the standalone entry to the school's own feedback channel, which the
+ * composer offers in any case.
+ */
+export interface FeatureFlags {
+  lessonFeedback: boolean;
+  schoolFeedback: boolean;
+}
+
+export type FeatureName = keyof FeatureFlags;
+
 /** An action taken at the school on the student's behalf. */
 export type SchoolActionResponse =
   | { status: "ok" }
@@ -344,6 +357,8 @@ export interface AdminOverview {
   communityReachable: boolean;
   /** False until the blind-eligibility issuer key is loaded. */
   issuerReady: boolean;
+  /** Product switches (Dash owns them). */
+  features: FeatureFlags;
 }
 
 export interface AdminImportResult {

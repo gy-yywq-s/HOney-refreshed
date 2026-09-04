@@ -14,6 +14,7 @@ import { Skeleton } from "../lib/motion";
 import { Navigate } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import type {
+  FeatureName,
   EntityType,
   KillSwitchName,
   StandaloneMode,
@@ -59,6 +60,19 @@ const STANDALONE_MODES: { value: StandaloneMode; label: string }[] = [
 
 const ENTITY_TYPES: EntityType[] = ["teacher", "room", "dish"];
 
+const FEATURE_META: { name: FeatureName; label: string; description: string }[] = [
+  {
+    name: "lessonFeedback",
+    label: "Lesson feedback",
+    description: "The school's own per-lesson feedback form, in Settings. Off: Experiences covers the same ground.",
+  },
+  {
+    name: "schoolFeedback",
+    label: "Feedback to the school (own entry)",
+    description: "A standalone entry in Settings. The composer offers it either way.",
+  },
+];
+
 type Feedback = { tone: "success" | "danger"; text: string } | null;
 type Run = (key: string, fn: () => Promise<void>, successText?: string) => Promise<void>;
 
@@ -89,6 +103,12 @@ export function DashPage() {
       setBusy(null);
     }
   };
+
+  const onFeature = (name: FeatureName, on: boolean) =>
+    run(`feature:${name}`, async () => {
+      await api.adminSetFeature(name, on);
+      overview.reload();
+    });
 
   const counts = overview.data?.counts;
 
@@ -127,6 +147,25 @@ export function DashPage() {
       </section>
 
       <WebAccessPanel />
+
+      {/* What the app shows (Gary 2026-09-04): product switches, not gates. */}
+      <section className="rowlist" aria-label="Screens">
+        <h2 className="overline">Screens</h2>
+        {FEATURE_META.map((f) => (
+          <div className="row" key={f.name}>
+            <span className="row__main">
+              <span className="row__title">{f.label}</span>
+              <span className="row__sub">{f.description}</span>
+            </span>
+            <Switch
+              on={overview.data?.features[f.name] ?? false}
+              label={f.label}
+              disabled={!overview.data || busy === `feature:${f.name}`}
+              onChange={(next) => void onFeature(f.name, next)}
+            />
+          </div>
+        ))}
+      </section>
 
       <section className="rowlist" aria-label="Kill switches">
         <h2 className="overline">Kill switches</h2>

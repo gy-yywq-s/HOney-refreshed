@@ -214,6 +214,19 @@ export class PortalApi {
     throw operationRejected(path, typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
   }
 
+  /**
+   * POST /api/students/student_complaints — the school's own feedback channel
+   * (its form sends `{ complaint }` and nothing else). This is NOT anonymous:
+   * it arrives at the school under the student's portal identity.
+   */
+  async submitComplaint(token: string, complaint: string): Promise<void> {
+    const path = "/api/students/student_complaints";
+    const resp = await this.http.request({ method: "POST", path, token, jsonBody: { complaint }, mutation: true });
+    const env = asEnvelope(this.http.triage(resp, path), path);
+    if (env.status === 0) return;
+    throw operationRejected(path, typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
+  }
+
   /** GET /api/students/get_my_warning — the student's own disciplinary records. */
   warnings(token: string): Promise<StudentWarningWire[]> {
     return this.rows<StudentWarningWire>(token, "/api/students/get_my_warning");
