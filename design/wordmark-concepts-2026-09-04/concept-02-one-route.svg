@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820">
+  <rect width="1440" height="820" fill="#F2F6F4"/>
+  <text x="96" y="92" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="26" fill="#58625F">02  One route</text>
+  <text x="96" y="132" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#7E8884">One continuous path crosses O–n–e; the node marks a hand-off, not a pin.</text>
+  <g transform="translate(184 206)" fill="none" stroke="#171D22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 68V346M0 205H154M154 68V346" stroke-width="28"/>
+    <path d="M451 170A128 128 0 1 0 451 234" stroke-width="32"/>
+    <path d="M451 202H470V346M470 238c0-45 25-74 67-74 45 0 70 29 70 73v109" stroke-width="30"/>
+    <path d="M654 258h126c0-58-23-94-65-94-44 0-67 38-67 91 0 56 28 94 77 94 25 0 47-9 63-26" stroke-width="30"/>
+    <path d="M829 170l69 178 71-178M898 348c-14 48-33 69-76 69" stroke-width="30"/>
+    <circle cx="461" cy="202" r="14" fill="#35B878" stroke="none"/>
+    <circle cx="649" cy="258" r="10" fill="#35B878" stroke="none"/>
+  </g>
+  <rect x="96" y="664" width="438" height="78" rx="24" fill="#E7EFEB"/>
+  <text x="126" y="712" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#56615D">Graphic lives in the reading path, not beside the name.</text>
+</svg>

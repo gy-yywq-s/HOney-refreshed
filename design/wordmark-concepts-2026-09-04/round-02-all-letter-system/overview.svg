@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="2460" viewBox="0 0 1920 2460">
+  <rect width="1920" height="2460" fill="#E9EBE8"/>
+  <text x="60" y="62" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="30" fill="#373B39">HOney wordmark brainstorm — round 02</text>
+  <text x="60" y="98" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#686D6A">All-letter systems; concepts 01–04 explore campus/cam, 05–08 deliberately do not.</text>
+  <g transform="translate(40 135)">
+    <image href="01-one-cam-dual-read.png" x="0" y="0" width="900" height="562.5"/>
+    <image href="02-campus-circulation.png" x="940" y="0" width="900" height="562.5"/>
+    <image href="03-courtyard-alphabet.png" x="0" y="592" width="900" height="562.5"/>
+    <image href="04-two-plazas-bridge.png" x="940" y="592" width="900" height="562.5"/>
+    <image href="05-folded-ribbon.png" x="0" y="1184" width="900" height="562.5"/>
+    <image href="06-counter-relay.png" x="940" y="1184" width="900" height="562.5"/>
+    <image href="07-hinged-letters.png" x="0" y="1776" width="900" height="562.5"/>
+    <image href="08-one-lockup.png" x="940" y="1776" width="900" height="562.5"/>
+  </g>
+</svg>

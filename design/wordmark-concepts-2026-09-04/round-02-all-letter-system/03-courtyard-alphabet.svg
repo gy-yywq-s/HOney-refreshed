@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F6F3FA"/>
+  <text x="92" y="82" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="27" fill="#605B68">03  Courtyard alphabet</text>
+  <text x="92" y="124" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#89828F">Every glyph uses the same five modules: boundary, doorway cut, bridge, turn, and fork.</text>
+
+  <g transform="translate(166 240)" fill="none" stroke="#432E78" stroke-width="38" stroke-linecap="round" stroke-linejoin="round">
+    <!-- H/gate with two matching doorway cuts -->
+    <path d="M0 30V320M148 30V320M0 171H148"/>
+    <path d="M0 267h22M126 267h22" stroke="#EBA24A" stroke-width="14"/>
+
+    <!-- O/courtyard: complete outside, C-shaped inner route -->
+    <circle cx="337" cy="174" r="132"/>
+    <path d="M386 120A68 68 0 1 0 386 228" stroke="#EBA24A" stroke-width="14"/>
+
+    <!-- n/covered passage with same doorway cut -->
+    <path d="M496 136V320M496 212C496 163 526 132 572 132C619 132 645 162 645 211V320"/>
+    <path d="M555 320h31" stroke="#EBA24A" stroke-width="14"/>
+
+    <!-- e/turning court with split terminal -->
+    <path d="M694 230H830C830 166 803 132 758 132C709 132 684 173 684 230C684 288 716 324 767 324C795 324 818 312 838 291"/>
+    <path d="M800 132l22-24 20 24" stroke="#EBA24A" stroke-width="14"/>
+
+    <!-- y/outgoing fork with door cuts at both branches -->
+    <path d="M877 140L946 324L1021 140M946 324C934 373 910 394 862 394"/>
+    <path d="M886 164l20-8M992 156l20 8" stroke="#EBA24A" stroke-width="14"/>
+  </g>
+
+  <g transform="translate(986 678)">
+    <rect width="308" height="112" rx="28" fill="#ECE5F2"/>
+    <path d="M34 58h46M103 58h46M172 58h46M241 58h34" stroke="#432E78" stroke-width="11" stroke-linecap="round"/>
+    <path d="M57 58v-17M126 58v17M195 58v-17M258 58v17" stroke="#EBA24A" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="986" y="820" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#777080">Shared spatial grammar test</text>
+</svg>

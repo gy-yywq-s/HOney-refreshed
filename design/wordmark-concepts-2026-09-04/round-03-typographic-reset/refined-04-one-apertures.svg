@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F6F7F4"/>
+  <text x="70" y="65" font-family="Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="300" fill="#747975">One apertures</text>
+  <defs>
+    <mask id="onecuts" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="900">
+      <rect width="1440" height="900" fill="white"/>
+      <rect x="693" y="406" width="15" height="13" rx="4" transform="rotate(-18 700 412)" fill="black"/>
+      <rect x="811" y="360" width="14" height="12" rx="4" transform="rotate(-18 818 366)" fill="black"/>
+      <rect x="951" y="439" width="14" height="12" rx="4" transform="rotate(-18 958 445)" fill="black"/>
+    </mask>
+  </defs>
+  <image href="base-helvetica-ultralight-outline.svg" x="273" y="230" width="894" height="366.078" mask="url(#onecuts)"/>
+  <g transform="translate(82 680)">
+    <image href="base-helvetica-ultralight-outline.svg" width="224" height="91.7"/>
+    <image href="base-helvetica-ultralight-outline.svg" y="116" width="134" height="54.9"/>
+  </g>
+  <text x="1280" y="806" text-anchor="end" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" fill="#7B807C">Only O–n–e share the aperture; H and y remain untouched.</text>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820">
+  <rect width="1440" height="820" fill="#F7F5EF"/>
+  <text x="96" y="92" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="26" fill="#5E625F">01  Aperture tile</text>
+  <text x="96" y="132" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#858985">The missing piece makes the C-like aperture read back as O.</text>
+  <g transform="translate(188 210)" fill="none" stroke="#142650" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 62V340M0 199H154M154 62V340" stroke-width="30"/>
+    <path d="M451 170A128 128 0 1 0 451 234" stroke-width="34"/>
+    <path d="M478 172V340M478 238c0-44 25-70 67-70s66 26 66 70v102" stroke-width="30"/>
+    <path d="M661 256h126c0-55-22-88-64-88-45 0-68 37-68 88 0 54 28 88 75 88 24 0 45-8 61-24" stroke-width="30"/>
+    <path d="M830 174l70 172 70-172M900 346c-15 50-32 70-74 70" stroke-width="30"/>
+    <rect x="450" y="188" width="24" height="28" rx="7" fill="#F46452" stroke="none" transform="rotate(-8 462 202)"/>
+  </g>
+  <g transform="translate(1000 634) scale(.42)" fill="none" stroke="#142650" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 62V340M0 199H154M154 62V340" stroke-width="30"/>
+    <path d="M451 170A128 128 0 1 0 451 234" stroke-width="34"/>
+    <path d="M478 172V340M478 238c0-44 25-70 67-70s66 26 66 70v102" stroke-width="30"/>
+    <path d="M661 256h126c0-55-22-88-64-88-45 0-68 37-68 88 0 54 28 88 75 88 24 0 45-8 61-24" stroke-width="30"/>
+    <path d="M830 174l70 172 70-172M900 346c-15 50-32 70-74 70" stroke-width="30"/>
+    <rect x="450" y="188" width="24" height="28" rx="7" fill="#F46452" stroke="none" transform="rotate(-8 462 202)"/>
+  </g>
+  <text x="1000" y="774" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#777B78">Small-use check</text>
+</svg>

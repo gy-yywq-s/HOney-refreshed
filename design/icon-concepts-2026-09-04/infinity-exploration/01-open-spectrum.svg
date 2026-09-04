@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#EAF4F6"/>
+  <g fill="none" stroke-width="72" stroke-linecap="butt" stroke-linejoin="round">
+    <path pathLength="100" d="M190 512C286 334 426 334 512 512C598 690 738 690 834 512C738 334 598 334 512 512C426 690 286 690 190 512" stroke="#5E9ED6" stroke-dasharray="18 82"/>
+    <path pathLength="100" d="M190 512C286 334 426 334 512 512C598 690 738 690 834 512C738 334 598 334 512 512C426 690 286 690 190 512" stroke="#57A47A" stroke-dasharray="20 80" stroke-dashoffset="-18"/>
+    <path pathLength="100" d="M190 512C286 334 426 334 512 512C598 690 738 690 834 512C738 334 598 334 512 512C426 690 286 690 190 512" stroke="#F5AE54" stroke-dasharray="18 82" stroke-dashoffset="-38"/>
+    <path pathLength="100" d="M190 512C286 334 426 334 512 512C598 690 738 690 834 512C738 334 598 334 512 512C426 690 286 690 190 512" stroke="#745170" stroke-dasharray="20 80" stroke-dashoffset="-56"/>
+    <path pathLength="100" d="M190 512C286 334 426 334 512 512C598 690 738 690 834 512C738 334 598 334 512 512C426 690 286 690 190 512" stroke="#25354A" stroke-dasharray="18 82" stroke-dashoffset="-76"/>
+  </g>
+  <circle cx="190" cy="512" r="36" fill="#5E9ED6"/>
+</svg>

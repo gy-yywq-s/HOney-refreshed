@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F5F7F6"/>
+  <text x="70" y="65" font-family="Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="300" fill="#747A77">O–n fold</text>
+  <defs>
+    <mask id="oncut" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="900">
+      <rect width="1440" height="900" fill="white"/>
+      <circle cx="700" cy="413" r="10" fill="black"/>
+      <rect x="721" y="399" width="17" height="27" rx="6" fill="black"/>
+    </mask>
+  </defs>
+  <image href="base-helvetica-ultralight-outline.svg" x="273" y="230" width="894" height="366.078" mask="url(#oncut)"/>
+  <path d="M699 406H710C717 406 719 419 726 419H733" fill="none" stroke="#111518" stroke-width="7" stroke-linecap="round"/>
+  <path d="M699 419H710C717 419 719 406 726 406H733" fill="none" stroke="#477EC8" stroke-width="7" stroke-linecap="round"/>
+  <g transform="translate(1023 675)">
+    <path d="M0 7h11c7 0 9 13 16 13h7" fill="none" stroke="#111518" stroke-width="7" stroke-linecap="round"/>
+    <path d="M0 20h11c7 0 9-13 16-13h7" fill="none" stroke="#477EC8" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <text x="80" y="805" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" fill="#7B817E">The fold is the actual missing O–n connection, not a nearby badge.</text>
+</svg>

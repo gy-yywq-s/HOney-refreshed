@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F9F6F0"/>
+  <text x="70" y="65" font-family="Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="300" fill="#78736C">Returning y</text>
+  <image href="base-helvetica-ultralight-outline.svg" x="273" y="230" width="894" height="366.078"/>
+  <!-- continue the existing descender with one quiet returning gesture -->
+  <path d="M1047 580C1029 583 1019 592 1020 603C1021 616 1035 622 1053 619C1072 616 1086 602 1082 588" fill="none" stroke="#111518" stroke-width="7" stroke-linecap="round"/>
+  <path d="M1082 588c-2-7 1-12 8-15" fill="none" stroke="#477EC8" stroke-width="7" stroke-linecap="round"/>
+  <g transform="translate(82 680)">
+    <image href="base-helvetica-ultralight-outline.svg" width="224" height="91.7"/>
+    <image href="base-helvetica-ultralight-outline.svg" y="116" width="134" height="54.9"/>
+  </g>
+  <text x="1280" y="806" text-anchor="end" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" fill="#817C75">The graphic grows from the existing terminal; no letter is interrupted.</text>
+</svg>

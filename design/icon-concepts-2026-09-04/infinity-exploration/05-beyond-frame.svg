@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#EAF4F6"/>
+  <g fill="none" stroke-width="78" stroke-linecap="butt" stroke-linejoin="round">
+    <path pathLength="100" d="M-62 650C116 250 365 250 512 512C659 774 908 774 1086 374" stroke="#25354A"/>
+    <path pathLength="100" d="M-62 650C116 250 365 250 512 512C659 774 908 774 1086 374" stroke="#5E9ED6" stroke-dasharray="20 80"/>
+    <path pathLength="100" d="M-62 650C116 250 365 250 512 512C659 774 908 774 1086 374" stroke="#57A47A" stroke-dasharray="20 80" stroke-dashoffset="-20"/>
+    <path pathLength="100" d="M-62 650C116 250 365 250 512 512C659 774 908 774 1086 374" stroke="#F5AE54" stroke-dasharray="18 82" stroke-dashoffset="-40"/>
+    <path pathLength="100" d="M-62 650C116 250 365 250 512 512C659 774 908 774 1086 374" stroke="#745170" stroke-dasharray="20 80" stroke-dashoffset="-58"/>
+    <path pathLength="100" d="M-62 650C116 250 365 250 512 512C659 774 908 774 1086 374" stroke="#25354A" stroke-dasharray="22 78" stroke-dashoffset="-78"/>
+  </g>
+  <path d="M512 512C365 774 116 774-62 374" fill="none" stroke="#AFC2C7" stroke-width="48" stroke-linecap="round"/>
+  <path d="M512 512C659 250 908 250 1086 650" fill="none" stroke="#AFC2C7" stroke-width="48" stroke-linecap="round"/>
+</svg>

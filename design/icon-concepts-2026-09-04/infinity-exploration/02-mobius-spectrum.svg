@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#EAF4F6"/>
+  <g fill="none" stroke-width="104" stroke-linecap="round" stroke-linejoin="round">
+    <path pathLength="100" d="M186 512C282 326 424 326 512 512C600 698 742 698 838 512C742 326 600 326 512 512C424 698 282 698 186 512" stroke="#25354A"/>
+    <path pathLength="100" d="M186 512C282 326 424 326 512 512C600 698 742 698 838 512C742 326 600 326 512 512C424 698 282 698 186 512" stroke="#5E9ED6" stroke-dasharray="22 78"/>
+    <path pathLength="100" d="M186 512C282 326 424 326 512 512C600 698 742 698 838 512C742 326 600 326 512 512C424 698 282 698 186 512" stroke="#57A47A" stroke-dasharray="22 78" stroke-dashoffset="-22"/>
+    <path pathLength="100" d="M186 512C282 326 424 326 512 512C600 698 742 698 838 512C742 326 600 326 512 512C424 698 282 698 186 512" stroke="#F5AE54" stroke-dasharray="18 82" stroke-dashoffset="-44"/>
+    <path pathLength="100" d="M186 512C282 326 424 326 512 512C600 698 742 698 838 512C742 326 600 326 512 512C424 698 282 698 186 512" stroke="#745170" stroke-dasharray="20 80" stroke-dashoffset="-62"/>
+    <path pathLength="100" d="M186 512C282 326 424 326 512 512C600 698 742 698 838 512C742 326 600 326 512 512C424 698 282 698 186 512" stroke="#25354A" stroke-dasharray="18 82" stroke-dashoffset="-82"/>
+  </g>
+  <!-- A single clean twist makes the centre read as a ribbon, not two crossing strokes. -->
+  <path d="M456 441C477 466 495 490 512 512C530 535 548 558 570 581" fill="none" stroke="#EAF4F6" stroke-width="124" stroke-linecap="butt"/>
+  <path d="M456 441C477 466 495 490 512 512C530 535 548 558 570 581" fill="none" stroke="#AFC2C7" stroke-width="82" stroke-linecap="butt"/>
+</svg>

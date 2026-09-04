@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+  <rect width="1440" height="760" fill="#F4F6F7"/>
+  <text x="64" y="58" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">A · Mist fold</text>
+  <g transform="translate(0 176)">
+    <image href="glyph-bricks/tight-r1-h.png" x="170" y="0" width="244" height="180"/>
+    <image href="glyph-bricks/tight-r1-o.png" x="350" y="0" width="265" height="180"/>
+    <image href="glyph-bricks/tight-r1-n.png" x="520" y="0" width="244" height="180"/>
+    <image href="glyph-bricks/tight-r1-e.png" x="685" y="0" width="275" height="180"/>
+    <image href="glyph-bricks/tight-r1-y.png" x="850" y="0" width="318" height="180"/>
+  </g>
+  <g transform="translate(56 585) scale(.32)">
+    <image href="glyph-bricks/tight-r1-h.png" x="0" y="0" width="244" height="180"/>
+    <image href="glyph-bricks/tight-r1-o.png" x="180" y="0" width="265" height="180"/>
+    <image href="glyph-bricks/tight-r1-n.png" x="350" y="0" width="244" height="180"/>
+    <image href="glyph-bricks/tight-r1-e.png" x="515" y="0" width="275" height="180"/>
+    <image href="glyph-bricks/tight-r1-y.png" x="680" y="0" width="318" height="180"/>
+  </g>
+</svg>

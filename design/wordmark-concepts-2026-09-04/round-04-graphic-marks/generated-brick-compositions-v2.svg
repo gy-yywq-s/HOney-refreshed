@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="940" viewBox="0 0 1440 940">
+  <rect width="1440" height="940" fill="#F4F6F7"/>
+  <text x="56" y="54" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="20" fill="#5C6770">HOney — custom glyph systems assembled from ImageGen bricks</text>
+
+  <g transform="translate(0 82)">
+    <text x="70" y="78" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="14" fill="#667079">Mist fold</text>
+    <image href="glyph-bricks/tight-r1-h.png" x="185" y="0" width="196" height="145"/>
+    <image href="glyph-bricks/tight-r1-o.png" x="350" y="0" width="213" height="145"/>
+    <image href="glyph-bricks/tight-r1-n.png" x="535" y="0" width="196" height="145"/>
+    <image href="glyph-bricks/tight-r1-e.png" x="700" y="0" width="221" height="145"/>
+    <image href="glyph-bricks/tight-r1-y.png" x="885" y="0" width="255" height="145"/>
+  </g>
+
+  <g transform="translate(0 292)">
+    <text x="70" y="70" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="14" fill="#667079">Smoky plum</text>
+    <image href="glyph-bricks/tight-r2-h.png" x="185" y="0" width="207" height="135"/>
+    <image href="glyph-bricks/tight-r2-o.png" x="355" y="0" width="225" height="135"/>
+    <image href="glyph-bricks/tight-r2-n.png" x="548" y="0" width="207" height="135"/>
+    <image href="glyph-bricks/tight-r2-e.png" x="718" y="0" width="234" height="135"/>
+    <image href="glyph-bricks/tight-r2-y.png" x="915" y="0" width="270" height="135"/>
+  </g>
+
+  <g transform="translate(0 492)">
+    <text x="70" y="74" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="14" fill="#667079">Muted moss</text>
+    <image href="glyph-bricks/tight-r3-h.png" x="185" y="0" width="207" height="144"/>
+    <image href="glyph-bricks/tight-r3-o.png" x="355" y="0" width="225" height="144"/>
+    <image href="glyph-bricks/tight-r3-n.png" x="548" y="0" width="207" height="144"/>
+    <image href="glyph-bricks/tight-r3-e.png" x="718" y="0" width="234" height="144"/>
+    <image href="glyph-bricks/tight-r3-y.png" x="915" y="0" width="270" height="144"/>
+  </g>
+
+  <g transform="translate(0 702)">
+    <text x="70" y="78" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="14" fill="#667079">Interlocked mist</text>
+    <image href="glyph-bricks/tight-r4-h.png" x="185" y="0" width="230" height="170"/>
+    <image href="glyph-bricks/tight-r4-o.png" x="370" y="0" width="250" height="170"/>
+    <image href="glyph-bricks/tight-r4-n.png" x="580" y="0" width="230" height="170"/>
+    <image href="glyph-bricks/tight-r4-e.png" x="770" y="0" width="260" height="170"/>
+    <image href="glyph-bricks/tight-r4-y.png" x="990" y="0" width="300" height="170"/>
+  </g>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1320" viewBox="0 0 1800 1320">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="20" flood-color="#19242B" flood-opacity=".12"/></filter>
+    <clipPath id="tile"><rect width="420" height="420" rx="92"/></clipPath>
+  </defs>
+  <rect width="1800" height="1320" fill="#E9ECEF"/>
+  <text x="68" y="74" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="34" font-weight="600" fill="#273238">Infinite colour · icon exploration</text>
+  <text x="68" y="112" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#667079">Colour keeps arriving; the form never reaches a final state.</text>
+
+  <g transform="translate(70 165)">
+    <g filter="url(#shadow)" clip-path="url(#tile)"><image href="01-open-spectrum.png" width="420" height="420"/></g>
+    <text y="462" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="20" fill="#273238">01 · Open spectrum</text>
+    <image href="01-open-spectrum.png" x="340" y="442" width="64" height="64"/>
+  </g>
+  <g transform="translate(570 165)">
+    <g filter="url(#shadow)" clip-path="url(#tile)"><image href="02-mobius-spectrum.png" width="420" height="420"/></g>
+    <text y="462" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="20" fill="#273238">02 · Möbius spectrum</text>
+    <image href="02-mobius-spectrum.png" x="340" y="442" width="64" height="64"/>
+  </g>
+  <g transform="translate(1070 165)">
+    <g filter="url(#shadow)" clip-path="url(#tile)"><image href="03-unfinished-handoff.png" width="420" height="420"/></g>
+    <text y="462" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="20" fill="#273238">03 · Unfinished handoff</text>
+    <image href="03-unfinished-handoff.png" x="340" y="442" width="64" height="64"/>
+  </g>
+  <g transform="translate(320 730)">
+    <g filter="url(#shadow)" clip-path="url(#tile)"><image href="04-two-endless-paths.png" width="420" height="420"/></g>
+    <text y="462" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="20" fill="#273238">04 · Two endless paths</text>
+    <image href="04-two-endless-paths.png" x="340" y="442" width="64" height="64"/>
+  </g>
+  <g transform="translate(920 730)">
+    <g filter="url(#shadow)" clip-path="url(#tile)"><image href="05-beyond-frame.png" width="420" height="420"/></g>
+    <text y="462" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="20" fill="#273238">05 · Beyond frame</text>
+    <image href="05-beyond-frame.png" x="340" y="442" width="64" height="64"/>
+  </g>
+</svg>

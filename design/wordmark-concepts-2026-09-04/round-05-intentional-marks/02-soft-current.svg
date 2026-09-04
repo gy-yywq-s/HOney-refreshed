@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+  <rect width="1440" height="760" fill="#EEF2F2"/>
+  <text x="64" y="58" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">02 · Soft current</text>
+
+  <path d="M188 342C286 342 294 321 387 321C455 321 473 357 544 357C627 357 644 326 724 326C805 326 823 350 903 350C1000 350 1034 329 1142 329" fill="none" stroke="#81979C" stroke-width="18" stroke-linecap="round"/>
+  <ellipse cx="486" cy="337" rx="65" ry="74" fill="#EEF2F2"/>
+  <rect x="619" y="281" width="94" height="112" rx="45" fill="#EEF2F2"/>
+
+  <g transform="translate(0 225)">
+    <image href="glyphs/wave-h.png" x="150" y="0" width="244" height="220"/>
+    <image href="glyphs/wave-o.png" x="330" y="0" width="299" height="220"/>
+    <image href="glyphs/wave-n.png" x="540" y="0" width="275" height="220"/>
+    <image href="glyphs/wave-e.png" x="735" y="0" width="287" height="220"/>
+    <image href="glyphs/wave-y.png" x="930" y="0" width="306" height="220"/>
+  </g>
+
+  <g transform="translate(68 592) scale(.34)">
+    <path d="M118 117C216 117 224 96 317 96C385 96 403 132 474 132C557 132 574 101 654 101C735 101 753 125 833 125C930 125 964 104 1072 104" fill="none" stroke="#81979C" stroke-width="18" stroke-linecap="round"/>
+    <ellipse cx="416" cy="112" rx="65" ry="74" fill="#EEF2F2"/>
+    <rect x="549" y="56" width="94" height="112" rx="45" fill="#EEF2F2"/>
+    <image href="glyphs/wave-h.png" x="80" y="0" width="244" height="220"/>
+    <image href="glyphs/wave-o.png" x="260" y="0" width="299" height="220"/>
+    <image href="glyphs/wave-n.png" x="470" y="0" width="275" height="220"/>
+    <image href="glyphs/wave-e.png" x="665" y="0" width="287" height="220"/>
+    <image href="glyphs/wave-y.png" x="860" y="0" width="306" height="220"/>
+  </g>
+</svg>

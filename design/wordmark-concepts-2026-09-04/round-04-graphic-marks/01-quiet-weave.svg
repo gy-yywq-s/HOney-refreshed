@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F4F6F7"/>
+  <text x="70" y="65" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="19" fill="#667079">Quiet weave</text>
+  <g transform="translate(150 180)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- H: the bridge folds once rather than receiving a badge -->
+    <path d="M40 85V385M192 85V385" stroke="#2B3338" stroke-width="24"/>
+    <path d="M40 236H96C119 236 124 214 147 214C164 214 175 236 192 236" stroke="#2B3338" stroke-width="24"/>
+    <path d="M96 236C119 236 124 214 147 214" stroke="#6D858A" stroke-width="13"/>
+
+    <!-- O: dark boundary + muted returning plane complete one loop -->
+    <path d="M435 99C377 59 294 66 251 119C205 177 210 286 262 344C307 393 389 399 443 357C488 322 506 255 491 190C482 151 463 119 435 99" stroke="#2B3338" stroke-width="27"/>
+    <path d="M435 99C479 134 500 181 500 232C500 283 480 326 443 357" stroke="#93A8AC" stroke-width="15"/>
+
+    <!-- n and e are drawn as one circulation, but remain readable -->
+    <path d="M548 385V210C548 172 574 149 610 149C651 149 676 178 676 220V385" stroke="#2B3338" stroke-width="24"/>
+    <path d="M725 273H854C854 193 823 149 770 149C715 149 688 201 688 271C688 345 724 390 783 390C817 390 844 376 865 350" stroke="#2B3338" stroke-width="24"/>
+    <path d="M676 273C693 273 706 257 725 257" stroke="#6D858A" stroke-width="13"/>
+
+    <!-- y ends with the same folded underside as H -->
+    <path d="M906 160L973 385L1049 160M973 385C961 445 937 471 887 471" stroke="#2B3338" stroke-width="24"/>
+    <path d="M973 385C961 431 946 454 919 464" stroke="#6D858A" stroke-width="13"/>
+  </g>
+  <g transform="translate(1018 706) scale(.25)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M435 99C377 59 294 66 251 119C205 177 210 286 262 344C307 393 389 399 443 357C488 322 506 255 491 190C482 151 463 119 435 99" stroke="#2B3338" stroke-width="27"/>
+    <path d="M435 99C479 134 500 181 500 232C500 283 480 326 443 357" stroke="#93A8AC" stroke-width="15"/>
+    <path d="M548 385V210C548 172 574 149 610 149C651 149 676 178 676 220V385" stroke="#2B3338" stroke-width="24"/>
+    <path d="M725 273H854C854 193 823 149 770 149C715 149 688 201 688 271C688 345 724 390 783 390C817 390 844 376 865 350" stroke="#2B3338" stroke-width="24"/>
+    <path d="M676 273C693 273 706 257 725 257" stroke="#6D858A" stroke-width="13"/>
+  </g>
+</svg>

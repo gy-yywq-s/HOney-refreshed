@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+  <rect width="1440" height="760" fill="#F4F6F7"/>
+  <text x="64" y="58" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">01 · Hidden spine</text>
+
+  <!-- One line is present across the whole mark, but disappears inside counters. -->
+  <path d="M190 340H1145" fill="none" stroke="#667F86" stroke-width="18" stroke-linecap="round"/>
+  <ellipse cx="486" cy="340" rx="67" ry="76" fill="#F4F6F7"/>
+  <rect x="620" y="282" width="94" height="112" rx="45" fill="#F4F6F7"/>
+
+  <g transform="translate(0 225)">
+    <image href="glyphs/capsule-h.png" x="150" y="0" width="244" height="220"/>
+    <image href="glyphs/capsule-o.png" x="330" y="0" width="299" height="220"/>
+    <image href="glyphs/capsule-n.png" x="540" y="0" width="275" height="220"/>
+    <image href="glyphs/capsule-e.png" x="735" y="0" width="287" height="220"/>
+    <image href="glyphs/capsule-y.png" x="930" y="0" width="306" height="220"/>
+  </g>
+
+  <g transform="translate(68 592) scale(.34)">
+    <path d="M120 115H1075" fill="none" stroke="#667F86" stroke-width="18" stroke-linecap="round"/>
+    <ellipse cx="416" cy="115" rx="67" ry="76" fill="#F4F6F7"/>
+    <rect x="550" y="57" width="94" height="112" rx="45" fill="#F4F6F7"/>
+    <image href="glyphs/capsule-h.png" x="80" y="0" width="244" height="220"/>
+    <image href="glyphs/capsule-o.png" x="260" y="0" width="299" height="220"/>
+    <image href="glyphs/capsule-n.png" x="470" y="0" width="275" height="220"/>
+    <image href="glyphs/capsule-e.png" x="665" y="0" width="287" height="220"/>
+    <image href="glyphs/capsule-y.png" x="860" y="0" width="306" height="220"/>
+  </g>
+</svg>

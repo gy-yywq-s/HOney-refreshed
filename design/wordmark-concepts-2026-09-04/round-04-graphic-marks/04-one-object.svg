@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F5F4F6"/>
+  <text x="70" y="65" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="19" fill="#706A70">One object</text>
+  <g transform="translate(140 176)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 88V390M202 88V390M50 239H202" stroke="#2B3135" stroke-width="26"/>
+    <path d="M152 239C174 239 180 219 202 219" stroke="#766A75" stroke-width="14"/>
+
+    <!-- One is a single locked silhouette: O loop, n arch, e turn -->
+    <path d="M468 106C412 61 327 63 277 116C223 174 224 286 279 346C329 400 414 403 470 359C515 324 531 260 518 197C509 156 492 125 468 106" stroke="#2B3135" stroke-width="28"/>
+    <path d="M470 359C496 339 514 308 520 274" stroke="#A79EA6" stroke-width="16"/>
+    <path d="M518 274C536 274 548 253 548 229V390" stroke="#766A75" stroke-width="14"/>
+    <path d="M548 390V221C548 174 578 146 621 146C667 146 694 176 694 222V390" stroke="#2B3135" stroke-width="28"/>
+    <path d="M694 270H834C834 190 801 146 747 146C691 146 663 199 663 270C663 345 701 392 762 392C799 392 828 376 850 347" stroke="#2B3135" stroke-width="28"/>
+    <path d="M694 270C710 270 720 249 737 249C754 249 764 270 781 270" stroke="#766A75" stroke-width="14"/>
+
+    <path d="M894 158L963 390L1041 158M963 390C952 449 927 478 876 478" stroke="#2B3135" stroke-width="26"/>
+  </g>
+  <g transform="translate(1010 693) scale(.23)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M468 106C412 61 327 63 277 116C223 174 224 286 279 346C329 400 414 403 470 359C515 324 531 260 518 197C509 156 492 125 468 106" stroke="#2B3135" stroke-width="28"/>
+    <path d="M470 359C496 339 514 308 520 274" stroke="#A79EA6" stroke-width="16"/>
+    <path d="M518 274C536 274 548 253 548 229V390" stroke="#766A75" stroke-width="14"/>
+    <path d="M548 390V221C548 174 578 146 621 146C667 146 694 176 694 222V390" stroke="#2B3135" stroke-width="28"/>
+    <path d="M694 270H834C834 190 801 146 747 146C691 146 663 199 663 270C663 345 701 392 762 392C799 392 828 376 850 347" stroke="#2B3135" stroke-width="28"/>
+    <path d="M694 270C710 270 720 249 737 249C754 249 764 270 781 270" stroke="#766A75" stroke-width="14"/>
+  </g>
+</svg>

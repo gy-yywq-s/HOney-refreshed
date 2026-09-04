@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F1F5F3"/>
+  <text x="70" y="65" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="19" fill="#66736C">Two places</text>
+  <g transform="translate(146 186)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- H gate -->
+    <path d="M42 78V382M194 78V382M42 230H194" stroke="#293237" stroke-width="25"/>
+    <path d="M101 230C111 217 125 217 136 230" stroke="#6B786D" stroke-width="14"/>
+
+    <!-- O first place, intentionally complete -->
+    <ellipse cx="365" cy="230" rx="132" ry="154" stroke="#293237" stroke-width="27"/>
+    <path d="M445 116C479 148 495 189 495 230C495 271 480 310 448 341" stroke="#A7B3AA" stroke-width="15"/>
+
+    <!-- n is the bridge between two distinct counters -->
+    <path d="M538 382V218C538 174 566 148 607 148C650 148 677 176 677 220V382" stroke="#293237" stroke-width="25"/>
+    <path d="M677 267H716" stroke="#6B786D" stroke-width="14"/>
+
+    <!-- e is a second, smaller place with a carried counter -->
+    <path d="M716 267H851C851 191 819 148 766 148C712 148 684 198 684 267C684 341 721 387 781 387C817 387 844 372 866 344" stroke="#293237" stroke-width="25"/>
+    <ellipse cx="766" cy="267" rx="18" ry="13" stroke="#6B786D" stroke-width="8"/>
+
+    <!-- y exit -->
+    <path d="M907 158L975 382L1052 158M975 382C963 442 938 469 887 469" stroke="#293237" stroke-width="25"/>
+    <path d="M948 450C966 443 973 431 978 413" stroke="#A7B3AA" stroke-width="14"/>
+  </g>
+</svg>

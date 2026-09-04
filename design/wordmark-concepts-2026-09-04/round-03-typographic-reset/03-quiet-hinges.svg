@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F9F6F0"/>
+  <text x="80" y="75" font-family="Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="300" fill="#6E6962">03  Quiet hinges</text>
+  <text x="720" y="464" text-anchor="middle" font-family="Avenir Next" font-size="272" font-weight="300" letter-spacing="-11" fill="#111719">HOney</text>
+
+  <!-- gaps are cut first; small detached capsules complete the rhythm -->
+  <g stroke="#F9F6F0" stroke-width="22" stroke-linecap="round">
+    <path d="M548 294l20 18"/>
+    <path d="M731 325l18 18"/>
+    <path d="M878 337l18 18"/>
+  </g>
+  <g stroke="#111719" stroke-width="8" stroke-linecap="round">
+    <path d="M552 298l11 10"/>
+    <path d="M735 329l10 10"/>
+    <path d="M882 341l10 10"/>
+  </g>
+
+  <g transform="translate(1016 641)">
+    <path d="M0 0h156" stroke="#111719" stroke-width="8" stroke-linecap="round"/>
+    <path d="M78 0l38-36" stroke="#111719" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="78" cy="0" r="7" fill="#F9F6F0" stroke="#111719" stroke-width="4"/>
+  </g>
+  <g font-family="Avenir Next" font-weight="300" fill="#111719">
+    <text x="84" y="694" font-size="38" letter-spacing="-2">HOney</text>
+    <text x="84" y="758" font-size="26" letter-spacing="-1">HOney</text>
+    <text x="84" y="812" font-size="18">HOney</text>
+  </g>
+</svg>

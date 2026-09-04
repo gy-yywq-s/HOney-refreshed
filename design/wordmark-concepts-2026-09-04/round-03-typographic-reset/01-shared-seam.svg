@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F8F7F3"/>
+  <text x="80" y="75" font-family="Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="300" fill="#6D6E6B">01  Shared seam</text>
+  <text x="720" y="446" text-anchor="middle" font-family="Helvetica Neue" font-size="272" font-weight="200" letter-spacing="-12" fill="#101418">HOney</text>
+
+  <!-- one optically consistent diagonal cut, repeated sparingly -->
+  <g stroke="#F8F7F3" stroke-width="19" stroke-linecap="round">
+    <path d="M419 386l22-24"/>
+    <path d="M633 386l22-24"/>
+    <path d="M776 388l22-24"/>
+    <path d="M1036 386l22-24"/>
+  </g>
+  <g stroke="#101418" stroke-width="5" stroke-linecap="round">
+    <path d="M427 379l9-10"/>
+    <path d="M641 379l9-10"/>
+    <path d="M784 381l9-10"/>
+    <path d="M1044 379l9-10"/>
+  </g>
+
+  <g font-family="Helvetica Neue" font-weight="200" fill="#101418">
+    <text x="84" y="692" font-size="38" letter-spacing="-2">HOney</text>
+    <text x="84" y="758" font-size="26" letter-spacing="-1">HOney</text>
+    <text x="84" y="812" font-size="18">HOney</text>
+  </g>
+  <text x="1268" y="812" text-anchor="end" font-family="Helvetica Neue, Arial, sans-serif" font-size="15" fill="#7D7E7A">No metaphor required. The seam itself is the signature.</text>
+</svg>

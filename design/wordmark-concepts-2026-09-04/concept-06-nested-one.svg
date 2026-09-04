@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820">
+  <rect width="1440" height="820" fill="#F1F7F6"/>
+  <text x="96" y="92" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="26" fill="#566462">06  Nested One</text>
+  <text x="96" y="132" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#7B8986">The enlarged O holds the start of n–e, so One gains a second emblem-like silhouette.</text>
+  <g transform="translate(178 198)" fill="none" stroke="#123F3B" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 76V354M0 213H154M154 76V354" stroke-width="29"/>
+    <path d="M448 168A142 142 0 1 0 448 239" stroke-width="34"/>
+    <path d="M435 194V354M435 249c0-44 26-70 68-70 43 0 66 27 66 70v105" stroke-width="29"/>
+    <path d="M605 267h122c0-55-22-88-62-88-43 0-65 36-65 88 0 54 27 91 74 91 23 0 44-8 60-25" stroke-width="29"/>
+    <path d="M783 185l70 173 70-173M853 358c-14 48-33 68-75 68" stroke-width="29"/>
+    <path d="M438 315h30" stroke="#E4A139" stroke-width="14"/>
+  </g>
+  <rect x="1015" y="575" width="250" height="150" rx="30" fill="#E3EFEC"/>
+  <g transform="translate(1065 602) scale(.32)" fill="none" stroke="#123F3B" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M448 168A142 142 0 1 0 448 239" stroke-width="34"/>
+    <path d="M435 194V354M435 249c0-44 26-70 68-70 43 0 66 27 66 70v105" stroke-width="29"/>
+    <path d="M605 267h122c0-55-22-88-62-88-43 0-65 36-65 88 0 54 27 91 74 91 23 0 44-8 60-25" stroke-width="29"/>
+    <path d="M438 315h30" stroke="#E4A139" stroke-width="14"/>
+  </g>
+  <text x="1024" y="755" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#6B7B78">One-only extraction test</text>
+</svg>

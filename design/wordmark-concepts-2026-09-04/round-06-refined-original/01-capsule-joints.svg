@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+  <rect width="1440" height="760" fill="#F4F6F7"/>
+  <text x="64" y="58" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">01 · Capsule joints</text>
+  <g transform="translate(230 178)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- H: one structural joint completes the crossbar -->
+    <path d="M0 48V348M146 48V348M0 198H62M86 198H146" stroke="#273137" stroke-width="22"/>
+    <path d="M62 198H86" stroke="#6D858A" stroke-width="12"/>
+
+    <!-- O remains an O; the joint both closes the aperture and enters n -->
+    <path d="M409 139A128 128 0 1 0 409 257" stroke="#273137" stroke-width="25"/>
+    <path d="M409 198H454" stroke="#6D858A" stroke-width="12"/>
+
+    <!-- n -->
+    <path d="M458 348V215C458 166 488 142 528 142C570 142 596 171 596 215V348" stroke="#273137" stroke-width="22"/>
+
+    <!-- n–e hand-off uses the same capsule geometry -->
+    <path d="M596 242H630" stroke="#6D858A" stroke-width="12"/>
+    <path d="M630 242H761C761 179 735 142 691 142C644 142 620 185 620 243C620 304 651 350 702 350C730 350 753 338 773 316" stroke="#273137" stroke-width="22"/>
+
+    <!-- y carries the joint into a vertical terminal -->
+    <path d="M811 150L877 350L951 150M877 350C866 401 843 425 798 425" stroke="#273137" stroke-width="22"/>
+    <path d="M878 332V357" stroke="#6D858A" stroke-width="12"/>
+  </g>
+</svg>

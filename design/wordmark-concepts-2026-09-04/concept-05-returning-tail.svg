@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820">
+  <rect width="1440" height="820" fill="#FAF5F1"/>
+  <text x="96" y="92" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="26" fill="#655B58">05  Returning tail</text>
+  <text x="96" y="132" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#8C807C">The y reaches back to complete the O, turning the whole name into one connected graphic.</text>
+  <g transform="translate(184 202)" fill="none" stroke="#1B2229" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 71V349M0 208H154M154 71V349" stroke-width="28"/>
+    <path d="M451 170A128 128 0 1 0 451 234" stroke-width="32"/>
+    <path d="M478 179V349M478 243c0-42 25-68 66-68 42 0 65 27 65 68v106" stroke-width="28"/>
+    <path d="M656 262h125c0-54-22-87-63-87-44 0-67 36-67 87 0 54 28 91 76 91 24 0 45-8 62-25" stroke-width="28"/>
+    <path d="M826 181l70 172 70-172M896 353c-11 45-31 68-69 79-116 34-249 38-355 22-63-10-91-31-91-60 0-30 12-75 14-148" stroke-width="28"/>
+    <circle cx="486" cy="246" r="12" fill="#F26C5A" stroke="none"/>
+  </g>
+  <path d="M116 702h1210" stroke="#E3D8D2"/>
+  <text x="100" y="744" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#7A706C">Most playful direction; the return stroke must stay light enough not to become an underline.</text>
+</svg>

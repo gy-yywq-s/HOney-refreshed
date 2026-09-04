@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1300" viewBox="0 0 1800 1300">
+  <rect width="1800" height="1300" fill="#E9ECEF"/>
+  <text x="80" y="78" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="34" font-weight="600" fill="#273238">HOney · Open-loop spectrum</text>
+  <text x="80" y="116" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#667079">Draft asset pack · multicolour A loop on B pale-sky surface</text>
+  <image href="app-icon.svg" x="80" y="175" width="520" height="520"/>
+  <image href="app-icon-dark.svg" x="650" y="175" width="250" height="250"/>
+  <image href="app-icon-tinted.svg" x="650" y="445" width="250" height="250"/>
+  <image href="web-icon.svg" x="965" y="175" width="520" height="520"/>
+  <text x="80" y="735" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">iOS default</text>
+  <text x="650" y="735" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">Dark / tinted</text>
+  <text x="965" y="735" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">Web companion</text>
+  <rect x="80" y="790" width="1635" height="420" rx="32" fill="#F4F6F7"/>
+  <image href="wordmark.svg" x="150" y="805" width="1060" height="470"/>
+  <g transform="translate(1320 940)"><image href="app-icon.svg" width="64" height="64"/><image href="web-icon.svg" x="100" width="64" height="64"/></g>
+  <text x="1320" y="1030" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="16" fill="#5C6770">64 px check</text>
+</svg>

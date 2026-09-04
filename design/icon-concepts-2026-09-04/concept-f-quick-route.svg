@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="920" viewBox="0 0 1440 920">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#101820" flood-opacity=".14"/></filter>
+    <g id="mark-f">
+      <path d="M260 638C260 505 367 488 435 501C544 522 523 348 646 338C744 330 790 395 790 475" fill="none" stroke="currentColor" stroke-width="62" stroke-linecap="round"/>
+      <circle cx="260" cy="638" r="46" fill="var(--accent)"/>
+      <circle cx="438" cy="501" r="38" fill="var(--surface)" stroke="currentColor" stroke-width="45"/>
+      <circle cx="790" cy="475" r="46" fill="var(--accent2)"/>
+      <path d="M742 257L764 221M804 276L846 257" fill="none" stroke="var(--accent2)" stroke-width="28" stroke-linecap="round"/>
+    </g>
+    <g id="web-badge"><circle cx="790" cy="790" r="112" fill="var(--surface)" stroke="var(--surface)" stroke-width="30"/><circle cx="790" cy="790" r="78" fill="none" stroke="var(--ink)" stroke-width="20"/><ellipse cx="790" cy="790" rx="37" ry="78" fill="none" stroke="var(--ink)" stroke-width="15"/><path d="M716 790H864" fill="none" stroke="var(--ink)" stroke-width="15" stroke-linecap="round"/></g>
+    <symbol id="light-f" viewBox="0 0 1024 1024" style="--surface:#EEF4FF;--ink:#26384A;--accent:#5A9FE0;--accent2:#F5AE54;color:var(--ink)"><rect width="1024" height="1024" rx="224" fill="var(--surface)"/><use xlink:href="#mark-f"/></symbol>
+    <symbol id="dark-f" viewBox="0 0 1024 1024" style="--surface:#171A20;--ink:#F1EEE8;--accent:#78A9D8;--accent2:#F2B668;color:var(--ink)"><rect width="1024" height="1024" rx="224" fill="var(--surface)"/><use xlink:href="#mark-f"/></symbol>
+    <symbol id="tint-f" viewBox="0 0 1024 1024" style="--surface:#DDE1E5;--ink:#101820;--accent:#101820;--accent2:#101820;color:var(--ink)"><rect width="1024" height="1024" rx="224" fill="var(--surface)"/><use xlink:href="#mark-f"/></symbol>
+    <symbol id="web-f" viewBox="0 0 1024 1024" style="--surface:#EEF4FF;--ink:#26384A;--accent:#5A9FE0;--accent2:#F5AE54;color:var(--ink)"><rect width="1024" height="1024" rx="224" fill="var(--surface)"/><g transform="translate(-26 -28) scale(.96)"><use xlink:href="#mark-f"/></g><use xlink:href="#web-badge"/></symbol>
+  </defs>
+  <rect width="1440" height="920" fill="#E9ECEF"/>
+  <text x="72" y="80" font-family="Arial, sans-serif" font-size="46" font-weight="700" fill="#182532">F · Quick route</text>
+  <text x="72" y="122" font-family="Arial, sans-serif" font-size="22" fill="#66717B">A route between three useful stops, with one small success ping. Fast rather than symbolic.</text>
+  <use xlink:href="#light-f" x="76" y="190" width="500" height="500" filter="url(#shadow)"/><text x="76" y="732" font-family="-apple-system,sans-serif" font-size="20" fill="#66717B">iOS · pale blue / navy / blue + amber</text>
+  <use xlink:href="#dark-f" x="626" y="205" width="220" height="220" filter="url(#shadow)"/><text x="626" y="455" font-family="-apple-system,sans-serif" font-size="18" fill="#66717B">Dark</text>
+  <use xlink:href="#tint-f" x="626" y="492" width="220" height="220" filter="url(#shadow)"/><text x="626" y="742" font-family="-apple-system,sans-serif" font-size="18" fill="#66717B">Tinted</text>
+  <use xlink:href="#web-f" x="942" y="230" width="390" height="390" filter="url(#shadow)"/><text x="942" y="662" font-family="-apple-system,sans-serif" font-size="20" fill="#66717B">Web companion · globe becomes the fourth destination</text>
+  <use xlink:href="#light-f" x="960" y="730" width="64" height="64"/><use xlink:href="#web-f" x="1048" y="730" width="64" height="64"/><text x="1130" y="771" font-family="-apple-system,sans-serif" font-size="18" fill="#66717B">64 px check</text>
+  <rect x="72" y="846" width="1296" height="1" fill="#C8CED4"/><text x="72" y="882" font-family="-apple-system,sans-serif" font-size="17" fill="#76818B">Most playful option · still reads cleanly as a small utility icon</text>
+</svg>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="960" viewBox="0 0 1440 960">
+  <rect width="1440" height="960" fill="#F4F6F7"/>
+  <text x="64" y="62" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="22" fill="#5C6770">HOney — generated glyph bricks, assembled manually</text>
+
+  <g transform="translate(180 106)">
+    <text x="0" y="48" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="15" fill="#667079">Mist fold</text>
+    <image href="glyph-bricks/r1-h.png" x="130" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r1-o.png" x="310" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r1-n.png" x="492" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r1-e.png" x="655" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r1-y.png" x="818" y="0" width="240" height="134"/>
+  </g>
+
+  <g transform="translate(180 306)">
+    <text x="0" y="48" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="15" fill="#667079">Smoky plum</text>
+    <image href="glyph-bricks/r2-h.png" x="130" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r2-o.png" x="310" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r2-n.png" x="492" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r2-e.png" x="655" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r2-y.png" x="818" y="0" width="240" height="134"/>
+  </g>
+
+  <g transform="translate(180 506)">
+    <text x="0" y="48" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="15" fill="#667079">Muted moss</text>
+    <image href="glyph-bricks/r3-h.png" x="130" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r3-o.png" x="310" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r3-n.png" x="492" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r3-e.png" x="655" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r3-y.png" x="818" y="0" width="240" height="134"/>
+  </g>
+
+  <g transform="translate(180 706)">
+    <text x="0" y="48" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="15" fill="#667079">Interlocked mist</text>
+    <image href="glyph-bricks/r4-h.png" x="130" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r4-o.png" x="310" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r4-n.png" x="492" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r4-e.png" x="655" y="0" width="240" height="134"/>
+    <image href="glyph-bricks/r4-y.png" x="818" y="0" width="240" height="134"/>
+  </g>
+</svg>

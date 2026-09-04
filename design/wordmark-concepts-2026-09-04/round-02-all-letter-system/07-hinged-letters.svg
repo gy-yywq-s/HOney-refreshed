@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F6F7F2"/>
+  <text x="92" y="82" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="27" fill="#5D635A">07  Hinged letters</text>
+  <text x="92" y="124" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#858B82">Each glyph contains one controlled joint, suggesting an interface that can open, turn, or adapt.</text>
+
+  <g transform="translate(175 244)" fill="none" stroke="#1D312C" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 25V317M146 25V317M0 171H146"/>
+    <path d="M418 97A128 128 0 1 0 418 245M418 97l24 25M418 245l24-25"/>
+    <path d="M477 132V317M477 202C477 155 504 129 548 129C592 129 617 157 617 202V317"/>
+    <path d="M663 228H797C797 166 772 129 727 129C679 129 653 171 653 229C653 287 685 323 736 323C764 323 788 312 808 290"/>
+    <path d="M846 136L916 323L991 136M916 323C904 372 882 395 836 395"/>
+  </g>
+  <g fill="#EFBC3E">
+    <circle cx="321" cy="415" r="13"/><circle cx="611" cy="366" r="13"/><circle cx="793" cy="446" r="13"/><circle cx="983" cy="472" r="13"/><circle cx="1091" cy="567" r="13"/>
+  </g>
+  <g transform="translate(1010 681)">
+    <path d="M0 0h190" stroke="#1D312C" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="95" cy="0" r="13" fill="#EFBC3E"/>
+    <path d="M95 0l60-45" stroke="#1D312C" stroke-width="14" stroke-linecap="round"/>
+  </g>
+  <text x="1010" y="780" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#6D756A">A joint, not a campus icon</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="left-turn" x1="125" y1="500" x2="190" y2="650" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#25354A"/><stop offset="1" stop-color="#5E9ED6"/></linearGradient>
+    <linearGradient id="left-return" x1="150" y1="620" x2="512" y2="512" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#5E9ED6"/><stop offset=".72" stop-color="#5E9ED6"/><stop offset="1" stop-color="#D7E1E5"/></linearGradient>
+    <linearGradient id="upper-open" x1="512" y1="512" x2="720" y2="350" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#57A47A"/><stop offset=".78" stop-color="#57A47A"/><stop offset="1" stop-color="#745170"/></linearGradient>
+    <linearGradient id="right-open" x1="512" y1="512" x2="765" y2="390" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#745170"/><stop offset=".72" stop-color="#745170"/><stop offset="1" stop-color="#F5AE54"/></linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#EAF4F6"/>
+  <!-- upper opening → centre → large left upper -->
+  <path d="M720 350C630 350 570 430 512 512" fill="none" stroke="url(#upper-open)" stroke-width="48" stroke-linecap="butt"/>
+  <path d="M512 512C440 410 360 300 250 315C160 325 115 400 120 500" fill="none" stroke="#25354A" stroke-width="48" stroke-linecap="butt"/>
+  <!-- large left turn and return -->
+  <path d="M120 500C125 550 136 592 150 620" fill="none" stroke="url(#left-turn)" stroke-width="48" stroke-linecap="butt"/>
+  <path d="M150 620C220 770 420 760 512 512" fill="none" stroke="url(#left-return)" stroke-width="48" stroke-linecap="butt"/>
+  <!-- small right loop returns to the lower opening -->
+  <path d="M512 512C590 650 680 710 770 650C850 595 850 470 765 390" fill="none" stroke="url(#right-open)" stroke-width="48" stroke-linecap="butt"/>
+  <!-- centre over/under: green passes over pale mist -->
+  <path d="M512 512C548 459 587 412 630 382" fill="none" stroke="#EAF4F6" stroke-width="68" stroke-linecap="butt"/>
+  <path d="M512 512C548 459 587 412 630 382" fill="none" stroke="#57A47A" stroke-width="48" stroke-linecap="butt"/>
+  <circle cx="720" cy="350" r="24" fill="#745170"/>
+  <circle cx="765" cy="390" r="24" fill="#F5AE54"/>
+  <circle cx="748" cy="345" r="22" fill="#F5AE54"/>
+  <path d="M794 310L823 277" fill="none" stroke="#57A47A" stroke-width="22" stroke-linecap="round"/>
+</svg>

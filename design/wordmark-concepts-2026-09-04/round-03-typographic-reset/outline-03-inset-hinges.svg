@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F9F6F0"/>
+  <text x="70" y="65" font-family="Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="300" fill="#78736C">Inset hinges</text>
+  <defs>
+    <mask id="hinges" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="900">
+      <rect width="1440" height="900" fill="white"/>
+      <rect x="663" y="303" width="23" height="17" rx="5" transform="rotate(39 674 312)" fill="black"/>
+      <rect x="809" y="359" width="21" height="17" rx="5" transform="rotate(39 819 367)" fill="black"/>
+      <rect x="982" y="337" width="21" height="17" rx="5" transform="rotate(39 992 345)" fill="black"/>
+    </mask>
+  </defs>
+  <image href="base-helvetica-ultralight-outline.svg" x="273" y="230" width="894" height="366.078" mask="url(#hinges)"/>
+  <g fill="#111518">
+    <rect x="669" y="307" width="12" height="7" rx="3.5" transform="rotate(39 675 311)"/>
+    <rect x="813" y="363" width="12" height="7" rx="3.5" transform="rotate(39 819 367)"/>
+    <rect x="986" y="341" width="12" height="7" rx="3.5" transform="rotate(39 992 345)"/>
+  </g>
+  <g transform="translate(82 679)">
+    <image href="base-helvetica-ultralight-outline.svg" x="0" y="0" width="224" height="91.7"/>
+    <image href="base-helvetica-ultralight-outline.svg" x="0" y="116" width="134" height="54.9"/>
+  </g>
+  <text x="1280" y="806" text-anchor="end" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" fill="#817C75">The hinge sits inside the cut and stays monochrome.</text>
+</svg>

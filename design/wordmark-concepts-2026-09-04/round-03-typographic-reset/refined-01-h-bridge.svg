@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F8F7F3"/>
+  <text x="70" y="65" font-family="Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="300" fill="#777873">H bridge</text>
+  <defs>
+    <mask id="hcut" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="900">
+      <rect width="1440" height="900" fill="white"/>
+      <rect x="365" y="396" width="42" height="20" rx="5" fill="black"/>
+    </mask>
+  </defs>
+  <image href="base-helvetica-ultralight-outline.svg" x="273" y="230" width="894" height="366.078" mask="url(#hcut)"/>
+  <path d="M363 408H374C381 408 382 399 390 399C398 399 399 408 408 408" fill="none" stroke="#111518" stroke-width="7" stroke-linecap="round"/>
+  <path d="M374 408C381 408 382 399 390 399" fill="none" stroke="#477EC8" stroke-width="7" stroke-linecap="round"/>
+  <g transform="translate(82 680)">
+    <image href="base-helvetica-ultralight-outline.svg" width="224" height="91.7"/>
+    <image href="base-helvetica-ultralight-outline.svg" y="116" width="134" height="54.9"/>
+  </g>
+  <text x="1280" y="806" text-anchor="end" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" fill="#858681">One structural event; the rest of the word stays calm.</text>
+</svg>

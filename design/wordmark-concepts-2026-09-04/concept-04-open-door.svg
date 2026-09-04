@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820">
+  <rect width="1440" height="820" fill="#F3F6FB"/>
+  <text x="96" y="92" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="26" fill="#56606E">04  Open door</text>
+  <text x="96" y="132" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#7F8997">A small hinged plane occupies the O aperture: portal, action, and letter closure at once.</text>
+  <g transform="translate(185 207)" fill="none" stroke="#173A8F" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 65V343M0 202H154M154 65V343" stroke-width="29"/>
+    <path d="M451 170A128 128 0 1 0 451 234" stroke-width="33"/>
+    <path d="M478 174V343M478 238c0-42 25-68 66-68 42 0 65 27 65 68v105" stroke-width="29"/>
+    <path d="M656 256h125c0-54-22-86-63-86-44 0-67 35-67 86 0 54 28 91 76 91 24 0 45-8 62-25" stroke-width="29"/>
+    <path d="M825 176l70 171 70-171M895 347c-14 48-33 69-75 69" stroke-width="29"/>
+    <path d="M451 176l23 9v38l-23 9z" fill="#52A9F7" stroke="none"/>
+    <circle cx="468" cy="204" r="3" fill="#F3F6FB" stroke="none"/>
+  </g>
+  <text x="101" y="712" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="18" fill="#687384">More literal than the other directions; useful only if the door still reads as part of O.</text>
+</svg>

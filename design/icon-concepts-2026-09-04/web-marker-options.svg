@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="920" viewBox="0 0 1440 920">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#101820" flood-opacity=".13"/></filter>
+    <g id="cards">
+      <rect x="270" y="270" width="512" height="430" rx="92" fill="none" stroke="#26394A" stroke-width="58" transform="rotate(-5 526 485)"/>
+      <rect x="240" y="326" width="512" height="430" rx="92" fill="#FFF2D9" stroke="#26394A" stroke-width="58" transform="rotate(4 496 541)"/>
+      <circle cx="370" cy="467" r="32" fill="#F18B68"/>
+      <path d="M444 460H648M350 570H650M350 650H555" fill="none" stroke="#26394A" stroke-width="43" stroke-linecap="round"/>
+    </g>
+    <g id="globe"><circle cx="790" cy="790" r="112" fill="#FFF2D9" stroke="#FFF2D9" stroke-width="30"/><circle cx="790" cy="790" r="78" fill="none" stroke="#26394A" stroke-width="20"/><ellipse cx="790" cy="790" rx="37" ry="78" fill="none" stroke="#26394A" stroke-width="15"/><path d="M716 790H864" fill="none" stroke="#26394A" stroke-width="15" stroke-linecap="round"/></g>
+    <g id="browser"><rect x="680" y="700" width="220" height="174" rx="50" fill="#FFF2D9" stroke="#FFF2D9" stroke-width="30"/><rect x="692" y="712" width="196" height="150" rx="38" fill="none" stroke="#26394A" stroke-width="20"/><path d="M700 760H880" stroke="#26394A" stroke-width="16"/><circle cx="730" cy="738" r="9" fill="#F18B68"/><circle cx="760" cy="738" r="9" fill="#26394A"/></g>
+    <g id="cursor"><path d="M716 690L872 790L804 810L778 880Z" fill="#FFF2D9" stroke="#FFF2D9" stroke-width="70" stroke-linejoin="round"/><path d="M716 690L872 790L804 810L778 880Z" fill="none" stroke="#26394A" stroke-width="24" stroke-linejoin="round"/><circle cx="856" cy="714" r="24" fill="#F18B68"/></g>
+    <g id="external"><circle cx="790" cy="790" r="112" fill="#FFF2D9" stroke="#FFF2D9" stroke-width="30"/><path d="M736 844L840 740M768 740H840V812" fill="none" stroke="#26394A" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <symbol id="option-globe" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="224" fill="#FFF2D9"/><g transform="translate(-26 -26) scale(.96)"><use xlink:href="#cards"/></g><use xlink:href="#globe"/></symbol>
+    <symbol id="option-browser" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="224" fill="#FFF2D9"/><g transform="translate(-26 -26) scale(.96)"><use xlink:href="#cards"/></g><use xlink:href="#browser"/></symbol>
+    <symbol id="option-cursor" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="224" fill="#FFF2D9"/><g transform="translate(-26 -26) scale(.96)"><use xlink:href="#cards"/></g><use xlink:href="#cursor"/></symbol>
+    <symbol id="option-external" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="224" fill="#FFF2D9"/><g transform="translate(-26 -26) scale(.96)"><use xlink:href="#cards"/></g><use xlink:href="#external"/></symbol>
+  </defs>
+  <rect width="1440" height="920" fill="#E9ECEF"/>
+  <text x="72" y="80" font-family="Arial, sans-serif" font-size="46" font-weight="700" fill="#182532">Web companion marker</text>
+  <text x="72" y="122" font-family="Arial, sans-serif" font-size="22" fill="#66717B">Same utility mark, four ways to distinguish the installed Web app without writing “web”.</text>
+  <use xlink:href="#option-globe" x="72" y="190" width="280" height="280" filter="url(#shadow)"/>
+  <use xlink:href="#option-browser" x="410" y="190" width="280" height="280" filter="url(#shadow)"/>
+  <use xlink:href="#option-cursor" x="748" y="190" width="280" height="280" filter="url(#shadow)"/>
+  <use xlink:href="#option-external" x="1086" y="190" width="280" height="280" filter="url(#shadow)"/>
+  <text x="72" y="518" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#26394A">1 · Globe</text><text x="72" y="550" font-family="Arial, sans-serif" font-size="18" fill="#66717B">Most universal; slightly badge-like.</text>
+  <text x="410" y="518" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#26394A">2 · Browser window</text><text x="410" y="550" font-family="Arial, sans-serif" font-size="18" fill="#66717B">Most explicit; busier at small size.</text>
+  <text x="748" y="518" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#26394A">3 · Cursor</text><text x="748" y="550" font-family="Arial, sans-serif" font-size="18" fill="#66717B">Lightest and most playful; desktop-coded.</text>
+  <text x="1086" y="518" font-family="Arial, sans-serif" font-size="23" font-weight="700" fill="#26394A">4 · External arrow</text><text x="1086" y="550" font-family="Arial, sans-serif" font-size="18" fill="#66717B">Clean, but can imply “opens elsewhere”.</text>
+  <rect x="72" y="630" width="1296" height="1" fill="#C8CED4"/>
+  <text x="72" y="682" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#26394A">64 px reality check</text>
+  <use xlink:href="#option-globe" x="72" y="718" width="64" height="64"/><use xlink:href="#option-browser" x="410" y="718" width="64" height="64"/><use xlink:href="#option-cursor" x="748" y="718" width="64" height="64"/><use xlink:href="#option-external" x="1086" y="718" width="64" height="64"/>
+  <text x="72" y="858" font-family="Arial, sans-serif" font-size="18" fill="#66717B">My current order: globe → cursor → browser → external arrow. The final PWA version will also get a separate maskable-safe export.</text>
+</svg>

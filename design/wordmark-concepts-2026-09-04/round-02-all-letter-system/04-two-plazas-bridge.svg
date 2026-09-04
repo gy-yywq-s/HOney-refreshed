@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F2F7FA"/>
+  <text x="92" y="82" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="27" fill="#56636A">04  Two plazas and a bridge</text>
+  <text x="92" y="124" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#7E8B92">Inside One, O and e are two places and n is the connector; H and y extend the same system.</text>
+
+  <g transform="translate(176 242)" fill="none" stroke="#173D65" stroke-linecap="round" stroke-linejoin="round">
+    <!-- H entry gate -->
+    <path d="M0 26V316M150 26V316M0 170H150" stroke-width="31"/>
+    <circle cx="75" cy="170" r="14" fill="#46A7E8" stroke="none"/>
+
+    <!-- O plaza with controlled campus entrance -->
+    <path d="M425 121A128 128 0 1 0 425 219" stroke-width="34"/>
+    <path d="M425 170H461" stroke="#46A7E8" stroke-width="13"/>
+
+    <!-- n is literally the bridge between the two round places -->
+    <path d="M461 316V201C461 154 491 128 536 128C580 128 607 155 607 201V229" stroke-width="31"/>
+    <path d="M607 229H662" stroke="#46A7E8" stroke-width="13"/>
+
+    <!-- e is a second smaller plaza, not a stock glyph -->
+    <path d="M662 229H791C791 166 765 128 719 128C670 128 644 171 644 229C644 288 676 324 728 324C757 324 782 312 801 289" stroke-width="31"/>
+    <circle cx="719" cy="229" r="13" fill="#46A7E8" stroke="none"/>
+
+    <!-- y exit fork -->
+    <path d="M842 136L912 324L989 136M912 324C899 374 877 397 830 397" stroke-width="31"/>
+    <path d="M912 324v43" stroke="#46A7E8" stroke-width="13"/>
+  </g>
+
+  <g transform="translate(1025 660)">
+    <rect width="270" height="134" rx="31" fill="#E4F0F6"/>
+    <circle cx="62" cy="67" r="34" fill="none" stroke="#173D65" stroke-width="12" stroke-dasharray="180 34"/>
+    <path d="M96 67h42q20 0 20 20v12" fill="none" stroke="#46A7E8" stroke-width="8" stroke-linecap="round"/>
+    <path d="M158 99h48c0-26-12-41-30-41-21 0-30 18-30 41 0 24 13 40 34 40" fill="none" stroke="#173D65" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="1030" y="825" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#6F7E86">One as a secondary mark</text>
+</svg>

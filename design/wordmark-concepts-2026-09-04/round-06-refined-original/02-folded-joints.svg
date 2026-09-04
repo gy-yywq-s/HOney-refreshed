@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+  <rect width="1440" height="760" fill="#EEF2F2"/>
+  <text x="64" y="58" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">02 · Folded joints</text>
+  <g transform="translate(230 178)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 48V348M146 48V348M0 198H59M91 198H146" stroke="#273137" stroke-width="22"/>
+    <path d="M59 202C68 202 72 190 80 190C86 190 88 198 91 198" stroke="#667568" stroke-width="12"/>
+
+    <path d="M409 139A128 128 0 1 0 409 257" stroke="#273137" stroke-width="25"/>
+    <path d="M409 190H425C437 190 440 206 451 206H458" stroke="#667568" stroke-width="12"/>
+
+    <path d="M458 348V215C458 166 488 142 528 142C570 142 596 171 596 215V348" stroke="#273137" stroke-width="22"/>
+    <path d="M596 248H608C618 248 620 236 630 236H641" stroke="#667568" stroke-width="12"/>
+    <path d="M641 242H761C761 179 735 142 691 142C644 142 620 185 620 243C620 304 651 350 702 350C730 350 753 338 773 316" stroke="#273137" stroke-width="22"/>
+
+    <path d="M811 150L877 350L951 150M877 350C866 401 843 425 798 425" stroke="#273137" stroke-width="22"/>
+    <path d="M877 333C877 342 867 347 867 356C867 362 872 367 877 369" stroke="#667568" stroke-width="12"/>
+  </g>
+</svg>

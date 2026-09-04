@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F2F6F3"/>
+  <text x="92" y="82" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="27" fill="#58625E">02  Campus circulation</text>
+  <text x="92" y="124" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#7F8985">One route changes function as it passes through every letter; it cannot be detached from the name.</text>
+
+  <g transform="translate(177 252)" fill="none" stroke="#17201E" stroke-width="31" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 18V306M146 18V306M0 157H146"/>
+    <circle cx="328" cy="160" r="126"/>
+    <path d="M476 130V306M476 198C476 151 504 126 548 126C593 126 617 154 617 199V306"/>
+    <path d="M662 218H795C795 159 771 126 728 126C682 126 657 166 657 219C657 275 686 310 736 310C763 310 785 300 803 280"/>
+    <path d="M841 132L909 309L981 132M909 309C897 356 875 378 830 378"/>
+  </g>
+
+  <!-- the accent route is a structural cross-section through the whole word -->
+  <path d="M177 409H323C354 409 366 375 390 349C428 308 480 300 523 326C559 348 575 397 604 409H653C683 409 692 365 724 345C762 321 810 325 841 354C865 377 871 409 900 409H980C1014 409 1020 375 1050 363C1084 349 1110 376 1124 409C1141 450 1157 480 1183 507" fill="none" stroke="#2DBD7F" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#2DBD7F">
+    <circle cx="323" cy="409" r="12"/><circle cx="604" cy="409" r="12"/><circle cx="900" cy="409" r="12"/><circle cx="1124" cy="409" r="12"/>
+  </g>
+
+  <g transform="translate(116 703)" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif">
+    <text x="0" y="0" font-size="18" fill="#59635F">Gate → courtyard → covered connection → turn → fork</text>
+    <text x="0" y="36" font-size="16" fill="#818B87">The campus meaning is carried by the sequence, not by an icon hidden in O.</text>
+  </g>
+</svg>

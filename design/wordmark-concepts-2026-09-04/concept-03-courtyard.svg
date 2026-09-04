@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820">
+  <rect width="1440" height="820" fill="#F8F3EA"/>
+  <text x="96" y="92" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="26" fill="#625D55">03  Courtyard</text>
+  <text x="96" y="132" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#8A8378">The O becomes a campus-like quad with one visible entrance and a living center.</text>
+  <g transform="translate(186 208)" fill="none" stroke="#352B6B" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 66V344M0 204H154M154 66V344" stroke-width="29"/>
+    <circle cx="327" cy="204" r="128" stroke-width="33"/>
+    <path d="M470 174V344M470 239c0-43 26-69 67-69 42 0 65 27 65 69v105" stroke-width="29"/>
+    <path d="M649 257h125c0-54-22-87-63-87-44 0-67 36-67 87 0 54 28 91 76 91 24 0 45-8 62-25" stroke-width="29"/>
+    <path d="M819 176l70 172 70-172M889 348c-14 48-33 68-75 68" stroke-width="29"/>
+    <path d="M327 204h114" stroke="#F2A552" stroke-width="16"/>
+    <circle cx="327" cy="204" r="18" fill="#F2A552" stroke="none"/>
+  </g>
+  <g transform="translate(1060 612)">
+    <circle cx="84" cy="84" r="68" fill="none" stroke="#352B6B" stroke-width="18" stroke-dasharray="365 64" transform="rotate(9 84 84)"/>
+    <path d="M84 84h68" stroke="#F2A552" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="84" cy="84" r="10" fill="#F2A552"/>
+  </g>
+  <text x="1227" y="706" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#777067">Possible extracted mark</text>
+</svg>

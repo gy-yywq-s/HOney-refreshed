@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F8F6F0"/>
+  <text x="92" y="82" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="27" fill="#5E605E">01  One / cam dual read</text>
+  <text x="92" y="124" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#858784">Primary read: HOney. Secondary read inside One: c — a — m.</text>
+
+  <g transform="translate(185 250)" fill="none" stroke="#152956" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <!-- H: two buildings joined by a bridge -->
+    <path d="M0 20V302M142 20V302M0 156H142"/>
+    <rect x="58" y="145" width="27" height="22" rx="7" fill="#F36B55" stroke="none"/>
+
+    <!-- O/c: almost closed boundary; n begins where the entrance ends -->
+    <path d="M392 80A125 125 0 1 0 392 242" stroke-width="32"/>
+    <path d="M392 80Q425 117 422 153Q421 194 392 242" stroke="#F36B55" stroke-width="13"/>
+
+    <!-- n/a: n silhouette with a low counter and diagonal return -->
+    <path d="M447 132V302M447 197C447 151 475 126 518 126C562 126 586 154 586 199V302"/>
+    <path d="M458 267Q510 222 574 267" stroke="#F36B55" stroke-width="13"/>
+
+    <!-- e/m: e remains legible while its upper terminal branches into two arches -->
+    <path d="M632 216H766C766 158 742 126 699 126C653 126 628 166 628 218C628 274 657 308 707 308C733 308 755 298 774 278"/>
+    <path d="M713 126Q732 92 758 126Q783 92 807 126" stroke="#F36B55" stroke-width="13"/>
+
+    <!-- y: a route fork rather than a generic terminal -->
+    <path d="M817 132L884 307L955 132M884 307C871 356 851 376 808 376"/>
+    <circle cx="817" cy="132" r="8" fill="#F36B55" stroke="none"/>
+    <circle cx="955" cy="132" r="8" fill="#F36B55" stroke="none"/>
+  </g>
+
+  <g transform="translate(134 700)" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif">
+    <text x="0" y="0" font-size="18" fill="#5E605E">Every letter carries a campus role</text>
+    <text x="0" y="36" font-size="16" fill="#868783">H bridge · O boundary · n shelter/counter · e turning plaza/branch · y fork</text>
+  </g>
+  <g transform="translate(970 660)">
+    <rect width="330" height="126" rx="30" fill="#EEEAE0"/>
+    <text x="30" y="46" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#77766F">Second-look key</text>
+    <text x="30" y="91" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="31" fill="#152956">O ↔ c   n ↔ a   e ↔ m</text>
+  </g>
+</svg>

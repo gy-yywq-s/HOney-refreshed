@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+  <rect width="1440" height="760" fill="#F4F6F7"/>
+  <g transform="translate(222 170)" fill="none" stroke="#273238" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Preserve the original H/O contact and its large open O. -->
+    <path d="M0 42V332M150 42V332M0 186H150" stroke-width="29"/>
+    <circle cx="75" cy="186" r="11" fill="#738B91" stroke="none"/>
+
+    <path d="M438 160A128 128 0 1 0 438 212" stroke-width="32"/>
+    <path d="M438 186H461" stroke="#738B91" stroke-width="12"/>
+
+    <path d="M461 332V217C461 170 491 144 536 144C580 144 607 171 607 217V245" stroke-width="29"/>
+    <path d="M607 245H660" stroke="#738B91" stroke-width="12"/>
+
+    <path d="M660 245H790C790 182 764 144 718 144C669 144 643 187 643 245C643 304 675 340 727 340C756 340 781 328 800 305" stroke-width="29"/>
+    <circle cx="718" cy="245" r="10" fill="#738B91" stroke="none"/>
+
+    <path d="M841 152L911 340L988 152M911 340C898 390 876 413 829 413" stroke-width="29"/>
+    <path d="M911 324V357" stroke="#738B91" stroke-width="12"/>
+  </g>
+
+  <!-- Actual-use checks, same geometry rather than a fallback font. -->
+  <g transform="translate(72 610) scale(.25)" fill="none" stroke="#273238" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 42V332M150 42V332M0 186H150" stroke-width="29"/><circle cx="75" cy="186" r="11" fill="#738B91" stroke="none"/>
+    <path d="M438 160A128 128 0 1 0 438 212" stroke-width="32"/><path d="M438 186H461" stroke="#738B91" stroke-width="12"/>
+    <path d="M461 332V217C461 170 491 144 536 144C580 144 607 171 607 217V245" stroke-width="29"/><path d="M607 245H660" stroke="#738B91" stroke-width="12"/>
+    <path d="M660 245H790C790 182 764 144 718 144C669 144 643 187 643 245C643 304 675 340 727 340C756 340 781 328 800 305" stroke-width="29"/><circle cx="718" cy="245" r="10" fill="#738B91" stroke="none"/>
+    <path d="M841 152L911 340L988 152M911 340C898 390 876 413 829 413" stroke-width="29"/><path d="M911 324V357" stroke="#738B91" stroke-width="12"/>
+  </g>
+  <g transform="translate(72 704) scale(.14)" fill="none" stroke="#273238" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 42V332M150 42V332M0 186H150" stroke-width="29"/><circle cx="75" cy="186" r="11" fill="#738B91" stroke="none"/>
+    <path d="M438 160A128 128 0 1 0 438 212" stroke-width="32"/><path d="M438 186H461" stroke="#738B91" stroke-width="12"/>
+    <path d="M461 332V217C461 170 491 144 536 144C580 144 607 171 607 217V245" stroke-width="29"/><path d="M607 245H660" stroke="#738B91" stroke-width="12"/>
+    <path d="M660 245H790C790 182 764 144 718 144C669 144 643 187 643 245C643 304 675 340 727 340C756 340 781 328 800 305" stroke-width="29"/><circle cx="718" cy="245" r="10" fill="#738B91" stroke="none"/>
+    <path d="M841 152L911 340L988 152M911 340C898 390 876 413 829 413" stroke-width="29"/><path d="M911 324V357" stroke="#738B91" stroke-width="12"/>
+  </g>
+</svg>

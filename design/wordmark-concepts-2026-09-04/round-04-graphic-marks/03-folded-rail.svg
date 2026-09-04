@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F4F6F7"/>
+  <text x="70" y="65" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="19" fill="#667079">Folded rail</text>
+  <g transform="translate(145 188)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- the mark uses one recurring over-under fold, not dots -->
+    <path d="M45 75V385M198 75V385" stroke="#232B31" stroke-width="30"/>
+    <path d="M45 232H101C123 232 128 209 150 209C172 209 176 232 198 232" stroke="#232B31" stroke-width="30"/>
+    <path d="M101 232C123 232 128 209 150 209" stroke="#667568" stroke-width="16"/>
+
+    <path d="M447 101C391 60 306 65 260 120C208 183 215 294 273 349C325 398 407 396 458 344C510 291 513 190 465 126C460 118 453 109 447 101" stroke="#232B31" stroke-width="31"/>
+    <path d="M458 344C478 324 490 299 495 272" stroke="#A8B2AA" stroke-width="17"/>
+
+    <path d="M545 385V215C545 172 573 147 614 147C657 147 684 176 684 220V385" stroke="#232B31" stroke-width="30"/>
+    <path d="M729 267H864C864 190 833 147 779 147C724 147 696 198 696 267C696 341 733 387 793 387C828 387 856 372 878 344" stroke="#232B31" stroke-width="30"/>
+    <path d="M684 267C701 267 711 245 729 245C747 245 755 267 771 267" stroke="#667568" stroke-width="16"/>
+
+    <path d="M916 158L985 385L1062 158M985 385C973 446 948 473 897 473" stroke="#232B31" stroke-width="30"/>
+    <path d="M985 385C979 414 970 435 955 449" stroke="#A8B2AA" stroke-width="17"/>
+  </g>
+</svg>

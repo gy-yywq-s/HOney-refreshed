@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+  <rect width="1440" height="760" fill="#EEF2F2"/>
+  <text x="64" y="58" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">B · Moss aperture</text>
+  <g transform="translate(0 176)">
+    <image href="glyph-bricks/tight-r3-h.png" x="170" y="0" width="259" height="180"/>
+    <image href="glyph-bricks/tight-r3-o.png" x="360" y="0" width="281" height="180"/>
+    <image href="glyph-bricks/tight-r3-n.png" x="545" y="0" width="259" height="180"/>
+    <image href="glyph-bricks/tight-r3-e.png" x="715" y="0" width="293" height="180"/>
+    <image href="glyph-bricks/tight-r3-y-clean.png" x="900" y="0" width="386" height="180"/>
+  </g>
+  <g transform="translate(56 585) scale(.32)">
+    <image href="glyph-bricks/tight-r3-h.png" x="0" y="0" width="259" height="180"/>
+    <image href="glyph-bricks/tight-r3-o.png" x="190" y="0" width="281" height="180"/>
+    <image href="glyph-bricks/tight-r3-n.png" x="375" y="0" width="259" height="180"/>
+    <image href="glyph-bricks/tight-r3-e.png" x="545" y="0" width="293" height="180"/>
+    <image href="glyph-bricks/tight-r3-y-clean.png" x="730" y="0" width="386" height="180"/>
+  </g>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1040" viewBox="0 0 1440 1040">
+  <rect width="1440" height="1040" fill="#F7F6F3"/>
+  <text x="72" y="70" font-family="Helvetica Neue, Arial, sans-serif" font-size="25" fill="#585A58">Type skeleton study — unmodified</text>
+  <g fill="#111518">
+    <text x="90" y="210" font-family="Helvetica Neue" font-size="126" font-weight="200" letter-spacing="-4">HOney</text>
+    <text x="90" y="360" font-family="Avenir Next" font-size="122" font-weight="300" letter-spacing="-4">HOney</text>
+    <text x="90" y="510" font-family="SF Pro Display" font-size="124" font-weight="300" letter-spacing="-4">HOney</text>
+    <text x="90" y="660" font-family="Gill Sans" font-size="128" font-weight="300" letter-spacing="-3">HOney</text>
+    <text x="90" y="810" font-family="Futura" font-size="118" font-weight="400" letter-spacing="-3">HOney</text>
+    <text x="90" y="960" font-family="Skia" font-size="120" font-weight="400" letter-spacing="-3">HOney</text>
+  </g>
+  <g font-family="Helvetica Neue, Arial, sans-serif" font-size="16" fill="#777A77">
+    <text x="690" y="178">Helvetica Neue 200</text>
+    <text x="690" y="328">Avenir Next 300</text>
+    <text x="690" y="478">SF Pro Display 300</text>
+    <text x="690" y="628">Gill Sans 300</text>
+    <text x="690" y="778">Futura 400</text>
+    <text x="690" y="928">Skia 400</text>
+  </g>
+  <g transform="translate(1040 120)" fill="#111518">
+    <text x="0" y="0" font-family="Helvetica Neue" font-size="34" font-weight="200">HOney  34</text>
+    <text x="0" y="70" font-family="Avenir Next" font-size="34" font-weight="300">HOney  34</text>
+    <text x="0" y="140" font-family="SF Pro Display" font-size="34" font-weight="300">HOney  34</text>
+    <text x="0" y="210" font-family="Gill Sans" font-size="34" font-weight="300">HOney  34</text>
+    <text x="0" y="280" font-family="Futura" font-size="34" font-weight="400">HOney  34</text>
+    <text x="0" y="350" font-family="Skia" font-size="34" font-weight="400">HOney  34</text>
+  </g>
+</svg>

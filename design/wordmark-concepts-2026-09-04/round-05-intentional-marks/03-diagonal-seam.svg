@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760">
+  <rect width="1440" height="760" fill="#F4F6F7"/>
+  <text x="64" y="58" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">03 · Diagonal seam</text>
+
+  <path d="M190 372L1146 294" fill="none" stroke="#756B74" stroke-width="18" stroke-linecap="round"/>
+  <ellipse cx="486" cy="346" rx="66" ry="75" fill="#F4F6F7"/>
+  <rect x="620" y="286" width="95" height="112" rx="45" fill="#F4F6F7" transform="rotate(-5 667 342)"/>
+
+  <g transform="translate(0 225)">
+    <image href="glyphs/diag-h.png" x="150" y="0" width="244" height="220"/>
+    <image href="glyphs/diag-o.png" x="330" y="0" width="299" height="220"/>
+    <image href="glyphs/diag-n.png" x="540" y="0" width="275" height="220"/>
+    <image href="glyphs/diag-e.png" x="735" y="0" width="287" height="220"/>
+    <image href="glyphs/diag-y.png" x="930" y="0" width="306" height="220"/>
+  </g>
+
+  <g transform="translate(68 592) scale(.34)">
+    <path d="M120 147L1076 69" fill="none" stroke="#756B74" stroke-width="18" stroke-linecap="round"/>
+    <ellipse cx="416" cy="121" rx="66" ry="75" fill="#F4F6F7"/>
+    <rect x="550" y="61" width="95" height="112" rx="45" fill="#F4F6F7" transform="rotate(-5 597 117)"/>
+    <image href="glyphs/diag-h.png" x="80" y="0" width="244" height="220"/>
+    <image href="glyphs/diag-o.png" x="260" y="0" width="299" height="220"/>
+    <image href="glyphs/diag-n.png" x="470" y="0" width="275" height="220"/>
+    <image href="glyphs/diag-e.png" x="665" y="0" width="287" height="220"/>
+    <image href="glyphs/diag-y.png" x="860" y="0" width="306" height="220"/>
+  </g>
+</svg>

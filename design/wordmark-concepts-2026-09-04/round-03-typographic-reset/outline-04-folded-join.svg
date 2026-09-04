@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F6F7F4"/>
+  <text x="70" y="65" font-family="Helvetica Neue, Arial, sans-serif" font-size="19" font-weight="300" fill="#747975">Folded join</text>
+  <defs>
+    <mask id="fold" maskUnits="userSpaceOnUse" x="0" y="0" width="1440" height="900">
+      <rect width="1440" height="900" fill="white"/>
+      <circle cx="701" cy="413" r="11" fill="black"/>
+      <rect x="721" y="401" width="17" height="24" rx="6" fill="black"/>
+    </mask>
+  </defs>
+  <image href="base-helvetica-ultralight-outline.svg" x="273" y="230" width="894" height="366.078" mask="url(#fold)"/>
+
+  <!-- compact over-under fold, scaled to the native stroke rather than used as an icon -->
+  <g transform="translate(696 398)">
+    <path d="M0 4h25c6 0 10 4 10 10v4H12C5 18 0 13 0 8z" fill="#111518"/>
+    <path d="M35 18H18c-6 0-10 4-10 10v4h17c6 0 10-4 10-10z" fill="#477EC8"/>
+  </g>
+
+  <g transform="translate(1040 663)">
+    <path d="M0 4h45c10 0 16 7 16 16v8H21C9 28 0 19 0 10z" fill="#111518"/>
+    <path d="M61 28H31c-10 0-17 7-17 17v8h30c10 0 17-7 17-17z" fill="#477EC8"/>
+  </g>
+  <text x="80" y="805" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" fill="#7B807C">The only color occupies a structural replacement at the O–n join.</text>
+</svg>

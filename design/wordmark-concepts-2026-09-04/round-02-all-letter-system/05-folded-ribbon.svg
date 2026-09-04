@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#FAF3F1"/>
+  <text x="92" y="82" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="27" fill="#655B58">05  Folded ribbon</text>
+  <text x="92" y="124" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#8C807C">No campus metaphor: every letter is a different fold of one lively, tool-like ribbon.</text>
+
+  <g transform="translate(172 243)" fill="none" stroke="#222126" stroke-width="27" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 26V318M142 26V318M0 171H142L166 150"/>
+    <path d="M419 91C385 48 329 31 278 47C211 68 175 135 188 202C201 271 267 316 336 306C398 297 438 247 437 185C436 144 417 112 386 92L419 91"/>
+    <path d="M468 132V318M468 204C468 154 496 128 540 128C584 128 610 156 610 203V318"/>
+    <path d="M654 228H790C790 165 764 128 718 128C670 128 644 171 644 229C644 288 676 324 728 324C757 324 781 313 802 291"/>
+    <path d="M840 137L910 324L985 137M910 324C898 373 875 396 830 396"/>
+  </g>
+  <path d="M338 456L362 435M610 446L632 425M777 471L800 450M1012 476L1034 455" stroke="#F06454" stroke-width="14" stroke-linecap="round"/>
+  <path d="M1110 688c34-28 72-28 106 0s72 28 106 0" fill="none" stroke="#222126" stroke-width="14" stroke-linecap="round"/>
+  <path d="M1159 673l17-14M1245 703l17-14" stroke="#F06454" stroke-width="10" stroke-linecap="round"/>
+  <text x="1110" y="753" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#766D69">Shared fold language</text>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="920" viewBox="0 0 1440 920">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#101820" flood-opacity=".14"/></filter>
+    <pattern id="paper" width="1024" height="1024" patternUnits="userSpaceOnUse"><image xlink:href="paper-texture-component.png" width="1024" height="1024" opacity=".06"/></pattern>
+    <g id="mark-b">
+      <path d="M240 650H784" fill="none" stroke="currentColor" stroke-width="62" stroke-linecap="round"/>
+      <path d="M302 620C343 432 476 326 637 340C708 346 766 379 810 431" fill="none" stroke="currentColor" stroke-width="62" stroke-linecap="round"/>
+      <circle cx="678" cy="275" r="31" fill="var(--accent)"/>
+      <path d="M678 216V176M735 234L765 204" fill="none" stroke="var(--accent)" stroke-width="30" stroke-linecap="round"/>
+    </g>
+    <g id="web-badge"><circle cx="790" cy="790" r="112" fill="var(--surface)" stroke="var(--surface)" stroke-width="30"/><circle cx="790" cy="790" r="78" fill="none" stroke="var(--ink)" stroke-width="20"/><ellipse cx="790" cy="790" rx="37" ry="78" fill="none" stroke="var(--ink)" stroke-width="15"/><path d="M716 790H864" fill="none" stroke="var(--ink)" stroke-width="15" stroke-linecap="round"/></g>
+    <symbol id="light-b" viewBox="0 0 1024 1024" style="--surface:#EAF4F6;--ink:#243643;--accent:#F59A61;color:var(--ink)"><rect width="1024" height="1024" rx="224" fill="var(--surface)"/><use xlink:href="#mark-b"/></symbol>
+    <symbol id="dark-b" viewBox="0 0 1024 1024" style="--surface:#171A1F;--ink:#F0F1EE;--accent:#86A9CE;color:var(--ink)"><rect width="1024" height="1024" rx="224" fill="var(--surface)"/><use xlink:href="#mark-b"/></symbol>
+    <symbol id="tint-b" viewBox="0 0 1024 1024" style="--surface:#DDE1E5;--ink:#101820;--accent:#101820;color:var(--ink)"><rect width="1024" height="1024" rx="224" fill="var(--surface)"/><use xlink:href="#mark-b"/></symbol>
+    <symbol id="web-b" viewBox="0 0 1024 1024" style="--surface:#EAF4F6;--ink:#243643;--accent:#F59A61;color:var(--ink)"><rect width="1024" height="1024" rx="224" fill="var(--surface)"/><g transform="translate(-26 -28) scale(.96)"><use xlink:href="#mark-b"/></g><use xlink:href="#web-badge"/></symbol>
+  </defs>
+  <rect width="1440" height="920" fill="#E9ECEF"/>
+  <text x="72" y="80" font-family="Arial, sans-serif" font-size="46" font-weight="700" fill="#182532">B · Day dial</text>
+  <text x="72" y="122" font-family="Arial, sans-serif" font-size="22" fill="#66717B">A bouncy horizon and a warm ping: recognisably about the day without becoming a clock.</text>
+  <use xlink:href="#light-b" x="76" y="190" width="500" height="500" filter="url(#shadow)"/>
+  <text x="76" y="732" font-family="-apple-system,sans-serif" font-size="20" fill="#66717B">iOS · pale sky / navy / soft orange</text>
+  <use xlink:href="#dark-b" x="626" y="205" width="220" height="220" filter="url(#shadow)"/><text x="626" y="455" font-family="-apple-system,sans-serif" font-size="18" fill="#66717B">Dark</text>
+  <use xlink:href="#tint-b" x="626" y="492" width="220" height="220" filter="url(#shadow)"/><text x="626" y="742" font-family="-apple-system,sans-serif" font-size="18" fill="#66717B">Tinted</text>
+  <use xlink:href="#web-b" x="942" y="230" width="390" height="390" filter="url(#shadow)"/>
+  <text x="942" y="662" font-family="-apple-system,sans-serif" font-size="20" fill="#66717B">Web companion · globe replaces the lower endpoint</text>
+  <use xlink:href="#light-b" x="960" y="730" width="64" height="64"/><use xlink:href="#web-b" x="1048" y="730" width="64" height="64"/><text x="1130" y="771" font-family="-apple-system,sans-serif" font-size="18" fill="#66717B">64 px check</text>
+  <rect x="72" y="846" width="1296" height="1" fill="#C8CED4"/><text x="72" y="882" font-family="-apple-system,sans-serif" font-size="17" fill="#76818B">Cheerful daily-tool energy · avoids calendar-page and clock-face clichés</text>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+  <rect width="1440" height="900" fill="#F9F5ED"/>
+  <text x="92" y="82" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="27" fill="#625D55">08  One lockup</text>
+  <text x="92" y="124" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="17" fill="#898279">One becomes an interlocked graphic object; H opens into it and y carries its motion out.</text>
+
+  <g transform="translate(158 225)" fill="none" stroke="#273A5B" stroke-linecap="round" stroke-linejoin="round">
+    <!-- H opens into the cluster -->
+    <path d="M0 47V335M142 47V335M0 191H142L181 168" stroke-width="30"/>
+
+    <!-- full O protects primary reading -->
+    <circle cx="364" cy="191" r="142" stroke-width="34"/>
+
+    <!-- n enters the O counter but keeps its own stem and arch -->
+    <path d="M416 166V335M416 225C416 177 444 150 488 150C532 150 557 178 557 224V335" stroke-width="30"/>
+
+    <!-- e overlaps n terminal; its crossbar becomes the lock line -->
+    <path d="M595 246H724C724 186 700 150 657 150C611 150 587 191 587 247C587 304 617 339 667 339C694 339 716 329 735 308" stroke-width="30"/>
+    <path d="M557 246H608" stroke="#E58A43" stroke-width="13"/>
+
+    <!-- y continues the lockup trajectory -->
+    <path d="M773 157L841 339L915 157M841 339C829 388 807 410 762 410" stroke-width="30"/>
+    <path d="M735 308Q758 320 773 300" stroke="#E58A43" stroke-width="13"/>
+  </g>
+
+  <g transform="translate(1010 628)">
+    <rect width="286" height="164" rx="34" fill="#EFE7D8"/>
+    <circle cx="84" cy="82" r="57" fill="none" stroke="#273A5B" stroke-width="15"/>
+    <path d="M104 70v67M104 93q0-27 26-27q25 0 25 27v44M155 103h54q0-38-26-38q-29 0-29 38q0 37 31 37q15 0 25-10" fill="none" stroke="#273A5B" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M151 103h12" stroke="#E58A43" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="1010" y="824" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="15" fill="#766F64">One extraction without a separate logo</text>
+</svg>

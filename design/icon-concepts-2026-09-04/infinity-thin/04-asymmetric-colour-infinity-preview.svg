@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820">
+  <defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="15" stdDeviation="22" flood-color="#19242B" flood-opacity=".13"/></filter><clipPath id="tile"><rect width="560" height="560" rx="122"/></clipPath></defs>
+  <rect width="1440" height="820" fill="#E9ECEF"/>
+  <text x="70" y="76" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="31" font-weight="600" fill="#273238">Asymmetric colour infinity</text>
+  <text x="70" y="112" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#667079">Large left loop · small right loop · thin multi-colour paths · ongoing brush at the top opening</text>
+  <g transform="translate(86 170)" filter="url(#shadow)" clip-path="url(#tile)"><image href="04-asymmetric-colour-infinity.svg" width="560" height="560"/></g>
+  <g transform="translate(760 210)">
+    <image href="04-asymmetric-colour-infinity.svg" width="300" height="300"/>
+    <image href="04-asymmetric-colour-infinity.svg" x="365" y="15" width="128" height="128"/>
+    <image href="04-asymmetric-colour-infinity.svg" x="365" y="185" width="64" height="64"/>
+    <text x="0" y="355" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="17" fill="#667079">300 px</text>
+    <text x="365" y="165" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="17" fill="#667079">128 px</text>
+    <text x="365" y="275" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="17" fill="#667079">64 px</text>
+  </g>
+</svg>

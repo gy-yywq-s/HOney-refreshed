@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#EAF4F6"/>
+
+  <!-- Upper-left to lower-right path: graphite becomes smoky plum. -->
+  <g fill="none" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <path pathLength="100" d="M202 430C292 253 468 286 570 500C657 682 794 678 850 520" stroke="#25354A" stroke-dasharray="56 44"/>
+    <path pathLength="100" d="M202 430C292 253 468 286 570 500C657 682 794 678 850 520" stroke="#745170" stroke-dasharray="44 56" stroke-dashoffset="-56"/>
+  </g>
+
+  <!-- Lower-left to upper-right path: blue becomes green. -->
+  <g fill="none" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path pathLength="100" d="M202 580C307 744 478 702 570 530C655 371 790 350 850 480" stroke="#5E9ED6" stroke-dasharray="52 48"/>
+    <path pathLength="100" d="M202 580C307 744 478 702 570 530C655 371 790 350 850 480" stroke="#57A47A" stroke-dasharray="48 52" stroke-dashoffset="-52"/>
+  </g>
+
+  <!-- A small top opening: colour is still being added. -->
+  <path d="M742 381C758 373 773 372 788 376" fill="none" stroke="#EAF4F6" stroke-width="48" stroke-linecap="round"/>
+  <circle cx="744" cy="380" r="20" fill="#F5AE54"/>
+  <path d="M794 348L819 319" fill="none" stroke="#57A47A" stroke-width="20" stroke-linecap="round"/>
+</svg>

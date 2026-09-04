@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1260" viewBox="0 0 1920 1260">
+  <rect width="1920" height="1260" fill="#E8EAE7"/>
+  <text x="48" y="58" font-family="Helvetica Neue, Arial, sans-serif" font-size="26" font-weight="300" fill="#424643">HOney wordmark — typographic reset</text>
+  <text x="48" y="91" font-family="Helvetica Neue, Arial, sans-serif" font-size="15" fill="#707570">Real glyph outlines with generated components rebuilt into the strokes</text>
+  <g transform="translate(30 120)">
+    <image href="refined-01-h-bridge.png" x="0" y="0" width="915" height="571.875"/>
+    <image href="refined-02-on-fold.png" x="945" y="0" width="915" height="571.875"/>
+    <image href="refined-03-y-return.png" x="0" y="597" width="915" height="571.875"/>
+    <image href="refined-04-one-apertures.png" x="945" y="597" width="915" height="571.875"/>
+  </g>
+</svg>
