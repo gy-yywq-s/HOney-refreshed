@@ -1,19 +1,19 @@
-// Scroll model: FRAMED_SCROLL. The student's own records at the school
-// (Gary 2026-09-03): the campus card, weekend stay-overs, and the school's
-// disciplinary record. HOney stores NONE of it — every visit reads it live
-// with the student's own portal session and shows the school's own words.
-// Bilingual chrome; the school's wording is never translated.
+// Scroll model: FRAMED_SCROLL. The student's own school records: campus card,
+// weekend stay, disciplinary record. Read live, stored nowhere, and every
+// action the school offers is offered here too (Gary 2026-09-04). Bilingual
+// chrome; the school's wording is never translated — and never explained at
+// length: one short line at most.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client";
-import type { CardResponse, SchoolReadStatus, WarningsResponse, WeekendResponse } from "../../api/types";
+import type { CardResponse, SchoolActionResponse, SchoolReadStatus, WarningsResponse, WeekendResponse, WeekendStay } from "../../api/types";
 import { useApi } from "../../lib/useApi";
 import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime } from "../../lib/format";
 import { useLang, useT } from "../../lib/i18n";
 import { usePortalEntry } from "../../lib/portalEntry";
-import { Modal } from "../../components/Modal";
+import { ConfirmDialog, Modal } from "../../components/Modal";
 import { CARD_TOP_UP_AMOUNTS } from "@honey/shared/api";
 
 type Bi = { en: string; zh: string };
@@ -125,12 +125,7 @@ export function CampusCardPage() {
               ))}
             </section>
           )}
-          <p className="text-4">
-            {L({
-              en: "Read from the school's card system when you open this page — HOney keeps no copy. Paying happens in the school's own system, never here.",
-              zh: "打开本页时才从学校的一卡通系统读取，HOney 不留副本。付款始终在学校自己的系统里完成，不经过这里。",
-            })}
-          </p>
+          <p className="text-4">{L({ en: "Read live.", zh: "实时读取。" })}</p>
         </>
       ) : data ? (
         <StateNote status={data.status} empty={{ en: "No card is registered to you.", zh: "你名下没有一卡通。" }} />
@@ -218,12 +213,7 @@ function TopUpSheet({ onClose, onPaid }: { onClose: () => void; onPaid: () => vo
     <Modal title={L({ en: "Top up the card", zh: "一卡通充值" })} onClose={onClose}>
       {sent ? (
         <>
-          <p>
-            {L({
-              en: "The school opened the order and the payment page is in the other tab. The balance here updates once the school records the payment.",
-              zh: "学校已经开单，付款页面在另一个标签里。学校记录到付款后，这里的余额才会更新。",
-            })}
-          </p>
+          <p>{L({ en: "The payment page is in the other tab.", zh: "付款页面在另一个标签里。" })}</p>
           <div className="card-actions">
             <button className="btn btn--primary" onClick={onPaid}>
               {t("Done")}
@@ -232,12 +222,7 @@ function TopUpSheet({ onClose, onPaid }: { onClose: () => void; onPaid: () => vo
         </>
       ) : (
         <>
-          <p className="text-4">
-            {L({
-              en: "HOney only asks the school to open the order. You pay on the school's own payment page — an order you do not pay stays unpaid.",
-              zh: "HOney 只负责让学校开一张单。付款在学校自己的支付页面完成——没付的单子就一直是未付。",
-            })}
-          </p>
+          <p className="text-4">{L({ en: "Opens an Alipay link.", zh: "会打开支付宝链接。" })}</p>
           {/* Every amount the school offers, all of them visible. */}
           <div className="topup__amounts">
             {PRESETS.map((v) => (
@@ -267,37 +252,99 @@ function TopUpSheet({ onClose, onPaid }: { onClose: () => void; onPaid: () => vo
   );
 }
 
-/** Settings › Weekend stay — the records the school holds and the open days. */
+/** Settings › Weekend stay — apply for the open days, withdraw what is booked. */
 export function WeekendStayPage() {
   const L = useL();
   const t = useT();
   const weekend = useApi<WeekendResponse>(() => api.schoolWeekend(), []);
   const data = weekend.data;
+  const [picked, setPicked] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const [withdrawing, setWithdrawing] = useState<WeekendStay | null>(null);
+
+  const say = (res: SchoolActionResponse, ok: Bi): boolean => {
+    if (res.status === "ok") {
+      setNote({ tone: "success", text: L(ok) });
+      return true;
+    }
+    setNote({
+      tone: "danger",
+      text:
+        res.status === "refused"
+          ? res.reason
+          : res.status === "portal_reconnect_required"
+            ? L({ en: "The school connection needs renewing.", zh: "学校连接需要重新登录。" })
+            : L({ en: "The school could not be reached.", zh: "连不上学校系统。" }),
+    });
+    return false;
+  };
+
+  async function apply() {
+    if (picked.length === 0 || busy) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = await api.schoolWeekendApply(picked);
+      if (say(res, { en: "Applied.", zh: "已提交。" })) {
+        setPicked([]);
+        weekend.reload();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function withdraw(stay: WeekendStay) {
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = await api.schoolWeekendWithdraw(stay.id);
+      if (say(res, { en: "Withdrawn.", zh: "已撤回。" })) weekend.reload();
+    } finally {
+      setBusy(false);
+      setWithdrawing(null);
+    }
+  }
+
+  const booked = new Set((data?.stays ?? []).map((s) => s.date));
+  const open = (data?.selectableDays ?? []).filter((d) => !booked.has(d));
 
   return (
     <div className="stack">
       <h1 className="page-title">{t("Weekend stay")}</h1>
       {weekend.loading && <Skeleton lines={4} />}
+      {note && <div className={`banner banner--${note.tone}`} role="status">{note.text}</div>}
       {data && data.status === "ok" ? (
         <>
-          {data.selectableDays.length > 0 && (
+          {open.length > 0 && (
             <section className="card">
-              <span className="eyebrow">{L({ en: "Open for booking", zh: "可选日期" })}</span>
-              <p className="text-3" style={{ marginBottom: 0 }}>
-                {data.selectableDays.join(" · ")}
-              </p>
-              <p className="caption" style={{ marginBottom: 0 }}>
-                {L({
-                  en: "Booking a weekend is done in the school portal — HOney only shows what the school has on record.",
-                  zh: "申请留宿仍在学校门户里操作——HOney 只显示学校记录在案的内容。",
-                })}
-              </p>
+              <span className="eyebrow">{L({ en: "Open days", zh: "可选日期" })}</span>
+              {/* Every open day, all of them shown. */}
+              <div className="topup__amounts">
+                {open.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    aria-pressed={picked.includes(d)}
+                    className={picked.includes(d) ? "btn btn--small btn--pill-ok" : "btn btn--small"}
+                    onClick={() => setPicked((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d]))}
+                  >
+                    {d.slice(5)}
+                  </button>
+                ))}
+              </div>
+              <div className="card-actions">
+                <button className="btn btn--primary" disabled={busy || picked.length === 0} onClick={() => void apply()}>
+                  {busy ? t("Saving…") : `${L({ en: "Apply", zh: "申请" })}${picked.length > 1 ? ` · ${picked.length}` : ""}`}
+                </button>
+              </div>
             </section>
           )}
           <section className="rowlist" aria-label="Your weekends">
             <h2 className="overline">{L({ en: "On record", zh: "已记录" })}</h2>
             {data.stays.length === 0 ? (
-              <p className="caption">{L({ en: "No weekend stays on record.", zh: "没有留宿记录。" })}</p>
+              <p className="caption">{L({ en: "Nothing booked.", zh: "还没有留宿。" })}</p>
             ) : (
               data.stays.map((s) => (
                 <div className="row" key={s.id}>
@@ -305,17 +352,34 @@ export function WeekendStayPage() {
                     <span className="row__title">{s.label || s.date}</span>
                     <span className="row__sub">
                       {s.campus}
-                      {s.mentor ? ` · ${L({ en: "mentor", zh: "导师" })} ${s.mentor}` : ""}
+                      {s.mentor ? ` · ${s.mentor}` : ""}
                     </span>
+                  </span>
+                  <span className="row__actions">
+                    <button className="btn btn--ghost btn--small" disabled={busy} onClick={() => setWithdrawing(s)}>
+                      {L({ en: "Withdraw", zh: "撤回" })}
+                    </button>
                   </span>
                 </div>
               ))
             )}
           </section>
+          <p className="text-4">{L({ en: "Read live.", zh: "实时读取。" })}</p>
         </>
       ) : data ? (
-        <StateNote status={data.status} empty={{ en: "No weekend stays on record.", zh: "没有留宿记录。" }} />
+        <StateNote status={data.status} empty={{ en: "Nothing booked.", zh: "还没有留宿。" }} />
       ) : null}
+      {withdrawing && (
+        <ConfirmDialog
+          title={L({ en: "Withdraw this weekend?", zh: "撤回这次留宿？" })}
+          body={withdrawing.label || withdrawing.date}
+          confirmLabel={L({ en: "Withdraw", zh: "撤回" })}
+          danger
+          busy={busy}
+          onClose={() => setWithdrawing(null)}
+          onConfirm={() => void withdraw(withdrawing)}
+        />
+      )}
     </div>
   );
 }
@@ -330,12 +394,6 @@ export function SchoolRecordPage() {
   return (
     <div className="stack">
       <h1 className="page-title">{t("School record")}</h1>
-      <p className="muted">
-        {L({
-          en: "What the school has recorded about you. It is read live and kept nowhere in HOney — no one else can see it here, and nothing about it is ever attached to an Experience.",
-          zh: "学校记录在案的、关于你的内容。每次打开都是实时读取，HOney 不做任何保存——别人在这里看不到，也永远不会和任何一条经历关联。",
-        })}
-      </p>
       {warnings.loading && <Skeleton lines={4} />}
       {data && data.status === "ok" ? (
         data.warnings.length === 0 ? (
@@ -364,6 +422,7 @@ export function SchoolRecordPage() {
       ) : data ? (
         <StateNote status={data.status} empty={{ en: "Nothing on record.", zh: "没有任何记录。" }} />
       ) : null}
+      <p className="text-4">{L({ en: "Read live.", zh: "实时读取。" })}</p>
     </div>
   );
 }

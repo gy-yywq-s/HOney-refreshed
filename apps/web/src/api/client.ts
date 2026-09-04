@@ -30,6 +30,7 @@ import type {
   NoticesResponse,
   CardResponse,
   CardTopUpResponse,
+  SchoolActionResponse,
   WarningsResponse,
   WeekendResponse,
   KillSwitchName,
@@ -211,6 +212,14 @@ export class ApiClient {
 
   schoolWeekend(): Promise<WeekendResponse> {
     return this.request("GET", "/api/school/weekend");
+  }
+
+  schoolWeekendApply(dates: string[]): Promise<SchoolActionResponse> {
+    return this.request("POST", "/api/school/weekend/apply", { dates });
+  }
+
+  schoolWeekendWithdraw(recordId: number): Promise<SchoolActionResponse> {
+    return this.request("POST", "/api/school/weekend/withdraw", { recordId });
   }
 
   /** The school's own notices, newest first (Gary 2026-09-03). */

@@ -214,6 +214,13 @@ export interface WeekendStay {
   campus: string;
 }
 
+/** An action taken at the school on the student's behalf. */
+export type SchoolActionResponse =
+  | { status: "ok" }
+  | { status: "portal_reconnect_required" }
+  | { status: "refused"; reason: string }
+  | { status: "unavailable" };
+
 export interface WeekendResponse {
   status: SchoolReadStatus;
   stays: WeekendStay[];

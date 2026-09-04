@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { AppContext } from "../context.js";
-import type { CardResponse, CardTopUpResponse, WarningsResponse, WeekendResponse } from "@honey/shared/api";
+import type { CardResponse, CardTopUpResponse, SchoolActionResponse, WarningsResponse, WeekendResponse } from "@honey/shared/api";
 import { parsePortalTime } from "@honey/shared/access";
 
 // The student's own records at the school (Gary 2026-09-03: campus card,
@@ -20,6 +20,17 @@ function isExpired(e: unknown): boolean {
 
 export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): void {
   const tokenFor = (honeyId: string) => ctx.accounts.loadPortalToken(honeyId)?.token ?? null;
+
+  /** One failure mapping for the actions: expiry, the school's refusal, or an outage. */
+  const failure = (e: unknown, honeyId: string): SchoolActionResponse => {
+    if (isExpired(e)) {
+      ctx.accounts.markPortalExpired(honeyId);
+      return { status: "portal_reconnect_required" };
+    }
+    const info = e instanceof Error && "info" in e ? (e as { info: { kind: string; reason?: string } }).info : null;
+    if (info?.kind === "operationRejected") return { status: "refused", reason: info.reason ?? "The school refused it." };
+    return { status: "unavailable" };
+  };
 
   app.get("/api/school/card", { preHandler: ctx.requireAuth }, async (req, reply): Promise<CardResponse> => {
     void reply.header("cache-control", "no-store");
@@ -130,6 +141,38 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
     }
   });
 
+  /** Apply to stay over on the chosen weekend days. */
+  app.post<{ Body: { dates?: string[] } }>("/api/school/weekend/apply", { preHandler: ctx.requireAuth }, async (req, reply): Promise<SchoolActionResponse> => {
+    void reply.header("cache-control", "no-store");
+    const user = ctx.userOf(req);
+    const token = tokenFor(user.honey_id);
+    if (!token) return { status: "portal_reconnect_required" };
+    const dates = (req.body?.dates ?? []).filter((d) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d));
+    if (dates.length === 0) return { status: "refused", reason: "Choose at least one day." };
+    try {
+      await ctx.connector.api.applyWeekendStay(token, dates);
+      return { status: "ok" };
+    } catch (e) {
+      return failure(e, user.honey_id);
+    }
+  });
+
+  /** Withdraw one stay-over the school has on record. */
+  app.post<{ Body: { recordId?: number } }>("/api/school/weekend/withdraw", { preHandler: ctx.requireAuth }, async (req, reply): Promise<SchoolActionResponse> => {
+    void reply.header("cache-control", "no-store");
+    const user = ctx.userOf(req);
+    const token = tokenFor(user.honey_id);
+    if (!token) return { status: "portal_reconnect_required" };
+    const recordId = Number(req.body?.recordId);
+    if (!Number.isInteger(recordId)) return { status: "refused", reason: "Unknown record." };
+    try {
+      await ctx.connector.api.withdrawWeekendStay(token, recordId);
+      return { status: "ok" };
+    } catch (e) {
+      return failure(e, user.honey_id);
+    }
+  });
+
   app.get("/api/school/warnings", { preHandler: ctx.requireAuth }, async (req, reply): Promise<WarningsResponse> => {
     void reply.header("cache-control", "no-store");
     const user = ctx.userOf(req);
@@ -166,7 +209,7 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
     try {
       const [rows, days] = await Promise.all([
         ctx.connector.api.weekendStays(conn.token),
-        ctx.connector.api.weekendDays(conn.token, conn.studentId).catch(() => [] as string[]),
+        ctx.connector.api.weekendDays(conn.token, 1).catch(() => [] as string[]),
       ]);
       return {
         status: "ok",

@@ -208,14 +208,43 @@ export class PortalApi {
     return this.rows<WeekendStayWire>(token, "/api/weekend/live_list");
   }
 
-  /** GET /api/weekend/weekend_select/{studentId} — the days that can be chosen. */
-  async weekendDays(token: string, studentId: number | string): Promise<string[]> {
-    const path = `/api/weekend/weekend_select/${encodeURIComponent(String(studentId))}`;
+  /**
+   * GET /api/weekend/weekend_select/{kind} — the days that can be chosen.
+   * The path segment is the KIND (1 = staying over, 2 = meals), not a student
+   * id: the portal's own weekend page calls it with 1 and 2 (its bundle,
+   * 2026-09-04). `special_day` is folded in the same way it folds them.
+   */
+  async weekendDays(token: string, kind: 1 | 2 = 1): Promise<string[]> {
+    const path = `/api/weekend/weekend_select/${kind}`;
     const resp = await this.http.request({ method: "GET", path, token });
     const env = asEnvelope(this.http.triage(resp, path), path);
     if (env.status !== 0 || env.data === null || typeof env.data !== "object") return [];
-    const days = (env.data as { day_list?: unknown }).day_list;
-    return Array.isArray(days) ? days.filter((d): d is string => typeof d === "string") : [];
+    const d = env.data as { day_list?: unknown; special_day?: unknown };
+    const list = [...(Array.isArray(d.day_list) ? d.day_list : []), ...(Array.isArray(d.special_day) ? d.special_day : [])];
+    return [...new Set(list.filter((x): x is string => typeof x === "string"))].sort();
+  }
+
+  /**
+   * POST /api/weekend/apply_live — apply to stay over. The portal sends the
+   * dates comma-joined in `live_dates` (its own weekend page does exactly
+   * this). Applying twice for the same day is the school's business, not
+   * ours: its answer is passed back as it is.
+   */
+  async applyWeekendStay(token: string, dates: string[]): Promise<void> {
+    const path = "/api/weekend/apply_live";
+    const resp = await this.http.request({ method: "POST", path, token, jsonBody: { live_dates: dates.join(",") }, mutation: true });
+    const env = asEnvelope(this.http.triage(resp, path), path);
+    if (env.status === 0) return;
+    throw operationRejected(path, typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
+  }
+
+  /** POST /api/weekend/delete_live_record — withdraw one stay-over. */
+  async withdrawWeekendStay(token: string, recordId: number): Promise<void> {
+    const path = "/api/weekend/delete_live_record";
+    const resp = await this.http.request({ method: "POST", path, token, jsonBody: { record_id: recordId }, mutation: true });
+    const env = asEnvelope(this.http.triage(resp, path), path);
+    if (env.status === 0) return;
+    throw operationRejected(path, typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
   }
 
   /**
