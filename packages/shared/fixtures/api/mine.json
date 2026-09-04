@@ -2,51 +2,48 @@
   "experiences": [
     {
       "id": "exp_short",
-      "entity_key": "lesson:tok_a1",
-      "lesson_id": "tok_a1",
-      "ctx_teacher_id": "t_76b873b12d89",
-      "ctx_course_id": "c_55566",
-      "ctx_room_id": "r_345",
+      "primaryEntity": {
+        "type": "lesson",
+        "id": "tok_a1",
+        "name": null
+      },
+      "contexts": [
+        {
+          "type": "course",
+          "id": "c_al_econ_u4",
+          "name": null
+        },
+        {
+          "type": "teacher",
+          "id": "t_76b873b12d89",
+          "name": null
+        }
+      ],
       "body": "Econ today actually made sense once the diagrams came out.",
       "rating": null,
       "provenance": "verified_lesson",
       "status": "published",
-      "status_detail": null,
-      "policy_version": 7,
-      "created_at": 1788333120000,
-      "published_at": 1788333120000
+      "statusDetail": null,
+      "postNonce": "oKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr8",
+      "controlPublicKey": "TmDOXP_H06UskXylYiMchd0IVIFNA-QJYp8Bwy_AAvI",
+      "createdAt": 1788333120000
     },
     {
       "id": "exp_hidden",
-      "entity_key": "teacher:t_zhao",
-      "lesson_id": null,
-      "ctx_teacher_id": null,
-      "ctx_course_id": null,
-      "ctx_room_id": null,
-      "body": "…",
+      "primaryEntity": {
+        "type": "teacher",
+        "id": "t_zhao",
+        "name": null
+      },
+      "contexts": [],
+      "body": "Hidden after a re-check.",
       "rating": null,
       "provenance": "verified_retrospective",
       "status": "blocked",
-      "status_detail": "Hidden after re-check.",
-      "policy_version": 7,
-      "created_at": 1788091200000,
-      "published_at": 1788091200000
-    },
-    {
-      "id": "exp_gone",
-      "entity_key": "dish:d_001",
-      "lesson_id": null,
-      "ctx_teacher_id": null,
-      "ctx_course_id": null,
-      "ctx_room_id": null,
-      "body": null,
-      "rating": 2,
-      "provenance": "verified_member",
-      "status": "revoked",
-      "status_detail": null,
-      "policy_version": 6,
-      "created_at": 1787198400000,
-      "published_at": null
+      "statusDetail": "Re-checked under policy v7.",
+      "postNonce": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+      "controlPublicKey": "BQZL0HQ4N972dKgA31iq-lOmQFdUKWxR2_-ZZfG1Z1Q",
+      "createdAt": 1787913600000
     }
   ]
 }

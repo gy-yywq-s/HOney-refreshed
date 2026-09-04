@@ -41,6 +41,7 @@ public enum ModerationCopy {
     public static let failedClosed = "HOney could not check this reliably. Nothing was published, and your words remain on this iPhone."
     public static let failedClosedUnsaved = "HOney could not check this reliably. Nothing was published — and this iPhone could not save the draft either, so copy your words before leaving."
     public static let draftNotSaved = "This iPhone could not save the draft. Your words are only in this editor until it can."
+    public static let restoreNeeded = "Your post controls exist, but not on this iPhone yet. Restore them in Settings › Post controls, then share. Your draft stays here."
     public static let keptPrivateNeverSent = "This note stayed on this iPhone — it was never sent anywhere. You can edit, delete or share it later from Your notes & posts."
     public static let keptPrivateAfterCheck = "It was not published. The text was processed once for the pre-publication check, then kept as a private note on this iPhone. You can edit, delete or share it later from Your notes & posts."
     public static let cooldownSaveFailed = "Publishing can wait, but this iPhone could not save the note. Copy your words, or fix the storage problem and try Keep private again."
@@ -80,6 +81,7 @@ public enum SubmitErrorCopy {
         "body_invalid": "The text is empty or longer than 5000 characters.",
         "rating_invalid": "Stars are whole numbers from 1 to 5.",
         "lesson_not_yours": "That lesson isn't in your imported history, so this account can't review it. Pick a lesson from your own History.",
+        "lesson_not_started": "This lesson hasn't started yet. You can share what it was like once it has begun.",
         "entity_unknown": "This entry is no longer listed.",
         "entity_frozen": "New experiences for this entry are paused by the moderators right now.",
         "standalone_closed": "Reviews for this entry are closed right now.",
@@ -87,7 +89,18 @@ public enum SubmitErrorCopy {
         "no_verified_exposure": "You can review teachers and rooms your imported timetable shows you've actually had — nothing in your history matches this entry.",
         "rating_not_allowed": "Stars are for dishes only, never for people, lessons or rooms. Remove the rating to continue.",
         "cooldown_ticket_invalid": "You edited the text since the waiting period started, so the check needs to run once more. Nothing was lost.",
-        "already_reviewed": "You've already shared an experience for this. Remove it in Your notes & posts if you want to write a new one.",
+        "already_posted": "You've already shared an experience for this. Remove it in Your notes & posts if you want to write a new one.",
+        "temporarily_suspended": "Sharing from this posting identity is paused for a while after repeated rule problems.",
+        "issuer_unavailable": "Sharing isn't available right now (the eligibility service is not ready). Your words stay on this iPhone.",
+        "issuance_rate_limited": "You've asked to share many times today. Try again tomorrow — your words stay on this iPhone.",
+        "token_invalid": "The eligibility check didn't verify. Try again; your words are still here.",
+        "token_scope_mismatch": "The eligibility check was for something else. Try again from the same lesson or entry.",
+        "token_expired": "The eligibility check expired. Try again; your words are still here.",
+        "token_used": "That eligibility check was already used. Try again; your words are still here.",
+        "envelope_invalid": "Something in the post's packaging was wrong. Try again; your words are still here.",
+        "signature_invalid": "This iPhone's post controls could not sign the post. Check Settings › Post controls.",
+        "pass_invalid": "The pre-publication check has expired. Run it again; your words are still here.",
+        "pass_mismatch": "The text changed after the check. Run it again; your words are still here.",
     ]
 
     public static func describe(_ error: Error) -> String {
@@ -101,8 +114,9 @@ public enum SubmitErrorCopy {
     }
 }
 
-/// A "mine" row only ever exists for a post that was actually published, so
-/// the only statuses are published, later-hidden (blocked) and revoked.
+/// A "mine" row only ever exists for a post that was actually published and
+/// is still controlled: published, or later hidden (blocked). A removed post
+/// is deleted outright (v2: revoke frees the slot), so it has no row.
 public enum MineStatusCopy {
     public struct Meta: Sendable, Equatable {
         public let label: String
@@ -110,12 +124,28 @@ public enum MineStatusCopy {
         public let explain: String
     }
 
-    public static func meta(_ status: MyExperienceStatus) -> Meta {
+    public static func meta(_ status: MineStatus) -> Meta {
         switch status {
         case .published: return Meta(label: "Shared", tone: .ok, explain: "")
         case .blocked: return Meta(label: "Hidden", tone: .danger, explain: "This was hidden after a re-check against the current community rules. You can remove it if you want to write a new one about this.")
-        case .revoked: return Meta(label: "Removed", tone: .muted, explain: "You removed this post — you can write a new one about this whenever you want.")
         case .unknown(let raw): return Meta(label: raw, tone: .muted, explain: "")
         }
     }
+
+    public static let removed = "Removed. The post is gone — you can write a new one about this any time."
+    public static let removeFailed = "Could not remove the post. Please try again."
+    public static let rootNotHere = "The post control that manages this post is not on this iPhone. Restore your post controls first (Settings › Post controls)."
+}
+
+/// Post controls copy (Settings › Post controls; Web: PostControlsPage.tsx).
+public enum PostControlsCopy {
+    public static let createdLocal = "Post controls created on this device"
+    public static let ready = "Post controls are on this device and backed up."
+    public static let restoreNeeded = "Restore on this device"
+    public static let restoreExplain = "Your post controls exist, but not on this iPhone. Restore them with a passkey, another device, or your 12 recovery words."
+    public static let wordsExplain = "Write these 12 words down and keep them somewhere safe. They restore your post controls on a new device. HOney never sees them."
+    public static let wordsWrong = "Those words don't match. Check the spelling and the order."
+    public static let pairExplain = "On the device that already has your post controls, open Settings › Post controls › Another device and enter this code."
+    public static let replaceExplain = "Future posts will be signed by a new root. If saving the backup fails, nothing changes."
+    public static let eraseExplain = "Removes the post controls from this iPhone only. The encrypted backup stays; you can restore later with a passkey, another device or the recovery words."
 }

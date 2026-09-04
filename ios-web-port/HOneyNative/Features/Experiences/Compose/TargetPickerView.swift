@@ -36,7 +36,7 @@ struct TargetPickerView: View {
                             if index > 0 { HairlineDivider() }
                             Button { nav.push(.compose(.lesson(id: lesson.id, date: Formatters.toIsoDate(Date(epochMillis: lesson.startsAt))))) } label: {
                                 EntityRow(
-                                    title: lesson.subjectName,
+                                    title: lesson.title,
                                     caption: [Formatters.relativeDay(lesson.startsAt), lesson.teacherName, DisplayNames.roomLabel(lesson.roomName)]
                                         .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
                                 )

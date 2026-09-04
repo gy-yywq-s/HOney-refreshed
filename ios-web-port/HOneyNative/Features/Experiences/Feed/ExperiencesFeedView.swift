@@ -84,7 +84,8 @@ struct ExperiencesFeedView: View {
                             }
                             ExperiencePostRow(
                                 exp: exp,
-                                reaction: model.reactions[exp.id] ?? ReactionState(exp),
+                                reaction: model.reactionState(for: exp),
+                                name: model.name,
                                 onReact: { value in Task { await model.react(exp, value: value) } },
                                 onReport: { category in await model.report(exp, category: category) },
                                 openEntity: { route in nav.push(route) }

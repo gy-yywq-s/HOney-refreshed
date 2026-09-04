@@ -1,12 +1,15 @@
 {
   "nextLesson": {
     "id": "1330001",
-    "subjectName": "CIE Chinese Language & Literature",
+    "subjectId": "s_chinese",
+    "subjectName": "Chinese",
+    "courseId": "c_al_chin",
+    "courseName": "AL CHIN",
+    "classSectionId": "sec_chin_2026a",
+    "classSectionName": "2026 Autumn · Prep Class",
     "topicName": null,
     "teacherId": "t_zhao",
     "teacherName": "赵流畅",
-    "courseId": "c_55738",
-    "courseName": "CIE Chinese Language & Literature 2026秋CIEAL中文备考班 赵流畅",
     "roomId": null,
     "roomName": null,
     "startsAt": 1788402600000,

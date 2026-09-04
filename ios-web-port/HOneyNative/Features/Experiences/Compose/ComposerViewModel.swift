@@ -1,8 +1,8 @@
 // Composer presentation state (spec §15): resolves the target, hydrates the
 // draft, debounces autosave, and maps ComposerController outcomes into
-// what the editor shows. The publication sequence itself lives in
-// HOneyCore.ComposerController; the identity-free publish goes through the
-// dedicated PublicationAPIClient.
+// what the editor shows. The v2 publication sequence itself lives in
+// HOneyCore (ComposerController over PublishClient): post controls, blind
+// eligibility, the signed envelope, check, publish — none of it here.
 //
 // Every claim the editor makes about storage is backed by a verified write
 // (review 11d42e3 §3.3): "Saved" only after the bytes are on the device,
@@ -117,7 +117,7 @@ final class ComposerViewModel {
                     lessons = try await env.timetable.history(HistoryParams(limit: 200, order: .desc)).lessons
                 }
                 let lesson = lessons.first { $0.id == lessonId }
-                label = lesson?.subjectName ?? "A lesson from your history"
+                label = lesson?.title ?? "A lesson from your history"
                 detail = lesson.map { l in
                     [Formatters.shortDate(l.startsAt), Formatters.timeRange(l.startsAt, l.endsAt), l.teacherName ?? "", DisplayNames.roomLabel(l.roomName)]
                         .filter { !$0.isEmpty }.joined(separator: " · ")
@@ -127,7 +127,7 @@ final class ComposerViewModel {
                 let registry = try await env.timetable.entities()
                 let type = EntityType(rawValue: String(entityKey.prefix { $0 != ":" }))
                 if let entity = registry.entities.first(where: { $0.entityKey == entityKey }) {
-                    label = DisplayNames.entityTitle(type: entity.type, name: entity.name)
+                    label = entity.name
                     detail = kindLabel(entity.type)
                     scope = ComposerScope(entityKey: entityKey, isDish: entity.type == .dish)
                 } else {
@@ -180,23 +180,17 @@ final class ComposerViewModel {
     }
 
     private func makeController(_ scope: ComposerScope) -> ComposerController {
-        let api = env.api
-        let publication = env.publication
-        let keys = env.keys
+        let publish = env.publish
         let drafts = env.drafts
-        let journal = env.journal
         let feedStore = env.feedStore
         let timetable = env.timetable
+        let account = env.scope?.honeyId ?? ""
         return ComposerController(scope: scope, deps: ComposerDependencies(
-            eligibility: { try await api.experienceEligibility($0) },
-            check: { try await api.checkExperience($0) },
-            publish: { try await publication.publish($0) },
-            storeKey: { id, key in try keys.add(key: key, experienceId: id) },
-            keyIsStored: { id in ((try? keys.list()) ?? []).contains { $0.experienceId == id } },
+            prepare: { target, body, rating in try await publish.preparePost(account: account, target: target, body: body, rating: rating) },
+            check: { prepared, ticket in try await publish.check(prepared, cooldownTicket: ticket) },
+            publish: { prepared, pass in try await publish.publish(prepared, pass: pass) },
             saveDraft: { key, body, rating in try drafts.save(targetKey: key, body: body, rating: rating) },
             clearDraft: { key in try drafts.clear(key) },
-            journalWrite: { record in try await journal.write(record) },
-            journalRemove: { id in try await journal.remove(experienceId: id) },
             didPublish: {
                 await feedStore.invalidateAll()
                 await timetable.invalidateEntities()
@@ -247,9 +241,9 @@ final class ComposerViewModel {
         await apply(outcome)
     }
 
-    func retryStoringKey() async {
-        guard let controller else { return }
-        await apply(await controller.retryStoringKey())
+    /// Back to the editor after the post-controls notice (the draft is still here).
+    func backToEditing() {
+        status = .editing
     }
 
     private func apply(_ outcome: ComposerOutcome) async {

@@ -1,49 +1,52 @@
-import { createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { Lesson } from "@honey/shared";
 import { PortalApi, joinLessons, mergeLessonsById, normalizeTableLessons, retrySafeRead } from "@honey/portal-connector";
 import { portalWeekIndex } from "@honey/shared";
 import type { AccountService } from "./accounts.js";
-import type { EntityRegistry } from "../experiences/entities.js";
-import { sanitizeCourseName } from "../experiences/entities.js";
+import { SchoolImportService } from "../school/import.js";
+import type { SchoolProfile } from "../school/types.js";
 
 // Timetable import (Band 4 → Band 3 handoff): pulls upstream weeks with the
-// stored portal token, normalizes into canonical entities, records the user's
-// lesson exposure. Raw payloads never leave this module (spec §5.2).
-
-/** Teacher has no stable upstream id — derive one from the display string. */
-export function teacherIdFor(displayName: string): string {
-  return "t_" + createHash("sha256").update(displayName.trim()).digest("hex").slice(0, 12);
-}
+// stored portal token and hands the normalized lessons to the canonical
+// importer, which writes stable Subject / Course / Section / Teacher / Room /
+// Lesson objects and the user's exposure. Raw payloads never leave this
+// module (spec §5.2); rosters are cut before the resolver sees a label.
 
 export interface SyncResult {
   lessons: number;
   teachers: number;
   courses: number;
   rooms: number;
+  unresolved: number;
   status: "ok" | "portal_reconnect_required" | "no_consent";
 }
 
+const EMPTY: Omit<SyncResult, "status"> = { lessons: 0, teachers: 0, courses: 0, rooms: 0, unresolved: 0 };
+
 export class ImportService {
+  readonly school: SchoolImportService;
+
   constructor(
-    private readonly db: DatabaseSync,
+    db: DatabaseSync,
     private readonly accounts: AccountService,
     private readonly api: PortalApi,
-    private readonly registry?: EntityRegistry,
+    profile: SchoolProfile,
     private readonly now: () => Date = () => new Date(),
-  ) {}
+  ) {
+    this.school = new SchoolImportService(db, profile, () => this.now().getTime());
+  }
 
   /**
-   * Sync a window of [-8 weeks, +4 weeks] around now. Uses the sealed portal
-   * token; on expiry marks the connection for client-driven reconnect (the
-   * backend holds no school password — by design it cannot re-login itself).
+   * Sync the term the Lesson Table covers plus the viewable past weeks. Uses
+   * the sealed portal token; on expiry marks the connection for client-driven
+   * reconnect (the backend holds no school password — by design it cannot
+   * re-login itself).
    */
   async syncTimetable(honeyId: string): Promise<SyncResult> {
     // No consent gate (2026-09-01): the school sign-in is the import decision.
     // `no_consent` stays in the status union only for wire compatibility.
-
     const conn = this.accounts.loadPortalToken(honeyId);
-    if (!conn) return { lessons: 0, teachers: 0, courses: 0, rooms: 0, status: "portal_reconnect_required" };
+    if (!conn) return { ...EMPTY, status: "portal_reconnect_required" };
 
     const nowDate = this.now();
 
@@ -72,91 +75,20 @@ export class ImportService {
         const kind = (e as { info: { kind: string } }).info.kind;
         if (kind === "sessionExpired") {
           this.accounts.markPortalExpired(honeyId);
-          return { lessons: 0, teachers: 0, courses: 0, rooms: 0, status: "portal_reconnect_required" };
+          return { ...EMPTY, status: "portal_reconnect_required" };
         }
       }
       throw e;
     }
 
     const counts = this.upsertLessons(honeyId, lessons);
-    this.registry?.syncOrganic(); // organic entity accrual (decisions doc)
     this.accounts.markSynced(honeyId);
     return { ...counts, status: "ok" };
   }
 
-  /** Pure persistence of already-normalized lessons (also used by tests/seeds). */
-  upsertLessons(honeyId: string, lessons: Lesson[]): { lessons: number; teachers: number; courses: number; rooms: number } {
-    const teacherStmt = this.db.prepare(
-      "INSERT INTO teachers (id, display_name) VALUES (?, ?) ON CONFLICT(id) DO NOTHING",
-    );
-    const courseStmt = this.db.prepare(
-      `INSERT INTO courses (id, subject_id, name) VALUES (?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET subject_id = excluded.subject_id, name = excluded.name`,
-    );
-    const roomStmt = this.db.prepare(
-      "INSERT INTO rooms (id, name) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name",
-    );
-    const lessonStmt = this.db.prepare(
-      `INSERT INTO lesson_instances (id, course_id, teacher_id, room_id, subject_name, topic_name, starts_at, ends_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
-         course_id = excluded.course_id, teacher_id = excluded.teacher_id,
-         room_id = excluded.room_id, subject_name = excluded.subject_name,
-         topic_name = excluded.topic_name, starts_at = excluded.starts_at, ends_at = excluded.ends_at`,
-    );
-    const exposureStmt = this.db.prepare(
-      `INSERT INTO user_lesson_exposures (honey_id, lesson_instance_id, teacher_id, course_id)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(honey_id, lesson_instance_id) DO UPDATE SET
-         teacher_id = excluded.teacher_id, course_id = excluded.course_id`,
-    );
-
-    const teachers = new Set<string>();
-    const courses = new Set<string>();
-    const rooms = new Set<string>();
-
-    this.db.exec("BEGIN");
-    try {
-      for (const l of lessons) {
-        let teacherId: string | null = null;
-        if (l.teacherDisplayName) {
-          teacherId = teacherIdFor(l.teacherDisplayName);
-          teacherStmt.run(teacherId, l.teacherDisplayName.trim());
-          teachers.add(teacherId);
-        }
-        let courseId: string | null = null;
-        if (l.classId) {
-          courseId = `c_${l.classId}`;
-          courseStmt.run(courseId, l.subjectId ?? null, sanitizeCourseName(l.className ?? l.subjectName, l.teacherDisplayName));
-          courses.add(courseId);
-        }
-        let roomId: string | null = null;
-        if (l.roomId) {
-          roomId = `r_${l.roomId}`;
-          roomStmt.run(roomId, l.roomDisplayName ?? l.roomId);
-          rooms.add(roomId);
-        } else if (l.roomDisplayName) {
-          roomId = `r_${createHash("sha256").update(l.roomDisplayName).digest("hex").slice(0, 12)}`;
-          roomStmt.run(roomId, l.roomDisplayName);
-          rooms.add(roomId);
-        }
-        lessonStmt.run(
-          l.id,
-          courseId,
-          teacherId,
-          roomId,
-          l.subjectName,
-          l.topicName ?? null,
-          l.startsAt.getTime(),
-          l.endsAt.getTime(),
-        );
-        exposureStmt.run(honeyId, l.id, teacherId, courseId);
-      }
-      this.db.exec("COMMIT");
-    } catch (e) {
-      this.db.exec("ROLLBACK");
-      throw e;
-    }
-    return { lessons: lessons.length, teachers: teachers.size, courses: courses.size, rooms: rooms.size };
+  /** Persistence of already-normalized lessons through the canonical resolver (also used by seeds/tests). */
+  upsertLessons(honeyId: string, lessons: Lesson[]): Omit<SyncResult, "status"> {
+    const { lessons: n, teachers, courses, rooms, unresolved } = this.school.importLessons(honeyId, lessons);
+    return { lessons: n, teachers, courses, rooms, unresolved };
   }
 }

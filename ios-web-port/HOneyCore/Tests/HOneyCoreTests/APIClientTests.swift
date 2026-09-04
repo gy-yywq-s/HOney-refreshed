@@ -120,17 +120,29 @@ final class APIClientTests: XCTestCase {
         XCTAssertEqual(transport.count, 0, "no network call without a session")
     }
 
-    func testQueryEncoding() async throws {
-        let transport = ScriptedTransport { _ in HTTPResponse(status: 200, body: try Fixtures.data("feed-page")) }
+    func testQueryEncodingAndPathSegments() async throws {
+        let transport = ScriptedTransport { _ in HTTPResponse(status: 200, body: try Fixtures.data("entities")) }
         let client = APIClient(baseURL: base, transport: transport, sessionStore: InMemorySessionStore(sessionFixture()))
-        _ = try await client.feedPage(FeedParams(scope: .school, cursor: "a b+c", limit: 5, courseId: "c_1"))
-        let url = transport.lastRequest!.url
-        let comps = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-        XCTAssertEqual(comps.path, "/api/experiences/feed")
+        _ = try await client.entities(type: .course, q: "a b+c")
+        let comps = URLComponents(url: transport.lastRequest!.url, resolvingAgainstBaseURL: false)!
+        XCTAssertEqual(comps.path, "/api/entities")
         let items = Dictionary(uniqueKeysWithValues: comps.queryItems!.map { ($0.name, $0.value ?? "") })
-        XCTAssertEqual(items, ["scope": "school", "cursor": "a b+c", "limit": "5", "courseId": "c_1"])
-        _ = try? await client.react(experienceId: "id/with slash", value: 1)
-        XCTAssertTrue(transport.lastRequest!.url.absoluteString.hasSuffix("/api/experiences/id%2Fwith%20slash/react"), "path segment is percent-encoded")
+        XCTAssertEqual(items, ["type": "course", "q": "a b+c"])
+        _ = try? await client.vaultPairingRead(pairingId: "id/with slash")
+        XCTAssertTrue(transport.lastRequest!.url.absoluteString.hasSuffix("/api/vault/pairing/id%2Fwith%20slash"), "path segment is percent-encoded")
+    }
+
+    func testVaultConflictCarriesTheCurrentRecord() async throws {
+        let transport = ScriptedTransport { req in
+            if req.method == "PUT" { return HTTPResponse(status: 409, body: try Fixtures.data("vault-put-conflict")) }
+            return HTTPResponse(status: 404, body: Data(#"{"error":"no_vault"}"#.utf8))
+        }
+        let client = APIClient(baseURL: base, transport: transport, sessionStore: InMemorySessionStore(sessionFixture()))
+        let none = try await client.vault()
+        XCTAssertNil(none, "404 reads as no vault, not an error")
+        let put = try await client.vaultPut(VaultPutRequest(vaultId: "v_fixture", baseRevision: 2, iv: "i", ciphertext: "c", wrappers: []))
+        guard case .conflict(let current) = put else { return XCTFail("conflict expected") }
+        XCTAssertEqual(current.revision, 3)
     }
 
     private func sessionFixture() -> SessionTokens {
@@ -138,22 +150,30 @@ final class APIClientTests: XCTestCase {
     }
 }
 
-final class PublicationAPIClientTests: XCTestCase {
-    func testPublishCarriesNoIdentity() async throws {
+final class CommunityAPIClientTests: XCTestCase {
+    func testRequestsCarryNoIdentity() async throws {
         let transport = ScriptedTransport { req in
-            HTTPResponse(status: 200, body: try Fixtures.data("publish"))
+            switch req.url.path {
+            case "/community/v2/feed": return HTTPResponse(status: 200, body: try Fixtures.data("feed-page"))
+            case "/community/v2/search": return HTTPResponse(status: 200, body: try Fixtures.data("search"))
+            default: return HTTPResponse(status: 200, body: try Fixtures.data("publish"))
+            }
         }
-        let client = PublicationAPIClient(baseURL: URL(string: "https://honey.example")!, transport: transport)
-        let result = try await client.publish(PublishExperienceInput(eligibilityToken: "e", pass: "p", body: "b"))
-        XCTAssertEqual(result.ownershipKey, "own_fixture_key")
-        let req = transport.request(at: 0)
-        XCTAssertEqual(req.url.path, "/api/experiences/publish")
-        for header in req.headers.keys {
-            XCTAssertFalse(header.lowercased().contains("authorization"), "publish must never carry a session")
-            XCTAssertFalse(header.lowercased().contains("cookie"), "publish must never carry cookies")
+        let client = CommunityAPIClient(baseURL: URL(string: "https://honey.example")!, transport: transport)
+        let page = try await client.feed(FeedRequestV2(scope: .myClasses, exposure: ExposureScope(teachers: ["t"], courses: [], lessons: ["l"]), limit: 20))
+        XCTAssertEqual(page.items.count, 3)
+        let search = try await client.search(q: "dia grams")
+        XCTAssertEqual(search.q, "diagrams")
+        for i in 0..<transport.count {
+            let req = transport.request(at: i)
+            for header in req.headers.keys {
+                XCTAssertFalse(header.lowercased().contains("authorization"), "Community must never see a session")
+                XCTAssertFalse(header.lowercased().contains("cookie"), "Community must never see cookies")
+            }
         }
-        let body = try JSONSerialization.jsonObject(with: req.body!) as! [String: Any]
-        XCTAssertEqual(Set(body.keys), ["eligibilityToken", "pass", "body"])
+        let feedBody = try JSONSerialization.jsonObject(with: transport.request(at: 0).body!) as! [String: Any]
+        XCTAssertEqual(Set(feedBody.keys), ["scope", "exposure", "limit"])
+        XCTAssertTrue(transport.request(at: 1).url.absoluteString.hasSuffix("/community/v2/search?q=dia%20grams"))
     }
 
     func testIdentityFreeTransportConstructs() {
@@ -163,14 +183,14 @@ final class PublicationAPIClientTests: XCTestCase {
         XCTAssertNotNil(transport)
     }
 
-    func testPublishErrorsAreTyped() async {
-        let transport = ScriptedTransport { _ in HTTPResponse(status: 422, body: Data(#"{"error":"pass_content_mismatch"}"#.utf8)) }
-        let client = PublicationAPIClient(baseURL: URL(string: "https://honey.example")!, transport: transport)
+    func testErrorsAreTyped() async {
+        let transport = ScriptedTransport { _ in HTTPResponse(status: 422, body: Data(#"{"error":"pass_mismatch"}"#.utf8)) }
+        let client = CommunityAPIClient(baseURL: URL(string: "https://honey.example")!, transport: transport)
         do {
-            _ = try await client.publish(PublishExperienceInput(eligibilityToken: "e", pass: "p", body: "b"))
+            _ = try await client.mineChallenge()
             XCTFail()
         } catch let error as APIError {
-            XCTAssertEqual(error.code, "pass_content_mismatch")
+            XCTAssertEqual(error.code, "pass_mismatch")
         } catch { XCTFail("\(error)") }
     }
 }

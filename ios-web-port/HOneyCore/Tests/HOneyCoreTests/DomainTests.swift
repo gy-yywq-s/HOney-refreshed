@@ -26,17 +26,17 @@ final class PeriodCatalogTests: XCTestCase {
 }
 
 final class DisplayNamesTests: XCTestCase {
-    func testParseCourseNameMatchesTheWeb() {
-        XCTAssertEqual(DisplayNames.parseCourseName("CIE Chinese Language & Literature 2026秋CIEAL中文备考班 赵流畅"),
-                       CourseDisplay(title: "CIE Chinese Language & Literature", meta: "2026 Autumn · 中文备考班 · 赵流畅"))
-        XCTAssertEqual(DisplayNames.parseCourseName("Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明"),
-                       CourseDisplay(title: "Edexcel Economics-U4", meta: "2026 Autumn · 备考班 · 朱昂明"))
-        XCTAssertEqual(DisplayNames.parseCourseName("IELTS-Speaking 2026秋IELTS Speaking强化班 ChenJenny", teacherName: "ChenJenny"),
-                       CourseDisplay(title: "IELTS-Speaking", meta: "2026 Autumn · 强化班 · ChenJenny"))
-        XCTAssertEqual(DisplayNames.parseCourseName("Activity 2026年秋活动课 活动课老师"),
-                       CourseDisplay(title: "Activity", meta: "2026 Autumn · 活动课 · 活动课老师"))
-        XCTAssertEqual(DisplayNames.parseCourseName("CIE Physics-A2 2026秋A2PHY备考5班 陈拯侃").meta, "2026 Autumn · 备考5班 · 陈拯侃")
-        XCTAssertEqual(DisplayNames.parseCourseName("Public Speaking"), CourseDisplay(title: "Public Speaking", meta: ""))
+    func testLessonTitlesMatchTheWeb() {
+        // The canonical Course is the title; an unresolved label falls back to the Subject.
+        XCTAssertEqual(DisplayNames.lessonTitle(courseName: "AL ECON U4", subjectName: "Economics"), "AL ECON U4")
+        XCTAssertEqual(DisplayNames.lessonTitle(courseName: nil, subjectName: "Public Speaking"), "Public Speaking")
+        // Week cells drop the level from a course code; subjects compact.
+        XCTAssertEqual(DisplayNames.compactLessonTitle(courseName: "AL ECON U4", subjectName: "Economics"), "ECON U4")
+        XCTAssertEqual(DisplayNames.compactLessonTitle(courseName: "AL CHIN", subjectName: "Chinese"), "CHIN")
+        XCTAssertEqual(DisplayNames.compactLessonTitle(courseName: "IELTS Speaking", subjectName: "IELTS"), "IELTS Speaking")
+        XCTAssertEqual(DisplayNames.compactLessonTitle(courseName: "IELTS Speaking", subjectName: "IELTS", phone: true), "IELTS Speaking", "no curated short form → the code stays (same as the Web)")
+        XCTAssertEqual(DisplayNames.compactLessonTitle(courseName: nil, subjectName: "CIE Chinese Language & Literature"), "Chinese")
+        XCTAssertEqual(DisplayNames.compactLessonTitle(courseName: nil, subjectName: "Edexcel Economics-U4", phone: true), "Econ")
     }
 
     func testRoomLabel() {
@@ -172,10 +172,10 @@ final class DayAndWeekTests: XCTestCase {
             XCTAssertEqual(matrix.dates, ["2026-08-31", "2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05"], "Saturday has a lesson, Sunday does not")
             XCTAssertEqual(matrix.endOffset, 5)
             let p3 = PeriodCatalog.periods[2]
-            XCTAssertEqual(matrix.cell(date: "2026-09-02", band: p3).first?.subjectName, "Edexcel Economics-U4")
+            XCTAssertEqual(matrix.cell(date: "2026-09-02", band: p3).first?.title, "AL ECON U4")
             XCTAssertEqual(matrix.cell(date: "2026-09-02", band: PeriodCatalog.periods[1]).lessons.count, 0)
-            XCTAssertEqual(matrix.unplaced.map { $0.lesson.subjectName }, ["Morning Reading"], "08:00–08:40 overlaps no period")
-            XCTAssertEqual(matrix.cell(date: "2026-09-02", band: PeriodCatalog.periods[0]).first?.subjectName, "IELTS-Speaking", "08:30–10:00 overlaps P1")
+            XCTAssertEqual(matrix.unplaced.map { $0.lesson.title }, ["Morning Reading"], "08:00–08:40 overlaps no period")
+            XCTAssertEqual(matrix.cell(date: "2026-09-02", band: PeriodCatalog.periods[0]).first?.title, "IELTS Speaking", "08:30–10:00 overlaps P1")
             let loading = WeekMatrix(monday: "2026-08-31", days: nil)
             XCTAssertEqual(loading.dates.count, 5)
         }
@@ -195,10 +195,22 @@ final class DayAndWeekTests: XCTestCase {
 
 final class ExperienceDisplayTests: XCTestCase {
     func testContextPartsReadCourseTeacherRoom() throws {
-        let page = try Fixtures.decode(FeedPage.self, "feed-page")
-        let parts = ExperienceDisplay.contextParts(page.items[0])
-        XCTAssertEqual(parts.map(\.type), [.course, .teacher, .room])
-        XCTAssertEqual(ExperienceDisplay.contextParts(page.items[1]).map { $0.name ?? "" }, ["Jennifer Anne Whitcombe-Rasmussen"])
+        let page = try Fixtures.decode(FeedPageV2.self, "feed-page")
+        // Names are joined client-side from Core's directory (the wire carries ids only).
+        let directory = try Fixtures.decode(DirectoryResponse.self, "directory")
+        let names: NameResolver = { ref in
+            switch ref.type {
+            case .course: return directory.courses.first { $0.id == ref.id }?.name
+            case .teacher: return directory.teachers.first { $0.id == ref.id }?.name
+            case .room: return directory.rooms.first { $0.id == ref.id }?.name
+            default: return nil
+            }
+        }
+        let parts = ExperienceDisplay.contextParts(page.items[0], name: names)
+        XCTAssertEqual(parts.map(\.ref.type), [.course, .teacher, .room])
+        XCTAssertEqual(parts.map(\.name), ["AL ECON U4", "朱昂明", "309"])
+        XCTAssertEqual(ExperienceDisplay.contextParts(page.items[1], name: names).map(\.name), ["Jennifer Anne Whitcombe-Rasmussen"])
+        XCTAssertEqual(ExperienceDisplay.contextParts(page.items[2], name: { _ in nil }).count, 0, "an unnamed primary is not shown")
         XCTAssertEqual(ExperienceDisplay.provenanceText(page.items[0]), "from a class you’ve taken · 2 Sept 2026")
         XCTAssertTrue(ExperienceDisplay.isFeature(page.items[0].body!))
         XCTAssertFalse(ExperienceDisplay.isFeature(page.items[1].body!))
@@ -207,15 +219,16 @@ final class ExperienceDisplayTests: XCTestCase {
         XCTAssertTrue(clamped.text.hasSuffix("…"))
         XCTAssertLessThanOrEqual(clamped.text.count, ExperienceDisplay.clampChars + 1)
         XCTAssertFalse(ExperienceDisplay.clampedBody(page.items[1].body!, expanded: true).clamped)
-        XCTAssertEqual(ExperienceDisplay.previewCaption(page.items[0]), "Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明 · 朱昂明 · 2 Sept 2026")
-        XCTAssertEqual(ExperienceDisplay.route(for: page.items[0].primary!), nil, "lessons have no public page")
-        XCTAssertEqual(ExperienceDisplay.route(for: page.items[1].primary!), .entity(.teacher, "t_23348879d1b4"))
+        XCTAssertEqual(ExperienceDisplay.previewCaption(page.items[0], name: names), "AL ECON U4 · 朱昂明 · 2 Sept 2026")
+        XCTAssertEqual(ExperienceDisplay.route(for: page.items[0].primary), nil, "lessons have no public page")
+        XCTAssertEqual(ExperienceDisplay.route(for: page.items[1].primary), .entity(.teacher, "t_23348879d1b4"))
         XCTAssertEqual(ExperienceDisplay.route(for: EntityRef(entityKey: "dish:d_001", type: .dish, name: "x", source: "admin")), .entity(.dish, "d_001"))
     }
 
     func testReasonCopyHidesUnknownCodes() {
         XCTAssertEqual(ModerationCopy.describeReasons(["timing:high_arousal", "internal:x"]).count, 1)
-        XCTAssertEqual(SubmitErrorCopy.describe(APIError(status: 422, code: "already_reviewed")), SubmitErrorCopy.byCode["already_reviewed"])
+        XCTAssertEqual(SubmitErrorCopy.describe(APIError(status: 422, code: "already_posted")), SubmitErrorCopy.byCode["already_posted"])
+        XCTAssertEqual(SubmitErrorCopy.describe(APIError(status: 422, code: "token_used")), SubmitErrorCopy.byCode["token_used"])
         XCTAssertEqual(SubmitErrorCopy.describe(APIError.networkError), "Could not reach the HOney server. Check your connection and try again.")
     }
 

@@ -2,19 +2,6 @@
   "items": [
     {
       "id": "exp_short",
-      "entity_key": "lesson:tok_a1",
-      "ctx_teacher_id": "t_76b873b12d89",
-      "ctx_course_id": "c_55566",
-      "ctx_room_id": "r_345",
-      "body": "Econ today actually made sense once the diagrams came out.",
-      "rating": null,
-      "provenance": "verified_lesson",
-      "publishedDay": 20698,
-      "reactions": {
-        "likes": 3,
-        "dislikes": 1
-      },
-      "myReaction": 1,
       "primary": {
         "type": "lesson",
         "id": "tok_a1",
@@ -23,46 +10,51 @@
       "contexts": [
         {
           "type": "course",
-          "id": "c_55566",
-          "name": "Edexcel Economics-U4 2026秋EdexcelIALECONU4备考班 朱昂明"
+          "id": "c_al_econ_u4",
+          "name": null
         },
         {
           "type": "teacher",
           "id": "t_76b873b12d89",
-          "name": "朱昂明"
+          "name": null
         },
         {
           "type": "room",
           "id": "r_345",
-          "name": "309"
+          "name": null
         }
-      ]
+      ],
+      "body": "Econ today actually made sense once the diagrams came out.",
+      "rating": null,
+      "provenance": "verified_lesson",
+      "publishedDay": 20698,
+      "reactions": {
+        "likes": 3,
+        "dislikes": 1
+      }
     },
     {
       "id": "exp_long",
-      "entity_key": "teacher:t_23348879d1b4",
-      "ctx_teacher_id": null,
-      "ctx_course_id": null,
-      "ctx_room_id": null,
+      "primary": {
+        "type": "teacher",
+        "id": "t_23348879d1b4",
+        "name": null
+      },
+      "contexts": [],
       "body": "Speaking practice with her is a lot: every session she picks one of us to describe a photo for two full minutes without notes, and the first time it happened I froze completely. What I did not expect is that she never lets the silence become embarrassing — she just waits, then asks one small question that gives you a way back in. Over a few weeks I noticed I stopped rehearsing sentences in my head before speaking, which is exactly the thing the exam needs. It is not a comfortable class. It is one of the few where I can point at what changed. If you are the kind of person who needs to prepare everything in advance you will hate the first month; stay for the second one. I still cannot fully explain why it works, but it does for me, and the two friends I have compared notes with say something similar about the waiting — that the pause is the teaching.",
       "rating": null,
       "provenance": "verified_retrospective",
       "publishedDay": 20690,
-      "reactions": null,
-      "myReaction": 0,
-      "primary": {
-        "type": "teacher",
-        "id": "t_23348879d1b4",
-        "name": "Jennifer Anne Whitcombe-Rasmussen"
-      },
-      "contexts": []
+      "reactions": null
     },
     {
       "id": "exp_dish",
-      "entity_key": "dish:d_001",
-      "ctx_teacher_id": null,
-      "ctx_course_id": null,
-      "ctx_room_id": null,
+      "primary": {
+        "type": "dish",
+        "id": "d_001",
+        "name": null
+      },
+      "contexts": [],
       "body": "Sweeter than it looks. Good on a cold day.",
       "rating": 4,
       "provenance": "verified_member",
@@ -70,13 +62,7 @@
       "reactions": {
         "likes": 0,
         "dislikes": 0
-      },
-      "primary": {
-        "type": "dish",
-        "id": "d_001",
-        "name": "番茄炒蛋"
-      },
-      "contexts": []
+      }
     }
   ],
   "nextCursor": "cur_opaque_next",

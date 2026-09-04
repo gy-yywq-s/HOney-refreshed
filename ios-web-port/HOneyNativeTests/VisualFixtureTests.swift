@@ -44,12 +44,17 @@ final class FixtureTransport: HTTPTransport, @unchecked Sendable {
         case "/api/history": name = "history"
         case "/api/directory": name = "directory"
         case "/api/entities": name = "entities"
-        case "/api/experiences/feed": name = "feed-page"
-        case "/api/experiences/feed/updates": name = "feed-updates"
-        case "/api/experiences/from-my-classes": name = "from-my-classes"
-        case "/api/experiences/search": name = "search"
-        case "/api/experiences/stats": name = "stats"
-        case "/api/experiences/mine": name = "mine"
+        // Community v2 (identity-free) and the Core issuer/vault surface.
+        case "/community/v2/feed": name = "feed-page"
+        case "/community/v2/feed/updates": name = "feed-updates"
+        case "/community/v2/from-my-classes": name = "from-my-classes"
+        case "/community/v2/search": name = "search"
+        case "/community/v2/stats": name = "stats"
+        case "/community/v2/mine": name = "mine"
+        case "/community/v2/mine/challenge": name = "challenge"
+        case "/api/community/issuer": name = "issuer"
+        case "/api/community/scope": name = "scope"
+        case "/api/vault": name = nil // no vault → post controls are created locally at the first share
         case "/api/portal/entry": name = "portal-entry-ok"
         default: name = nil
         }

@@ -13,7 +13,7 @@ public struct QueryItem: Sendable, Equatable {
     let value: String
 }
 
-public actor APIClient {
+public actor APIClient: IssuerAPI, VaultAPI {
     public let baseURL: URL
     private let transport: HTTPTransport
     private let sessionStore: SessionStoring
@@ -131,75 +131,78 @@ public actor APIClient {
         return try await request("GET", "/api/entities", query: query)
     }
 
-    /// Find mode: entities + published experiences matching the words.
-    public func search(q: String) async throws -> SearchResponse {
-        try await request("GET", "/api/experiences/search", query: [QueryItem(name: "q", value: q)])
+    // MARK: Anonymous Control v2 — issuer, scope, Control Vault, pairing relay
+    // (posts themselves go to Community through CommunityAPIClient, never here)
+
+    /// The blind-eligibility issuer's public descriptor (no session needed).
+    public func communityIssuer() async throws -> IssuerDescriptor {
+        try await request("GET", "/api/community/issuer", auth: false)
     }
 
-    public func entityStats(entityKey: String) async throws -> EntityStats {
-        try await request("GET", "/api/experiences/stats", query: [QueryItem(name: "entityKey", value: entityKey)])
+    /// The viewer's canonical exposure with opaque lesson ids.
+    public func communityScope() async throws -> CommunityScope {
+        try await request("GET", "/api/community/scope")
     }
 
-    /// Cursor-paged social stream. Cursors are opaque — passed back verbatim.
-    public func feedPage(_ params: FeedParams) async throws -> FeedPage {
-        var query = [QueryItem(name: "scope", value: params.scope.rawValue)]
-        if let v = params.cursor { query.append(QueryItem(name: "cursor", value: v)) }
-        if let v = params.limit { query.append(QueryItem(name: "limit", value: String(v))) }
-        if let v = params.entityKey { query.append(QueryItem(name: "entityKey", value: v)) }
-        if let v = params.teacherId { query.append(QueryItem(name: "teacherId", value: v)) }
-        if let v = params.courseId { query.append(QueryItem(name: "courseId", value: v)) }
-        if let v = params.roomId { query.append(QueryItem(name: "roomId", value: v)) }
-        return try await request("GET", "/api/experiences/feed", query: query)
+    /// Uncounted: which metadata the issuer would bind for a target.
+    public func communityEligibilityInfo(_ target: EligibilityTarget) async throws -> EligibilityInfoResponse {
+        try await request("POST", "/api/community/eligibility/info", body: target)
     }
 
-    /// Quiet new-content probe — never moves the reader.
-    public func feedUpdates(scope: FeedScope, head: String) async throws -> FeedUpdatesResponse {
-        try await request("GET", "/api/experiences/feed/updates", query: [QueryItem(name: "scope", value: scope.rawValue), QueryItem(name: "head", value: head)])
+    /// Counted: the one blind-signing round.
+    public func communityEligibility(_ input: EligibilityRequest) async throws -> EligibilityIssued {
+        try await request("POST", "/api/community/eligibility", body: input)
     }
 
-    /// Posts relevant to the caller's verified exposure (Home previews).
-    public func fromMyClasses(before: Int64? = nil, limit: Int? = nil) async throws -> ExperiencesFeedResponse {
-        var query: [QueryItem] = []
-        if let before { query.append(QueryItem(name: "before", value: String(before))) }
-        if let limit { query.append(QueryItem(name: "limit", value: String(limit))) }
-        return try await request("GET", "/api/experiences/from-my-classes", query: query)
+    /// nil when no vault exists (404).
+    public func vault() async throws -> VaultRecord? {
+        do {
+            return try await request("GET", "/api/vault")
+        } catch let error as APIError where error.status == 404 {
+            return nil
+        }
     }
 
-    /// Step 1: authenticated, single-use, scope-bound eligibility token.
-    public func experienceEligibility(_ input: ExperienceEligibilityInput) async throws -> ExperienceEligibilityResponse {
-        try await request("POST", "/api/experiences/eligibility", body: input)
+    /// CAS write; a 409 carries the server's current record.
+    public func vaultPut(_ input: VaultPutRequest) async throws -> VaultPutResponse {
+        do {
+            return try await request("PUT", "/api/vault", body: input)
+        } catch let error as APIError where error.status == 409 {
+            if let body = error.body, let conflict = try? WireCoding.decode(VaultPutResponse.self, from: body) { return conflict }
+            throw error
+        }
     }
 
-    /// Step 2: synchronous moderation preflight. The draft is never persisted.
-    public func checkExperience(_ input: CheckExperienceInput) async throws -> CheckExperienceResponse {
-        try await request("POST", "/api/experiences/check", body: input)
+    public func vaultDelete() async throws {
+        _ = try await request("DELETE", "/api/vault") as OkResponse
     }
 
-    /// Own submissions, proved by client-held keys (any status).
-    public func myExperiences(keys: [String]) async throws -> MyExperiencesResponse {
-        try await request("POST", "/api/experiences/mine", body: KeysBody(keys: keys))
+    public func vaultPairingOffer(recipientPublicKey: String) async throws -> PairingOffer {
+        try await request("POST", "/api/vault/pairing", body: RecipientBody(recipientPublicKey: recipientPublicKey))
     }
 
-    public func revokeExperience(ownershipKey: String) async throws -> OkResponse {
-        try await request("POST", "/api/experiences/revoke", body: OwnershipKeyBody(ownershipKey: ownershipKey))
+    public func vaultPairingRead(pairingId: String) async throws -> PairingOffer {
+        try await request("GET", "/api/vault/pairing/\(pathEncode(pairingId))")
     }
 
-    public func react(experienceId: String, value: Int) async throws -> ReactResponse {
-        try await request("POST", "/api/experiences/\(pathEncode(experienceId))/react", body: ValueBody(value: value))
+    public func vaultPairingDeliver(pairingId: String, enc: String, ciphertext: String) async throws {
+        _ = try await request("POST", "/api/vault/pairing/\(pathEncode(pairingId))/deliver", body: DeliverBody(enc: enc, ciphertext: ciphertext)) as OkResponse
     }
 
-    /// Reports are category-only: the backend rejects any free text.
-    public func report(experienceId: String, category: ReportCategory) async throws -> OkResponse {
-        try await request("POST", "/api/experiences/\(pathEncode(experienceId))/report", body: CategoryBody(category: category))
+    /// nil while the other device has not delivered yet (404).
+    public func vaultPairingClaim(pairingId: String) async throws -> PairingDelivery? {
+        do {
+            return try await request("GET", "/api/vault/pairing/\(pathEncode(pairingId))/delivery")
+        } catch let error as APIError where error.status == 404 {
+            return nil
+        }
     }
 
     // MARK: Plumbing
 
     private struct Empty: Encodable {}
-    private struct KeysBody: Encodable { let keys: [String] }
-    private struct OwnershipKeyBody: Encodable { let ownershipKey: String }
-    private struct ValueBody: Encodable { let value: Int }
-    private struct CategoryBody: Encodable { let category: ReportCategory }
+    private struct RecipientBody: Encodable { let recipientPublicKey: String }
+    private struct DeliverBody: Encodable { let enc: String; let ciphertext: String }
     private struct RefreshBody: Encodable { let refreshToken: String }
     /// The refresh endpoint answers a bare SessionTokens; tolerate a `{ session }` wrapper too.
     private struct WrappedSession: Decodable { let session: SessionTokens }

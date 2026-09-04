@@ -1,0 +1,94 @@
+/* Web Access (spec Part II). Built only from the app's existing tokens and
+   row/card/chip vocabulary; the progress list is the one new shape. */
+
+.access-route {
+  margin-top: var(--sp-2);
+}
+
+.access-permit__now {
+  margin-left: var(--sp-1);
+}
+
+.access-new-permit {
+  margin-top: var(--sp-2);
+  text-decoration: none;
+  color: inherit;
+}
+.access-new-permit[aria-disabled="true"] {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.access-failure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.access-stages {
+  list-style: none;
+  margin: 0 0 var(--sp-3);
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1);
+}
+.access-stage {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--muted);
+}
+.access-stage__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  flex: none;
+}
+.access-stage--reached {
+  color: var(--ink);
+}
+.access-stage--reached .access-stage__dot {
+  background: currentColor;
+}
+.access-stage--current .access-stage__dot {
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 18%, transparent);
+}
+.access-progress--live .access-stage--current .access-stage__dot {
+  animation: access-pulse var(--dur-slow, 1.2s) ease-in-out infinite;
+}
+.access-stage--confirmed {
+  color: var(--ok);
+}
+.access-stage--rejected,
+.access-stage--not_sent {
+  color: var(--accent-2);
+}
+.access-stage--outcome_unknown {
+  color: var(--danger);
+}
+.access-progress__line {
+  margin: 0 0 var(--sp-1);
+  font-weight: 600;
+}
+.access-progress--danger .access-progress__line {
+  color: var(--danger);
+}
+
+@keyframes access-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 8%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .access-progress--live .access-stage--current .access-stage__dot {
+    animation: none;
+  }
+}

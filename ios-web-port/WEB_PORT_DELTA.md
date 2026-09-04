@@ -69,3 +69,23 @@ weight and page grammar were reproduced. See `WEB_VISUAL_FIDELITY.md`.
 
 Per-post control keys (review §5.2) stay behind `OwnershipKeyStoring`
 (versioned export); a master-secret model waits for a server protocol.
+
+## Anonymous Control v2 + canonical school data (2026-09-03)
+
+- Wire: `Lesson` carries `subjectId/classSectionId/classSectionName`; `courseName` is the canonical
+  course ("AL ECON U4") or nil when unresolved; every title is `lesson.title` (course ?? subject) and
+  Week cells use `DisplayNames.compactLessonTitle` — `parseCourseName/entityTitle/entityMeta` deleted.
+- Experiences read from Community (`CommunityAPIClient`, identity-free transport, `/community/v2/*`);
+  names are joined on the device (`NameMaps.name(_:)`) because the wire carries ids only; the
+  viewer's own reactions are remembered in `Preferences` (`ReactionMemory`).
+- Publication: `ComposerController` → `PublishClient.preparePost` (post controls + blind eligibility
+  + signed envelope) → check → publish. No per-post key to store: `.publishedKeyUnsaved` and the
+  recovery journal are gone; a server vault not restored on this iPhone yields
+  `.postControlsRestoreNeeded` (draft kept).
+- Settings › Post controls (`PostControlsViews.swift`): create · recovery words (show, 2-word check,
+  restore) · another device (code, poll, deliver) · replace root · remove from this iPhone.
+  Passkey wrappers made on the Web are listed; adding one from iOS is not offered yet.
+- Delete account = delete public content by proof first (`AccountDeletion`), then the account;
+  a locked vault or an unrevoked post stops the whole thing and says why.
+- `VisualFixtureTests` answer `/community/v2/*`, `/api/community/issuer|scope` from the new
+  fixtures; `/api/vault` answers 404 (post controls are created locally at the first share).

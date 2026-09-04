@@ -75,36 +75,23 @@ final class AccountScopeTests: XCTestCase {
         XCTAssertFalse(prefs.firstPublishDisclosureSeen)
     }
 
-    func testPublicationJournalIsDurableAndPerAccount() async throws {
-        let journal = PublicationJournal(directory: tempDir())
-        await journal.setAccount("h_a")
-        try await journal.write(PublicationRecord(experienceId: "e1", ownershipKey: "k1", targetKey: "lesson:1", createdAt: 1))
-        try await journal.write(PublicationRecord(experienceId: "e2", ownershipKey: "k2", targetKey: "dish:1", createdAt: 2))
-        let pending = try await journal.pending()
-        XCTAssertEqual(pending.map(\.experienceId), ["e1", "e2"])
-        await journal.setAccount("h_b")
-        let other = try await journal.pending()
-        XCTAssertEqual(other, [])
-        await journal.setAccount("h_a")
-        try await journal.remove(experienceId: "e1")
-        let rest = try await journal.pending()
-        XCTAssertEqual(rest.map(\.ownershipKey), ["k2"])
-        try await journal.remove(experienceId: "e2")
-        let none = try await journal.pending()
-        XCTAssertEqual(none, [])
-        await journal.setAccount(nil)
-        do {
-            try await journal.write(PublicationRecord(experienceId: "e3", ownershipKey: "k3", targetKey: "x", createdAt: 3))
-            XCTFail("no account → no journal")
-        } catch let error as PublicationJournalError {
-            XCTAssertEqual(error, .noAccount)
-        }
-    }
-
-    func testOwnershipKeysSignedOutNamespaceIsEmptyAndReadOnly() throws {
-        let keys = SecretOwnershipKeyStore(store: InMemorySecretStore(), account: SecretOwnershipKeyStore.signedOutAccount)
-        XCTAssertEqual(try keys.list(), [])
-        XCTAssertThrowsError(try keys.add(key: "k", experienceId: "e"))
+    func testDeletionChecklistIsPerAccountAndResumable() {
+        let prefs = Preferences(defaults: UserDefaults(suiteName: "honey-tests-\(UUID().uuidString)")!)
+        XCTAssertNil(prefs.readChecklist(), "no account → nothing")
+        prefs.writeChecklist(DeletionChecklist(startedAt: 1))
+        XCTAssertNil(prefs.readChecklist(), "no account → writes are dropped")
+        prefs.setAccount("h_a")
+        var checklist = DeletionChecklist(startedAt: 1)
+        checklist.postsFound = 3
+        checklist.postsRevoked = 2
+        checklist.failedPosts = ["exp_x"]
+        prefs.writeChecklist(checklist)
+        XCTAssertEqual(prefs.readChecklist(), checklist)
+        prefs.setAccount("h_b")
+        XCTAssertNil(prefs.readChecklist())
+        prefs.setAccount("h_a")
+        prefs.writeChecklist(nil)
+        XCTAssertNil(prefs.readChecklist())
     }
 }
 

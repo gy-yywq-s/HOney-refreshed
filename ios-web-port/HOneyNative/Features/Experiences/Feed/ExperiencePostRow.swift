@@ -10,8 +10,10 @@ import HOneyCore
 struct ExperiencePostRow: View {
     @Environment(\.theme) private var theme
     @Environment(\.hType) private var ramp
-    let exp: PublicExperience
+    let exp: PublicExperienceV2
     let reaction: ReactionState
+    /// Names are joined on the device (the wire carries ids only).
+    let name: NameResolver
     let onReact: (Int) -> Void
     let onReport: (ReportCategory) async -> Result<Void, Error>
     let openEntity: (AppRoute) -> Void
@@ -24,7 +26,7 @@ struct ExperiencePostRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: HSpace.x2) {
-            let parts = ExperienceDisplay.contextParts(exp)
+            let parts = ExperienceDisplay.contextParts(exp, name: name)
             if !parts.isEmpty {
                 contextLine(parts)
             }
@@ -69,21 +71,21 @@ struct ExperiencePostRow: View {
 
     /// `.post__context`: caption 600 in ink-2; names are links that inherit
     /// the line's colour (features.css `.post__context a { color: inherit }`).
-    private func contextLine(_ parts: [EntitySummary]) -> some View {
+    private func contextLine(_ parts: [NamedRef]) -> some View {
         // Inline links that flow and wrap like the Web's text run.
         FlowLayout(spacing: 4, rowSpacing: 0) {
             ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
                 if index > 0 { Text("·").font(ramp.font(.captionSemibold)).foregroundStyle(theme.ink2) }
-                if let route = ExperienceDisplay.route(for: part) {
+                if let route = ExperienceDisplay.route(for: part.ref) {
                     Button { openEntity(route) } label: {
-                        Text(part.name ?? "")
+                        Text(part.name)
                             .font(ramp.font(.captionSemibold))
                             .foregroundStyle(theme.ink2)
                             .multilineTextAlignment(.leading)
                     }
                     .buttonStyle(.plain)
                 } else {
-                    Text(part.name ?? "")
+                    Text(part.name)
                         .font(ramp.font(.captionSemibold))
                         .foregroundStyle(theme.ink2)
                         .multilineTextAlignment(.leading)

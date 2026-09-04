@@ -237,6 +237,7 @@ export class AccountService {
   /** Wipe imported timetable data for this user (settings: delete imported data). */
   deleteImportedData(honeyId: string): void {
     this.db.prepare("DELETE FROM user_lesson_exposures WHERE honey_id = ?").run(honeyId);
+    this.db.prepare("DELETE FROM import_runs WHERE honey_id = ?").run(honeyId);
   }
 
   /** Reads the flag bound at provisioning — no per-request permission re-derivation. */

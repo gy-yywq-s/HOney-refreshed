@@ -5,12 +5,14 @@ on:
       - "ios-web-port/**"
       - "packages/shared/fixtures/**"
       - "packages/shared/src/api/**"
+      - "packages/shared/src/community-v2/**"
       - ".github/workflows/ios-web-port.yml"
   pull_request:
     paths:
       - "ios-web-port/**"
       - "packages/shared/fixtures/**"
       - "packages/shared/src/api/**"
+      - "packages/shared/src/community-v2/**"
       - ".github/workflows/ios-web-port.yml"
 concurrency:
   group: ios-web-port-${{ github.ref }}

@@ -1,0 +1,31 @@
+[Unit]
+Description=HOney Access - isolated Web Access service (loopback :8874)
+After=network.target
+
+[Service]
+Type=simple
+User=honey
+Group=honey
+WorkingDirectory=/home/honey/app
+EnvironmentFile=/home/honey/.secrets/access.env
+ExecStart=/usr/bin/node packages/access-service/dist/server.js
+Restart=on-failure
+RestartSec=3
+# In-flight gate requests get their outcome journaled before the process ends.
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/honey/data
+ProtectHome=read-only
+# The other services' databases and secrets are hidden from this process.
+InaccessiblePaths=-/home/honey/data/honey.db -/home/honey/data/honey.db-wal -/home/honey/data/honey.db-shm -/home/honey/data/vault.db -/home/honey/data/vault.db-wal -/home/honey/data/vault.db-shm -/home/honey/data/community.db -/home/honey/data/community.db-wal -/home/honey/data/community.db-shm -/home/honey/.secrets/honey.env -/home/honey/.secrets/community.env -/home/honey/.secrets/school-test-account.env -/home/honey/.secrets/openrouter.env
+# Egress restriction (spec §16.3): loopback (its own listener) and the school
+# portal only. Refresh the portal addresses with `dig +short www.huayaopudong.com`
+# when the school moves; the app-layer allowlist refuses any other origin first.
+IPAddressDeny=any
+IPAddressAllow=localhost
+IPAddressAllow=47.116.180.112
+
+[Install]
+WantedBy=multi-user.target

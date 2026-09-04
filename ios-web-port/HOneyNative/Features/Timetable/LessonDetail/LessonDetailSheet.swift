@@ -21,16 +21,13 @@ struct LessonDetailSheet: View {
     let showsOpenDay: Bool
     let act: (LessonDetailAction) -> Void
 
-    private var course: CourseDisplay? {
-        lesson.courseName.map { DisplayNames.parseCourseName($0, teacherName: lesson.teacherName) }
-    }
-
     private var isoDate: String { Formatters.toIsoDate(Date(epochMillis: lesson.startsAt)) }
 
     var body: some View {
-        let extra = course.flatMap { $0.meta.isEmpty ? nil : $0.meta }
+        // Canonical school data: the class section is context ("2026 Autumn · Prep Class"), never the title.
+        let extra = lesson.classSectionName.flatMap { $0.isEmpty ? nil : $0 }
         let topic = lesson.topicName.flatMap { $0.isEmpty || $0 == lesson.subjectName ? nil : $0 }
-        WebSheet(title: lesson.subjectName, onClose: { dismiss() }) {
+        WebSheet(title: lesson.title, onClose: { dismiss() }) {
             VStack(alignment: .leading, spacing: HSpace.x1) {
                 Text("\(Formatters.shortDate(lesson.startsAt)) · \(Formatters.timeRange(lesson.startsAt, lesson.endsAt))")
                     .font(ramp.font(.bodySemibold))

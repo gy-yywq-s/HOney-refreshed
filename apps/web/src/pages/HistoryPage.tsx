@@ -6,7 +6,7 @@ import type { Lesson } from "../api/types";
 import { useApi } from "../lib/useApi";
 import { useRetryFocus } from "../lib/useRetryFocus";
 import { formatDayTitle, formatRelativeDay, formatTime, todayIsoDate, shiftIsoDate } from "../lib/format";
-import { roomLabel } from "../lib/displayNames";
+import { lessonTitle, roomLabel } from "../lib/displayNames";
 import { t, useT } from "../lib/i18n";
 import { staggerStyle , Skeleton } from "../lib/motion";
 
@@ -135,7 +135,7 @@ export function HistoryPage() {
               {group.lessons.map((lesson, rowIndex) => (
                 <li className="history-row stagger" style={staggerStyle(rowIndex)} key={lesson.id}>
                   <span className="history-row__body">
-                    <span>{lesson.subjectName}</span>
+                    <span>{lessonTitle(lesson)}</span>
                     <span className="caption">
                       {[lesson.teacherName, roomLabel(lesson.roomName)].filter(Boolean).join(" · ")}
                     </span>

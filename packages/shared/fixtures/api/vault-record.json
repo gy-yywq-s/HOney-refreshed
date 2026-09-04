@@ -1,0 +1,25 @@
+{
+  "vaultId": "v_fixture",
+  "revision": 3,
+  "iv": "AAAAAAAAAAAAAAAA",
+  "ciphertext": "Y2lwaGVydGV4dC1maXh0dXJlLWJ5dGVzLW5vdC1yZWFs",
+  "wrappers": [
+    {
+      "type": "recovery_phrase",
+      "format": "words12-v1",
+      "iv": "AQEBAQEBAQEBAQEB",
+      "wrappedR": "d3JhcHBlZC1SLWJ5LXBocmFzZQ",
+      "createdAt": 1788333600000
+    },
+    {
+      "type": "passkey_prf",
+      "credentialId": "cred_fixture",
+      "prfInput": "cHJmLWlucHV0LWZpeHR1cmU",
+      "iv": "AgICAgICAgICAgIC",
+      "wrappedR": "d3JhcHBlZC1SLWJ5LXByZg",
+      "createdAt": 1788333900000,
+      "label": "Safari on iPhone"
+    }
+  ],
+  "updatedAt": 1788333900000
+}

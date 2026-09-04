@@ -59,47 +59,54 @@ final class PrivateNoteStoreTests: XCTestCase {
     }
 }
 
-final class OwnershipKeyStoreTests: XCTestCase {
-    func testAddListRemoveNamespaced() throws {
+/// Post controls on the device (spec §35): the roots live in the Keychain
+/// sealed under a per-account device secret; nothing is readable across
+/// accounts; a Keychain that refuses to write surfaces, never pretends.
+final class PostControlStoreTests: XCTestCase {
+    struct NoVault: VaultAPI {
+        var record: VaultRecord?
+        func vault() async throws -> VaultRecord? { record }
+        func vaultPut(_ request: VaultPutRequest) async throws -> VaultPutResponse { .ok(revision: request.baseRevision + 1, updatedAt: 1) }
+        func vaultDelete() async throws {}
+        func vaultPairingOffer(recipientPublicKey: String) async throws -> PairingOffer { PairingOffer(pairingId: "p", recipientPublicKey: recipientPublicKey, expiresAt: 0) }
+        func vaultPairingRead(pairingId: String) async throws -> PairingOffer { PairingOffer(pairingId: pairingId, recipientPublicKey: "", expiresAt: 0) }
+        func vaultPairingDeliver(pairingId: String, enc: String, ciphertext: String) async throws {}
+        func vaultPairingClaim(pairingId: String) async throws -> PairingDelivery? { nil }
+    }
+
+    func testRootsAreSealedPerAccountAndReadBack() async throws {
         let secrets = InMemorySecretStore()
-        let store = SecretOwnershipKeyStore(store: secrets, account: "h_1")
-        XCTAssertEqual(try store.list(), [])
-        try store.add(key: "ok-1", experienceId: "e-1")
-        try store.add(key: "ok-2", experienceId: "e-2")
-        XCTAssertEqual(try store.list().map(\.key), ["ok-1", "ok-2"])
-        XCTAssertEqual(try store.list()[0].kind, "public")
-        XCTAssertEqual(SecretOwnershipKeyStore(store: secrets, account: "h_1").count(), 2, "a fresh store over the same secrets sees the same keys")
-        XCTAssertEqual(SecretOwnershipKeyStore(store: secrets, account: "h_2").count(), 0, "another account sees nothing")
-        try store.remove(key: "ok-1")
-        XCTAssertEqual(try store.list().map(\.key), ["ok-2"])
+        let controls = PostControls(api: NoVault(), storage: SecretPostControlStore(store: secrets))
+        let epoch = SchoolEpoch(schoolId: "huayaopudong", academicYear: "2026-27")
+        let status = try await controls.status(account: "h_1")
+        XCTAssertEqual(status, .none)
+        let roots = try await controls.create(account: "h_1", epoch: epoch)
+        XCTAssertEqual(roots.roots.count, 1)
+        XCTAssertEqual(roots.active.state, "active")
+        let again = try await controls.unlock(account: "h_1")
+        XCTAssertEqual(again, roots, "the same roots come back from the Keychain")
+        let other = try await controls.unlock(account: "h_2")
+        XCTAssertNil(other, "another account sees nothing")
+        // The Keychain never holds a root or R in the clear.
+        for name in try secrets.keys(withPrefix: "honey.v2.") {
+            let bytes = try secrets.read(name) ?? Data()
+            XCTAssertFalse(bytes.range(of: roots.active.secret) != nil, "root in the clear at \(name)")
+            XCTAssertFalse(bytes.range(of: roots.r) != nil, "R in the clear at \(name)")
+        }
+        if case .localOnly(let local) = try await controls.status(account: "h_1") { XCTAssertEqual(local, roots) } else { XCTFail("local only") }
+        try await controls.eraseLocal(account: "h_1")
+        let erased = try await controls.unlock(account: "h_1")
+        XCTAssertNil(erased)
     }
 
-    func testExportImportIsTheWebFileShape() throws {
-        let a = SecretOwnershipKeyStore(store: InMemorySecretStore(), account: "h")
-        try a.add(key: "ok-1", experienceId: "e-1")
-        try a.add(key: "ok-2", experienceId: "e-2")
-        let exported = try a.exportJSON()
-        let obj = try JSONSerialization.jsonObject(with: exported) as! [String: Any]
-        XCTAssertEqual(obj["version"] as? Int, 1)
-        XCTAssertEqual((obj["keys"] as? [[String: Any]])?.count, 2)
-
-        let b = SecretOwnershipKeyStore(store: InMemorySecretStore(), account: "h")
-        try b.add(key: "ok-2", experienceId: "e-2")
-        XCTAssertEqual(try b.importJSON(exported), 1)
-        XCTAssertEqual(b.count(), 2)
-        XCTAssertThrowsError(try b.importJSON(Data(#"{"hello":"world"}"#.utf8)))
-        XCTAssertEqual(b.count(), 2)
-
-        // The Web's literal export file
-        let web = #"{"version":1,"keys":[{"key":"ok-9","experienceId":"e-9","createdAt":1788000000000,"kind":"public"}]}"#
-        XCTAssertEqual(try b.importJSON(Data(web.utf8)), 1)
-    }
-
-    func testKeychainWriteFailureSurfaces() {
+    func testKeychainWriteFailureSurfaces() async {
         let secrets = InMemorySecretStore()
         secrets.failWrites = true
-        let store = SecretOwnershipKeyStore(store: secrets, account: "h")
-        XCTAssertThrowsError(try store.add(key: "k", experienceId: "e"))
+        let controls = PostControls(api: NoVault(), storage: SecretPostControlStore(store: secrets))
+        do {
+            _ = try await controls.create(account: "h", epoch: SchoolEpoch(schoolId: "s", academicYear: "y"))
+            XCTFail("a refused write must not report a created root")
+        } catch {}
     }
 }
 
@@ -133,29 +140,40 @@ final class LocalStoresTests: XCTestCase {
         XCTAssertEqual(prefs.recentContexts.map(\.name), ["朱昂明", "309"])
     }
 
-    func testTransferBundleAcceptsBothShapes() async throws {
-        let keysOnly = #"{"version":1,"keys":[{"key":"k1","experienceId":"e1","createdAt":1,"kind":"public"}]}"#
-        let bundle = try TransferBundle.decode(Data(keysOnly.utf8))
-        XCTAssertEqual(bundle.ownershipKeys.count, 1)
+    func testTransferBundleCarriesNotesOnly() async throws {
         let full = """
-        {"version":1,"accountHint":"h_1","privateNotes":[{"id":"n1","body":"kept","rating":null,"target":{"label":"Ms Lin"},"cooldown":null,"createdAt":1,"updatedAt":2}],
-         "ownershipKeys":[{"key":"k2","experienceId":"e2","createdAt":1,"kind":"public"},{"key":"","experienceId":"bad","createdAt":1,"kind":"public"}]}
+        {"version":1,"accountHint":"h_1","privateNotes":[{"id":"n1","body":"kept","rating":null,"target":{"label":"Ms Lin"},"cooldown":null,"createdAt":1,"updatedAt":2}]}
         """
         let b2 = try TransferBundle.decode(Data(full.utf8))
         XCTAssertEqual(b2.accountHint, "h_1")
         XCTAssertEqual(b2.privateNotes.first?.body, "kept")
-        XCTAssertEqual(b2.ownershipKeys.count, 1, "invalid entries dropped")
         XCTAssertThrowsError(try TransferBundle.decode(Data(#"{"version":2}"#.utf8)))
+        // A v1 key export is not a bundle any more: post controls travel through the vault.
+        let keysOnly = #"{"version":1,"keys":[{"key":"k1","experienceId":"e1","createdAt":1,"kind":"public"}]}"#
+        XCTAssertEqual(try TransferBundle.decode(Data(keysOnly.utf8)).privateNotes.count, 0)
 
-        let keys = SecretOwnershipKeyStore(store: InMemorySecretStore(), account: "h_1")
         let notes = PrivateNoteStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
         await notes.setAccount("h_1")
-        let report = await b2.apply(keys: keys, notes: notes)
-        XCTAssertEqual(report.keysAdded, 1)
+        let report = await b2.apply(notes: notes)
         XCTAssertEqual(report.notesAdded, 1)
         XCTAssertTrue(report.failures.isEmpty)
-        let again = await b2.apply(keys: keys, notes: notes)
-        XCTAssertEqual(again.keysAdded, 0)
+        let again = await b2.apply(notes: notes)
         XCTAssertEqual(again.notesAdded, 0, "deduplicated")
+    }
+
+    func testReactionMemoryIsPerAccount() {
+        let prefs = Preferences(defaults: UserDefaults(suiteName: "honey-tests-\(UUID().uuidString)")!)
+        prefs.setAccount("h_1")
+        XCTAssertEqual(prefs.myReaction("e1"), 0)
+        prefs.setMyReaction("e1", 1)
+        XCTAssertEqual(prefs.myReaction("e1"), 1)
+        prefs.setReactorRegistered("mark")
+        XCTAssertTrue(prefs.reactorRegistered("mark"))
+        prefs.setAccount("h_2")
+        XCTAssertEqual(prefs.myReaction("e1"), 0, "another account remembers nothing")
+        XCTAssertFalse(prefs.reactorRegistered("mark"))
+        prefs.setAccount("h_1")
+        prefs.setMyReaction("e1", 0)
+        XCTAssertEqual(prefs.myReaction("e1"), 0)
     }
 }

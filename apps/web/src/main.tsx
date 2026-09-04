@@ -11,6 +11,7 @@ import "./styles/tokens.css";
 import "./styles/foundations.css";
 import "./styles/components.css";
 import "./styles/features.css";
+import "./styles/access.css";
 import "./styles/admin.css";
 
 applyLang();

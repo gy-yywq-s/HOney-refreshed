@@ -222,54 +222,90 @@ public final class Preferences: @unchecked Sendable {
     }
 }
 
+// MARK: - Reaction memory + deletion checklist (device-only state)
+
+extension Preferences: ReactionMemory, DeletionChecklistStore {
+    private enum V2Key {
+        static let reactions = "honey.reactions.mine"
+        static let reactors = "honey.reactor.registered"
+        static let deletion = "honey.account-deletion"
+    }
+
+    private func dict(_ key: String) -> [String: Int] {
+        guard let k = scoped(key), let data = defaults.data(forKey: k) else { return [:] }
+        return (try? JSONDecoder().decode([String: Int].self, from: data)) ?? [:]
+    }
+
+    private func setDict(_ key: String, _ value: [String: Int]) {
+        guard let k = scoped(key) else { return }
+        defaults.set(try? JSONEncoder().encode(value), forKey: k)
+    }
+
+    /// The viewer's own reaction, remembered on this device (the feed carries none).
+    public func myReaction(_ experienceId: String) -> Int {
+        let v = dict(V2Key.reactions)[experienceId] ?? 0
+        return v == 1 || v == -1 ? v : 0
+    }
+
+    public func setMyReaction(_ experienceId: String, _ value: Int) {
+        var all = dict(V2Key.reactions)
+        if value == 0 { all.removeValue(forKey: experienceId) } else { all[experienceId] = value }
+        setDict(V2Key.reactions, all)
+    }
+
+    public func reactorRegistered(_ mark: String) -> Bool { dict(V2Key.reactors)[mark] == 1 }
+
+    public func setReactorRegistered(_ mark: String) {
+        var all = dict(V2Key.reactors)
+        all[mark] = 1
+        setDict(V2Key.reactors, all)
+    }
+
+    public func readChecklist() -> DeletionChecklist? {
+        guard let k = scoped(V2Key.deletion), let data = defaults.data(forKey: k) else { return nil }
+        return try? JSONDecoder().decode(DeletionChecklist.self, from: data)
+    }
+
+    public func writeChecklist(_ checklist: DeletionChecklist?) {
+        guard let k = scoped(V2Key.deletion) else { return }
+        if let checklist { defaults.set(try? JSONEncoder().encode(checklist), forKey: k) } else { defaults.removeObject(forKey: k) }
+    }
+}
+
 // MARK: - Transfer bundle (Web → iPhone)
 
-/// Either the Web's ownership-key export or the versioned device bundle.
+/// The versioned device bundle of private notes (post controls travel
+/// through the Control Vault — pairing, passkey or recovery words — never a file).
 public struct TransferBundle: Sendable, Equatable {
     public var accountHint: String?
     public var privateNotes: [PrivateNote]
-    public var ownershipKeys: [StoredOwnershipKey]
 
     struct Wire: Decodable {
         var version: Int
         var accountHint: String?
         var privateNotes: [PrivateNote]?
-        var ownershipKeys: [StoredOwnershipKey]?
-        var keys: [StoredOwnershipKey]?
     }
 
-    public init(accountHint: String? = nil, privateNotes: [PrivateNote] = [], ownershipKeys: [StoredOwnershipKey] = []) {
+    public init(accountHint: String? = nil, privateNotes: [PrivateNote] = []) {
         self.accountHint = accountHint
         self.privateNotes = privateNotes
-        self.ownershipKeys = ownershipKeys
     }
 
     public static func decode(_ data: Data) throws -> TransferBundle {
         guard let wire = try? JSONDecoder().decode(Wire.self, from: data), wire.version == 1 else {
-            throw OwnershipKeyImportError.notAnExport
+            throw TransferBundleError.notABundle
         }
-        return TransferBundle(
-            accountHint: wire.accountHint,
-            privateNotes: wire.privateNotes ?? [],
-            ownershipKeys: (wire.ownershipKeys ?? wire.keys ?? []).filter { $0.isValid }
-        )
+        return TransferBundle(accountHint: wire.accountHint, privateNotes: wire.privateNotes ?? [])
     }
 
     public struct ImportReport: Sendable, Equatable {
-        public var keysAdded: Int
         public var notesAdded: Int
         public var failures: [String]
     }
 
-    /// Writes keys to the key store and notes to the note store; partial
-    /// failures are reported, never hidden.
-    public func apply(keys: OwnershipKeyStoring, notes: PrivateNoteStore) async -> ImportReport {
-        var report = ImportReport(keysAdded: 0, notesAdded: 0, failures: [])
-        do {
-            report.keysAdded = try keys.merge(ownershipKeys)
-        } catch {
-            report.failures.append("Control keys could not be stored in the Keychain.")
-        }
+    /// Writes notes to the note store; partial failures are reported, never hidden.
+    public func apply(notes: PrivateNoteStore) async -> ImportReport {
+        var report = ImportReport(notesAdded: 0, failures: [])
         let existing = (try? await notes.list()) ?? []
         let have = Set(existing.map { "\($0.body)|\($0.target.label)" })
         for note in privateNotes where !have.contains("\(note.body)|\(note.target.label)") {
@@ -282,4 +318,8 @@ public struct TransferBundle: Sendable, Equatable {
         }
         return report
     }
+}
+
+public enum TransferBundleError: Error, Sendable, Equatable {
+    case notABundle
 }

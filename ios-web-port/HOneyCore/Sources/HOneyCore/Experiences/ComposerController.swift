@@ -1,14 +1,15 @@
-// Composer state machine (Web: useComposer.ts). The publication flow is
-// eligibility → check → publish. `check` never persists the draft and never
-// publishes; publication happens ONLY on an explicit action. A `nudge`
-// surfaces a preflight choice (add context / share as written / keep
-// private). Every non-publish outcome leaves the draft intact.
+// Composer state machine (Web: useComposer.ts). The v2 publication flow is
+// prepare (post controls + blind eligibility + signed envelope) → check →
+// publish. `check` never persists the draft and never publishes;
+// publication happens ONLY on an explicit action. A `nudge` surfaces a
+// preflight choice (add context / share as written / keep private). Every
+// non-publish outcome leaves the draft intact.
 //
 // Storage truth (review 11d42e3 §3.3): the draft is written to the device
 // BEFORE any network call and the outcome says whether that write really
-// happened; after a publish the control key is journaled durably BEFORE
-// the draft is cleared or the Keychain is asked, and the Keychain write is
-// read back before the journal entry is dropped.
+// happened. There is no per-post key to store any more: the post's control
+// key is derived from the device's root and the post nonce, so nothing can
+// be lost between publish and Keychain.
 
 import Foundation
 
@@ -25,9 +26,7 @@ public struct ComposerScope: Sendable, Equatable, Hashable {
 
     public var draftKey: String { lessonId.map { "lesson:\($0)" } ?? (entityKey ?? "") }
 
-    var eligibilityInput: ExperienceEligibilityInput {
-        ExperienceEligibilityInput(lessonId: lessonId, entityKey: entityKey)
-    }
+    public var target: PublishTarget { PublishTarget(lessonId: lessonId, entityKey: entityKey) }
 }
 
 public struct ComposerNotice: Sendable, Equatable {
@@ -50,11 +49,10 @@ public enum ComposerStatus: Sendable, Equatable {
     case checking
     case nudge(reasons: [String])
     case cooldown(retryAt: Int64, reasons: [String])
-    case published(experienceId: String, ownershipKey: String)
-    /// The post is public but the control key is not in the Keychain.
-    /// `journaled` = the key is at least in the on-device recovery journal
-    /// and will be retried on every launch; false = only this screen has it.
-    case publishedKeyUnsaved(experienceId: String, ownershipKey: String, journaled: Bool)
+    case published(experienceId: String)
+    /// A server vault exists that this iPhone has not restored: sharing waits
+    /// for Settings › Post controls (the draft stays).
+    case postControlsRestoreNeeded
 }
 
 public struct ComposerOutcome: Sendable, Equatable {
@@ -71,9 +69,8 @@ public struct HeldCooldown: Sendable, Equatable {
 }
 
 /// The moderation decision as the composer consumes it — an adapter over
-/// the current `CheckLane` contract (review §5.1), so a later richer
-/// Standing → Expression → Scope → Timing contract changes this mapping
-/// and nothing in the views.
+/// the `CheckLaneV2` contract, so a later richer Standing → Expression →
+/// Scope → Timing contract changes this mapping and nothing in the views.
 public enum ModerationDecision: Sendable, Equatable {
     case publishable(pass: String)
     case nudge(pass: String, reasons: [String])
@@ -83,7 +80,7 @@ public enum ModerationDecision: Sendable, Equatable {
     case blocked
     case unavailable
 
-    public init(_ response: CheckExperienceResponse) {
+    public init(_ response: CheckResponseV2) {
         switch response.lane {
         case .publish:
             if let pass = response.pass { self = .publishable(pass: pass) } else { self = .unavailable }
@@ -100,39 +97,27 @@ public enum ModerationDecision: Sendable, Equatable {
 }
 
 public struct ComposerDependencies: Sendable {
-    public var eligibility: @Sendable (ExperienceEligibilityInput) async throws -> ExperienceEligibilityResponse
-    public var check: @Sendable (CheckExperienceInput) async throws -> CheckExperienceResponse
-    public var publish: @Sendable (PublishExperienceInput) async throws -> PublishExperienceResponse
-    public var storeKey: @Sendable (_ experienceId: String, _ key: String) throws -> Void
-    /// Read the Keychain back: is the key for this post really there?
-    public var keyIsStored: @Sendable (_ experienceId: String) -> Bool
+    /// Post controls + blind eligibility + signed envelope (PublishClient.preparePost).
+    public var prepare: @Sendable (_ target: PublishTarget, _ body: String, _ rating: Int?) async throws -> PreparedPost
+    public var check: @Sendable (_ prepared: PreparedPost, _ cooldownTicket: String?) async throws -> CheckResponseV2
+    public var publish: @Sendable (_ prepared: PreparedPost, _ pass: String) async throws -> PublishResponseV2
     public var saveDraft: @Sendable (_ key: String, _ body: String, _ rating: Int?) throws -> Void
     public var clearDraft: @Sendable (_ key: String) throws -> Void
-    public var journalWrite: @Sendable (PublicationRecord) async throws -> Void
-    public var journalRemove: @Sendable (_ experienceId: String) async throws -> Void
     public var didPublish: @Sendable () async -> Void
 
     public init(
-        eligibility: @escaping @Sendable (ExperienceEligibilityInput) async throws -> ExperienceEligibilityResponse,
-        check: @escaping @Sendable (CheckExperienceInput) async throws -> CheckExperienceResponse,
-        publish: @escaping @Sendable (PublishExperienceInput) async throws -> PublishExperienceResponse,
-        storeKey: @escaping @Sendable (String, String) throws -> Void,
-        keyIsStored: @escaping @Sendable (String) -> Bool,
+        prepare: @escaping @Sendable (PublishTarget, String, Int?) async throws -> PreparedPost,
+        check: @escaping @Sendable (PreparedPost, String?) async throws -> CheckResponseV2,
+        publish: @escaping @Sendable (PreparedPost, String) async throws -> PublishResponseV2,
         saveDraft: @escaping @Sendable (String, String, Int?) throws -> Void,
         clearDraft: @escaping @Sendable (String) throws -> Void,
-        journalWrite: @escaping @Sendable (PublicationRecord) async throws -> Void,
-        journalRemove: @escaping @Sendable (String) async throws -> Void,
         didPublish: @escaping @Sendable () async -> Void = {}
     ) {
-        self.eligibility = eligibility
+        self.prepare = prepare
         self.check = check
         self.publish = publish
-        self.storeKey = storeKey
-        self.keyIsStored = keyIsStored
         self.saveDraft = saveDraft
         self.clearDraft = clearDraft
-        self.journalWrite = journalWrite
-        self.journalRemove = journalRemove
         self.didPublish = didPublish
     }
 }
@@ -141,12 +126,12 @@ public actor ComposerController {
     public let scope: ComposerScope
     private let deps: ComposerDependencies
 
-    /// Held between a `nudge` and the student's explicit follow-up.
-    private var pass: (eligibilityToken: String, pass: String)?
+    /// Held between a `nudge` and the student's explicit follow-up: the
+    /// prepared (token + signed envelope) post and its content-bound pass.
+    private var held: (prepared: PreparedPost, pass: String)?
     /// The cooldown ticket is CONTENT-BOUND server-side: keep the text it was
     /// issued for, so an edited draft re-checks fresh.
     private var cooldown: (ticket: String, retryAt: Int64, body: String, rating: Int?)?
-    private var lastPublished: (experienceId: String, ownershipKey: String, journaled: Bool)?
     /// The last text that went through the check path (for honest "kept private" copy).
     private var lastChecked: (body: String, rating: Int?)?
 
@@ -192,18 +177,19 @@ public actor ComposerController {
     /// "Continue to share": an ordinary check; after a pause the held ticket
     /// is reused for unchanged text.
     public func continueToShare(body: String, rating: Int?) async -> ComposerOutcome {
-        let held = heldCooldown(body: body, rating: rating)
-        return await runCheck(body: body, rating: rating, ticket: held?.ticket)
+        let heldTicket = heldCooldown(body: body, rating: rating)
+        return await runCheck(body: body, rating: rating, ticket: heldTicket?.ticket)
     }
 
-    /// "Share as written" from the nudge preflight: an explicit publish.
+    /// "Share as written" from the nudge preflight: an explicit publish of
+    /// exactly the prepared post the check saw.
     public func shareAsWritten(body: String, rating: Int?) async -> ComposerOutcome {
-        guard let held = pass else { return await runCheck(body: body, rating: rating, ticket: nil) }
+        guard let held else { return await runCheck(body: body, rating: rating, ticket: nil) }
         do {
-            return try await finishPublish(eligibilityToken: held.eligibilityToken, pass: held.pass, body: body, rating: rating)
-        } catch let error as APIError where error.code.hasPrefix("eligibility_") || error.code.hasPrefix("pass_") {
-            // A stale token/pass (rare — 10 min+ later) just re-runs the check.
-            pass = nil
+            return try await finishPublish(prepared: held.prepared, pass: held.pass)
+        } catch let error as APIError where error.code.hasPrefix("token_") || error.code.hasPrefix("pass_") {
+            // A stale token/pass (rare — later) just re-runs the check.
+            self.held = nil
             return await runCheck(body: body, rating: rating, ticket: nil)
         } catch {
             return ComposerOutcome(status: .editing, notice: ComposerNotice(tone: .danger, text: SubmitErrorCopy.describe(error)))
@@ -212,14 +198,8 @@ public actor ComposerController {
 
     /// Leave the nudge preflight to add more context, keeping the draft.
     public func backToEditing() -> ComposerOutcome {
-        pass = nil
+        held = nil
         return ComposerOutcome(status: .editing, notice: nil)
-    }
-
-    /// Retry storing the control key after a publish whose key save failed.
-    public func retryStoringKey() async -> ComposerOutcome {
-        guard let last = lastPublished else { return ComposerOutcome(status: .editing, notice: nil) }
-        return await settleKey(experienceId: last.experienceId, ownershipKey: last.ownershipKey, journaled: last.journaled)
     }
 
     // MARK: Internals
@@ -230,21 +210,24 @@ public actor ComposerController {
         // Persist the draft BEFORE any network call; say so honestly if it failed.
         var persisted = true
         do { try deps.saveDraft(scope.draftKey, body, rating) } catch { persisted = false }
-        pass = nil
+        held = nil
         let ratingToSend = scope.isDish ? rating : nil
         do {
-            let elig = try await deps.eligibility(scope.eligibilityInput)
-            let check = try await deps.check(CheckExperienceInput(
-                lessonId: scope.lessonId, entityKey: scope.entityKey, body: trimmed, rating: ratingToSend, cooldownTicket: ticket
-            ))
+            let prepared: PreparedPost
+            do {
+                prepared = try await deps.prepare(scope.target, trimmed, ratingToSend)
+            } catch PublishError.postControlsRestoreNeeded {
+                return ComposerOutcome(status: .postControlsRestoreNeeded, notice: ComposerNotice(tone: .warn, text: ModerationCopy.restoreNeeded), draftPersisted: persisted)
+            }
+            let check = try await deps.check(prepared, ticket)
             lastChecked = (trimmed, rating)
             switch ModerationDecision(check) {
-            case .publishable(let contentPass):
-                var outcome = try await finishPublish(eligibilityToken: elig.eligibilityToken, pass: contentPass, body: body, rating: rating)
+            case .publishable(let pass):
+                var outcome = try await finishPublish(prepared: prepared, pass: pass)
                 outcome.draftPersisted = persisted
                 return outcome
-            case .nudge(let contentPass, let reasons):
-                pass = (elig.eligibilityToken, contentPass)
+            case .nudge(let pass, let reasons):
+                held = (prepared, pass)
                 return ComposerOutcome(status: .nudge(reasons: reasons), notice: nil, draftPersisted: persisted)
             case .cooldown(let cooldownTicket, let retryAt, let reasons):
                 cooldown = (cooldownTicket, retryAt, trimmed, rating)
@@ -263,44 +246,13 @@ public actor ComposerController {
         }
     }
 
-    private func finishPublish(eligibilityToken: String, pass contentPass: String, body: String, rating: Int?) async throws -> ComposerOutcome {
-        let result = try await deps.publish(PublishExperienceInput(
-            eligibilityToken: eligibilityToken,
-            pass: contentPass,
-            body: body.trimmingCharacters(in: .whitespacesAndNewlines),
-            rating: scope.isDish ? rating : nil
-        ))
-        pass = nil
+    private func finishPublish(prepared: PreparedPost, pass: String) async throws -> ComposerOutcome {
+        let result = try await deps.publish(prepared, pass)
+        held = nil
         cooldown = nil
-        // The post is public from here on. Journal the key durably first.
-        var journaled = false
-        do {
-            try await deps.journalWrite(PublicationRecord(experienceId: result.experienceId, ownershipKey: result.ownershipKey, targetKey: scope.draftKey, createdAt: HOneyClock.now().epochMillis))
-            journaled = true
-        } catch {
-            journaled = false
-        }
-        lastPublished = (result.experienceId, result.ownershipKey, journaled)
-        await deps.didPublish()
-        return await settleKey(experienceId: result.experienceId, ownershipKey: result.ownershipKey, journaled: journaled)
-    }
-
-    /// Keychain write + readback; only then the journal entry and the draft go.
-    private func settleKey(experienceId: String, ownershipKey: String, journaled: Bool) async -> ComposerOutcome {
-        do {
-            try deps.storeKey(experienceId, ownershipKey)
-            guard deps.keyIsStored(experienceId) else { throw SecretStoreError.writeFailed }
-        } catch {
-            if !journaled {
-                // Keep the draft too: the words are the only other thing the student has.
-                return ComposerOutcome(status: .publishedKeyUnsaved(experienceId: experienceId, ownershipKey: ownershipKey, journaled: false), notice: nil)
-            }
-            try? deps.clearDraft(scope.draftKey)
-            return ComposerOutcome(status: .publishedKeyUnsaved(experienceId: experienceId, ownershipKey: ownershipKey, journaled: true), notice: nil)
-        }
-        if journaled { try? await deps.journalRemove(experienceId) }
+        // The post is public from here on; its control key derives from the root on this device.
         try? deps.clearDraft(scope.draftKey)
-        lastPublished = nil
-        return ComposerOutcome(status: .published(experienceId: experienceId, ownershipKey: ownershipKey), notice: nil)
+        await deps.didPublish()
+        return ComposerOutcome(status: .published(experienceId: result.experienceId), notice: nil)
     }
 }

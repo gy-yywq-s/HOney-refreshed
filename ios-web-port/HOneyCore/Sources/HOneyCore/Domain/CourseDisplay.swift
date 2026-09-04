@@ -1,62 +1,34 @@
-// Human display of the school portal's raw labels (Web: lib/displayNames.ts).
-// A portal course string such as
-//   "CIE Chinese Language & Literature 2026秋CIEAL中文备考班 赵流畅"
-// is one administrative concatenation — subject, term + class code + class
-// type, teacher — with no separators. The domain keeps the raw string (it is
-// the identity the portal uses); presentation splits it ONCE here into a
-// title and secondary metadata. Deterministic: nothing is invented.
+// Display helpers for canonical names (Web: lib/displayNames.ts). Domain
+// meaning is settled at the import boundary on the backend (canonical
+// Course "AL ECON U4", section "2026 Autumn · Prep Class", teacher, room);
+// nothing here corrects a name — these helpers only abbreviate and typeset
+// for narrow places.
 
 import Foundation
 
-public struct CourseDisplay: Sendable, Equatable {
-    /// "CIE Chinese Language & Literature"
-    public let title: String
-    /// "2026 Autumn · 中文备考班 · 赵流畅" — empty when the raw name had no term token.
-    public let meta: String
-}
-
 public enum DisplayNames {
-    private static let seasons: [Character: String] = ["春": "Spring", "夏": "Summer", "秋": "Autumn", "冬": "Winter"]
-    private static let term = #/^(20\d\d)年?([春夏秋冬])/#
-    private static let cjkRun = #/[㐀-鿿][㐀-鿿0-9A-Za-z]*班?/#
-    private static let leadingAlnum = #/^[0-9A-Za-z]+/#
-
-    public static func parseCourseName(_ raw: String, teacherName: String? = nil) -> CourseDisplay {
-        let tokens = raw.trimmingCharacters(in: .whitespaces).split(whereSeparator: { $0.isWhitespace }).map(String.init)
-        guard let termAt = tokens.firstIndex(where: { $0.firstMatch(of: term) != nil }), termAt > 0 else {
-            return CourseDisplay(title: raw.trimmingCharacters(in: .whitespaces), meta: "")
-        }
-        let title = tokens[..<termAt].joined(separator: " ")
-        var rest = Array(tokens[termAt...])
-        let match = rest[0].firstMatch(of: term)!
-        let season = match.output.2.first.flatMap { seasons[$0] } ?? String(match.output.2)
-        let termLabel = "\(match.output.1) \(season)"
-        // The teacher is the last token when it matches the known name, or
-        // when it carries no digits and is not the term token itself.
-        var teacher = ""
-        if rest.count > 1, let last = rest.last, last == teacherName || !last.contains(where: { $0.isNumber }) {
-            teacher = last
-            rest.removeLast()
-        }
-        // Class type: the CJK run(s) after the season, e.g. 中文备考班 / 强化班 / 活动课.
-        let afterSeason = ([String(rest[0][match.range.upperBound...])] + rest.dropFirst()).joined(separator: " ")
-        let runs = afterSeason.matches(of: cjkRun).map { String($0.output) }
-        let classType = runs
-            .map { $0.replacing(leadingAlnum, with: "") }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-        let meta = [termLabel, classType, teacher].filter { !$0.isEmpty }.joined(separator: " · ")
-        return CourseDisplay(title: title, meta: meta)
+    /// The lesson's title: the canonical Course students mean ("AL ECON U4"), else its Subject.
+    public static func lessonTitle(courseName: String?, subjectName: String) -> String {
+        courseName ?? subjectName
     }
 
-    /// The human title of a course entity name; other entity types pass through.
-    public static func entityTitle(type: EntityType, name: String) -> String {
-        type == .course ? parseCourseName(name).title : name
+    public static func lessonTitle(_ lesson: Lesson) -> String {
+        lessonTitle(courseName: lesson.courseName, subjectName: lesson.subjectName)
     }
 
-    /// Secondary line for a course entity; empty for everything else.
-    public static func entityMeta(type: EntityType, name: String) -> String {
-        type == .course ? parseCourseName(name).meta : ""
+    private static let levelPrefix = #/^(AL|AS|A2|IGCSE|GCSE|IB|AP)\s+/#
+
+    /// Week-matrix cell form of the title: a course code drops its level ("ECON U4"); a subject compacts.
+    public static func compactLessonTitle(courseName: String?, subjectName: String, phone: Bool = false) -> String {
+        if let courseName {
+            let code = courseName.replacing(levelPrefix, with: "").trimmingCharacters(in: .whitespaces)
+            return phone && code.count > 8 ? shortSubjectName(code) : code
+        }
+        return phone ? shortSubjectName(subjectName) : compactSubjectName(subjectName)
+    }
+
+    public static func compactLessonTitle(_ lesson: Lesson, phone: Bool = false) -> String {
+        compactLessonTitle(courseName: lesson.courseName, subjectName: lesson.subjectName, phone: phone)
     }
 
     /// "Room 309" — a bare room number gets the word; a named place keeps its name.

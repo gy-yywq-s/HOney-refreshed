@@ -20,7 +20,7 @@ struct ExploreView: View {
     @State private var mine: Set<String> = []
     @State private var loading = true
     @State private var error: String?
-    @State private var search: SearchResponse?
+    @State private var search: SearchResponseV2?
     @State private var searching = false
     @State private var searchError: String?
     @State private var searchTask: Task<Void, Never>?
@@ -152,7 +152,7 @@ struct ExploreView: View {
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard !Task.isCancelled else { return }
             do {
-                let result = try await env.api.search(q: q)
+                let result = try await env.community.search(q: q)
                 guard !Task.isCancelled, q == query.trimmingCharacters(in: .whitespaces) else { return }
                 search = result
                 feedModel().seed(result.experiences)
@@ -246,9 +246,8 @@ struct ExploreView: View {
     }
 
     private func row(_ entity: EntityRef, mark: Bool) -> some View {
-        let title = DisplayNames.entityTitle(type: entity.type, name: entity.name)
-        let meta = DisplayNames.entityMeta(type: entity.type, name: entity.name)
-        let caption = [meta, mark ? L10n.t("from your classes") : ""].filter { !$0.isEmpty }.joined(separator: " · ")
+        let title = entity.name
+        let caption = mark ? L10n.t("from your classes") : ""
         return Button {
             if let route = ExperienceDisplay.route(for: entity) {
                 if case .entity(let type, let id) = route {
@@ -275,7 +274,8 @@ struct ExploreView: View {
                 ForEach(search.experiences) { exp in
                     ExperiencePostRow(
                         exp: exp,
-                        reaction: feed?.reactions[exp.id] ?? ReactionState(exp),
+                        reaction: feed?.reactionState(for: exp) ?? ReactionState(exp, myValue: env.prefs.myReaction(exp.id)),
+                        name: feed?.name ?? { _ in nil },
                         onReact: { value in Task { await feedModel().react(exp, value: value) } },
                         onReport: { category in await feedModel().report(exp, category: category) },
                         openEntity: { route in nav.push(route) }

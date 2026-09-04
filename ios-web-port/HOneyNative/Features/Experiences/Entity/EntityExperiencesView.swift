@@ -17,7 +17,7 @@ struct EntityExperiencesView: View {
     @State private var feed: FeedViewModel?
     @State private var names = NameMaps()
     @State private var namesError: String?
-    @State private var stats: EntityStats?
+    @State private var stats: EntityStatsV2?
 
     private var entityKey: String { "\(type.rawValue):\(id)" }
 
@@ -41,8 +41,7 @@ struct EntityExperiencesView: View {
         case .course: raw = names.course[id] ?? names.entity[entityKey]
         default: raw = names.entity[entityKey]
         }
-        guard let raw else { return kindTitle }
-        return DisplayNames.entityTitle(type: type, name: raw)
+        return raw ?? kindTitle
     }
 
     private var neverListed: Bool {
@@ -50,7 +49,7 @@ struct EntityExperiencesView: View {
     }
 
     private var survivor: EntityRef? {
-        names.entities.first { $0.type == type && $0.entityKey != entityKey && DisplayNames.entityTitle(type: type, name: $0.name) == name }
+        names.entities.first { $0.type == type && $0.entityKey != entityKey && $0.name == name }
     }
 
     private var intro: String {
@@ -100,7 +99,7 @@ struct EntityExperiencesView: View {
             }
             await loadNames()
             if let feed { await feed.enter() }
-            stats = try? await env.api.entityStats(entityKey: entityKey)
+            stats = try? await env.community.stats(entityKey: entityKey)
         }
         .onDisappear { Task { await feed?.leave() } }
     }
@@ -132,7 +131,7 @@ struct EntityExperiencesView: View {
                 VStack(alignment: .leading, spacing: HSpace.x1) {
                     Text("This entry is no longer listed.").hfont(.body).foregroundStyle(theme.muted)
                     if let survivor {
-                        Button("Open the current entry for \(DisplayNames.entityTitle(type: type, name: survivor.name))") {
+                        Button("Open the current entry for \(survivor.name)") {
                             if let route = ExperienceDisplay.route(for: survivor) { nav.push(route) }
                         }
                         .buttonStyle(.webLinkBody)
@@ -180,7 +179,8 @@ struct EntityExperiencesView: View {
                 ForEach(feed.items) { exp in
                     ExperiencePostRow(
                         exp: exp,
-                        reaction: feed.reactions[exp.id] ?? ReactionState(exp),
+                        reaction: feed.reactionState(for: exp),
+                        name: feed.name,
                         onReact: { value in Task { await feed.react(exp, value: value) } },
                         onReport: { category in await feed.report(exp, category: category) },
                         openEntity: { route in nav.push(route) }

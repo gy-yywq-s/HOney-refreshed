@@ -37,17 +37,21 @@ final class KeychainSecretStoreTests: XCTestCase {
         try store.delete("honey.session")
     }
 
-    func testOwnershipKeysOnTheKeychainExportAndImport() throws {
+    func testPostControlsSealedOnTheKeychainPerAccount() throws {
         let store = try keychainStore()
-        let keys = SecretOwnershipKeyStore(store: store, account: "h_test")
-        try keys.add(key: "own-1", experienceId: "e-1")
-        XCTAssertEqual(keys.count(), 1)
-        let exported = try keys.exportJSON()
-        let other = SecretOwnershipKeyStore(store: store, account: "h_other")
-        XCTAssertEqual(other.count(), 0, "namespaced by account")
-        XCTAssertEqual(try other.importJSON(exported), 1)
-        try keys.remove(key: "own-1")
-        try other.remove(key: "own-1")
+        let controls = SecretPostControlStore(store: store, prefix: "honey.v2.test")
+        let secret = try controls.deviceSecret(account: "h_test")
+        XCTAssertEqual(secret.count, 32)
+        XCTAssertEqual(try controls.deviceSecret(account: "h_test"), secret, "stable per account")
+        XCTAssertNotEqual(try controls.deviceSecret(account: "h_other"), secret, "namespaced by account")
+        let state = LocalVaultState(vaultId: "v", revision: 1, wrappers: [], rIv: "i", rWrapped: "w", payloadIv: "pi", payloadCiphertext: "pc")
+        try controls.saveState(account: "h_test", state)
+        XCTAssertEqual(try controls.loadState(account: "h_test"), state)
+        XCTAssertNil(try controls.loadState(account: "h_other"))
+        try controls.clearState(account: "h_test")
+        try controls.clearDeviceSecret(account: "h_test")
+        try controls.clearDeviceSecret(account: "h_other")
+        XCTAssertNil(try controls.loadState(account: "h_test"))
     }
 }
 

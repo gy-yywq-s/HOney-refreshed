@@ -77,6 +77,14 @@ struct RouteView: View {
             AccountView()
         case .settingsAppearance:
             AppearanceView()
+        case .settingsPostControls:
+            PostControlsView()
+        case .settingsRecoveryWords:
+            RecoveryWordsView()
+        case .settingsPairDevice:
+            PairDeviceView()
+        case .settingsReplaceRoot:
+            ReplaceRootView()
         }
     }
 }

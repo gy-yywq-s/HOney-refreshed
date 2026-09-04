@@ -161,6 +161,13 @@ final class Navigator {
             case "privacy": go(.settings, [.settingsPrivacy])
             case "account": go(.settings, [.settingsAccount])
             case "appearance": go(.settings, [.settingsAppearance])
+            case "post-controls":
+                switch segments.dropFirst().first {
+                case "recovery-words": go(.settings, [.settingsPostControls, .settingsRecoveryWords])
+                case "pair": go(.settings, [.settingsPostControls, .settingsPairDevice])
+                case "replace-root": go(.settings, [.settingsPostControls, .settingsReplaceRoot])
+                default: go(.settings, [.settingsPostControls])
+                }
             default: go(.settings)
             }
         default:

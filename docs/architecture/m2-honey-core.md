@@ -39,12 +39,16 @@ sequenceDiagram
 
 ## Data (stdlib `node:sqlite`, WAL, STRICT tables)
 
-`honey_users · honey_sessions · school_connections · import_consents` +
-`teachers · courses · rooms · lesson_instances · user_lesson_exposures`.
-No exams table — by design (spec §0/§18). Teacher ids are derived from display names (the portal
-exposes no stable teacher id). History is a query over exposures, never a second source of truth
-(§13.3). Consent gates every import; revoking stops sync; imported data is deletable independently
-of the account.
+`honey_users · honey_sessions · school_connections · import_consents` + the canonical school data
+tables (`schools · subjects · courses · course_aliases · teachers · teacher_aliases · rooms ·
+room_aliases · class_sections · lesson_instances · user_lesson_exposures · import_runs ·
+unresolved_import_labels · dishes`) — see
+[`canonical-school-data.md`](canonical-school-data.md) for the five-layer model and the resolver
+(2026-09-02; it replaced the first-cut `teachers/courses/rooms` tables and the entity registry).
+No exams table — by design (spec §0/§18). Teachers and rooms resolve through alias tables (the
+portal exposes no stable teacher id). History is a query over exposures, never a second source of
+truth (§13.3). Import is part of the account; imported data is deletable independently of the
+account.
 
 ## API surface (Band 3, UI-agnostic)
 

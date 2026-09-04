@@ -1,5 +1,12 @@
 # M3 — Experiences: anonymous community with fail-closed moderation
 
+> **Superseded in part (2026-09-02).** The anonymity model below (per-post ownership keys, HMAC
+> eligibility tokens, publication inside Core) was replaced by **Anonymous Control v2**: one
+> recoverable root, blind eligibility with public metadata, per-post control keys, and a separate
+> Community process. Read [`anonymous-control-v2.md`](anonymous-control-v2.md) and
+> [`community-process.md`](community-process.md) first; the product decisions and the moderation
+> lanes here still hold.
+
 **Goal:** peer testimony about lessons, teachers, rooms and canteen dishes that is anonymous *by
 architecture*, moderated *without humans in the loop*, and fast enough to feel instant.
 

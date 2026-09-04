@@ -69,9 +69,12 @@ export function ExperiencesWhyPage() {
         <h2>Why anonymity is protected.</h2>
         <p>
           HOney narrows what the public space will carry <em>before</em> publication, so ordinary
-          peer speech can be strongly protected. Published posts are stored without your school
-          account attached. What you write may still make you recognisable to people who know the
-          situation — anonymity is a design boundary, not magic.
+          peer speech can be strongly protected. Posts are stored by a separate service that has no
+          account database: the request that publishes carries no HOney session, and the proof
+          that you may share is a blind token the account service cannot recognise afterwards. Your
+          device holds the only control over your posts. What you write may still make you
+          recognisable to people who know the situation — anonymity is a design boundary, not
+          magic.
         </p>
       </section>
 

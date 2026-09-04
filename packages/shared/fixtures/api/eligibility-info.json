@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "info": {
+    "v": 2,
+    "schoolId": "huayaopudong",
+    "academicYear": "2026-27",
+    "scope": "lesson:tok_a1",
+    "contexts": {
+      "lessonId": "tok_a1",
+      "courseId": "c_al_econ_u4",
+      "teacherId": "t_76b873b12d89",
+      "roomId": "r_345"
+    },
+    "provenance": "verified_lesson",
+    "week": 36
+  }
+}

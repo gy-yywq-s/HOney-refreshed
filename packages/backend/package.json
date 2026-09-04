@@ -8,9 +8,12 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
+    "db:reset:dev": "tsx src/scripts/db-reset-dev.ts",
+    "issuer:keygen": "tsx src/scripts/issuer-keygen.ts",
     "test": "vitest run"
   },
   "dependencies": {
+    "@cloudflare/blindrsa-ts": "0.4.6",
     "fastify": "^5.1.0",
     "@honey/shared": "workspace:*",
     "@honey/portal-connector": "workspace:*",
