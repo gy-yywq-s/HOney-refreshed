@@ -108,7 +108,9 @@ struct TimetableRootView: View {
         }
     }
 
-    /// `.daynav` on phones: modes centred (with the overflow at the right),
+    /// `.daynav` on phones: modes centred (with the overflow at the right;
+    /// History lives in that menu, not as its own corner button — Gary
+    /// 2026-09-04),
     /// the stepper row, Back to today; 8 pt above, 4 pt below, 8 pt after.
     private func header(_ model: TimetableViewModel) -> some View {
         VStack(spacing: HSpace.x1) {
@@ -120,18 +122,6 @@ struct TimetableRootView: View {
                 .accessibilityLabel("Timetable view")
                 HStack(spacing: HSpace.x2) {
                     Spacer()
-                    // `.daynav__history`: History in the empty top-right corner
-                    // beside the pill, the gesture named right there (Gary 2026-09-03).
-                    Button { nav.push(.history(select: false)) } label: {
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text("History").font(ramp.font(.captionSemibold)).foregroundStyle(theme.accent)
-                            Text(L10n.t("or pull up at the end")).font(ramp.font(.micro)).foregroundStyle(theme.muted)
-                        }
-                        .frame(minHeight: HSize.control)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("History")
                     Menu {
                         Button(model.view == .week ? L10n.t("This week") : L10n.t("Today"), systemImage: "calendar") { model.goToday() }
                         Button("History", systemImage: "clock.arrow.circlepath") { nav.push(.history(select: false)) }
