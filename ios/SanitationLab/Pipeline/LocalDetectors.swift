@@ -82,6 +82,12 @@ struct LocalDetectors {
             // watermark are easier to see after local contrast is increased.
             if let enhanced = enhancedForFaces(cg) {
                 candidates.append(contentsOf: visionFaces(in: enhanced))
+                for tile in faceTiles(in: enhanced) {
+                    candidates.append(contentsOf: visionFaces(in: tile.image).map {
+                        $0.offsetBy(dx: tile.rect.minX, dy: tile.rect.minY)
+                    })
+                }
+                candidates.append(contentsOf: coreImageFaces(in: enhanced))
             }
 
             // A small secondary passport portrait may be below the detector's
@@ -143,7 +149,12 @@ struct LocalDetectors {
         guard let detector = CIDetector(
             ofType: CIDetectorTypeFace,
             context: CIContext(options: [.cacheIntermediates: false]),
-            options: [CIDetectorAccuracy: CIDetectorAccuracyHigh, CIDetectorTracking: false]
+            options: [
+                CIDetectorAccuracy: CIDetectorAccuracyHigh,
+                CIDetectorTracking: false,
+                CIDetectorMinFeatureSize: 0.01,
+                CIDetectorNumberOfAngles: 11,
+            ]
         ) else { return [] }
         let height = CGFloat(cg.height)
         return detector.features(in: CIImage(cgImage: cg)).compactMap { feature in

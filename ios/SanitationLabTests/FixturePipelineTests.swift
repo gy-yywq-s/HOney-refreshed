@@ -47,6 +47,16 @@ final class FixturePipelineTests: XCTestCase {
         XCTAssertNotNil(run.outputData)
     }
 
+    func testMainAndSecondaryCredentialPortraitsAreBothHidden() async throws {
+        let item = try XCTUnwrap(manifest.items.first { $0.id == "real/r22" })
+        let data = try XCTUnwrap(manifest.data(for: item, in: folder))
+        let run = await SanitationPipeline(classifier: StubCredentialClassifier(credentialLike: true)).run(imageData: data, fixtureId: item.id)
+        attach(run, item)
+        XCTAssertEqual(run.outcome, .sanitized)
+        XCTAssertGreaterThanOrEqual(run.record.facesFound, 2, "main and pale secondary portraits must both be detected")
+        XCTAssertGreaterThanOrEqual(run.record.regions.filter { $0.kind == .portrait }.count, 2)
+    }
+
     // MARK: - Synthetic credentials: ground truth
 
     func testSyntheticCredentialsAreSanitizedWithTheRightRegions() async throws {
