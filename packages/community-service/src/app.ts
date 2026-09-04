@@ -23,6 +23,7 @@ import { installIdentityFreeBoundary, type LogLine } from "./redaction.js";
 import { CommunitySettings } from "./settings.js";
 import { IssuerKeys, TokenRedemption } from "./token-redemption.js";
 import { defaultLlmRunner } from "./moderation/index.js";
+import { classifyCredentialImage, type ImageLlmConfig, type ImageVerdict } from "./moderation/image.js";
 import { registerAdminRoutes } from "./admin.js";
 
 // HOney Community — the process that stores anonymous posts and cannot
@@ -37,6 +38,8 @@ export interface CommunityAppOptions {
   issuer?: IssuerDescriptor;
   now?: () => number;
   log?: (line: LogLine) => void;
+  /** Test seam for the credential-image classifier (production calls the model). */
+  classifyImage?: (jpeg: Buffer, config: ImageLlmConfig) => Promise<ImageVerdict>;
 }
 
 export interface CommunityContext {
@@ -51,6 +54,8 @@ export interface CommunityContext {
 }
 
 const BODY_LIMIT = 64 * 1024;
+/** The analysis derivative (≤768 px, JPEG) — well under the edge's 256 KB cap. */
+const IMAGE_BODY_LIMIT = 256 * 1024;
 
 export function buildCommunityApp(opts: CommunityAppOptions = {}): FastifyInstance & { ctx: CommunityContext } {
   const config: CommunityConfig = { ...loadCommunityConfig(), ...opts.config };
@@ -81,6 +86,20 @@ export function buildCommunityApp(opts: CommunityAppOptions = {}): FastifyInstan
   });
 
   app.get("/community/health", async () => ({ status: "ok", service: "honey-community" }));
+
+  // ---- credential-image classification (identity-free, nothing stored) ----
+  // The body is the analysis-size JPEG itself (no JSON, no base64 — the edge
+  // caps bodies at 256 KB). One boolean comes back; the client hides the
+  // regions on the device. See docs/architecture/credential-image-sanitation.md.
+  app.addContentTypeParser("image/jpeg", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
+  app.post<{ Body: Buffer }>("/community/v2/image/classify", { bodyLimit: IMAGE_BODY_LIMIT }, async (req, reply) => {
+    if (!Buffer.isBuffer(req.body) || req.body.length < 64) return reply.code(415).send({ error: "jpeg_body_required" });
+    const config = ctx.settings.imageLlmConfig();
+    if (!config) return reply.code(503).send({ error: "classifier_unavailable" });
+    const verdict = await (opts.classifyImage ?? classifyCredentialImage)(req.body, config);
+    if (!verdict.ok) return reply.code(503).send({ error: "classifier_unavailable", latencyMs: verdict.latencyMs });
+    return { credentialLike: verdict.credentialLike, uncertain: verdict.uncertain, latencyMs: verdict.latencyMs, model: verdict.model ?? config.model };
+  });
 
   // ---- publication (identity-free) ----
   app.post<{ Body: CheckRequestV2 }>("/community/v2/check", async (req, reply) => {

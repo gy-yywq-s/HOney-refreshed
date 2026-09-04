@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
+import { DEFAULT_VISION_MODEL } from "./moderation/image.js";
 
 // Community-side operational settings: kill switches, frozen entities,
 // reaction threshold, cooling-off hours, the moderation model + key (sealed
@@ -69,6 +70,12 @@ export class CommunitySettings {
     }
     if (!apiKey) return null;
     return { apiKey, model: this.get("llm.model") ?? "mistralai/mistral-small-3.2-24b-instruct", timeoutMs: Number(this.get("llm.timeoutMs") ?? 8000) };
+  }
+  /** The credential-image classifier shares the key; its model is its own setting. */
+  imageLlmConfig(): { apiKey: string; model: string; timeoutMs: number } | null {
+    const base = this.llmConfig();
+    if (!base) return null;
+    return { apiKey: base.apiKey, model: this.get("image.model") ?? DEFAULT_VISION_MODEL, timeoutMs: Number(this.get("image.timeoutMs") ?? 10000) };
   }
   setLlmKey(apiKey: string): void {
     this.set("llm.apiKeySealed", seal(apiKey, this.sealKey));
