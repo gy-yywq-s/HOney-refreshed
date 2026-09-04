@@ -98,10 +98,13 @@ struct AccessView: View {
                     permitsSection(model)
                     accessDock(model)
                 }
-                .frame(minHeight: geo.size.height, alignment: .top)
                 .pageInset()
                 .padding(.top, HSpace.x2)
                 .padding(.bottom, HSpace.x4)
+                // Inside the one-screen minimum: one screen of content is one
+                // screen, not one screen plus 24 pt of nothing to scroll into
+                // (Gary 2026-09-05, every tab page had this).
+                .frame(minHeight: geo.size.height, alignment: .top)
             }
             .honeyRefreshable { await refreshModel.refresh(keepBanner: true, force: true) }
         }

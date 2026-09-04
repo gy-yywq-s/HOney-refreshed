@@ -239,7 +239,7 @@ struct DayTimetableScreen: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         if let day = model.day {
-                            DayTimelineView(date: day.date, lessons: day.lessons, canvasHeight: max(560, geo.size.height - HSpace.x4)) { lesson in model.selectedLesson = lesson }
+                            DayTimelineView(date: day.date, lessons: day.lessons, canvasHeight: max(560, geo.size.height - HSpace.x4 - HSpace.x2)) { lesson in model.selectedLesson = lesson }
                                 .pageInset()
                                 .onAppear { land(day, proxy: proxy) }
                                 .onChange(of: day.date) { _, _ in land(day, proxy: proxy) }
