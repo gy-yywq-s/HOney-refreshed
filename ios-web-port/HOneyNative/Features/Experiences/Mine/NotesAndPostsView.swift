@@ -173,7 +173,6 @@ struct NotesAndPostsView: View {
                     }
                 }
             }
-            .refreshAnchor()
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)

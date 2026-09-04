@@ -282,6 +282,15 @@ extension View {
     /// The Web's `--page-x` inset for content that lives in a ScrollView.
     func pageInset() -> some View { padding(.horizontal, HSpace.pageX) }
 
+    /// A visually open row inside the system List used by refreshable screens.
+    /// The List owns scrolling and refresh mechanics; page zones keep their
+    /// existing composition without inheriting grouped-list chrome.
+    func openListRow() -> some View {
+        listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+    }
+
     /// The page ground for every screen: the chosen surface, edge to edge.
     func surfaceBackground() -> some View { modifier(SurfaceBackground()) }
 

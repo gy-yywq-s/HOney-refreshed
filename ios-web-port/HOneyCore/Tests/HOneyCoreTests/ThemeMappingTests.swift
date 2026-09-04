@@ -4,6 +4,7 @@
 // palette against it, token by token.
 
 import XCTest
+import Observation
 @testable import HOneyCore
 
 final class ThemeMappingTests: XCTestCase {
@@ -175,5 +176,22 @@ final class ThemeMappingTests: XCTestCase {
         XCTAssertEqual(night.accent2, RGBA(hex: 0x8FC2D4))
         let harbour = ThemePalette.resolve(background: .white, accent: .harbour)
         XCTAssertEqual(harbour.accent, harbour.accent2, "one hue unless a scheme pairs two")
+    }
+
+    func testLanguageChangeInvalidatesViewsThatReadTranslations() {
+        let previous = L10n.language
+        defer { L10n.language = previous }
+        L10n.language = .en
+        let changed = expectation(description: "translation observation invalidated")
+
+        withObservationTracking {
+            _ = L10n.t("Today")
+        } onChange: {
+            changed.fulfill()
+        }
+
+        L10n.language = .zh
+        wait(for: [changed], timeout: 1)
+        XCTAssertEqual(L10n.t("Today"), "今天")
     }
 }

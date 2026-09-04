@@ -31,7 +31,10 @@ struct RootTabView: View {
                     RouteView(route: route)
                 }
         }
-        .tabItem { Label(tab.title, systemImage: tab.symbol) }
+        .tabItem {
+            Image(systemName: tab.symbol)
+                .accessibilityLabel(tab.title)
+        }
         .tag(tab)
     }
 }

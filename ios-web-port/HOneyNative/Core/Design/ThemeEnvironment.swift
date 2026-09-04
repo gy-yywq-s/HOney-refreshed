@@ -122,6 +122,7 @@ enum ThemeChrome {
         UITabBar.appearance().scrollEdgeAppearance = tab
         UITabBar.appearance().tintColor = theme.uiAccent
         UITabBar.appearance().unselectedItemTintColor = theme.uiMuted
+        UIRefreshControl.appearance().tintColor = theme.uiAccent
         // Live bars adopt the proxy only on their next layout; nudge the windows.
         for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
             for window in scene.windows {

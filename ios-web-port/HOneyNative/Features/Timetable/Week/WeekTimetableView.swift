@@ -56,7 +56,6 @@ struct WeekTimetableView: View {
                     .pageInset()
                 }
             }
-            .refreshAnchor()
             .padding(.bottom, HSpace.x4)
         }
         .honeyRefreshable { await model.load(reload: true) }

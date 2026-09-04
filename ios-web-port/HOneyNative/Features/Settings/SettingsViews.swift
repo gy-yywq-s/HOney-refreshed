@@ -26,59 +26,61 @@ struct SettingsRootView: View {
 
     var body: some View {
         let store = env.themeStore
-        ScrollView {
-            VStack(alignment: .leading, spacing: HSpace.x4) {
-                PageTitle(text: "Settings")
-                if let notice = env.loginNotice {
-                    InlineStatusBanner(text: notice, tone: .warning, action: ("OK", { env.loginNotice = nil }))
-                }
-                RowList(label: L10n.t("Account"), first: true) {
-                    Button { nav.push(.settingsAccount) } label: {
-                        SettingsRow(title: env.me?.displayName ?? "", sub: "HOney ID \(env.me?.honeyId ?? "")")
-                    }
-                    .buttonStyle(.plain)
-                }
-                RowList(label: L10n.t("School connection")) {
-                    Button { nav.push(.settingsConnection) } label: {
-                        SettingsRow(title: connectionLine, sub: L10n.t("Sync, saved login, imported data"))
-                    }
-                    .buttonStyle(.plain)
-                    StayConnectedRow(stayConnected: $stayConnected, showSaveLogin: $showSaveLogin)
-                }
-                RowList(label: L10n.t("Experiences & privacy")) {
-                    Button { nav.push(.mine) } label: { SettingsRow(title: L10n.t("Your notes & post controls")) }.buttonStyle(.plain)
-                    Button { nav.push(.settingsPrivacy) } label: { SettingsRow(title: L10n.t("How anonymity works")) }.buttonStyle(.plain)
-                }
-                RowList(label: L10n.t("Appearance")) {
-                    Button { nav.push(.settingsAppearance) } label: {
-                        SettingsRow(
-                            title: "\(L10n.t("Background")) · \(L10n.t("Accent")) · \(L10n.t("Text size")) · \(L10n.t("Language"))",
-                            sub: "\(L10n.t(store.background.label)) · \(store.accent.label) · \(L10n.t(store.textSize.label)) · \(L10n.isChinese ? "中文" : "English")"
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-                RowList(label: L10n.t("About")) {
-                    SettingsRow(title: "\(L10n.t("Build")) \(env.config.buildLabel)", sub: env.config.honeyBaseURL.host ?? "", trailing: .none)
-                }
-                if env.me?.isAdmin == true {
-                    RowList(label: L10n.t("Admin")) {
-                        Link(destination: env.config.dashURL) {
-                            SettingsRow(title: L10n.t("Open Dash"), sub: "\(L10n.t("The operational console for admins.")) Opens the Web Dash in Safari.")
+        GeometryReader { geo in
+            ScrollView {
+                VStack(alignment: .leading, spacing: HSpace.x4) {
+                        PageTitle(text: "Settings")
+                        if let notice = env.loginNotice {
+                            InlineStatusBanner(text: notice, tone: .warning, action: ("OK", { env.loginNotice = nil }))
                         }
-                    }
+                        RowList(label: L10n.t("Account"), first: true) {
+                            Button { nav.push(.settingsAccount) } label: {
+                                SettingsRow(title: env.me?.displayName ?? "", sub: "HOney ID \(env.me?.honeyId ?? "")")
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        RowList(label: L10n.t("School connection")) {
+                            Button { nav.push(.settingsConnection) } label: {
+                                SettingsRow(title: connectionLine, sub: L10n.t("Sync, saved login, imported data"))
+                            }
+                            .buttonStyle(.plain)
+                            StayConnectedRow(stayConnected: $stayConnected, showSaveLogin: $showSaveLogin)
+                        }
+                        RowList(label: L10n.t("Experiences & privacy")) {
+                            Button { nav.push(.mine) } label: { SettingsRow(title: L10n.t("Your notes & post controls")) }.buttonStyle(.plain)
+                            Button { nav.push(.settingsPrivacy) } label: { SettingsRow(title: L10n.t("How anonymity works")) }.buttonStyle(.plain)
+                        }
+                        RowList(label: L10n.t("Appearance")) {
+                            Button { nav.push(.settingsAppearance) } label: {
+                                SettingsRow(
+                                    title: "\(L10n.t("Background")) · \(L10n.t("Accent")) · \(L10n.t("Text size")) · \(L10n.t("Language"))",
+                                    sub: "\(L10n.t(store.background.label)) · \(store.accent.label) · \(L10n.t(store.textSize.label)) · \(L10n.isChinese ? "中文" : "English")"
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        RowList(label: L10n.t("About")) {
+                            SettingsRow(title: "\(L10n.t("Build")) \(env.config.buildLabel)", sub: env.config.honeyBaseURL.host ?? "", trailing: .none)
+                        }
+                        if env.me?.isAdmin == true {
+                            RowList(label: L10n.t("Admin")) {
+                                Link(destination: env.config.dashURL) {
+                                    SettingsRow(title: L10n.t("Open Dash"), sub: "\(L10n.t("The operational console for admins.")) Opens the Web Dash in Safari.")
+                                }
+                            }
+                        }
                 }
+                .frame(minHeight: geo.size.height, alignment: .top)
+                .pageInset()
+                .padding(.top, HSpace.x2)
+                .padding(.bottom, HSpace.x4)
             }
-            .refreshAnchor()
-            .pageInset()
-            .padding(.top, HSpace.x2)
-            .padding(.bottom, HSpace.x4)
+            .honeyRefreshable { await env.refreshMe() }
         }
         .surfaceBackground()
         .toolbar(.hidden, for: .navigationBar)
         .navigationTitle("Settings")
         .task { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin }
-        .honeyRefreshable { await env.refreshMe() }
         .sheet(isPresented: $showSaveLogin) {
             SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin }
         }
@@ -226,14 +228,13 @@ struct SchoolConnectionView: View {
                     Button(L10n.t("Delete imported data…")) { confirmDeleteData = true }.buttonStyle(.webDanger).disabled(busy != nil)
                 }
             }
-            .refreshAnchor()
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)
         }
+        .honeyRefreshable { await env.refreshMe() }
         .webScreen(title: L10n.t("School connection"))
         .task { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin }
-        .honeyRefreshable { await env.refreshMe() }
         .sheet(isPresented: $showSaveLogin) { SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin } }
         .sheet(isPresented: $showReconnect) { SchoolLoginSheet(purpose: .reconnect) { sync() } }
         .sheet(isPresented: $confirmDisconnect) {

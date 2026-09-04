@@ -159,13 +159,13 @@ public enum PortalTime {
 }
 
 /// The apply-permit draft: start / end / reason with the quick defaults the
-/// legacy app used (now → +2 h, reason 出门).
+    /// app uses (now → +2 h, reason out).
 public struct PermitDraft: Sendable, Equatable {
     public var start: Date
     public var end: Date
     public var reason: String
 
-    public static let defaultReason = "出门"
+    public static let defaultReason = "out"
 
     public init(start: Date, end: Date, reason: String) {
         self.start = start

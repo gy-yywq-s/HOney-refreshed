@@ -320,6 +320,73 @@ final class VisualFixtureTests: XCTestCase {
             SnapshotHarness.release(env)
         }
     }
+
+    func testRefreshScrollerOnEveryRefreshableScreen() async throws {
+        let env = try await SnapshotHarness.makeEnvironment()
+        let window = SnapshotHarness.window(for: env)
+
+        for tab in AppTab.allCases {
+            env.navigator.selected = tab
+            _ = try await SnapshotHarness.snapshot(env, name: "refresh-diagnostic-\(tab.rawValue)", settle: 0.8)
+            window.rootViewController?.view.layoutIfNeeded()
+            try assertRefreshScroller(in: window, label: tab.rawValue)
+        }
+
+        env.navigator.selected = .timetable
+        env.navigator.timetableIntent = TimetableIntent(date: nil, view: .week)
+        _ = try await SnapshotHarness.snapshot(env, name: "refresh-diagnostic-week", settle: 0.8)
+        try assertRefreshScroller(in: window, label: "week")
+
+        env.navigator.timetablePath = [.history(select: false)]
+        _ = try await SnapshotHarness.snapshot(env, name: "refresh-diagnostic-history", settle: 0.8)
+        try assertRefreshScroller(in: window, label: "history")
+        env.navigator.timetablePath = []
+
+        env.navigator.selected = .experiences
+        for (label, route) in [
+            ("explore", AppRoute.explore),
+            ("mine", AppRoute.mine),
+            ("entity", AppRoute.entity(.teacher, "t_76b873b12d89")),
+        ] {
+            env.navigator.experiencesPath = [route]
+            _ = try await SnapshotHarness.snapshot(env, name: "refresh-diagnostic-\(label)", settle: 0.8)
+            try assertRefreshScroller(in: window, label: label)
+        }
+        env.navigator.experiencesPath = []
+
+        env.navigator.selected = .settings
+        env.navigator.settingsPath = [.settingsConnection]
+        _ = try await SnapshotHarness.snapshot(env, name: "refresh-diagnostic-connection", settle: 0.8)
+        try assertRefreshScroller(in: window, label: "connection")
+
+        SnapshotHarness.release(env)
+    }
+
+    private func assertRefreshScroller(in window: UIWindow, label: String) throws {
+        let visibleScrollers = allScrollViews(in: window).filter(isVisible)
+        let scroller = try XCTUnwrap(visibleScrollers.max { lhs, rhs in
+            lhs.frame.width * lhs.frame.height < rhs.frame.width * rhs.frame.height
+        }, "\(label) has no visible refresh scroller")
+        XCTAssertTrue(scroller.bounces, "\(label) must keep the platform rubber band")
+        XCTAssertTrue(scroller.alwaysBounceVertical, "\(label) must refresh even when its content fits")
+        XCTAssertTrue(visibleScrollers.allSatisfy { $0.refreshControl == nil }, "\(label) must not fall back to the broken system .refreshable path")
+    }
+
+    private func isVisible(_ view: UIView) -> Bool {
+        var current: UIView? = view
+        while let node = current {
+            if node.isHidden || node.alpha < 0.01 { return false }
+            current = node.superview
+        }
+        return view.window != nil
+    }
+
+    private func allScrollViews(in root: UIView) -> [UIScrollView] {
+        var result: [UIScrollView] = []
+        if let scroll = root as? UIScrollView { result.append(scroll) }
+        for child in root.subviews { result.append(contentsOf: allScrollViews(in: child)) }
+        return result
+    }
 }
 
 final class TypographyTests: XCTestCase {

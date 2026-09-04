@@ -78,7 +78,6 @@ struct EntityExperiencesView: View {
                         header
                         posts(feed)
                     }
-                    .refreshAnchor()
                     .padding(.top, HSpace.x2)
                     .padding(.bottom, HSpace.x4)
                 }

@@ -14,6 +14,7 @@ import HOneyCore
 struct AccessView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.theme) private var theme
     @Environment(\.hType) private var ramp
     @State private var model: AccessViewModel?
@@ -25,7 +26,6 @@ struct AccessView: View {
     @State private var quickApplyPrompt = false
     @State private var withdrawing: ExitPermit?
     @State private var showSchoolLogin = false
-    @State private var refreshTrigger = RefreshTrigger()
 
     private let collapsedPermits = 3
 
@@ -64,38 +64,47 @@ struct AccessView: View {
 
     @ViewBuilder
     private func content(_ model: AccessViewModel) -> some View {
+        let refreshModel = model
         @Bindable var model = model
-        ScrollView {
-            VStack(alignment: .leading, spacing: HSpace.x4) {
-                HStack(alignment: .center, spacing: HSpace.x3) {
-                    PageTitle(text: "Access")
-                    Button { refreshTrigger.fire() } label: { Image(systemName: "arrow.clockwise") }
-                    .buttonStyle(.webIcon)
-                    .disabled(model.loading)
-                    .accessibilityLabel("Refresh Access")
+        GeometryReader { geo in
+            ScrollView {
+                VStack(alignment: .leading, spacing: HSpace.x4) {
+                    HStack(alignment: .center, spacing: HSpace.x3) {
+                        PageTitle(text: "Access")
+                        Button { Task { await model.refresh(keepBanner: true) } } label: {
+                            if model.loading {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                        }
+                        .buttonStyle(.webIcon)
+                        .disabled(model.loading)
+                        .accessibilityLabel("Refresh Access")
+                    }
+                    if let banner = model.banner {
+                        InlineStatusBanner(text: banner.text, tone: banner.tone, action: ("OK", { model.banner = nil }))
+                    }
+                    if model.needsSchoolLogin {
+                        InlineStatusBanner(
+                            text: model.permitsError ?? "Access needs your school login kept on this iPhone.",
+                            tone: .warning,
+                            action: ("Update school login", { showSchoolLogin = true })
+                        )
+                    } else if let doorsError = model.doorsError, model.banner == nil {
+                        InlineStatusBanner(text: doorsError, tone: .warning, action: (L10n.t("Try again"), { Task { await model.refresh() } }))
+                    }
+                    applyCard(model)
+                    permitsSection(model)
+                    accessDock(model)
                 }
-                if let banner = model.banner {
-                    InlineStatusBanner(text: banner.text, tone: banner.tone, action: ("OK", { model.banner = nil }))
-                }
-                if model.needsSchoolLogin {
-                    InlineStatusBanner(
-                        text: model.permitsError ?? "Access needs your school login kept on this iPhone.",
-                        tone: .warning,
-                        action: ("Update school login", { showSchoolLogin = true })
-                    )
-                } else if let doorsError = model.doorsError, model.banner == nil {
-                    InlineStatusBanner(text: doorsError, tone: .warning, action: (L10n.t("Try again"), { Task { await model.refresh() } }))
-                }
-                applyCard(model)
-                permitsSection(model)
-                accessDock(model)
+                .frame(minHeight: geo.size.height, alignment: .top)
+                .pageInset()
+                .padding(.top, HSpace.x2)
+                .padding(.bottom, HSpace.x4)
             }
-            .refreshAnchor()
-            .pageInset()
-            .padding(.top, HSpace.x2)
-            .padding(.bottom, HSpace.x4)
+            .honeyRefreshable { await refreshModel.refresh(keepBanner: true) }
         }
-        .honeyRefreshable(trigger: refreshTrigger) { await model.refresh(keepBanner: true) }
         .sheet(item: $editing) { field in
             PermitDraftEditor(field: field, draft: $model.draft)
         }
@@ -186,7 +195,29 @@ struct AccessView: View {
         let permits = model.listed
         let visible = showAllPermits ? permits : Array(permits.prefix(collapsedPermits))
         return VStack(alignment: .leading, spacing: HSpace.x2) {
-            Text("Permits").sectionLabel()
+            if permits.count > collapsedPermits, showAllPermits {
+                Button {
+                    togglePermitExpansion()
+                } label: {
+                    HStack(spacing: HSpace.x2) {
+                        Text("Permits").sectionLabel()
+                        Spacer()
+                        HStack(spacing: HSpace.x1) {
+                            Text("Show fewer")
+                            Image(systemName: "chevron.up")
+                        }
+                        .font(ramp.font(.captionSemibold))
+                        .foregroundStyle(theme.accent)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Permits, show fewer")
+                .accessibilityValue("Expanded")
+            } else {
+                Text("Permits").sectionLabel()
+            }
             if model.loading, permits.isEmpty {
                 LoadingPlaceholder(lines: 2)
             } else {
@@ -199,20 +230,42 @@ struct AccessView: View {
                 } else {
                     VStack(spacing: 0) {
                         ForEach(Array(visible.enumerated()), id: \.element.id) { index, permit in
-                            if index > 0 { HairlineDivider() }
-                            PermitRow(permit: permit, actionable: model.permitsUsable && !model.working) {
-                                beginGateFlow(model, route: .permit(recordId: permit.recordId))
-                            } withdraw: {
-                                withdrawing = permit
+                            VStack(spacing: 0) {
+                                if index > 0 { HairlineDivider() }
+                                PermitRow(permit: permit, actionable: model.permitsUsable && !model.working) {
+                                    beginGateFlow(model, route: .permit(recordId: permit.recordId))
+                                } withdraw: {
+                                    withdrawing = permit
+                                }
                             }
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                     }
                 }
-                if permits.count > collapsedPermits {
-                    Button(showAllPermits ? "Show fewer" : "Show all \(permits.count) permits") { withAnimation { showAllPermits.toggle() } }
-                        .buttonStyle(.webSmallGhost)
+                if permits.count > collapsedPermits, !showAllPermits {
+                    Button {
+                        togglePermitExpansion()
+                    } label: {
+                        HStack(spacing: HSpace.x1) {
+                            Text("Show all \(permits.count) permits")
+                            Image(systemName: "chevron.down")
+                        }
+                        .font(ramp.font(.captionSemibold))
+                        .foregroundStyle(theme.accent)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Show all \(permits.count) permits")
+                    .accessibilityValue("Collapsed")
                 }
             }
+        }
+    }
+
+    private func togglePermitExpansion() {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) {
+            showAllPermits.toggle()
         }
     }
 
@@ -220,27 +273,17 @@ struct AccessView: View {
 
     private func accessDock(_ model: AccessViewModel) -> some View {
         VStack(alignment: .leading, spacing: HSpace.x2) {
-            HStack(alignment: .firstTextBaseline, spacing: HSpace.x2) {
-                Text("School access").sectionLabel()
-                Text("Sent directly to the school").font(ramp.font(.micro)).foregroundStyle(theme.muted)
-            }
+            Text("School access").sectionLabel()
             HStack(spacing: HSpace.x3) {
-                AccessActionCard(title: "Day student", subtitle: "Open without an exit permit", symbol: "figure.walk.departure") {
+                AccessActionCard(title: "Day student", symbol: "figure.walk.departure") {
                     beginGateFlow(model, route: .commuter)
                 }
-                AccessActionCard(title: "Exit permit", subtitle: permitSubtitle(model), symbol: "doc.text") {
+                AccessActionCard(title: "Exit permit", symbol: "doc.text") {
                     beginPermitSelection(model)
                 }
             }
         }
         .padding(.top, HSpace.x2)
-    }
-
-    private func permitSubtitle(_ model: AccessViewModel) -> String {
-        if model.loading { return "Checking permits…" }
-        guard model.permitsUsable else { return model.permits.isEmpty ? "Permits unavailable" : "Refresh to use a permit" }
-        let n = model.openable.count
-        return n == 0 ? "No permit usable right now" : n == 1 ? "Use the approved permit" : "Choose one of \(n) permits"
     }
 
     private func beginGateFlow(_ model: AccessViewModel, route: AccessRoute) {
@@ -349,7 +392,7 @@ struct PermitDraftEditor: View {
                     .textFieldStyle(.web)
                     .submitLabel(.done)
                     .onSubmit { save() }
-                Text("Left empty, the reason is 出门.").hfont(.caption).foregroundStyle(theme.muted).padding(.top, HSpace.x2)
+                Text("Left empty, the reason is out.").hfont(.caption).foregroundStyle(theme.muted).padding(.top, HSpace.x2)
             }
             SheetActions {
                 Button(L10n.t("Done")) { save() }.buttonStyle(.webBlockPrimary)
@@ -422,7 +465,6 @@ struct AccessActionCard: View {
     @Environment(\.theme) private var theme
     @Environment(\.hType) private var ramp
     let title: String
-    let subtitle: String
     let symbol: String
     let tap: () -> Void
 
@@ -434,14 +476,15 @@ struct AccessActionCard: View {
                     .foregroundStyle(theme.accent)
                     .frame(width: 34, height: 34)
                     .background(theme.accentTint, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(ramp.font(.secondarySemibold)).foregroundStyle(theme.ink).lineLimit(1).minimumScaleFactor(0.85)
-                    Text(subtitle).font(ramp.font(.micro)).foregroundStyle(theme.muted).lineLimit(2)
-                }
+                Text(title)
+                    .font(ramp.font(.secondarySemibold))
+                    .foregroundStyle(theme.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 Spacer(minLength: 0)
             }
             .padding(HSpace.x3)
-            .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
             .background(theme.card, in: RoundedRectangle(cornerRadius: HRadius.control, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: HRadius.control, style: .continuous).strokeBorder(theme.line, lineWidth: 1))
             .contentShape(RoundedRectangle(cornerRadius: HRadius.control, style: .continuous))

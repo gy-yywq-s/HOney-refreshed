@@ -318,14 +318,14 @@ final class AccessRulesTests: XCTestCase {
     func testQuickDraftDefaultsAndMidnight() {
         PinnedClock.at("2026-09-02T14:30:00Z") { // 22:30 Shanghai
             var draft = PermitDraft.quick()
-            XCTAssertEqual(draft.reason, "出门")
+            XCTAssertEqual(draft.reason, "out")
             XCTAssertTrue(draft.crossesMidnight, "22:30 + 2 h is tomorrow")
             XCTAssertEqual(draft.request.startTime, "2026-09-02 22:30:00")
             XCTAssertEqual(draft.request.endTime, "2026-09-03 00:30:00")
             draft.setEnd(PinnedClock.shanghaiDate("2026-09-02 21:00"))
             XCTAssertEqual(PortalTime.string(draft.end), "2026-09-03 21:00:00", "an end before the start rolls to the next day")
             draft.reason = "   "
-            XCTAssertEqual(draft.cleanedReason, "出门")
+            XCTAssertEqual(draft.cleanedReason, "out")
             draft.setStart(PinnedClock.shanghaiDate("2026-09-03 22:00"))
             XCTAssertTrue(draft.end > draft.start)
         }

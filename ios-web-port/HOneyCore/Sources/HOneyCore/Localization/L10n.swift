@@ -6,27 +6,33 @@
 // as itself, so nothing can ever go blank.
 
 import Foundation
+import Observation
 
 public enum AppLanguage: String, Sendable, Codable, CaseIterable, Equatable {
     case system, en, zh
 }
 
+@Observable
+private final class L10nState: @unchecked Sendable {
+    var language: AppLanguage = .system
+}
+
 public enum L10n {
-    nonisolated(unsafe) private static var current: AppLanguage = .system
+    private static let state = L10nState()
     nonisolated(unsafe) public static var systemPrefersChinese: @Sendable () -> Bool = {
         Locale.preferredLanguages.first.map { $0.hasPrefix("zh") } ?? false
     }
 
     public static var language: AppLanguage {
-        get { current }
-        set { current = newValue }
+        get { state.language }
+        set { state.language = newValue }
     }
 
     /// The language actually in effect.
     public static var effective: AppLanguage {
-        switch current {
+        switch state.language {
         case .system: return systemPrefersChinese() ? .zh : .en
-        default: return current
+        default: return state.language
         }
     }
 

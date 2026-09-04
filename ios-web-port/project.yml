@@ -14,6 +14,9 @@ options:
 packages:
   HOneyCore:
     path: HOneyCore
+  Refresher:
+    url: https://github.com/gh123man/SwiftUI-Refresher.git
+    exactVersion: 1.1.12
 
 settings:
   base:
@@ -43,6 +46,7 @@ targets:
           - "*.md"
     dependencies:
       - package: HOneyCore
+      - package: Refresher
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gaelisus.honey.native

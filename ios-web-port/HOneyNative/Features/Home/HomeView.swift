@@ -22,8 +22,6 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: HSpace.x4) {
                     if let me = env.me {
-                        // The wordmark sits on the greeting line, at the
-                        // right and smaller (Gary 2026-09-02) — no brand bar.
                         HStack(alignment: .top, spacing: HSpace.x3) {
                             VStack(alignment: .leading, spacing: HSpace.x1) {
                                 Text(L10n.greeting(me.displayName))
@@ -39,7 +37,7 @@ struct HomeView: View {
                                 .padding(.top, 3)
                         }
                         .pageInset()
-                        .padding(.top, HSpace.x2)
+                        .padding(.top, HSpace.x5)
                     }
 
                     if let model {
@@ -59,7 +57,7 @@ struct HomeView: View {
                     }
                     .pageInset()
                 }
-                .refreshAnchor()
+                .frame(minHeight: geo.size.height, alignment: .top)
                 .padding(.bottom, HSpace.x4)
             }
             .honeyRefreshable { await model?.load(reload: true) }

@@ -64,90 +64,94 @@ struct ExperiencesFeedView: View {
     }
 
     private func stream(_ model: FeedViewModel) -> some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                header(model)
-                    .padding(.bottom, HSpace.x4)
+        GeometryReader { scrollGeo in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    header(model)
+                        .padding(.bottom, HSpace.x4)
 
-                if model.loading, model.items.isEmpty {
-                    LoadingPlaceholder(lines: 6).pageInset()
-                } else if let error = model.error, model.items.isEmpty {
-                    InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await model.refresh() } }))
-                        .pageInset()
-                } else if model.items.isEmpty {
-                    emptyState(model)
-                } else {
-                    ForEach(Array(model.items.enumerated()), id: \.element.id) { index, exp in
-                        if FeedInvitations.shows(at: index, count: model.items.count) {
-                            invitation
+                    if model.loading, model.items.isEmpty {
+                        LoadingPlaceholder(lines: 6).pageInset()
+                    } else if let error = model.error, model.items.isEmpty {
+                        InlineStatusBanner(text: error, tone: .danger, action: (L10n.t("Try again"), { Task { await model.refresh() } }))
+                            .pageInset()
+                    } else if model.items.isEmpty {
+                        emptyState(model)
+                    } else {
+                        ForEach(Array(model.items.enumerated()), id: \.element.id) { index, exp in
+                            if FeedInvitations.shows(at: index, count: model.items.count) {
+                                invitation
+                            }
+                            ExperiencePostRow(
+                                exp: exp,
+                                reaction: model.reactions[exp.id] ?? ReactionState(exp),
+                                onReact: { value in Task { await model.react(exp, value: value) } },
+                                onReport: { category in await model.report(exp, category: category) },
+                                openEntity: { route in nav.push(route) }
+                            )
+                            .pageInset()
+                            .id(exp.id)
+                            .onAppear { Task { await model.loadMoreIfNeeded(current: exp) } }
                         }
-                        ExperiencePostRow(
-                            exp: exp,
-                            reaction: model.reactions[exp.id] ?? ReactionState(exp),
-                            onReact: { value in Task { await model.react(exp, value: value) } },
-                            onReport: { category in await model.report(exp, category: category) },
-                            openEntity: { route in nav.push(route) }
-                        )
-                        .pageInset()
-                        .id(exp.id)
-                        .onAppear { Task { await model.loadMoreIfNeeded(current: exp) } }
-                    }
-                    if model.loadingMore {
-                        Text("…")
-                            .hfont(.body)
-                            .foregroundStyle(theme.muted)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, HSpace.x4)
-                    } else if model.end {
-                        Text(L10n.t("You’re all caught up."))
-                            .hfont(.caption)
-                            .foregroundStyle(theme.muted)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, HSpace.x4)
+                        if model.loadingMore {
+                            Text("…")
+                                .hfont(.body)
+                                .foregroundStyle(theme.muted)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, HSpace.x4)
+                        } else if model.end {
+                            Text(L10n.t("You’re all caught up."))
+                                .hfont(.caption)
+                                .foregroundStyle(theme.muted)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, HSpace.x4)
+                        }
                     }
                 }
+                .frame(minHeight: scrollGeo.size.height, alignment: .top)
+                .scrollTargetLayout()
+                .padding(.top, HSpace.x4)
+                .padding(.bottom, HSpace.x4)
             }
-            .scrollTargetLayout()
-            .refreshAnchor()
-            .padding(.top, HSpace.x4)
-            .padding(.bottom, HSpace.x4)
-        }
-        .scrollPosition(id: $scrolledID)
-        .overlay(alignment: .top) {
-            if model.newAvailable {
-                // `.feed-new`: a sticky pill 8 pt under the top, never a scroll yank.
-                Button {
-                    Task {
-                        await model.jumpToNew()
-                        scrolledID = model.items.first?.id
+            .honeyRefreshable { await model.refresh() }
+            .scrollPosition(id: $scrolledID)
+            .overlay(alignment: .top) {
+                if model.newAvailable {
+                    // `.feed-new`: a sticky pill 8 pt under the top, never a scroll yank.
+                    Button {
+                        Task {
+                            await model.jumpToNew()
+                            scrolledID = model.items.first?.id
+                        }
+                    } label: {
+                        Text(L10n.t("New experiences are available"))
+                            .font(ramp.font(.caption))
+                            .foregroundStyle(theme.accent)
+                            .padding(.horizontal, HSpace.x4)
+                            .padding(.vertical, HSpace.x2)
+                            .background(theme.surfaceSolid, in: Capsule())
+                            .overlay(Capsule().strokeBorder(theme.line, lineWidth: 1))
+                            .shadow(color: .black.opacity(0.08), radius: 7, y: 4)
                     }
-                } label: {
-                    Text(L10n.t("New experiences are available"))
-                        .font(ramp.font(.caption))
-                        .foregroundStyle(theme.accent)
-                        .padding(.horizontal, HSpace.x4)
-                        .padding(.vertical, HSpace.x2)
-                        .background(theme.surfaceSolid, in: Capsule())
-                        .overlay(Capsule().strokeBorder(theme.line, lineWidth: 1))
-                        .shadow(color: .black.opacity(0.08), radius: 7, y: 4)
+                    .buttonStyle(.plain)
+                    .padding(.top, HSpace.x2)
                 }
-                .buttonStyle(.plain)
-                .padding(.top, HSpace.x2)
             }
-        }
-        .honeyRefreshable { await model.refresh() }
-        .onChange(of: scrolledID) { _, id in
-            if let id, model.items.contains(where: { $0.id == id }) { model.restoreAnchorId = id }
-        }
-        .onChange(of: model.loading) { _, loading in
-            // Page one arrived (or was restored): land on the remembered post.
-            if !loading, let anchor = model.restoreAnchorId, model.items.contains(where: { $0.id == anchor }) {
-                scrolledID = anchor
+            .onChange(of: scrolledID) { _, id in
+                if let id, model.items.contains(where: { $0.id == id }) {
+                    model.restoreAnchorId = id
+                }
             }
-        }
-        .onAppear {
-            if let anchor = model.restoreAnchorId, model.items.contains(where: { $0.id == anchor }) {
-                scrolledID = anchor
+            .onChange(of: model.loading) { _, loading in
+                // Page one arrived (or was restored): land on the remembered post.
+                if !loading, let anchor = model.restoreAnchorId, model.items.contains(where: { $0.id == anchor }) {
+                    scrolledID = anchor
+                }
+            }
+            .onAppear {
+                if let anchor = model.restoreAnchorId, model.items.contains(where: { $0.id == anchor }) {
+                    scrolledID = anchor
+                }
             }
         }
     }

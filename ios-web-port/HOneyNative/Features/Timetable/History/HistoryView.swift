@@ -102,11 +102,11 @@ struct HistoryView: View {
                     filters
                 }
             }
-            .refreshAnchor()
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)
         }
+        .honeyRefreshable { await load(reload: true) }
         .webScreen(title: "History")
         .sheet(item: $selected) { lesson in
             LessonDetailSheet(lesson: lesson, showsOpenDay: true) { action in
@@ -135,7 +135,6 @@ struct HistoryView: View {
         .onChange(of: debounced) { _, _ in reload() }
         .onChange(of: teacherId) { _, _ in reload() }
         .onChange(of: courseId) { _, _ in reload() }
-        .honeyRefreshable { await load(reload: true) }
     }
 
     /// `.filters` on phones: the search full width, the two selects sharing a row.
