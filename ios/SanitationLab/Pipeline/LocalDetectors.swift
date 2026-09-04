@@ -56,6 +56,16 @@ struct Detections {
 
 struct LocalDetectors {
     var recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US"]
+    private static let faceCIContext = CIContext(options: [.cacheIntermediates: false])
+    private static let coreFaceDetector = CIDetector(
+        ofType: CIDetectorTypeFace,
+        context: faceCIContext,
+        options: [
+            CIDetectorAccuracy: CIDetectorAccuracyHigh,
+            CIDetectorTracking: false,
+            CIDetectorMinFeatureSize: 0.01,
+        ]
+    )
 
     /// Runs the three detectors concurrently, each on its own request handler.
     func detect(_ cg: CGImage) async -> Detections {
@@ -76,33 +86,35 @@ struct LocalDetectors {
 
     static func faces(in cg: CGImage) async -> [CGRect] {
         await Task.detached(priority: .userInitiated) {
-            var candidates = visionFaces(in: cg)
+            autoreleasepool {
+                var candidates = visionFaces(in: cg)
 
-            // Low-contrast monochrome/duotone portraits printed as a security
-            // watermark are easier to see after local contrast is increased.
-            if let enhanced = enhancedForFaces(cg) {
-                candidates.append(contentsOf: visionFaces(in: enhanced))
-                for tile in faceTiles(in: enhanced) {
+                // Low-contrast monochrome/duotone portraits printed as a security
+                // watermark are easier to see after local contrast is increased.
+                if let enhanced = enhancedForFaces(cg) {
+                    candidates.append(contentsOf: visionFaces(in: enhanced))
+                    for tile in faceTiles(in: enhanced) {
+                        candidates.append(contentsOf: visionFaces(in: tile.image).map {
+                            $0.offsetBy(dx: tile.rect.minX, dy: tile.rect.minY)
+                        })
+                    }
+                    candidates.append(contentsOf: coreImageFaces(in: enhanced))
+                }
+
+                // A small secondary passport portrait may be below the detector's
+                // full-image scale. Overlapping tiles make it larger without a
+                // separate model or any server round-trip.
+                for tile in faceTiles(in: cg) {
                     candidates.append(contentsOf: visionFaces(in: tile.image).map {
                         $0.offsetBy(dx: tile.rect.minX, dy: tile.rect.minY)
                     })
                 }
-                candidates.append(contentsOf: coreImageFaces(in: enhanced))
-            }
 
-            // A small secondary passport portrait may be below the detector's
-            // full-image scale. Overlapping tiles make it larger without a
-            // separate model or any server round-trip.
-            for tile in faceTiles(in: cg) {
-                candidates.append(contentsOf: visionFaces(in: tile.image).map {
-                    $0.offsetBy(dx: tile.rect.minX, dy: tile.rect.minY)
-                })
+                // Core Image uses a different face detector and catches some
+                // stylised printed portraits Vision misses.
+                candidates.append(contentsOf: coreImageFaces(in: cg))
+                return deduplicatedFaces(candidates)
             }
-
-            // Core Image uses a different face detector and catches some
-            // stylised printed portraits Vision misses.
-            candidates.append(contentsOf: coreImageFaces(in: cg))
-            return deduplicatedFaces(candidates)
         }.value
     }
 
@@ -125,7 +137,7 @@ struct LocalDetectors {
         sharpen.radius = 2.2
         sharpen.intensity = 0.7
         guard let output = sharpen.outputImage?.cropped(to: input.extent) else { return nil }
-        return CIContext(options: [.cacheIntermediates: false]).createCGImage(output, from: input.extent)
+        return faceCIContext.createCGImage(output, from: input.extent)
     }
 
     private static func faceTiles(in cg: CGImage) -> [(image: CGImage, rect: CGRect)] {
@@ -146,16 +158,7 @@ struct LocalDetectors {
     }
 
     private static func coreImageFaces(in cg: CGImage) -> [CGRect] {
-        guard let detector = CIDetector(
-            ofType: CIDetectorTypeFace,
-            context: CIContext(options: [.cacheIntermediates: false]),
-            options: [
-                CIDetectorAccuracy: CIDetectorAccuracyHigh,
-                CIDetectorTracking: false,
-                CIDetectorMinFeatureSize: 0.01,
-                CIDetectorNumberOfAngles: 11,
-            ]
-        ) else { return [] }
+        guard let detector = coreFaceDetector else { return [] }
         let height = CGFloat(cg.height)
         return detector.features(in: CIImage(cgImage: cg)).compactMap { feature in
             guard let face = feature as? CIFaceFeature else { return nil }
