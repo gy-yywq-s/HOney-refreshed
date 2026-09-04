@@ -25,6 +25,10 @@ struct RegionFinderResult: Equatable {
     var labelsSeen: [String]
     /// A local signal strong enough to call the image credential-like on its own.
     var strongSignal: Bool { labelsSeen.isEmpty == false || regions.contains { $0.kind == .code || $0.kind == .portrait } }
+    /// Credential evidence independent of ordinary faces.
+    var credentialSignal: Bool {
+        labelsSeen.isEmpty == false || regions.contains { $0.kind == .code || $0.detail == "mrz" }
+    }
 }
 
 enum SensitiveRegionFinder {
@@ -38,7 +42,7 @@ enum SensitiveRegionFinder {
     private static let digitRun = try! NSRegularExpression(pattern: #"\d{5,}"#)
     private static let tokenRegex = try! NSRegularExpression(pattern: #"[A-Za-z0-9][A-Za-z0-9\-]*"#)
     private static let personalLabelPattern =
-        #"(residential\s+address|home\s+address|mailing\s+address|address|residence|domicile|place\s+of\s+birth|date\s+of\s+birth|birth\s+date|d\.?o\.?b\.?|nationality|citizenship|sex|gender|phone|mobile|telephone|tel\.?|e-?mail|guardian|parent|emergency\s+contact|blood\s*(type|group)|住址|地址|住所|居住地址|户籍地址|戶籍地址|通讯地址|通訊地址|出生地点|出生地點|出生地|出生日期|出生年月日|出生|国籍|國籍|性别|性別|电话|電話|手机|手機|邮箱|郵箱|电邮|電郵|监护人|監護人|家长|家長|紧急联系人|緊急聯絡人|血型)"#
+        #"(residential\s+address|home\s+address|mailing\s+address|address|residence|domicile|place\s+of\s+birth|date\s+of\s+birth|birth\s+date|d\.?o\.?b\.?|phone|mobile|telephone|tel\.?|e-?mail|guardian|parent|emergency\s+contact|blood\s*(type|group)|住址|地址|住所|居住地址|户籍地址|戶籍地址|通讯地址|通訊地址|出生地点|出生地點|出生地|出生日期|出生年月日|出生|电话|電話|手机|手機|邮箱|郵箱|电邮|電郵|监护人|監護人|家长|家長|紧急联系人|緊急聯絡人|血型)"#
     private static let personalLabelRegex = try! NSRegularExpression(pattern: personalLabelPattern, options: [.caseInsensitive])
     private static let addressLabelRegex = try! NSRegularExpression(
         pattern: #"(residential\s+address|home\s+address|mailing\s+address|address|residence|domicile|住址|地址|住所|居住地址|户籍地址|戶籍地址|通讯地址|通訊地址)"#,
@@ -47,7 +51,7 @@ enum SensitiveRegionFinder {
         pattern: #"(holder'?s\s+signature|signature|signed|签名|簽名|持证人签名|持證人簽名)"#,
         options: [.caseInsensitive])
     private static let knownFieldRegex = try! NSRegularExpression(
-        pattern: labelPattern + "|" + personalLabelPattern + #"|(name|surname|given\s+names?|valid|expiry|expires|issued?|school|class|姓名|姓氏|名字|有效|签发|簽發|学校|學校|班级|班級)"#,
+        pattern: labelPattern + "|" + personalLabelPattern + #"|(name|surname|given\s+names?|sex|gender|nationality|citizenship|valid|expiry|expires|issued?|school|class|姓名|姓氏|名字|性别|性別|国籍|國籍|有效|签发|簽發|学校|學校|班级|班級)"#,
         options: [.caseInsensitive])
 
     /// Padding around what was found, so masks cover anti-aliasing and quiet zones.
@@ -94,7 +98,13 @@ enum SensitiveRegionFinder {
                 consumedLines.insert(j)
                 consumedLines.insert(i)
             } else {
-                labelWithoutValue = true
+                let fallback = fallbackFieldFrame(around: line.rect, lines: input.lines, in: bounds)
+                if fallback.isEmpty {
+                    labelWithoutValue = true
+                } else {
+                    regions.append(SensitiveRegion(kind: .number, rect: fallback, value: nil, detail: "label-fallback"))
+                    consumedLines.insert(i)
+                }
             }
         }
 
@@ -106,34 +116,51 @@ enum SensitiveRegionFinder {
             let whole = NSRange(location: 0, length: ns.length)
             guard let labelMatch = personalLabelRegex.firstMatch(in: line.string, options: [], range: whole) else { continue }
             labelsSeen.append(ns.substring(with: labelMatch.range))
+            let isAddress = addressLabelRegex.firstMatch(in: line.string, options: [], range: whole) != nil
 
             if let value = valueAfter(labelMatch, in: line) {
-                regions.append(SensitiveRegion(kind: .personalText, rect: pad(value.rect, by: numberPad, in: bounds), value: value.text, detail: "labelled-personal"))
                 consumedLines.insert(i)
-                if addressLabelRegex.firstMatch(in: line.string, options: [], range: whole) != nil {
+                if isAddress {
+                    var blockRect = value.rect
+                    var blockText = [value.text]
                     for j in addressContinuationLines(after: line, valueRect: value.rect, in: input.lines, excluding: consumedLines) {
                         let continuation = input.lines[j]
-                        regions.append(SensitiveRegion(kind: .personalText, rect: pad(continuation.rect, by: numberPad, in: bounds), value: continuation.string, detail: "address-continuation"))
+                        blockRect = blockRect.union(continuation.rect)
+                        blockText.append(continuation.string)
                         consumedLines.insert(j)
                     }
+                    regions.append(SensitiveRegion(kind: .personalText, rect: pad(blockRect, by: numberPad, in: bounds), value: blockText.joined(separator: " "), detail: "address-block"))
+                } else {
+                    regions.append(SensitiveRegion(kind: .personalText, rect: pad(value.rect, by: numberPad, in: bounds), value: value.text, detail: "labelled-personal"))
                 }
                 continue
             }
 
             if let j = nearestPersonalValueLine(to: line, in: input.lines, excluding: consumedLines.union([i])) {
                 let other = input.lines[j]
-                regions.append(SensitiveRegion(kind: .personalText, rect: pad(other.rect, by: numberPad, in: bounds), value: other.string, detail: "label-adjacent-personal"))
                 consumedLines.insert(i)
                 consumedLines.insert(j)
-                if addressLabelRegex.firstMatch(in: line.string, options: [], range: whole) != nil {
+                if isAddress {
+                    var blockRect = other.rect
+                    var blockText = [other.string]
                     for k in addressContinuationLines(after: other, valueRect: other.rect, in: input.lines, excluding: consumedLines) {
                         let continuation = input.lines[k]
-                        regions.append(SensitiveRegion(kind: .personalText, rect: pad(continuation.rect, by: numberPad, in: bounds), value: continuation.string, detail: "address-continuation"))
+                        blockRect = blockRect.union(continuation.rect)
+                        blockText.append(continuation.string)
                         consumedLines.insert(k)
                     }
+                    regions.append(SensitiveRegion(kind: .personalText, rect: pad(blockRect, by: numberPad, in: bounds), value: blockText.joined(separator: " "), detail: "address-block"))
+                } else {
+                    regions.append(SensitiveRegion(kind: .personalText, rect: pad(other.rect, by: numberPad, in: bounds), value: other.string, detail: "label-adjacent-personal"))
                 }
             } else {
-                labelWithoutValue = true
+                let fallback = fallbackFieldFrame(around: line.rect, lines: input.lines, in: bounds)
+                if fallback.isEmpty {
+                    labelWithoutValue = true
+                } else {
+                    regions.append(SensitiveRegion(kind: .personalText, rect: fallback, value: nil, detail: isAddress ? "address-fallback" : "label-fallback-personal"))
+                    consumedLines.insert(i)
+                }
             }
         }
 
@@ -154,17 +181,19 @@ enum SensitiveRegionFinder {
             regions.append(SensitiveRegion(kind: .portrait, rect: portraitFrame(around: face, in: bounds), value: nil, detail: nil))
         }
 
+        // MRZ is deterministic credential evidence and does not need the
+        // remote classifier to enable it.
+        for (i, line) in input.lines.enumerated() where !consumedLines.contains(i) && isMRZ(line.string) {
+            regions.append(SensitiveRegion(kind: .personalText, rect: pad(line.rect, by: numberPad, in: bounds), value: line.string, detail: "mrz"))
+            consumedLines.insert(i)
+        }
+
         guard credentialLike else {
             return RegionFinderResult(regions: regions, labelWithoutValue: labelWithoutValue, labelsSeen: labelsSeen)
         }
 
-        // 4. Standalone long identifiers and MRZ lines — only when the layout is a credential.
+        // 4. Standalone long identifiers — only when the layout is a credential.
         for (i, line) in input.lines.enumerated() where !consumedLines.contains(i) {
-            if isMRZ(line.string) {
-                regions.append(SensitiveRegion(kind: .personalText, rect: pad(line.rect, by: numberPad, in: bounds), value: line.string, detail: "mrz"))
-                consumedLines.insert(i)
-                continue
-            }
             let ns = line.string as NSString
             for m in tokenRegex.matches(in: line.string, options: [], range: NSRange(location: 0, length: ns.length)) {
                 let token = ns.substring(with: m.range)
@@ -242,7 +271,7 @@ enum SensitiveRegionFinder {
     private static func addressContinuationLines(after line: TextLine, valueRect: CGRect, in lines: [TextLine], excluding: Set<Int>) -> [Int] {
         var result: [Int] = []
         var previous = line.rect
-        for _ in 0..<2 {
+        for _ in 0..<8 {
             let candidate = lines.enumerated().filter { j, other in
                 guard !excluding.contains(j), !result.contains(j), other.rect.minY >= previous.maxY - previous.height * 0.2 else { return false }
                 let gap = other.rect.minY - previous.maxY
@@ -258,9 +287,29 @@ enum SensitiveRegionFinder {
         return result
     }
 
+    /// Conservative geometry when a sensitive label is visible but OCR did
+    /// not yield a separable value. It covers the rest of that field band up
+    /// to the next known label, avoiding a review-only dead end.
+    static func fallbackFieldFrame(around label: CGRect, lines: [TextLine], in bounds: CGRect) -> CGRect {
+        var maxY = min(bounds.maxY, label.maxY + label.height * 5)
+        for other in lines where other.rect.minY > label.midY {
+            let whole = NSRange(location: 0, length: (other.string as NSString).length)
+            if knownFieldRegex.firstMatch(in: other.string, options: [], range: whole) != nil {
+                maxY = min(maxY, other.rect.minY - label.height * 0.15)
+            }
+        }
+        let frame = CGRect(
+            x: label.minX,
+            y: max(bounds.minY, label.minY - label.height * 0.2),
+            width: bounds.maxX - label.minX,
+            height: maxY - max(bounds.minY, label.minY - label.height * 0.2)
+        )
+        return pad(frame, by: 0.04, in: bounds)
+    }
+
     static func signatureFrame(around label: CGRect, in bounds: CGRect) -> CGRect {
         let width = max(label.width * 3, bounds.width * 0.35)
-        let frame = CGRect(x: label.minX, y: label.minY - label.height * 3, width: width, height: label.height * 4.2)
+        let frame = CGRect(x: label.minX, y: label.minY - label.height * 0.5, width: width, height: label.height * 7.5)
         return frame.intersection(bounds)
     }
 

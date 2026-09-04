@@ -37,8 +37,9 @@ final class RegionFinderTests: XCTestCase {
     func testLabelWithNoValueAnywhereIsReported() {
         let lines = [line("Student No.", x: 100, y: 100), line("Zhang Wei", x: 100, y: 50)]
         let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
-        XCTAssertTrue(result.labelWithoutValue)
-        XCTAssertTrue(result.regions.isEmpty)
+        XCTAssertFalse(result.labelWithoutValue)
+        XCTAssertEqual(result.regions.map(\.detail), ["label-fallback"])
+        XCTAssertEqual(result.regions.map(\.kind), [.number])
     }
 
     func testNamesAndContextAreNeverRegions() {
@@ -62,9 +63,10 @@ final class RegionFinderTests: XCTestCase {
             line("出生：86.01.08", x: 100, y: 380),
         ]
         let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
-        XCTAssertEqual(result.regions.filter { $0.kind == .personalText }.count, 8)
+        XCTAssertEqual(result.regions.filter { $0.kind == .personalText }.count, 6)
         XCTAssertFalse(result.regions.contains { $0.value?.contains("Zhang Wei") == true })
         XCTAssertFalse(result.regions.contains { $0.value?.contains("HUAYAO") == true })
+        XCTAssertFalse(result.regions.contains { $0.value == "F" || $0.value == "Chinese" })
         XCTAssertFalse(result.labelWithoutValue)
     }
 
@@ -73,10 +75,15 @@ final class RegionFinderTests: XCTestCase {
             line("Residential address:", x: 100, y: 100, w: 220),
             line("221B Baker Street", x: 340, y: 102, w: 260),
             line("London NW1 6XE", x: 340, y: 136, w: 230),
-            line("Valid until: 2030-04", x: 100, y: 180),
+            line("Greater London", x: 340, y: 170, w: 230),
+            line("United Kingdom", x: 340, y: 204, w: 230),
+            line("Valid until: 2030-04", x: 100, y: 250),
         ]
         let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
-        XCTAssertEqual(result.regions.filter { $0.kind == .personalText }.map(\.value), ["221B Baker Street", "London NW1 6XE"])
+        let addresses = result.regions.filter { $0.detail == "address-block" }
+        XCTAssertEqual(addresses.count, 1)
+        XCTAssertEqual(addresses[0].value, "221B Baker Street London NW1 6XE Greater London United Kingdom")
+        XCTAssertTrue(addresses[0].rect.contains(CGPoint(x: 350, y: 210)))
         XCTAssertFalse(result.labelWithoutValue)
     }
 
@@ -88,6 +95,8 @@ final class RegionFinderTests: XCTestCase {
         let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
         XCTAssertEqual(Set(result.regions.map(\.kind)), Set([.signature, .personalText]))
         XCTAssertTrue(result.regions.contains { $0.detail == "mrz" })
+        let signature = try! XCTUnwrap(result.regions.first { $0.kind == .signature })
+        XCTAssertTrue(signature.rect.contains(CGPoint(x: 180, y: 390)), "signature band must extend below its printed label")
     }
 
     func testVerificationIgnoresTheSameValueOutsideItsBlurRegion() {
