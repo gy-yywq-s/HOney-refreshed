@@ -66,6 +66,7 @@ final class TestSetRunner: ObservableObject {
             switch (item.expected, r.outcome) {
             case ("CLEAN", "CLEAN"), ("SANITIZED", "SANITIZED"): return LabTheme.ok
             case ("UNCERTAIN", _): return LabTheme.warn
+            case (_, "REVIEW_REQUIRED"): return LabTheme.warn
             case ("SANITIZED", "COULD_NOT_SANITIZE"): return LabTheme.warn
             default: return LabTheme.bad
             }
@@ -131,10 +132,11 @@ struct RunDetailView: View {
                 if let after { labelled("After", after) }
                 if let r = record {
                     Group {
-                        Text(r.outcome + (r.reason.map { " · \($0.rawValue)" } ?? "")).font(.headline)
+                        let review = (r.reviewReasons ?? []).map(\.rawValue).joined(separator: ", ")
+                        Text(r.outcome + (r.reason.map { " · \($0.rawValue)" } ?? "") + (review.isEmpty ? "" : " · \(review)")).font(.headline)
                         Text("decision \(r.decision.rawValue)")
                         Text("classifier \(r.classifier.available ? (r.classifier.credentialLike ? "credential" : "clean") : "unavailable")\(r.classifier.uncertain ? " (uncertain)" : "") · \(r.classifier.model ?? "—")")
-                        Text("check \(r.classificationMs) ms · detect \(r.detectionMs) ms · hide \(r.sanitationMs) ms")
+                        Text("total \(r.totalMs ?? 0) ms · check \(r.classificationMs) ms · detect \(r.detectionMs) ms · hide \(r.sanitationMs) ms")
                         Text("faces \(r.facesFound) · codes \(r.codesFound) · text lines \(r.textLinesFound) · derivative \(r.derivativeBytes / 1024) KB")
                         Text("regions " + r.regionCounts.map { "\($0.key.rawValue) \($0.value)" }.sorted().joined(separator: ", "))
                         if let v = r.verification {

@@ -93,6 +93,14 @@ struct LabRootView: View {
             Text("Ready.").font(.subheadline).foregroundStyle(LabTheme.ok)
         case .sanitized:
             Text("Sensitive parts were hidden before sharing.").font(.subheadline).foregroundStyle(LabTheme.ok)
+        case .review:
+            VStack(spacing: 4) {
+                Text("Please review this image before using it.").font(.subheadline.weight(.semibold))
+                Text(model.reviewMessage).font(.subheadline).foregroundStyle(LabTheme.warn)
+            }
+            .multilineTextAlignment(.center)
+        case .confirmed:
+            Text("Ready after your review.").font(.subheadline).foregroundStyle(LabTheme.ok)
         case .failed:
             Text("We couldn't safely hide the sensitive parts in this image.")
                 .font(.subheadline)
@@ -110,8 +118,13 @@ struct LabRootView: View {
             PhotosPicker(selection: $pickerItem, matching: .images) { Text("Choose another") }.buttonStyle(LabButtonStyle(filled: false))
         case .checking, .processing:
             Button("Share") {}.buttonStyle(LabButtonStyle()).disabled(true).opacity(0.5)
-        case .clean, .sanitized:
+        case .clean, .sanitized, .confirmed:
             Button("Continue") { model.reset(); pickerItem = nil }.buttonStyle(LabButtonStyle())
+            if let ms = model.lastTimings { Text(ms).font(.caption).foregroundStyle(LabTheme.muted) }
+        case .review:
+            Button("I reviewed it — Use this image") { model.confirmReview() }.buttonStyle(LabButtonStyle())
+            PhotosPicker(selection: $pickerItem, matching: .images) { Text("Try another photo") }.buttonStyle(LabButtonStyle(filled: false))
+            Button("Remove image") { model.reset(); pickerItem = nil }.buttonStyle(LabButtonStyle(filled: false))
             if let ms = model.lastTimings { Text(ms).font(.caption).foregroundStyle(LabTheme.muted) }
         case .failed:
             PhotosPicker(selection: $pickerItem, matching: .images) { Text("Try another photo") }.buttonStyle(LabButtonStyle())
@@ -124,11 +137,12 @@ struct LabRootView: View {
 
 @MainActor
 final class LabFlowModel: ObservableObject {
-    enum State: Equatable { case idle, picked, checking, processing, clean, sanitized, failed }
+    enum State: Equatable { case idle, picked, checking, processing, clean, sanitized, review, confirmed, failed }
 
     @Published var state: State = .idle
     @Published var shownImage: UIImage?
     @Published var lastTimings: String?
+    @Published var reviewMessage = "Check that every detail you want hidden is blurred."
 
     private var pickedData: Data?
     private let pipeline = SanitationPipeline(classifier: RemoteCredentialClassifier(baseURL: LabConfig.baseURL))
@@ -138,6 +152,7 @@ final class LabFlowModel: ObservableObject {
         pickedData = data
         shownImage = image
         lastTimings = nil
+        reviewMessage = "Check that every detail you want hidden is blurred."
         state = .picked
     }
 
@@ -153,21 +168,39 @@ final class LabFlowModel: ObservableObject {
         }
         RunStore.save(run)
         let r = run.record
-        lastTimings = "check \(r.classificationMs) ms · detect \(r.detectionMs) ms · hide \(r.sanitationMs) ms"
+        lastTimings = "total \(r.totalMs ?? 0) ms · check \(r.classificationMs) ms · detect \(r.detectionMs) ms · hide \(r.sanitationMs) ms"
         switch run.outcome {
         case .clean:
             state = .clean
         case .sanitized:
             if let cg = run.outputImage { shownImage = UIImage(cgImage: cg) }
             state = .sanitized
+        case .reviewRequired(let reasons):
+            if let cg = run.outputImage { shownImage = UIImage(cgImage: cg) }
+            if reasons.contains(.nothingSensitiveLocated) || reasons.contains(.sensitiveDetailNotLocated) {
+                reviewMessage = "Some sensitive details may not have been found. Check the whole image carefully."
+            } else if reasons.contains(.verificationIncomplete) {
+                reviewMessage = "This is the best available result, but something may still be readable."
+            } else if reasons.contains(.timeBudgetReached) {
+                reviewMessage = "This is the best result completed in time. Check the whole image carefully."
+            } else {
+                reviewMessage = "This is the best available result. Check every blurred area and any detail still visible."
+            }
+            state = .review
         case .couldNotSanitize:
             state = .failed
         }
     }
 
+    func confirmReview() {
+        guard state == .review else { return }
+        state = .confirmed
+    }
+
     func reset() {
         pickedData = nil
         shownImage = nil
+        reviewMessage = "Check that every detail you want hidden is blurred."
         state = .idle
     }
 }
