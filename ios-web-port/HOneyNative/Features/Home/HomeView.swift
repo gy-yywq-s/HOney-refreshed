@@ -41,22 +41,24 @@ struct HomeView: View {
                             VStack(alignment: .leading, spacing: HSpace.x1) {
                                 Text(L10n.greeting(me.displayName))
                                     .hfont(.greeting)
-                                    // The greeting is the one line that wears
-                                    // the scheme on Home (Gary 2026-09-04).
-                                    .foregroundStyle(theme.accent)
+                                    // `.home-head__hi`: ink, as the Web at
+                                    // cebb399 (Gary 2026-09-05: 参照正确的做).
+                                    .foregroundStyle(theme.ink)
                                     .accessibilityAddTraits(.isHeader)
                                 Text(Formatters.dayTitle(Formatters.todayIsoDate()))
                                     .hfont(.secondary)
                                     .foregroundStyle(theme.ink2)
                             }
-                            Spacer(minLength: HSpace.x2)
-                            // Just under the greeting's cap height, and it
-                            // follows Text size like everything else.
-                            WordmarkView(height: 28 * ramp.scale)
-                                .padding(.top, 3)
+                            Spacer(minLength: HSpace.x3)
+                            // `.home-head__mark`: the wordmark at 22 px, 4 px
+                            // down from the row's top (an SVG prop on the
+                            // Web — it does not follow Text size).
+                            WordmarkView(height: 22)
+                                .padding(.top, 4)
                         }
                         .pageInset()
-                        .padding(.top, HSpace.x5)
+                        // `.main` on phones: 16 pt (+ the inset) above the head.
+                        .padding(.top, HSpace.x4)
                     }
 
                     if let model {
@@ -73,13 +75,9 @@ struct HomeView: View {
                         LoadingPlaceholder(lines: 2).pageInset()
                     }
 
-                    // The foot sits at the bottom of the page, not after the
-                    // last zone (Gary 2026-09-04: 贴 homepage 的底放): on a page
-                    // shorter than the screen this spacer takes the slack so
-                    // the portal link rests on the bottom edge; on a longer one
-                    // it collapses and the link simply ends the page.
-                    Spacer(minLength: 0)
-
+                    // Nothing is pinned to the foot of the page: `.stack.home`
+                    // at cebb399 lets the portal zone follow the voices like
+                    // every other zone (Gary 2026-09-05, the Web screenshot).
                     // `.home-foot.home-zone`: the portal entry is marginal by design
                     // (Gary 2026-09-03: 很小的边缘非胶囊) — a small link at the right.
                     VStack(alignment: .leading, spacing: 0) {
@@ -150,11 +148,13 @@ struct HomeView: View {
                     .frame(minHeight: 0)
             }
             .padding(.top, HSpace.x4)
-            .padding(.bottom, HSpace.x1)
+            .padding(.bottom, HSpace.x2)
             ForEach(Array(model.homeNotices.enumerated()), id: \.element.id) { index, notice in
                 if index > 0 { HairlineDivider() }
                 Button { openNotice = notice } label: {
-                    NoticeRow(notice: notice, unread: model.isUnread(notice))
+                    // `.home-notices__title` is 15/600 here; the /notices page's
+                    // own row keeps the body size.
+                    NoticeRow(notice: notice, unread: model.isUnread(notice), titleRole: .secondarySemibold)
                 }
                 .buttonStyle(.plain)
             }

@@ -120,6 +120,8 @@ struct NoticeRow: View {
     let notice: SchoolNotice
     let unread: Bool
     var excerpt = false
+    /// The /notices page's row is at the body size; Home's `.home-notices__title` passes 15/600.
+    var titleRole: TypeRole = .bodySemibold
 
     var body: some View {
         HStack(alignment: .center, spacing: HSpace.x4) {
@@ -131,7 +133,7 @@ struct NoticeRow: View {
                             .accessibilityLabel(L10n.t("New"))
                     }
                     Text(notice.title)
-                        .font(ramp.font(.bodySemibold))
+                        .font(ramp.font(titleRole))
                         .foregroundStyle(theme.ink)
                         .lineLimit(excerpt ? 2 : 1)
                         .multilineTextAlignment(.leading)
