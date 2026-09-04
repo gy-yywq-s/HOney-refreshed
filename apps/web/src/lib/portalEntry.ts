@@ -24,7 +24,16 @@ const MARGIN_MS = 5 * 60_000;
  * allowed cross-origin (reading it is not). If the tab is slower than this,
  * it is still signed in and simply lands on the portal's own page.
  */
-const HOP_SETTLE_MS = 2500;
+const HOP_SETTLE_MS = 2400;
+/**
+ * The portal's own session check answers 401 for a moment now and then (its
+ * first call on any load does, and occasionally the retry does too, which is
+ * how a tab ends up on its login page). A tab that lands there still holds the
+ * token and re-validates itself, so a second nudge takes it the rest of the
+ * way; when the first nudge already worked this is a refresh of the page the
+ * student is on.
+ */
+const HOP_RETRY_MS = 6500;
 
 /**
  * Open a portal page from a tap. `href` is the signed-in hop (the anchor's own
@@ -35,13 +44,15 @@ export function openPortalPage(href: string, path: string, event?: { preventDefa
   const win = window.open(href, "_blank");
   if (!win) return; // the anchor's href takes over
   event?.preventDefault();
-  window.setTimeout(() => {
+  const go = () => {
     try {
-      win.location.href = `${PORTAL_ORIGIN}${path}`;
+      if (!win.closed) win.location.href = `${PORTAL_ORIGIN}${path}`;
     } catch {
       /* the window is gone or refuses: it is signed in either way */
     }
-  }, HOP_SETTLE_MS);
+  };
+  window.setTimeout(go, HOP_SETTLE_MS);
+  window.setTimeout(go, HOP_RETRY_MS);
 }
 
 export interface PortalEntryState {
