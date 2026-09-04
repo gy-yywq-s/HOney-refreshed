@@ -76,6 +76,38 @@ public enum HOneyAccent: String, Sendable, Codable, CaseIterable, Equatable {
         }
     }
 
+    /// The scheme's companion hue — the second colour a scheme is allowed to
+    /// use where a surface must read as its own thing next to the accent (the
+    /// Home composer prompt is the first). Harbour's companion is the green
+    /// the prompt has always been; every other scheme now carries its own
+    /// pairing instead of borrowing Harbour's (Gary 2026-09-04). Chosen to sit
+    /// across the wheel from the accent while keeping the scheme's warmth.
+    public var companion: RGBA {
+        switch self {
+        case .harbour: return RGBA(hex: 0x2B7355)
+        case .cobalt: return RGBA(hex: 0x2F6F72)
+        case .moss: return RGBA(hex: 0x7A6A32)
+        case .clay: return RGBA(hex: 0x3B6A6A)
+        case .plum: return RGBA(hex: 0x4E6E62)
+        case .iris: return RGBA(hex: 0x4F7069)
+        case .amber: return RGBA(hex: 0x3A6572)
+        }
+    }
+
+    /// The companion lifted for Night, at the same remove from the surface as
+    /// `nightSwatch` is from the accent.
+    public var nightCompanion: RGBA {
+        switch self {
+        case .harbour: return RGBA(hex: 0x83C9A8)
+        case .cobalt: return RGBA(hex: 0x86C7C0)
+        case .moss: return RGBA(hex: 0xD3BE86)
+        case .clay: return RGBA(hex: 0x8FC5C2)
+        case .plum: return RGBA(hex: 0x9CC7B4)
+        case .iris: return RGBA(hex: 0x93C4B5)
+        case .amber: return RGBA(hex: 0x8FBFCB)
+        }
+    }
+
     /// The pale tint on light surfaces (`--accent-tint`).
     var lightTint: RGBA {
         switch self {
@@ -293,6 +325,13 @@ public struct ThemePalette: Sendable, Equatable {
 
     // Derived mixes the stylesheet computes with color-mix(); the component
     // that uses each one names the source rule.
+
+    /// The scheme's companion hue on this surface — the Home composer prompt's
+    /// green under Harbour, each other scheme's own pairing elsewhere. Not a
+    /// Web token: it is the native side of the same scheme (Gary 2026-09-04).
+    public var companion: RGBA {
+        background.isNight ? accentChoice.nightCompanion : accentChoice.companion
+    }
 
     /// `color-mix(in srgb, var(--ink) 28%, transparent)` — the lesson-card frame and the Home brand rule.
     public var frame: RGBA { ink.withAlpha(0.28) }

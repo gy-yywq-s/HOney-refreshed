@@ -109,7 +109,11 @@ enum ThemeChrome {
         // surface: muted items, the accent for the selected one, Source Sans labels.
         let tab = UITabBarAppearance()
         tab.configureWithOpaqueBackground()
-        tab.backgroundColor = theme.uiSurface
+        // The bar is not neutral chrome: it carries a breath of the scheme so
+        // switching Accent is visible at the bottom of every screen too
+        // (Gary 2026-09-04).
+        tab.backgroundColor = theme.palette.accent
+            .mixed(with: theme.palette.surface, amount: theme.isNight ? 0.05 : 0.07).uiColor
         tab.shadowColor = theme.palette.line.uiColor
         let label = HOneyFont.uiFont(role: .microSemibold, scale: theme.scale)
         for item in [tab.stackedLayoutAppearance, tab.inlineLayoutAppearance, tab.compactInlineLayoutAppearance] {
@@ -123,12 +127,36 @@ enum ThemeChrome {
         UITabBar.appearance().tintColor = theme.uiAccent
         UITabBar.appearance().unselectedItemTintColor = theme.uiMuted
         UIRefreshControl.appearance().tintColor = theme.uiAccent
-        // Live bars adopt the proxy only on their next layout; nudge the windows.
+        // The appearance proxy only reaches bars created AFTER it is set, so
+        // the tab bar the app is already showing kept the previous scheme
+        // (Gary 2026-09-04: 换颜色要把底部菜单栏颜色也换了). Hand the live bars
+        // the same appearance, then nudge them.
         for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
             for window in scene.windows {
                 window.overrideUserInterfaceStyle = theme.isNight ? .dark : .light
+                applyLive(in: window, nav: nav, tab: tab, theme: theme)
                 window.subviews.forEach { $0.setNeedsLayout() }
             }
         }
+    }
+
+    /// Walks a live view tree and re-dresses every bar in it.
+    @MainActor
+    private static func applyLive(in view: UIView, nav: UINavigationBarAppearance, tab: UITabBarAppearance, theme: HOneyTheme) {
+        if let bar = view as? UITabBar {
+            bar.standardAppearance = tab
+            bar.scrollEdgeAppearance = tab
+            bar.tintColor = theme.uiAccent
+            bar.unselectedItemTintColor = theme.uiMuted
+            bar.setNeedsLayout()
+        }
+        if let bar = view as? UINavigationBar {
+            bar.standardAppearance = nav
+            bar.scrollEdgeAppearance = nav
+            bar.compactAppearance = nav
+            bar.tintColor = theme.uiAccent
+            bar.setNeedsLayout()
+        }
+        for child in view.subviews { applyLive(in: child, nav: nav, tab: tab, theme: theme) }
     }
 }

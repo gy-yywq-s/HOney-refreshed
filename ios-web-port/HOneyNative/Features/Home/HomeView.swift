@@ -29,14 +29,18 @@ struct HomeView: View {
                             VStack(alignment: .leading, spacing: HSpace.x1) {
                                 Text(L10n.greeting(me.displayName))
                                     .hfont(.greeting)
-                                    .foregroundStyle(theme.ink)
+                                    // The greeting is the one line that wears
+                                    // the scheme on Home (Gary 2026-09-04).
+                                    .foregroundStyle(theme.accent)
                                     .accessibilityAddTraits(.isHeader)
                                 Text(Formatters.dayTitle(Formatters.todayIsoDate()))
                                     .hfont(.secondary)
                                     .foregroundStyle(theme.ink2)
                             }
                             Spacer(minLength: HSpace.x2)
-                            WordmarkView(height: 22)
+                            // Just under the greeting's cap height, and it
+                            // follows Text size like everything else.
+                            WordmarkView(height: 28 * ramp.scale)
                                 .padding(.top, 3)
                         }
                         .pageInset()
@@ -406,9 +410,10 @@ struct ExperiencePreviewRow: View {
 }
 
 /// `.composer-prompt`: a field-shaped entry at the foot of the voices — its
-/// own colour, apart from the lesson card above: the palette's green, faint
-/// (Gary 2026-09-03): the frame barely tinted, the fill a wash that fades out
-/// from left to right, the card shadow.
+/// own colour, apart from the lesson card above: the scheme's COMPANION hue,
+/// faint (Gary 2026-09-03; per-scheme since 2026-09-04 — the green belongs to
+/// Harbour, every other scheme brings its own pairing): the frame barely
+/// tinted, the fill a wash that fades out from left to right, the card shadow.
 struct ComposerPromptRow: View {
     @Environment(\.theme) private var theme
     @Environment(\.hType) private var ramp
@@ -419,7 +424,7 @@ struct ComposerPromptRow: View {
             HStack(spacing: HSpace.x3) {
                 Image(systemName: "pencil.line")
                     .font(.system(size: 16, weight: .regular))
-                    .foregroundStyle(theme.palette.ok.mixed(with: theme.palette.muted, amount: 0.7).color)
+                    .foregroundStyle(theme.palette.companion.mixed(with: theme.palette.muted, amount: 0.7).color)
                 Text(L10n.t("Share what a lesson was like…"))
                     .font(ramp.font(.secondary))
                     .foregroundStyle(theme.ink2)
@@ -432,8 +437,8 @@ struct ComposerPromptRow: View {
             .background(
                 LinearGradient(
                     stops: [
-                        .init(color: theme.palette.ok.mixed(with: theme.palette.cell, amount: 0.07).color, location: 0),
-                        .init(color: theme.palette.ok.mixed(with: theme.palette.cell, amount: 0.03).color, location: 0.45),
+                        .init(color: theme.palette.companion.mixed(with: theme.palette.cell, amount: 0.07).color, location: 0),
+                        .init(color: theme.palette.companion.mixed(with: theme.palette.cell, amount: 0.03).color, location: 0.45),
                         .init(color: theme.cell, location: 1),
                     ],
                     startPoint: .leading,
@@ -441,7 +446,7 @@ struct ComposerPromptRow: View {
                 ),
                 in: RoundedRectangle(cornerRadius: HRadius.field, style: .continuous)
             )
-            .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.palette.ok.mixed(with: theme.palette.line, amount: 0.12).color, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.palette.companion.mixed(with: theme.palette.line, amount: 0.12).color, lineWidth: 1))
             .cardShadow(theme)
             .contentShape(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
         }
