@@ -15,23 +15,31 @@ const PORTAL_ORIGIN = "https://www.huayaopudong.com";
 /** Where a portal link lands when nothing more specific is wanted. */
 export const PORTAL_HOME = `${PORTAL_ORIGIN}/student/notification`;
 const MARGIN_MS = 5 * 60_000;
-/** The portal's login hop stores its token in ITS OWN localStorage and then
- *  redirects where IT decides (a student lands on the notice board). Once that
- *  has happened in this browser, a deep link works on its own — so remember it
- *  and send the student straight to the page they asked for (Gary 2026-09-04). */
-const WARM_KEY = "honey.portal.warm";
+/**
+ * The hop stores HOney's token in the PORTAL's own localStorage and then goes
+ * where the portal decides. A deep page only works while that stored token is
+ * still alive — a dead one bounces to the portal's login page, which is
+ * exactly what this entry exists to avoid — so the hand-over remembers WHICH
+ * token it gave and until when, and deep links are used only inside that
+ * window. Outside it, the hop runs again and re-stores a fresh token.
+ */
+const WARM_KEY = "honey.portal.warmUntil";
 
-function warm(): boolean {
+function warmUntil(): number {
   try {
-    return localStorage.getItem(WARM_KEY) === "1";
+    return Number(localStorage.getItem(WARM_KEY) ?? 0) || 0;
   } catch {
-    return false;
+    return 0;
   }
 }
 
-export function markPortalWarm(): void {
+function warm(): boolean {
+  return warmUntil() - Date.now() > MARGIN_MS;
+}
+
+function markPortalWarm(expiresAt: number): void {
   try {
-    localStorage.setItem(WARM_KEY, "1");
+    localStorage.setItem(WARM_KEY, String(expiresAt));
   } catch {
     /* the next tap simply takes the login hop again */
   }
@@ -98,12 +106,17 @@ export function usePortalEntry(): PortalEntryState {
     };
   }, [entry, tick]);
 
-  const href = entry && entry.expiresAt - Date.now() > MARGIN_MS ? entry.url : PORTAL_HOME;
+  const live = entry && entry.expiresAt - Date.now() > MARGIN_MS ? entry : null;
+  const href = live ? live.url : PORTAL_HOME;
   return {
     href,
     needsLogin,
     refresh,
+    // Straight there while the portal still holds a live token from us;
+    // otherwise the hop, which stores one again.
     deepHref: (path: string) => (warm() ? `${PORTAL_ORIGIN}${path}` : href),
-    opened: markPortalWarm,
+    opened: () => {
+      if (!warm() && live) markPortalWarm(live.expiresAt);
+    },
   };
 }

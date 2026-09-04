@@ -336,7 +336,12 @@ export function WeekendStayPage() {
             /* Every open day, each one saying which day it is; the block is a
                tight grid, not a loose row (Gary 2026-09-04). */
             <section className="card daypick">
-              <span className="eyebrow">{L({ en: "Open days", zh: "可选日期" })}</span>
+              <div className="daypick__head">
+                <span className="eyebrow">{L({ en: "Open days", zh: "可选日期" })}</span>
+                <a className="daypick__portal" href={portal.deepHref("/student/weekend-plan")} target="_blank" rel="noopener noreferrer" onClick={portal.opened}>
+                  {L({ en: "In the portal", zh: "在门户里" })}
+                </a>
+              </div>
               <div className="daypick__grid">
                 {open.map((d) => {
                   const on = picked.includes(d);
@@ -358,9 +363,6 @@ export function WeekendStayPage() {
                 <button className="btn btn--primary" disabled={busy || picked.length === 0} onClick={() => void apply()}>
                   {busy ? t("Saving…") : `${L({ en: "Apply", zh: "申请" })}${picked.length > 0 ? ` · ${picked.length}` : ""}`}
                 </button>
-                <a className="btn btn--ghost" href={portal.deepHref("/student/weekend-plan")} target="_blank" rel="noopener noreferrer" onClick={portal.opened}>
-                  {L({ en: "In the portal", zh: "在门户里" })}
-                </a>
               </div>
             </section>
           )}
