@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1320" viewBox="0 0 1800 1320">
+  <defs><filter id="shadow" x="-25%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#19242B" flood-opacity=".14"/></filter><clipPath id="large"><rect width="520" height="520" rx="114"/></clipPath><clipPath id="small"><rect width="250" height="250" rx="55"/></clipPath></defs>
+  <rect width="1800" height="1320" fill="#E9ECEF"/>
+  <text x="76" y="76" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="34" font-weight="600" fill="#273238">HOney · Infinite colour</text>
+  <text x="76" y="116" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#667079">Selected asymmetric Möbius icon · outward open ends · cropped globe Web companion</text>
+
+  <g transform="translate(76 180)" filter="url(#shadow)" clip-path="url(#large)"><image href="source/icon-master.png" width="520" height="520"/></g>
+  <g transform="translate(650 180)" filter="url(#shadow)" clip-path="url(#small)"><image href="source/icon-dark-master.png" width="250" height="250"/></g>
+  <g transform="translate(650 450)" filter="url(#shadow)" clip-path="url(#small)"><image href="source/icon-tinted-master.png" width="250" height="250"/></g>
+  <g transform="translate(970 180)" filter="url(#shadow)" clip-path="url(#large)"><image href="source/web-icon-master.png" width="520" height="520"/></g>
+  <text x="76" y="744" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">iOS default</text>
+  <text x="650" y="744" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">Dark / tinted</text>
+  <text x="970" y="744" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="18" fill="#5C6770">Web companion</text>
+
+  <rect x="76" y="790" width="1648" height="440" rx="30" fill="#F4F6F7"/>
+  <image href="source/wordmark.png" x="130" y="800" width="950" height="421"/>
+  <image href="ios/AppIcon.appiconset/icon-default.png" x="1360" y="900" width="96" height="96"/>
+  <image href="web/icon-192.png" x="1500" y="900" width="96" height="96"/>
+  <image href="web/favicon-32.png" x="1390" y="1040" width="32" height="32"/>
+  <image href="web/favicon-16.png" x="1508" y="1048" width="16" height="16"/>
+  <text x="1355" y="1115" font-family="Source Sans 3, Helvetica Neue, sans-serif" font-size="16" fill="#5C6770">96 / 32 / 16 px checks</text>
+</svg>

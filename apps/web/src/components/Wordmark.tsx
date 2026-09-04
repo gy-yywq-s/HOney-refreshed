@@ -1,19 +1,18 @@
-// The HOney wordmark — cropped directly from Gary's chosen artwork
-// (bottom-left candidate, 2026-09-01). PNG with alpha, solid ink glyphs;
-// the night surface inverts it via CSS.
+// The HOney wordmark — the Infinite-colour pack (Gary 2026-09-04). Two
+// artworks, not one inverted: the night surface has its own, so the coloured
+// joints keep their hues instead of being hue-rotated into something else.
 
 interface WordmarkProps {
-  /** Rendered height in px (the PNG is 570x191). */
+  /** Rendered height in px (the artwork is 570x253). */
   height?: number;
 }
 
 export function WordmarkHOney({ height = 26 }: WordmarkProps) {
+  const width = (height * 570) / 253;
   return (
-    <img
-      className="wordmark"
-      src="/wordmark.png"
-      alt="HOney"
-      style={{ height, width: (height * 570) / 191 }}
-    />
+    <span className="wordmark" style={{ height, width }} role="img" aria-label="HOney">
+      <img className="wordmark__light" src="/wordmark.png" alt="" width={width} height={height} />
+      <img className="wordmark__night" src="/wordmark-dark.png" alt="" width={width} height={height} />
+    </span>
   );
 }
