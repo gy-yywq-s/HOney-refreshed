@@ -9,7 +9,7 @@ The production-ready icon masters in this draft are high-resolution PNGs derived
 - `ios/AppIcon.appiconset/`: 1024 px default, dark and tinted icons plus Xcode metadata.
 - `ios/Wordmark.imageset/`: transparent 1x, 2x and 3x wordmarks plus Xcode metadata.
 - `web/`: 512, 192 and 180 px Web-companion icons, 64/32/16 px favicons, Web wordmarks and a manifest snippet.
-- `source/web-globe-transparent.png`: globe cropped from the approved generated Web reference and composited directly onto the unchanged primary icon.
+- `source/web-globe-transparent.png`: globe cropped from the approved generated Web reference and composited directly onto the unchanged primary icon. The Web companion deliberately enlarges it to remain legible at installed-PWA and favicon sizes.
 - `preview.png`: visual and small-size inventory.
 
 No app or Web assets are replaced automatically.
