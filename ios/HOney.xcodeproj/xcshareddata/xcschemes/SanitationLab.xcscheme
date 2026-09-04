@@ -15,9 +15,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "26D57EDDE2B557398E107830"
-               BuildableName = "HOney.app"
-               BlueprintName = "HOney"
+               BlueprintIdentifier = "D782716035499EE93CEC6464"
+               BuildableName = "SanitationLab.app"
+               BlueprintName = "SanitationLab"
                ReferencedContainer = "container:HOney.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -29,9 +29,9 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "89521AF64EBE33936E28853C"
-               BuildableName = "HOneyTests.xctest"
-               BlueprintName = "HOneyTests"
+               BlueprintIdentifier = "EFFA1AFBE66B0AFF70B9D9AF"
+               BuildableName = "SanitationLabTests.xctest"
+               BlueprintName = "SanitationLabTests"
                ReferencedContainer = "container:HOney.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,9 +46,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "26D57EDDE2B557398E107830"
-            BuildableName = "HOney.app"
-            BlueprintName = "HOney"
+            BlueprintIdentifier = "D782716035499EE93CEC6464"
+            BuildableName = "SanitationLab.app"
+            BlueprintName = "SanitationLab"
             ReferencedContainer = "container:HOney.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -58,9 +58,9 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "89521AF64EBE33936E28853C"
-               BuildableName = "HOneyTests.xctest"
-               BlueprintName = "HOneyTests"
+               BlueprintIdentifier = "EFFA1AFBE66B0AFF70B9D9AF"
+               BuildableName = "SanitationLabTests.xctest"
+               BlueprintName = "SanitationLabTests"
                ReferencedContainer = "container:HOney.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -82,9 +82,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "26D57EDDE2B557398E107830"
-            BuildableName = "HOney.app"
-            BlueprintName = "HOney"
+            BlueprintIdentifier = "D782716035499EE93CEC6464"
+            BuildableName = "SanitationLab.app"
+            BlueprintName = "SanitationLab"
             ReferencedContainer = "container:HOney.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -101,9 +101,9 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "26D57EDDE2B557398E107830"
-            BuildableName = "HOney.app"
-            BlueprintName = "HOney"
+            BlueprintIdentifier = "D782716035499EE93CEC6464"
+            BuildableName = "SanitationLab.app"
+            BlueprintName = "SanitationLab"
             ReferencedContainer = "container:HOney.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
