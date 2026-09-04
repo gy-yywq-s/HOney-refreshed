@@ -2,7 +2,7 @@
 //  SanitationTypes.swift
 //  SanitationLab — the vocabulary of the credential-image pipeline.
 //
-//  Pure values, no UIKit drawing here: the pipeline reports one of three
+//  Pure values, no UIKit drawing here: the pipeline reports one of four
 //  outcomes (spec §2) and one record per run (spec §11).
 //
 

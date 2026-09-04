@@ -92,8 +92,8 @@ final class TestSetRunner: ObservableObject {
     func runAll() async {
         guard let manifest, let folder else { return }
         running = true
-        var right = 0, judged = 0
-        var classification: [Int] = []
+        var right = 0, judged = 0, reviewRequired = 0
+        var totals: [Int] = []
         for (i, item) in manifest.items.enumerated() {
             guard let data = manifest.data(for: item, in: folder) else { continue }
             let classifier: CredentialClassifier = live
@@ -109,13 +109,14 @@ final class TestSetRunner: ObservableObject {
                 judged += 1
                 if run.outcome.label == item.expected { right += 1 }
             }
-            classification.append(run.record.classificationMs)
-            summary = "\(i + 1)/\(rows.count) · \(right)/\(judged) as expected"
+            if run.requiresUserConfirmation { reviewRequired += 1 }
+            totals.append(run.record.totalMs ?? 0)
+            summary = "\(i + 1)/\(rows.count) · \(right)/\(judged) as expected · review \(reviewRequired)"
         }
-        let sorted = classification.sorted()
+        let sorted = totals.sorted()
         let p50 = sorted.isEmpty ? 0 : sorted[sorted.count / 2]
         let p90 = sorted.isEmpty ? 0 : sorted[min(sorted.count - 1, Int(Double(sorted.count) * 0.9))]
-        summary = "\(right)/\(judged) as expected · check p50 \(p50) ms p90 \(p90) ms"
+        summary = "\(right)/\(judged) as expected · review \(reviewRequired) · total p50 \(p50) ms p90 \(p90) ms"
         running = false
     }
 }
