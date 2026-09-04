@@ -194,6 +194,16 @@
   width: 100%;
 }
 
+/* A row that is itself the control. */
+.row--tap {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 /* A choice in HOney's own sheet — never the platform picker (Gary 2026-09-04). */
 .choice {
   display: inline-flex;

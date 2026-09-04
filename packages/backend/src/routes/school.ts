@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { AppContext } from "../context.js";
-import type { CardResponse, CardTopUpResponse, SchoolActionResponse, WarningsResponse, WeekendResponse } from "@honey/shared/api";
+import type { CardResponse, CardTopUpResponse, FeedbackResponse, FeedbackSubmission, SchoolActionResponse, WarningsResponse, WeekendResponse } from "@honey/shared/api";
 import { parsePortalTime } from "@honey/shared/access";
 
 // The student's own records at the school (Gary 2026-09-03: campus card,
@@ -167,6 +167,56 @@ export function registerSchoolRoutes(app: FastifyInstance, ctx: AppContext): voi
     if (!Number.isInteger(recordId)) return { status: "refused", reason: "Unknown record." };
     try {
       await ctx.connector.api.withdrawWeekendStay(token, recordId);
+      return { status: "ok" };
+    } catch (e) {
+      return failure(e, user.honey_id);
+    }
+  });
+
+  /** Lessons still waiting for this student's feedback (the portal's own list). */
+  app.get("/api/school/feedback", { preHandler: ctx.requireAuth }, async (req, reply): Promise<FeedbackResponse> => {
+    void reply.header("cache-control", "no-store");
+    const user = ctx.userOf(req);
+    const token = tokenFor(user.honey_id);
+    if (!token) return { status: "portal_reconnect_required", pending: [] };
+    try {
+      const rows = await ctx.connector.api.pendingFeedback(token);
+      return {
+        status: "ok",
+        pending: rows
+          .map((r) => ({ lessonId: r.lesson_id, teacher: r.teacher_name, topic: r.topic_name, at: r.start_time * 1000, week: r.week_num }))
+          .sort((a, b) => b.at - a.at),
+      };
+    } catch (e) {
+      if (isExpired(e)) {
+        ctx.accounts.markPortalExpired(user.honey_id);
+        return { status: "portal_reconnect_required", pending: [] };
+      }
+      return { status: "unavailable", pending: [] };
+    }
+  });
+
+  /** Send one lesson's feedback, in the school's own fields. */
+  app.post<{ Body: Partial<FeedbackSubmission> }>("/api/school/feedback", { preHandler: ctx.requireAuth }, async (req, reply): Promise<SchoolActionResponse> => {
+    void reply.header("cache-control", "no-store");
+    const user = ctx.userOf(req);
+    const token = tokenFor(user.honey_id);
+    if (!token) return { status: "portal_reconnect_required" };
+    const b = req.body ?? {};
+    const lessonId = Number(b.lessonId);
+    const rating = Math.round(Number(b.rating ?? 0));
+    if (!Number.isInteger(lessonId)) return { status: "refused", reason: "Unknown lesson." };
+    if (!(rating >= 1 && rating <= 5)) return { status: "refused", reason: "Choose a rating." };
+    try {
+      await ctx.connector.api.submitFeedback(token, {
+        lesson_id: lessonId,
+        rating,
+        feedback: String(b.comment ?? "").slice(0, 1000),
+        late: b.wasLate ? 1 : 0,
+        used_mobile: b.usedMobile ? 1 : 0,
+        unprepared: b.unprepared ? 1 : 0,
+        understandable: b.didNotUnderstand ? 1 : 0,
+      });
       return { status: "ok" };
     } catch (e) {
       return failure(e, user.honey_id);

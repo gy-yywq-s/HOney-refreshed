@@ -6,6 +6,8 @@ import type {
   ExitPermitWire,
   LessonTableWire,
   SchoolNoticeWire,
+  StudentFeedbackSubmission,
+  StudentFeedbackWire,
   StudentWarningWire,
   WeekendStayWire,
   WeeklyLessonWire,
@@ -196,6 +198,20 @@ export class PortalApi {
    */
   cardRecharges(token: string, cardId: string): Promise<CardRechargeWire[]> {
     return this.rows<CardRechargeWire>(token, `/api/card/recharge-record?card_id=${encodeURIComponent(cardId)}`);
+  }
+
+  /** GET /api/students/get_feedback — lessons still waiting for feedback. */
+  pendingFeedback(token: string): Promise<StudentFeedbackWire[]> {
+    return this.rows<StudentFeedbackWire>(token, "/api/students/get_feedback");
+  }
+
+  /** POST /api/students/update_feedback — one lesson's feedback. */
+  async submitFeedback(token: string, body: StudentFeedbackSubmission): Promise<void> {
+    const path = "/api/students/update_feedback";
+    const resp = await this.http.request({ method: "POST", path, token, jsonBody: body, mutation: true });
+    const env = asEnvelope(this.http.triage(resp, path), path);
+    if (env.status === 0) return;
+    throw operationRejected(path, typeof env.status === "number" ? env.status : undefined, refusalReason(env as Record<string, unknown>), envelopeShape(env as Record<string, unknown>));
   }
 
   /** GET /api/students/get_my_warning — the student's own disciplinary records. */

@@ -7,13 +7,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../api/client";
-import type { CardResponse, SchoolActionResponse, SchoolReadStatus, WarningsResponse, WeekendResponse, WeekendStay } from "../../api/types";
+import type { CardResponse, FeedbackResponse, FeedbackSubmission, LessonFeedbackItem, SchoolActionResponse, SchoolReadStatus, WarningsResponse, WeekendResponse, WeekendStay } from "../../api/types";
 import { useApi } from "../../lib/useApi";
 import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime } from "../../lib/format";
 import { getLang, useLang, useT } from "../../lib/i18n";
 import { usePortalEntry } from "../../lib/portalEntry";
 import { ConfirmDialog, Modal } from "../../components/Modal";
+import { ChevronRightIcon } from "../../components/icons";
 import { CARD_TOP_UP_AMOUNTS } from "@honey/shared/api";
 
 type Bi = { en: string; zh: string };
@@ -449,5 +450,184 @@ export function SchoolRecordPage() {
       ) : null}
       <p className="text-4">{L({ en: "Read live.", zh: "实时读取。" })}</p>
     </div>
+  );
+}
+
+/**
+ * Settings › Lesson feedback — the school's own "My Notification" work, in
+ * HOney: the lessons still waiting for feedback, and the form that sends it.
+ * The flags are the school's own wording.
+ */
+export function LessonFeedbackPage() {
+  const L = useL();
+  const t = useT();
+  const feedback = useApi<FeedbackResponse>(() => api.schoolFeedback(), []);
+  const data = feedback.data;
+  const [open, setOpen] = useState<LessonFeedbackItem | null>(null);
+  const [note, setNote] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+
+  return (
+    <div className="stack">
+      <h1 className="page-title">{t("Lesson feedback")}</h1>
+      {feedback.loading && <Skeleton lines={4} />}
+      {note && <div className={`banner banner--${note.tone}`} role="status">{note.text}</div>}
+      {data && data.status === "ok" ? (
+        data.pending.length === 0 ? (
+          <p className="card empty">{L({ en: "Nothing waiting.", zh: "没有待评的课。" })}</p>
+        ) : (
+          <section className="rowlist" aria-label="Waiting for feedback">
+            {data.pending.map((item) => (
+              <button className="row row--tap" key={item.lessonId} onClick={() => setOpen(item)}>
+                <span className="row__main">
+                  <span className="row__title">{item.topic}</span>
+                  <span className="row__sub">
+                    {item.teacher} · {formatShortDate(item.at)} · {formatTime(item.at)}
+                  </span>
+                </span>
+                <ChevronRightIcon size={18} />
+              </button>
+            ))}
+          </section>
+        )
+      ) : data ? (
+        <StateNote status={data.status} empty={{ en: "Nothing waiting.", zh: "没有待评的课。" }} />
+      ) : null}
+      <p className="text-4">{L({ en: "Read live.", zh: "实时读取。" })}</p>
+      {open && (
+        <FeedbackSheet
+          item={open}
+          onClose={() => setOpen(null)}
+          onDone={(ok, text) => {
+            setNote({ tone: ok ? "success" : "danger", text });
+            setOpen(null);
+            if (ok) feedback.reload();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+const FEEDBACK_ISSUES: { key: keyof Pick<FeedbackSubmission, "wasLate" | "usedMobile" | "unprepared" | "didNotUnderstand">; label: string }[] = [
+  // The school's own wording, verbatim.
+  { key: "wasLate", label: "Was late" },
+  { key: "usedMobile", label: "Used mobile for non-academic purposes" },
+  { key: "unprepared", label: "Was unprepared for class" },
+  { key: "didNotUnderstand", label: "I did not understand the teaching" },
+];
+
+function FeedbackSheet({
+  item,
+  onClose,
+  onDone,
+}: {
+  item: LessonFeedbackItem;
+  onClose: () => void;
+  onDone: (ok: boolean, text: string) => void;
+}) {
+  const L = useL();
+  const t = useT();
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [issues, setIssues] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function send() {
+    if (rating < 1) {
+      setError(L({ en: "Choose a rating.", zh: "请先评分。" }));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api.schoolSubmitFeedback({
+        lessonId: item.lessonId,
+        rating,
+        comment,
+        wasLate: !!issues.wasLate,
+        usedMobile: !!issues.usedMobile,
+        unprepared: !!issues.unprepared,
+        didNotUnderstand: !!issues.didNotUnderstand,
+      });
+      if (res.status === "ok") {
+        onDone(true, L({ en: "Sent.", zh: "已提交。" }));
+        return;
+      }
+      setError(
+        res.status === "refused"
+          ? res.reason
+          : res.status === "portal_reconnect_required"
+            ? L({ en: "The school connection needs renewing.", zh: "学校连接需要重新登录。" })
+            : L({ en: "The school could not be reached.", zh: "连不上学校系统。" }),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title={item.topic} onClose={onClose}>
+      <p className="caption">
+        {item.teacher} · {formatShortDate(item.at)}
+      </p>
+      <div className="field">
+        <span className="field__label">{L({ en: "Rating", zh: "评分" })}</span>
+        <div className="topup__amounts">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              aria-pressed={rating === n}
+              className={rating === n ? "btn btn--small btn--pill-ok" : "btn btn--small"}
+              onClick={() => setRating(n)}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="field">
+        <span className="field__label">{L({ en: "Issues (if applicable)", zh: "问题（如有）" })}</span>
+        <div className="choice-options">
+          {FEEDBACK_ISSUES.map((i) => (
+            <button
+              key={i.key}
+              type="button"
+              aria-pressed={!!issues[i.key]}
+              className={issues[i.key] ? "choice-option choice-option--on" : "choice-option"}
+              onClick={() => setIssues((s) => ({ ...s, [i.key]: !s[i.key] }))}
+            >
+              <span className="choice-option__main">
+                <span className="choice-option__label">{i.label}</span>
+              </span>
+              {issues[i.key] && <span className="choice-option__tick" aria-hidden="true">✓</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="field">
+        <label className="field__label" htmlFor="feedback-comment">
+          {L({ en: "What could be improved?", zh: "有什么可以改进的？" })}
+        </label>
+        <textarea
+          id="feedback-comment"
+          className="input"
+          rows={3}
+          maxLength={1000}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+      </div>
+      {error && <div role="alert" className="banner banner--danger">{error}</div>}
+      <div className="card-actions">
+        <button className="btn btn--primary" disabled={busy} onClick={() => void send()}>
+          {busy ? t("Saving…") : L({ en: "Send", zh: "提交" })}
+        </button>
+        <button className="btn btn--ghost" disabled={busy} onClick={onClose}>
+          {L({ en: "Cancel", zh: "取消" })}
+        </button>
+      </div>
+    </Modal>
   );
 }

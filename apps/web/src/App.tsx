@@ -15,7 +15,7 @@ import { ExperiencesExplorePage } from "./pages/experiences/ExplorePage";
 import { ExperiencesWhyPage } from "./pages/experiences/WhyPage";
 import { ExperiencesMinePage } from "./pages/experiences/MinePage";
 import { NoticesPage } from "./pages/NoticesPage";
-import { CampusCardPage, SchoolRecordPage, WeekendStayPage } from "./pages/settings/SchoolRecordsPages";
+import { CampusCardPage, LessonFeedbackPage, SchoolRecordPage, WeekendStayPage } from "./pages/settings/SchoolRecordsPages";
 import { HistoryPage } from "./pages/HistoryPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
@@ -67,6 +67,7 @@ export function App() {
               <Route path="/settings/card" element={<CampusCardPage />} />
               <Route path="/settings/weekend" element={<WeekendStayPage />} />
               <Route path="/settings/record" element={<SchoolRecordPage />} />
+              <Route path="/settings/feedback" element={<LessonFeedbackPage />} />
               <Route path="/settings/post-controls" element={<PostControlsPage />} />
               <Route path="/settings/post-controls/how" element={<PostControlsHowPage />} />
               <Route path="/settings/post-controls/recovery-words" element={<RecoveryWordsPage />} />

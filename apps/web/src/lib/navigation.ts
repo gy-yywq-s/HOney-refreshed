@@ -45,6 +45,7 @@ const NODES: RouteNode[] = [
   { pattern: "/settings/card", title: "Campus card", parent: "/settings" },
   { pattern: "/settings/weekend", title: "Weekend stay", parent: "/settings" },
   { pattern: "/settings/record", title: "School record", parent: "/settings" },
+  { pattern: "/settings/feedback", title: "Lesson feedback", parent: "/settings" },
   { pattern: "/settings/appearance", title: "Appearance", parent: "/settings" },
   { pattern: "/settings/post-controls", title: "Post controls", parent: "/settings" },
   { pattern: "/settings/post-controls/how", title: "How post controls work", parent: "/settings/post-controls" },

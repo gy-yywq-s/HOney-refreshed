@@ -214,6 +214,32 @@ export interface WeekendStay {
   campus: string;
 }
 
+/** A lesson the school is still waiting on this student's feedback for. */
+export interface LessonFeedbackItem {
+  lessonId: number;
+  teacher: string;
+  topic: string;
+  /** Epoch ms. */
+  at: number;
+  week: number;
+}
+
+export interface FeedbackResponse {
+  status: SchoolReadStatus;
+  pending: LessonFeedbackItem[];
+}
+
+/** The school's own form: a rating, its four issue flags, and a note. */
+export interface FeedbackSubmission {
+  lessonId: number;
+  rating: number;
+  comment: string;
+  wasLate: boolean;
+  usedMobile: boolean;
+  unprepared: boolean;
+  didNotUnderstand: boolean;
+}
+
 /** An action taken at the school on the student's behalf. */
 export type SchoolActionResponse =
   | { status: "ok" }

@@ -203,6 +203,13 @@ export function SettingsPage() {
             </span>
             <ChevronRightIcon size={18} />
           </Link>
+          <Link className="row" to="/settings/feedback">
+            <span className="row__main">
+              <span className="row__title">{t("Lesson feedback")}</span>
+              <span className="row__sub">{t("Lessons waiting for yours")}</span>
+            </span>
+            <ChevronRightIcon size={18} />
+          </Link>
           <Link className="row" to="/settings/record">
             <span className="row__main">
               <span className="row__title">{t("School record")}</span>

@@ -31,6 +31,8 @@ import type {
   CardResponse,
   CardTopUpResponse,
   SchoolActionResponse,
+  FeedbackResponse,
+  FeedbackSubmission,
   WarningsResponse,
   WeekendResponse,
   KillSwitchName,
@@ -204,6 +206,14 @@ export class ApiClient {
   /** Ask the school to open a top-up order; paying happens on its payment page. */
   schoolCardTopUp(amount: number): Promise<CardTopUpResponse> {
     return this.request("POST", "/api/school/card/topup", { amount });
+  }
+
+  schoolFeedback(): Promise<FeedbackResponse> {
+    return this.request("GET", "/api/school/feedback");
+  }
+
+  schoolSubmitFeedback(body: FeedbackSubmission): Promise<SchoolActionResponse> {
+    return this.request("POST", "/api/school/feedback", body);
   }
 
   schoolWarnings(): Promise<WarningsResponse> {

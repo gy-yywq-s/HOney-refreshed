@@ -157,6 +157,35 @@ export interface StudentWarningWire {
   update_time: string;
 }
 
+/**
+ * GET /api/students/get_feedback — the lessons still waiting for this
+ * student's feedback (the portal's own "My Notification" page).
+ */
+export interface StudentFeedbackWire {
+  lesson_id: number;
+  teacher_name: string;
+  topic_name: string;
+  /** Unix seconds. */
+  start_time: number;
+  week_num: number;
+}
+
+/**
+ * POST /api/students/update_feedback — the body the portal's own form sends
+ * (its bundle, 2026-09-04). The flags are its own wording: was late · used
+ * mobile for non-academic purposes · was unprepared for class · did not
+ * understand the teaching.
+ */
+export interface StudentFeedbackSubmission {
+  lesson_id: number;
+  rating: number;
+  feedback: string;
+  late: 0 | 1;
+  used_mobile: 0 | 1;
+  unprepared: 0 | 1;
+  understandable: 0 | 1;
+}
+
 /** GET /api/weekend/live_list — this student's weekend stay-over records. */
 export interface WeekendStayWire {
   record_id: number;

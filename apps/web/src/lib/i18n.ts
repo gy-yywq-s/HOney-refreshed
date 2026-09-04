@@ -231,6 +231,8 @@ const ZH: Record<string, string> = {
   "Campus card": "一卡通",
   "Weekend stay": "周末留宿",
   "School record": "学校记录",
+  "Lesson feedback": "课程反馈",
+  "Lessons waiting for yours": "等待你评价的课",
   "At school": "在学校",
   "Balance, spending": "余额、消费",
   "Days on record": "已记录的日期",
