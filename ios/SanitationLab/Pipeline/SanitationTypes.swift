@@ -98,6 +98,8 @@ struct SanitationRecord: Codable, Equatable {
 
     enum Decision: String, Codable {
         case classifierSaidClean
+        /// The classifier said clean, but local face privacy still required sanitation.
+        case classifierSaidCleanFacesFound
         case classifierSaidCredential
         /// Classifier down; a local signal (code / id label / long id) decided.
         case localSignalsWithClassifierDown

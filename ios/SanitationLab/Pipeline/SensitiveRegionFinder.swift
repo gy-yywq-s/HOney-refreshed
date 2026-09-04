@@ -24,7 +24,7 @@ struct RegionFinderResult: Equatable {
     var labelWithoutValue: Bool
     var labelsSeen: [String]
     /// A local signal strong enough to call the image credential-like on its own.
-    var strongSignal: Bool { labelsSeen.isEmpty == false || regions.contains { $0.kind == .code } }
+    var strongSignal: Bool { labelsSeen.isEmpty == false || regions.contains { $0.kind == .code || $0.kind == .portrait } }
 }
 
 enum SensitiveRegionFinder {
@@ -51,13 +51,14 @@ enum SensitiveRegionFinder {
         options: [.caseInsensitive])
 
     /// Padding around what was found, so masks cover anti-aliasing and quiet zones.
-    static let portraitPad: CGFloat = 0.10
+    static let portraitPad: CGFloat = 0.30
     static let codePad: CGFloat = 0.12
     static let numberPad: CGFloat = 0.18
 
-    /// `credentialLike` gates the layout-association rules (standalone long
-    /// ids, faces). Codes and labelled values are reported regardless, so a
-    /// caller with the classifier down can still see the strong signals.
+    /// `credentialLike` gates standalone long ids and credential-only
+    /// personal-field expansion. Faces are always privacy-sensitive. Codes
+    /// and labelled values are reported regardless, so a caller with the
+    /// classifier down can still see the strong signals.
     static func find(_ input: RegionFinderInput, credentialLike: Bool) -> RegionFinderResult {
         var regions: [SensitiveRegion] = []
         var labelsSeen: [String] = []
@@ -147,6 +148,12 @@ enum SensitiveRegionFinder {
             consumedLines.insert(i)
         }
 
+        // Every detected face is private, whether or not the image is a
+        // credential. This also covers ordinary photos and classifier misses.
+        for face in input.faces {
+            regions.append(SensitiveRegion(kind: .portrait, rect: portraitFrame(around: face, in: bounds), value: nil, detail: nil))
+        }
+
         guard credentialLike else {
             return RegionFinderResult(regions: regions, labelWithoutValue: labelWithoutValue, labelsSeen: labelsSeen)
         }
@@ -165,12 +172,6 @@ enum SensitiveRegionFinder {
                 let rect = line.subrect(range) ?? line.rect
                 regions.append(SensitiveRegion(kind: .number, rect: pad(rect, by: numberPad, in: bounds), value: token, detail: "standalone"))
             }
-        }
-
-        // 5. Portrait: every face on a credential image, widened to the photo
-        //    frame a card portrait sits in (head plus shoulders), not just the face.
-        for face in input.faces {
-            regions.append(SensitiveRegion(kind: .portrait, rect: portraitFrame(around: face, in: bounds), value: nil, detail: nil))
         }
 
         return RegionFinderResult(regions: regions, labelWithoutValue: labelWithoutValue, labelsSeen: labelsSeen)
@@ -263,12 +264,10 @@ enum SensitiveRegionFinder {
         return frame.intersection(bounds)
     }
 
-    /// Vision returns the face; an ID photo is roughly 1.8 faces wide and runs
-    /// from above the hair to below the shoulders. Blurring that frame hides
-    /// the portrait rather than a square in its middle.
+    /// Blur the face, hairline and immediate surround without allowing the
+    /// portrait region to expand into adjacent text columns.
     static func portraitFrame(around face: CGRect, in bounds: CGRect) -> CGRect {
-        let frame = CGRect(x: face.midX - face.width * 0.9, y: face.minY - face.height * 0.6, width: face.width * 1.8, height: face.height * 2.8)
-        return frame.union(pad(face, by: portraitPad, in: bounds)).intersection(bounds)
+        pad(face, by: portraitPad, in: bounds)
     }
 
     static func pad(_ rect: CGRect, by fraction: CGFloat, in bounds: CGRect) -> CGRect {

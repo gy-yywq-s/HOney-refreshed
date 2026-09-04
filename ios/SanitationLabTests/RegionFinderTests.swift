@@ -97,13 +97,40 @@ final class RegionFinderTests: XCTestCase {
         XCTAssertTrue(notCard.regions.isEmpty, "a long number on a non-credential is left alone")
     }
 
-    func testFacesBlurOnlyOnCredentials() {
+    func testFacesAreAlwaysPrivate() {
         let face = CGRect(x: 40, y: 130, width: 210, height: 270)
         let asCard = SensitiveRegionFinder.find(RegionFinderInput(faces: [face], codes: [], lines: [], imageSize: size), credentialLike: true)
         XCTAssertEqual(asCard.regions.map(\.kind), [.portrait])
         XCTAssertTrue(asCard.regions[0].rect.contains(face))
         let notCard = SensitiveRegionFinder.find(RegionFinderInput(faces: [face], codes: [], lines: [], imageSize: size), credentialLike: false)
-        XCTAssertTrue(notCard.regions.isEmpty)
+        XCTAssertEqual(notCard.regions.map(\.kind), [.portrait])
+        XCTAssertTrue(notCard.strongSignal)
+    }
+
+    func testEveryDistinctPortraitGetsASeparateRegion() {
+        let main = CGRect(x: 40, y: 100, width: 180, height: 220)
+        let watermark = CGRect(x: 700, y: 160, width: 70, height: 90)
+        let input = RegionFinderInput(faces: [main, watermark], codes: [], lines: [], imageSize: size)
+        let result = SensitiveRegionFinder.find(input, credentialLike: true)
+        XCTAssertEqual(result.regions.filter { $0.kind == .portrait }.count, 2)
+        XCTAssertTrue(result.regions.contains { $0.rect.contains(main) })
+        XCTAssertTrue(result.regions.contains { $0.rect.contains(watermark) })
+    }
+
+    func testPortraitMarginDoesNotReachNearbyName() {
+        let face = CGRect(x: 80, y: 100, width: 120, height: 150)
+        let region = SensitiveRegionFinder.portraitFrame(around: face, in: CGRect(origin: .zero, size: size))
+        XCTAssertTrue(region.contains(face))
+        XCTAssertFalse(region.contains(CGPoint(x: 300, y: 170)), "portrait blur must not expand into the text column")
+    }
+
+    func testFaceCandidateDedupKeepsSecondaryPortrait() {
+        let main = CGRect(x: 80, y: 100, width: 120, height: 150)
+        let sameMain = CGRect(x: 84, y: 104, width: 116, height: 146)
+        let secondary = CGRect(x: 700, y: 160, width: 60, height: 75)
+        let result = LocalDetectors.deduplicatedFaces([main, sameMain, secondary])
+        XCTAssertEqual(result.count, 2)
+        XCTAssertTrue(result.contains(secondary))
     }
 
     func testCodesAreAStrongSignalEvenWithoutTheClassifier() {

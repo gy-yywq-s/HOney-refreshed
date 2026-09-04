@@ -61,29 +61,46 @@ final class SanitationPipeline {
         record.classifier = answer
         record.classificationMs = Int(Date().timeIntervalSince(classification) * 1000)
 
-        // Decide.
-        let credentialLike: Bool
+        // Decide. Face privacy is unconditional: a classifier-clean image is
+        // still sanitized when local detection finds one or more faces. In
+        // that branch only faces are touched; credential-only text/code rules
+        // remain gated by the classifier.
+        var classifierCleanFaceRegions: [SensitiveRegion]?
         if answer.available {
-            credentialLike = answer.credentialLike
-            record.decision = credentialLike ? .classifierSaidCredential : .classifierSaidClean
-            if !credentialLike {
-                detectionTask.cancel()
-                return await finish(.clean, working: cg)
+            if answer.credentialLike {
+                record.decision = .classifierSaidCredential
+            } else {
+                let d = await detectionTask.value
+                note(d, into: &record)
+                let bounds = CGRect(origin: .zero, size: record.imageSize)
+                let faces = d.faces.map {
+                    SensitiveRegion(kind: .portrait, rect: SensitiveRegionFinder.portraitFrame(around: $0, in: bounds), value: nil, detail: nil)
+                }
+                guard !faces.isEmpty else {
+                    record.decision = .classifierSaidClean
+                    return await finish(.clean, working: cg)
+                }
+                record.decision = .classifierSaidCleanFacesFound
+                classifierCleanFaceRegions = faces
             }
         } else {
             let d = await detectionTask.value
             note(d, into: &record)
             let probe = SensitiveRegionFinder.find(RegionFinderInput(faces: d.faces, codes: d.codes, lines: d.lines, imageSize: record.imageSize), credentialLike: false)
-            credentialLike = probe.strongSignal
-            record.decision = credentialLike ? .localSignalsWithClassifierDown : .noSignalsWithClassifierDown
-            if !credentialLike { return await finish(.clean, working: cg) }
+            record.decision = probe.strongSignal ? .localSignalsWithClassifierDown : .noSignalsWithClassifierDown
+            if !probe.strongSignal { return await finish(.clean, working: cg) }
         }
 
         await onStage(.processing)
         let sanitation = Date()
         let d = await detectionTask.value
         note(d, into: &record)
-        let found = SensitiveRegionFinder.find(RegionFinderInput(faces: d.faces, codes: d.codes, lines: d.lines, imageSize: record.imageSize), credentialLike: true)
+        let found: RegionFinderResult
+        if let classifierCleanFaceRegions {
+            found = RegionFinderResult(regions: classifierCleanFaceRegions, labelWithoutValue: false, labelsSeen: [])
+        } else {
+            found = SensitiveRegionFinder.find(RegionFinderInput(faces: d.faces, codes: d.codes, lines: d.lines, imageSize: record.imageSize), credentialLike: true)
+        }
         record.regions = found.regions
         if found.labelWithoutValue {
             record.sanitationMs = Int(Date().timeIntervalSince(sanitation) * 1000)

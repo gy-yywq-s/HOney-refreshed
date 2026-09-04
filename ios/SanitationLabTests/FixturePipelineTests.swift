@@ -26,7 +26,7 @@ final class FixturePipelineTests: XCTestCase {
     // MARK: - Clean set: bytes come back untouched
 
     func testCleanImagesAreReturnedUnchanged() async throws {
-        for item in manifest.items where item.group == "clean" {
+        for item in manifest.items where item.group == "clean" && item.id != "clean/bottle_background_faces" {
             let data = try XCTUnwrap(manifest.data(for: item, in: folder))
             let run = await SanitationPipeline(classifier: StubCredentialClassifier(credentialLike: false)).run(imageData: data, fixtureId: item.id)
             XCTAssertEqual(run.outcome, .clean, item.id)
@@ -34,6 +34,17 @@ final class FixturePipelineTests: XCTestCase {
             XCTAssertNil(run.outputData)
             XCTAssertEqual(run.record.decision, .classifierSaidClean)
         }
+    }
+
+    func testFacesAreSanitizedEvenWhenClassifierSaysClean() async throws {
+        let item = try XCTUnwrap(manifest.items.first { $0.id == "clean/bottle_background_faces" })
+        let data = try XCTUnwrap(manifest.data(for: item, in: folder))
+        let run = await SanitationPipeline(classifier: StubCredentialClassifier(credentialLike: false)).run(imageData: data, fixtureId: item.id)
+        XCTAssertEqual(run.outcome, .sanitized)
+        XCTAssertEqual(run.record.decision, .classifierSaidCleanFacesFound)
+        XCTAssertGreaterThanOrEqual(run.record.facesFound, 2)
+        XCTAssertEqual(run.record.regions.filter { $0.kind == .portrait }.count, run.record.facesFound)
+        XCTAssertNotNil(run.outputData)
     }
 
     // MARK: - Synthetic credentials: ground truth

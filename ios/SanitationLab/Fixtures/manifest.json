@@ -47,8 +47,7 @@
       "id": "clean/bottle_background_faces",
       "file": "clean/bottle_background_faces.jpg",
       "expected": "CLEAN",
-      "mustHide": {},
-      "mustKeep": {
+      "mustHide": {
         "face": [
           [
             0.05,
@@ -64,7 +63,8 @@
           ]
         ]
       },
-      "note": "Background faces on a non-credential must NOT be blurred"
+      "mustKeep": {},
+      "note": "Every face is blurred even when the classifier says CLEAN"
     },
     {
       "id": "credential/student_card_qr",
