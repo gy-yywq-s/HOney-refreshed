@@ -15,6 +15,8 @@ enum SanitationOutcome: Equatable {
     case clean
     /// Credential-like and sanitized — a NEW encoding with the regions hidden.
     case sanitized
+    /// A best-guess image is available, but the user must review it before use.
+    case reviewRequired([ReviewReason])
     /// Credential-like but not safely sanitizable — the original must not be published.
     case couldNotSanitize(CouldNotSanitizeReason)
 
@@ -22,9 +24,25 @@ enum SanitationOutcome: Equatable {
         switch self {
         case .clean: return "CLEAN"
         case .sanitized: return "SANITIZED"
+        case .reviewRequired: return "REVIEW_REQUIRED"
         case .couldNotSanitize: return "COULD_NOT_SANITIZE"
         }
     }
+}
+
+enum ReviewReason: String, Codable, Equatable, CaseIterable {
+    /// The remote classifier returned a verdict but marked it uncertain.
+    case classifierUncertain
+    /// The remote classifier did not return a usable verdict.
+    case classifierUnavailable
+    /// A sensitive label was seen but its value could not be located confidently.
+    case sensitiveDetailNotLocated
+    /// The image may be a credential, but no sensitive region was found locally.
+    case nothingSensitiveLocated
+    /// The best-effort blur still produced a verification warning after retry.
+    case verificationIncomplete
+    /// Further refinement would exceed the end-to-end latency budget.
+    case timeBudgetReached
 }
 
 enum CouldNotSanitizeReason: String, Codable, Equatable {
@@ -92,14 +110,20 @@ struct SanitationRecord: Codable, Equatable {
     var classificationMs: Int
     var detectionMs: Int
     var sanitationMs: Int
+    /// End-to-end wall time. Optional so older stored records still decode.
+    var totalMs: Int? = nil
     var verification: Verification?
     var outcome: String
     var reason: CouldNotSanitizeReason?
+    /// Present only for REVIEW_REQUIRED. Optional so older stored records still decode.
+    var reviewReasons: [ReviewReason]? = nil
 
     enum Decision: String, Codable {
         case classifierSaidClean
         /// The classifier said clean, but local face privacy still required sanitation.
         case classifierSaidCleanFacesFound
+        /// Deterministic credential signals overrode a clean classifier verdict.
+        case localSignalsOverrodeClassifierClean
         case classifierSaidCredential
         /// Classifier down; a local signal (code / id label / long id) decided.
         case localSignalsWithClassifierDown
@@ -115,5 +139,10 @@ struct SanitationRecord: Codable, Equatable {
 
     var regionCounts: [RegionKind: Int] {
         Dictionary(grouping: regions, by: \.kind).mapValues(\.count)
+    }
+
+
+    var requiresUserConfirmation: Bool {
+        !(reviewReasons ?? []).isEmpty
     }
 }

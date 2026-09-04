@@ -93,12 +93,16 @@ final class FixturePipelineTests: XCTestCase {
 
     func testEdgeAndRealCredentialsAreNeverReturnedClean() async throws {
         var lines: [String] = []
+        var definiteReviewCount = 0
         for item in manifest.items where item.group == "edge" || item.group == "real" {
             let data = try XCTUnwrap(manifest.data(for: item, in: folder))
             let stub = StubCredentialClassifier(credentialLike: item.expected != "CLEAN")
             let run = await SanitationPipeline(classifier: stub).run(imageData: data, fixtureId: item.id)
             attach(run, item)
             lines.append(summary(run))
+            if item.expected != "UNCERTAIN", case .reviewRequired = run.outcome {
+                definiteReviewCount += 1
+            }
             if item.expected == "SANITIZED" {
                 XCTAssertNotEqual(run.outcome, .clean, "\(item.id): a credential came back CLEAN")
                 if run.outcome == .sanitized, let output = run.outputImage {
@@ -107,6 +111,7 @@ final class FixturePipelineTests: XCTestCase {
                 }
             }
         }
+        XCTAssertEqual(definiteReviewCount, 0, "fixed rules should resolve every definite fixture without user review")
         addText(lines.joined(separator: "\n"), named: "edge-and-real.txt")
     }
 
@@ -120,13 +125,67 @@ final class FixturePipelineTests: XCTestCase {
         let calculatorData = try XCTUnwrap(manifest.data(for: calculator, in: folder))
 
         let cardRun = await SanitationPipeline(classifier: down).run(imageData: cardData, fixtureId: card.id)
-        XCTAssertNotEqual(cardRun.outcome, .clean, "the QR is a strong signal on its own")
+        XCTAssertEqual(cardRun.outcome, .sanitized)
         XCTAssertEqual(cardRun.record.decision, .localSignalsWithClassifierDown)
         XCTAssertFalse(cardRun.record.classifier.available)
+        XCTAssertNotNil(cardRun.outputData)
+        XCTAssertFalse(cardRun.requiresUserConfirmation, "fixed evidence resolved the unavailable classifier")
 
         let calcRun = await SanitationPipeline(classifier: down).run(imageData: calculatorData, fixtureId: calculator.id)
         XCTAssertEqual(calcRun.outcome, .clean)
         XCTAssertEqual(calcRun.record.decision, .noSignalsWithClassifierDown)
+        XCTAssertNil(calcRun.outputData)
+        XCTAssertFalse(calcRun.requiresUserConfirmation)
+    }
+
+    func testUncertainCleanVerdictReturnsBestGuessForConfirmation() async throws {
+        let item = try XCTUnwrap(manifest.items.first { $0.id == "clean/calculator" })
+        let data = try XCTUnwrap(manifest.data(for: item, in: folder))
+        let classifier = StubCredentialClassifier(credentialLike: false, uncertain: true)
+        let run = await SanitationPipeline(classifier: classifier).run(imageData: data, fixtureId: item.id)
+        XCTAssertEqual(run.outcome, .reviewRequired([.classifierUncertain]))
+        XCTAssertEqual(run.outputData, data)
+        XCTAssertNotNil(run.outputImage)
+        XCTAssertTrue(run.record.requiresUserConfirmation)
+    }
+
+    func testNothingLocatedReturnsOriginalBestGuessForConfirmation() async throws {
+        let item = try XCTUnwrap(manifest.items.first { $0.id == "edge/credential_blurred" })
+        let data = try XCTUnwrap(manifest.data(for: item, in: folder))
+        let run = await SanitationPipeline(classifier: StubCredentialClassifier(credentialLike: true)).run(imageData: data, fixtureId: item.id)
+        guard case .reviewRequired(let reasons) = run.outcome else {
+            return XCTFail("an uncertain but readable image must return a best guess")
+        }
+        XCTAssertTrue(reasons.contains(.nothingSensitiveLocated))
+        XCTAssertEqual(run.outputData, data)
+        XCTAssertNotNil(run.outputImage)
+    }
+
+    func testDeterministicSignalsOverrideACleanModelVerdict() async throws {
+        let item = try XCTUnwrap(manifest.items.first { $0.id == "credential/student_card_qr" })
+        let data = try XCTUnwrap(manifest.data(for: item, in: folder))
+        let run = await SanitationPipeline(classifier: StubCredentialClassifier(credentialLike: false)).run(imageData: data, fixtureId: item.id)
+        XCTAssertEqual(run.record.decision, .localSignalsOverrodeClassifierClean)
+        XCTAssertEqual(run.outcome, .sanitized)
+        XCTAssertFalse(run.requiresUserConfirmation)
+    }
+
+    func testLatencyAndModelCostHardGates() async throws {
+        let item = try XCTUnwrap(manifest.items.first { $0.id == "clean/calculator" })
+        let data = try XCTUnwrap(manifest.data(for: item, in: folder))
+        let classifier = CountingSlowClassifier(delayMs: 5_000)
+        let budget = SanitationBudget(hardLimitMs: 2_000, classifierWaitMs: 80, retryReserveMs: 300)
+        let started = Date()
+        let run = await SanitationPipeline(classifier: classifier, budget: budget).run(imageData: data, fixtureId: item.id)
+        let elapsed = Int(Date().timeIntervalSince(started) * 1000)
+        let calls = await classifier.callCount()
+
+        XCTAssertEqual(calls, SanitationBudget.maxModelCallsPerRun)
+        XCTAssertLessThanOrEqual(SanitationBudget.maxModelCallsPerRun, 3)
+        XCTAssertLessThan(elapsed, budget.hardLimitMs)
+        XCTAssertLessThan(run.record.totalMs ?? .max, budget.hardLimitMs)
+        XCTAssertEqual(run.outcome, .clean)
+        XCTAssertLessThanOrEqual(SanitationBudget.production.hardLimitMs, 5_000)
     }
 
     // MARK: - Derivative
@@ -172,7 +231,8 @@ final class FixturePipelineTests: XCTestCase {
     private func summary(_ run: SanitationRun) -> String {
         let r = run.record
         let regions = r.regionCounts.map { "\($0.key.rawValue)=\($0.value)" }.sorted().joined(separator: " ")
-        return "\(r.fixtureId ?? "?"): \(r.outcome)\(r.reason.map { "(\($0.rawValue))" } ?? "") faces=\(r.facesFound) codes=\(r.codesFound) lines=\(r.textLinesFound) [\(regions)] detect=\(r.detectionMs)ms hide=\(r.sanitationMs)ms"
+        let review = (r.reviewReasons ?? []).map(\.rawValue).joined(separator: ",")
+        return "\(r.fixtureId ?? "?"): \(r.outcome)\(r.reason.map { "(\($0.rawValue))" } ?? "")\(review.isEmpty ? "" : "(\(review))") faces=\(r.facesFound) codes=\(r.codesFound) lines=\(r.textLinesFound) [\(regions)] detect=\(r.detectionMs)ms hide=\(r.sanitationMs)ms"
     }
 
     private func addText(_ text: String, named name: String) {
@@ -242,4 +302,25 @@ final class FixturePipelineTests: XCTestCase {
         ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
         return pixels
     }
+}
+
+private actor CountingSlowClassifier: CredentialClassifier {
+    private var calls = 0
+    let delayMs: Int
+
+    init(delayMs: Int) {
+        self.delayMs = delayMs
+    }
+
+    func classify(jpeg: Data) async -> ClassifierAnswer {
+        calls += 1
+        do {
+            try await Task.sleep(nanoseconds: UInt64(delayMs) * 1_000_000)
+        } catch {
+            return .unavailable(latencyMs: 0)
+        }
+        return ClassifierAnswer(available: true, credentialLike: false, uncertain: false, latencyMs: delayMs, model: "counting-slow")
+    }
+
+    func callCount() -> Int { calls }
 }

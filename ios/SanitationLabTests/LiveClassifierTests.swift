@@ -11,6 +11,26 @@ import XCTest
 @testable import SanitationLab
 
 final class LiveClassifierTests: XCTestCase {
+    func testLiveEndToEndRepresentativeCardStaysWithinHardGate() async throws {
+        guard ProcessInfo.processInfo.environment["SANITATION_LIVE"] == "1" else { throw XCTSkip("set SANITATION_LIVE=1 to hit the live route") }
+        guard let loaded = FixtureManifest.load() else { throw XCTSkip("no fixtures") }
+        let item = try XCTUnwrap(loaded.manifest.items.first { $0.id == "real/r22" })
+        let data = try XCTUnwrap(loaded.manifest.data(for: item, in: loaded.folder))
+        let pipeline = SanitationPipeline(classifier: RemoteCredentialClassifier(baseURL: LabConfig.baseURL))
+        let run = await pipeline.run(imageData: data, fixtureId: item.id)
+        let total = run.record.totalMs ?? .max
+
+        let report = "\(item.id): \(run.outcome.label) · total \(total) ms · classifier \(run.record.classificationMs) ms · detect \(run.record.detectionMs) ms · hide \(run.record.sanitationMs) ms · review \(run.requiresUserConfirmation)"
+        let attachment = XCTAttachment(string: report)
+        attachment.name = "live-end-to-end.txt"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+
+        XCTAssertNotEqual(run.outcome, .couldNotSanitize(.imageUnusable))
+        XCTAssertLessThan(total, 5_000, "hard gate: full live flow must remain below five seconds")
+        XCTAssertLessThanOrEqual(SanitationBudget.maxModelCallsPerRun, 1)
+    }
+
     func testLiveClassifierOverTheFixtureSet() async throws {
         guard ProcessInfo.processInfo.environment["SANITATION_LIVE"] == "1" else { throw XCTSkip("set SANITATION_LIVE=1 to hit the live route") }
         guard let loaded = FixtureManifest.load() else { throw XCTSkip("no fixtures") }

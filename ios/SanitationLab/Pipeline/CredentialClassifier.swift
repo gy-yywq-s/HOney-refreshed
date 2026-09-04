@@ -15,7 +15,8 @@ protocol CredentialClassifier: Sendable {
 
 struct RemoteCredentialClassifier: CredentialClassifier {
     var baseURL: URL
-    var timeout: TimeInterval = 8
+    /// The pipeline reserves the remaining hard-gate time for local work.
+    var timeout: TimeInterval = 3.2
 
     private struct Wire: Decodable {
         let credentialLike: Bool
