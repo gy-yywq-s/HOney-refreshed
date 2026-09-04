@@ -10,6 +10,8 @@ coverage/
 !.env.example
 # iOS
 ios/**/build/
+# Personal photos for the sanitation lab stay on the machine that took them
+ios/SanitationLab/Fixtures/local/
 ios/**/*.xcuserstate
 ios/**/DerivedData/
 

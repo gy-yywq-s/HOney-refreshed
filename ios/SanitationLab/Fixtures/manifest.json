@@ -1,0 +1,1060 @@
+{
+  "version": 1,
+  "coordinates": "fractions of image width/height, origin top-left",
+  "items": [
+    {
+      "id": "clean/calculator",
+      "file": "clean/calculator.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": ""
+    },
+    {
+      "id": "clean/notebook_name",
+      "file": "clean/notebook_name.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {
+        "name": [
+          [
+            0.275,
+            0.1,
+            0.5833,
+            0.1556
+          ]
+        ]
+      },
+      "note": "A handwritten person name must survive"
+    },
+    {
+      "id": "clean/textbook",
+      "file": "clean/textbook.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "ISBN is a long number on a NON-credential; must not be masked"
+    },
+    {
+      "id": "clean/ruler",
+      "file": "clean/ruler.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": ""
+    },
+    {
+      "id": "clean/bottle_background_faces",
+      "file": "clean/bottle_background_faces.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {
+        "face": [
+          [
+            0.05,
+            0.0444,
+            0.175,
+            0.2111
+          ],
+          [
+            0.8167,
+            0.0444,
+            0.9417,
+            0.2111
+          ]
+        ]
+      },
+      "note": "Background faces on a non-credential must NOT be blurred"
+    },
+    {
+      "id": "credential/student_card_qr",
+      "file": "credential/student_card_qr.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "portrait": [
+          [
+            0.1583,
+            0.3333,
+            0.3333,
+            0.6333
+          ]
+        ],
+        "number": [
+          [
+            0.5292,
+            0.4411,
+            0.6775,
+            0.4667
+          ]
+        ],
+        "code": [
+          [
+            0.7083,
+            0.5889,
+            0.8333,
+            0.7556
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.3667,
+            0.3644,
+            0.5658,
+            0.4078
+          ]
+        ],
+        "label": [
+          [
+            0.3667,
+            0.44,
+            0.5175,
+            0.4667
+          ]
+        ],
+        "context": [
+          [
+            0.3667,
+            0.5056,
+            0.5808,
+            0.5289
+          ],
+          [
+            0.3667,
+            0.5722,
+            0.555,
+            0.5944
+          ]
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "credential/student_card_barcode",
+      "file": "credential/student_card_barcode.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "portrait": [
+          [
+            0.1583,
+            0.3333,
+            0.3333,
+            0.6333
+          ]
+        ],
+        "number": [
+          [
+            0.5292,
+            0.4411,
+            0.6775,
+            0.4667
+          ]
+        ],
+        "code": [
+          [
+            0.3667,
+            0.6556,
+            0.6167,
+            0.7556
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.3667,
+            0.3644,
+            0.5658,
+            0.4078
+          ]
+        ],
+        "label": [
+          [
+            0.3667,
+            0.44,
+            0.5175,
+            0.4667
+          ]
+        ],
+        "context": [
+          [
+            0.3667,
+            0.5056,
+            0.5808,
+            0.5289
+          ],
+          [
+            0.3667,
+            0.5722,
+            0.555,
+            0.5944
+          ]
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "credential/student_id_label_only",
+      "file": "credential/student_id_label_only.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "portrait": [
+          [
+            0.1583,
+            0.3333,
+            0.3333,
+            0.6333
+          ]
+        ],
+        "number": [
+          [
+            0.52,
+            0.4411,
+            0.6683,
+            0.4667
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.3667,
+            0.3644,
+            0.5658,
+            0.4078
+          ]
+        ],
+        "label": [
+          [
+            0.3667,
+            0.44,
+            0.5083,
+            0.4667
+          ]
+        ],
+        "context": [
+          [
+            0.3667,
+            0.5056,
+            0.5808,
+            0.5289
+          ],
+          [
+            0.3667,
+            0.5722,
+            0.555,
+            0.5944
+          ]
+        ]
+      },
+      "note": "No code at all: number + portrait are the only sensitive regions"
+    },
+    {
+      "id": "credential/student_card_zh",
+      "file": "credential/student_card_zh.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "portrait": [
+          [
+            0.1583,
+            0.3333,
+            0.3333,
+            0.6333
+          ]
+        ],
+        "number": [
+          [
+            0.4633,
+            0.4356,
+            0.6208,
+            0.4633
+          ]
+        ],
+        "code": [
+          [
+            0.7083,
+            0.5889,
+            0.8333,
+            0.7556
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.3667,
+            0.36,
+            0.5083,
+            0.3978
+          ]
+        ],
+        "label": [
+          [
+            0.3667,
+            0.4322,
+            0.4517,
+            0.4689
+          ]
+        ],
+        "context": [
+          [
+            0.3667,
+            0.5033,
+            0.5467,
+            0.5378
+          ],
+          [
+            0.3667,
+            0.5711,
+            0.5308,
+            0.5978
+          ]
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "credential/student_card_angled",
+      "file": "credential/student_card_angled.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "portrait": [
+          [
+            0.187,
+            0.3351,
+            0.3612,
+            0.6351
+          ]
+        ],
+        "number": [
+          [
+            0.518,
+            0.4461,
+            0.6657,
+            0.4716
+          ]
+        ],
+        "code": [
+          [
+            0.6785,
+            0.5704,
+            0.803,
+            0.7371
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.3709,
+            0.3766,
+            0.5691,
+            0.42
+          ]
+        ],
+        "label": [
+          [
+            0.3734,
+            0.445,
+            0.5236,
+            0.4717
+          ]
+        ],
+        "context": [
+          [
+            0.3701,
+            0.5037,
+            0.5833,
+            0.527
+          ],
+          [
+            0.3714,
+            0.5633,
+            0.5589,
+            0.5855
+          ]
+        ]
+      },
+      "note": "Regions are approximate (widened 6 %)"
+    },
+    {
+      "id": "credential/student_card_in_scene",
+      "file": "credential/student_card_in_scene.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "portrait": [
+          [
+            0.48,
+            0.1911,
+            0.55,
+            0.3111
+          ]
+        ],
+        "number": [
+          [
+            0.6283,
+            0.2342,
+            0.6877,
+            0.2444
+          ]
+        ],
+        "code": [
+          [
+            0.7,
+            0.2933,
+            0.75,
+            0.36
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.5633,
+            0.2036,
+            0.643,
+            0.2209
+          ]
+        ],
+        "label": [
+          [
+            0.5633,
+            0.2338,
+            0.6237,
+            0.2444
+          ]
+        ],
+        "context": [
+          [
+            0.5633,
+            0.26,
+            0.649,
+            0.2693
+          ],
+          [
+            0.5633,
+            0.2867,
+            0.6387,
+            0.2956
+          ]
+        ]
+      },
+      "note": "Card is ~30 % of the frame"
+    },
+    {
+      "id": "credential/library_card",
+      "file": "credential/library_card.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "number": [
+          [
+            0.285,
+            0.43,
+            0.4733,
+            0.4556
+          ]
+        ],
+        "code": [
+          [
+            0.1583,
+            0.6333,
+            0.5083,
+            0.7444
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.1583,
+            0.3533,
+            0.2533,
+            0.3867
+          ]
+        ],
+        "label": [
+          [
+            0.1583,
+            0.4289,
+            0.2733,
+            0.4556
+          ]
+        ],
+        "context": [
+          [
+            0.1583,
+            0.4944,
+            0.4108,
+            0.5167
+          ]
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "credential/access_card",
+      "file": "credential/access_card.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "number": [
+          [
+            0.2508,
+            0.43,
+            0.3808,
+            0.4556
+          ]
+        ],
+        "code": [
+          [
+            0.5917,
+            0.5556,
+            0.7083,
+            0.7111
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.1583,
+            0.3544,
+            0.3667,
+            0.3967
+          ]
+        ],
+        "label": [
+          [
+            0.1583,
+            0.43,
+            0.2392,
+            0.4556
+          ]
+        ],
+        "context": [
+          [
+            0.1583,
+            0.4944,
+            0.3825,
+            0.5222
+          ]
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "credential/staff_card",
+      "file": "credential/staff_card.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {
+        "portrait": [
+          [
+            0.1583,
+            0.3333,
+            0.3333,
+            0.6333
+          ]
+        ],
+        "number": [
+          [
+            0.4933,
+            0.4411,
+            0.6117,
+            0.4667
+          ]
+        ],
+        "code": [
+          [
+            0.7083,
+            0.5889,
+            0.8333,
+            0.7556
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.3667,
+            0.3644,
+            0.53,
+            0.3978
+          ]
+        ],
+        "label": [
+          [
+            0.3667,
+            0.44,
+            0.4817,
+            0.4667
+          ]
+        ],
+        "context": [
+          [
+            0.3667,
+            0.5056,
+            0.5983,
+            0.5356
+          ]
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "edge/credential_blurred",
+      "file": "edge/credential_blurred.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {
+        "portrait": [
+          [
+            0.1583,
+            0.3333,
+            0.3333,
+            0.6333
+          ]
+        ],
+        "number": [
+          [
+            0.5292,
+            0.4411,
+            0.6775,
+            0.4667
+          ]
+        ],
+        "code": [
+          [
+            0.7083,
+            0.5889,
+            0.8333,
+            0.7556
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.3667,
+            0.3644,
+            0.5658,
+            0.4078
+          ]
+        ],
+        "label": [
+          [
+            0.3667,
+            0.44,
+            0.5175,
+            0.4667
+          ]
+        ],
+        "context": [
+          [
+            0.3667,
+            0.5056,
+            0.5808,
+            0.5289
+          ],
+          [
+            0.3667,
+            0.5722,
+            0.555,
+            0.5944
+          ]
+        ]
+      },
+      "note": "Record classifier + final behaviour; never publish the original if credential-like"
+    },
+    {
+      "id": "edge/credential_tiny",
+      "file": "edge/credential_tiny.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {
+        "portrait": [
+          [
+            0.4387,
+            0.4899,
+            0.4667,
+            0.5381
+          ]
+        ],
+        "number": [
+          [
+            0.498,
+            0.5072,
+            0.5217,
+            0.5113
+          ]
+        ],
+        "code": [
+          [
+            0.5267,
+            0.531,
+            0.5467,
+            0.5577
+          ]
+        ]
+      },
+      "mustKeep": {
+        "name": [
+          [
+            0.472,
+            0.4949,
+            0.5039,
+            0.5018
+          ]
+        ],
+        "label": [
+          [
+            0.472,
+            0.507,
+            0.4961,
+            0.5113
+          ]
+        ],
+        "context": [
+          [
+            0.472,
+            0.5176,
+            0.5063,
+            0.5213
+          ],
+          [
+            0.472,
+            0.5283,
+            0.5021,
+            0.5318
+          ]
+        ]
+      },
+      "note": "Card is ~12 % of the width"
+    },
+    {
+      "id": "edge/credential_partial_qr",
+      "file": "edge/credential_partial_qr.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {
+        "code": [
+          [
+            0.375,
+            0.2667,
+            0.75,
+            0.7667
+          ]
+        ]
+      },
+      "mustKeep": {},
+      "note": "Only a QR corner is visible"
+    },
+    {
+      "id": "edge/decorative_card",
+      "file": "edge/decorative_card.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {
+        "name": [
+          [
+            0.375,
+            0.3756,
+            0.4908,
+            0.4089
+          ]
+        ],
+        "context": [
+          [
+            0.375,
+            0.45,
+            0.6683,
+            0.4733
+          ],
+          [
+            0.375,
+            0.5167,
+            0.6625,
+            0.5444
+          ]
+        ]
+      },
+      "note": "Looks like a card, is not a credential — ideally CLEAN; record what happens"
+    },
+    {
+      "id": "real/r01",
+      "file": "real/r01.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "number already blanked by uploader; still a credential",
+      "source": "https://commons.wikimedia.org/wiki/File:Yuntech_Student_ID_Card_2017.png",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r02",
+      "file": "real/r02.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "card rear: long number, no portrait",
+      "source": "https://commons.wikimedia.org/wiki/File:Feng_Chia_University_student_ID_card_7293166948_rear.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r03",
+      "file": "real/r03.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "portrait pre-pixelated by uploader; barcode + number",
+      "source": "https://commons.wikimedia.org/wiki/File:National_Taitung_University_student_ID_card_20190727_face.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r04",
+      "file": "real/r04.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "portrait pre-pixelated; barcode",
+      "source": "https://commons.wikimedia.org/wiki/File:National_Ilan_University_student_ID_card_face_20181216.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r05",
+      "file": "real/r05.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "portrait pre-pixelated; barcode + number",
+      "source": "https://commons.wikimedia.org/wiki/File:NTPC_Xiufeng_High_School_student_ID_card_20180521_face.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r06",
+      "file": "real/r06.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "portrait pre-pixelated; 學號 label",
+      "source": "https://commons.wikimedia.org/wiki/File:Hsinchu_County_JAJH_student_ID_card_face_20190912.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r07",
+      "file": "real/r07.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "barcode + number",
+      "source": "https://commons.wikimedia.org/wiki/File:National_Keelung_Girls'_Senior_High_School_student_ID_card_20170216_face.jpg",
+      "license": "Public domain"
+    },
+    {
+      "id": "real/r08",
+      "file": "real/r08.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "REAL face; long numbers; name must survive",
+      "source": "https://commons.wikimedia.org/wiki/File:Student_ID_Card.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r09",
+      "file": "real/r09.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "logo only, no card",
+      "source": "https://commons.wikimedia.org/wiki/File:International_Student_Identity_Card.png",
+      "license": "Public domain"
+    },
+    {
+      "id": "real/r10",
+      "file": "real/r10.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "booklet cover 学生证, nothing identifying visible",
+      "source": "https://commons.wikimedia.org/wiki/File:学生证.png",
+      "license": "Public domain"
+    },
+    {
+      "id": "real/r11",
+      "file": "real/r11.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "tiny booklet among flowers",
+      "source": "https://commons.wikimedia.org/wiki/File:贵州大学学生证.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r12",
+      "file": "real/r12.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "booklet cover, nothing identifying visible",
+      "source": "https://commons.wikimedia.org/wiki/File:Student_ID_of_the_Hanshan_Normal_University.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r13",
+      "file": "real/r13.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "portrait pre-pixelated; 学生ID",
+      "source": "https://commons.wikimedia.org/wiki/File:Student_ID_of_Doshisha_University_20100401.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    {
+      "id": "real/r14",
+      "file": "real/r14.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "barcode + 學號; portrait pre-blanked",
+      "source": "https://commons.wikimedia.org/wiki/File:KLCIVS_student_ID_2012-09_face.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    {
+      "id": "real/r15",
+      "file": "real/r15.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "barcode + 學號",
+      "source": "https://commons.wikimedia.org/wiki/File:2002_TW_SCU_student_ID_face.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    {
+      "id": "real/r16",
+      "file": "real/r16.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "library card design with nothing personal on it",
+      "source": "https://commons.wikimedia.org/wiki/File:Library_card_from_Gotland,_Sweden.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r17",
+      "file": "real/r17.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "library card design with nothing personal on it",
+      "source": "https://commons.wikimedia.org/wiki/File:DC_Public_Library_card.jpg",
+      "license": "Public domain"
+    },
+    {
+      "id": "real/r18",
+      "file": "real/r18.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "library card barcode + number",
+      "source": "https://commons.wikimedia.org/wiki/File:ROC_National_Central_Library_membership_card_20050531_face.jpg",
+      "license": "CC BY 3.0"
+    },
+    {
+      "id": "real/r19",
+      "file": "real/r19.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "library sign, not a card",
+      "source": "https://commons.wikimedia.org/wiki/File:Library_card_of_THE_TAIWAN_PROVINCIAL_LIBRARY_AT_TAICHUNG_20140830.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r20",
+      "file": "real/r20.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "REAL face; numbers; front+back",
+      "source": "https://commons.wikimedia.org/wiki/File:U_Card_Frontback.jpg",
+      "license": "Public domain"
+    },
+    {
+      "id": "real/r21",
+      "file": "real/r21.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "card in a larger photo, held in hand; REAL face",
+      "source": "https://commons.wikimedia.org/wiki/File:A_Student_using_RFID_attendance_system_with_id_card.jpg",
+      "license": "CC0"
+    },
+    {
+      "id": "real/r22",
+      "file": "real/r22.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "national ID SPECIMEN; REAL face; MRZ + number",
+      "source": "https://commons.wikimedia.org/wiki/File:Dutch_identity_card_front_specimen_issued_9_March_2014.jpg",
+      "license": "CC0"
+    },
+    {
+      "id": "real/r23",
+      "file": "real/r23.jpg",
+      "expected": "UNCERTAIN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "dorm pass table, no portrait/number/code",
+      "source": "https://commons.wikimedia.org/wiki/File:西安交通大学_学生公寓出入证.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r24",
+      "file": "real/r24.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "barcode; portrait pre-blanked",
+      "source": "https://commons.wikimedia.org/wiki/File:TVSMHSS_ID_Card.JPG",
+      "license": "CC BY-SA 3.0"
+    },
+    {
+      "id": "real/r25",
+      "file": "real/r25.jpg",
+      "expected": "SANITIZED",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "portrait pre-pixelated; number pre-blanked partly",
+      "source": "https://commons.wikimedia.org/wiki/File:Taipei_Nangang_Community_College_student_identity_card_20160805.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    {
+      "id": "real/r26",
+      "file": "real/r26.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "film lobby card, decorative",
+      "source": "https://commons.wikimedia.org/wiki/File:Student_Prince_in_Old_Heidelberg_lobby_card_2.jpg",
+      "license": "Public domain"
+    },
+    {
+      "id": "real/r27",
+      "file": "real/r27.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "card catalogue drawers",
+      "source": "https://commons.wikimedia.org/wiki/File:Card_catalog_John_Rylands_Library_01.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    {
+      "id": "real/r28",
+      "file": "real/r28.jpg",
+      "expected": "CLEAN",
+      "mustHide": {},
+      "mustKeep": {},
+      "note": "card catalogue drawers",
+      "source": "https://commons.wikimedia.org/wiki/File:Schlagwortkatalog.jpg",
+      "license": "CC BY-SA 3.0"
+    }
+  ]
+}

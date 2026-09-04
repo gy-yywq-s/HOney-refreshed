@@ -2,8 +2,11 @@ name: iOS
 on:
   push:
     paths: ["ios/**", ".github/workflows/ios.yml"]
+    # lab/* branches are tested on Gary's Mac, not here (2026-09-04).
+    branches-ignore: ["lab/**"]
   pull_request:
     paths: ["ios/**", ".github/workflows/ios.yml"]
+    branches-ignore: ["lab/**"]
 concurrency:
   group: ios-${{ github.ref }}
   cancel-in-progress: true

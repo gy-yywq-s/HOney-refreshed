@@ -55,7 +55,64 @@ targets:
         GENERATE_INFOPLIST_FILE: "YES"
         CODE_SIGNING_ALLOWED: "NO"
 
+  # Standalone prototype (docs/architecture/credential-image-sanitation.md):
+  # its own app, its own tests, shares nothing with HOney but the repo.
+  SanitationLab:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SanitationLab
+        excludes:
+          - "Fixtures/**"
+          - "HANDOFF.md"
+      - path: SanitationLab/Fixtures
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gaelisus.honey.sanitationlab
+        PRODUCT_NAME: SanitationLab
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_CFBundleDisplayName: Sanitation Lab
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+
+  SanitationLabTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SanitationLabTests
+    dependencies:
+      - target: SanitationLab
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gaelisus.honey.sanitationlab.tests
+        GENERATE_INFOPLIST_FILE: "YES"
+        CODE_SIGNING_ALLOWED: "NO"
+
 schemes:
+  SanitationLab:
+    build:
+      targets:
+        SanitationLab: all
+        SanitationLabTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - SanitationLabTests
+
   HOney:
     build:
       targets:
