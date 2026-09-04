@@ -194,6 +194,77 @@
   width: 100%;
 }
 
+/* A choice in HOney's own sheet — never the platform picker (Gary 2026-09-04). */
+.choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-field);
+  font: inherit;
+  font-size: var(--fs-secondary);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+}
+.choice:disabled {
+  color: var(--muted);
+  box-shadow: none;
+  cursor: default;
+}
+.choice__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0;
+}
+.choice-option {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow-field);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.choice-option--on {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-solid));
+}
+.choice-option__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.choice-option__label {
+  font-weight: 600;
+}
+.choice-option__tick {
+  flex: none;
+  color: var(--accent);
+  font-weight: 700;
+}
+
 /* ── Fields ─────────────────────────────────────────────────────────────── */
 .field {
   display: flex;

@@ -22,6 +22,7 @@ import { CURATED_LLM_MODELS } from "@honey/shared/api";
 import { useAuth } from "../auth/AuthContext";
 import { ConfirmDialog } from "../components/Modal";
 import { Switch } from "../components/Switch";
+import { Picker } from "../components/Picker";
 import { formatCoarseDate } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { WebAccessPanel } from "./dash/WebAccessPanel";
@@ -252,18 +253,12 @@ function StandaloneModes({
             <span className="row__title">{type === "room" ? "Places" : type === "dish" ? "Dishes" : "Teachers"}</span>
           </span>
           <span className="row__actions">
-            <select
-              className="input"
-              aria-label={`Standalone mode for ${type}`}
-              value={modes[type]}
-              onChange={(e) => setModes((m) => ({ ...m, [type]: e.target.value as StandaloneMode }))}
-            >
-              {STANDALONE_MODES.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
+            <Picker
+              label={`Standalone mode · ${type === "room" ? "Places" : type === "dish" ? "Dishes" : "Teachers"}`}
+              value={modes[type]!}
+              options={STANDALONE_MODES}
+              onChange={(next) => setModes((m) => ({ ...m, [type]: next }))}
+            />
             <button
               className="btn btn--ghost btn--small"
               disabled={busy === `mode:type.${type}`}
@@ -537,21 +532,20 @@ function LlmPanel({
           {configured ? "A key is configured (sealed at rest — never shown again)." : "No key configured: moderation fails closed and nothing publishes."}
         </p>
         <div className="field">
-          <label className="field__label" htmlFor="llm-model">
-            Model
-          </label>
-          {/* A wheel of the benched models (a native picker on phones); the
-              configured model stays selectable even if it is not on the list. */}
-          <select id="llm-model" className="input" value={modelInput ?? model} onChange={(e) => setModelInput(e.target.value)}>
-            {model && !CURATED_LLM_MODELS.some((m) => m.id === model) && (
-              <option value={model}>{model} — configured</option>
-            )}
-            {CURATED_LLM_MODELS.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label} — {m.note}
-              </option>
-            ))}
-          </select>
+          <span className="field__label">Model</span>
+          {/* The benched models, in HOney's own sheet; the configured model
+              stays choosable even when it is not on the list. */}
+          <Picker
+            label="Moderation model"
+            value={modelInput ?? model}
+            options={[
+              ...(model && !CURATED_LLM_MODELS.some((m) => m.id === model)
+                ? [{ value: model, label: model, note: "configured" }]
+                : []),
+              ...CURATED_LLM_MODELS.map((m) => ({ value: m.id, label: m.label, note: m.note })),
+            ]}
+            onChange={setModelInput}
+          />
           <span className="caption">{CURATED_LLM_MODELS.find((m) => m.id === (modelInput ?? model))?.id ?? (modelInput ?? model)}</span>
         </div>
         <div className="field">
@@ -691,18 +685,12 @@ function CooldownPeriod({
           </span>
         </span>
         <span className="row__actions">
-          <select
-            className="input"
-            aria-label="Cooling-off period"
-            value={chosen}
-            onChange={(e) => setValue(Number(e.target.value))}
-          >
-            {options.map((h) => (
-              <option key={h} value={h}>
-                {describeHours(h)}
-              </option>
-            ))}
-          </select>
+          <Picker
+            label="Cooling-off period"
+            value={String(chosen)}
+            options={options.map((h) => ({ value: String(h), label: describeHours(h) }))}
+            onChange={(next) => setValue(Number(next))}
+          />
           <button className="btn btn--primary btn--small" disabled={busy || chosen === current} onClick={() => onApply(chosen)}>
             {busy ? "Saving…" : "Apply"}
           </button>
