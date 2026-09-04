@@ -12,7 +12,7 @@ import { useApi } from "../../lib/useApi";
 import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime } from "../../lib/format";
 import { getLang, useLang, useT } from "../../lib/i18n";
-import { openPortalPage, usePortalEntry } from "../../lib/portalEntry";
+import { usePortalEntry } from "../../lib/portalEntry";
 import { ConfirmDialog, Modal } from "../../components/Modal";
 import { CARD_TOP_UP_AMOUNTS } from "@honey/shared/api";
 
@@ -95,13 +95,7 @@ export function CampusCardPage() {
                 {L({ en: "Top up", zh: "充值" })}
               </button>
               {!portal.needsLogin && (
-                <a
-                  className="btn btn--ghost"
-                  href={portal.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => openPortalPage(portal.href, "/student/card", e)}
-                >
+                <a className="btn btn--ghost" href={portal.href} target="_blank" rel="noopener noreferrer">
                   {L({ en: "In the portal", zh: "在门户里" })}
                 </a>
               )}
@@ -344,13 +338,7 @@ export function WeekendStayPage() {
             <section className="card daypick">
               <div className="daypick__head">
                 <span className="eyebrow">{L({ en: "Open days", zh: "可选日期" })}</span>
-                <a
-                  className="daypick__portal"
-                  href={portal.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => openPortalPage(portal.href, "/student/weekend-plan", e)}
-                >
+                <a className="daypick__portal" href={portal.href} target="_blank" rel="noopener noreferrer">
                   {L({ en: "In the portal", zh: "在门户里" })}
                 </a>
               </div>

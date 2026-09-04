@@ -11,49 +11,8 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import { portalCredentials } from "./portalCredentials";
 
-const PORTAL_ORIGIN = "https://www.huayaopudong.com";
-export const PORTAL_HOME = `${PORTAL_ORIGIN}/student/notification`;
+export const PORTAL_HOME = "https://www.huayaopudong.com/student/notification";
 const MARGIN_MS = 5 * 60_000;
-/**
- * The portal's login page takes the token, stores it in its own localStorage
- * and then goes where IT decides (its notice board for a student); a deep page
- * carrying the token bounces to that login page, because only the login page
- * reads the query. So the student is never asked to navigate: HOney opens the
- * hop, KEEPS the window it opened, and sends that same window on to the page
- * they asked for once the token is stored — navigating a window you opened is
- * allowed cross-origin (reading it is not). If the tab is slower than this,
- * it is still signed in and simply lands on the portal's own page.
- */
-const HOP_SETTLE_MS = 2400;
-/**
- * The portal's own session check answers 401 for a moment now and then (its
- * first call on any load does, and occasionally the retry does too, which is
- * how a tab ends up on its login page). A tab that lands there still holds the
- * token and re-validates itself, so a second nudge takes it the rest of the
- * way; when the first nudge already worked this is a refresh of the page the
- * student is on.
- */
-const HOP_RETRY_MS = 6500;
-
-/**
- * Open a portal page from a tap. `href` is the signed-in hop (the anchor's own
- * href, so a blocked pop-up still works); `path` is where the student meant to
- * go.
- */
-export function openPortalPage(href: string, path: string, event?: { preventDefault: () => void }): void {
-  const win = window.open(href, "_blank");
-  if (!win) return; // the anchor's href takes over
-  event?.preventDefault();
-  const go = () => {
-    try {
-      if (!win.closed) win.location.href = `${PORTAL_ORIGIN}${path}`;
-    } catch {
-      /* the window is gone or refuses: it is signed in either way */
-    }
-  };
-  window.setTimeout(go, HOP_SETTLE_MS);
-  window.setTimeout(go, HOP_RETRY_MS);
-}
 
 export interface PortalEntryState {
   /** The signed-in link, or the plain portal address. */

@@ -26,7 +26,7 @@ import { WordmarkHOney } from "../components/Wordmark";
 import { useLang, useT } from "../lib/i18n";
 import { Skeleton, useNowTick } from "../lib/motion";
 import { useFromYourClasses } from "./experiences/shared";
-import { openPortalPage, usePortalEntry } from "../lib/portalEntry";
+import { usePortalEntry } from "../lib/portalEntry";
 import { useReadNotices } from "../lib/noticesRead";
 import { NoticeSheet } from "../components/NoticeSheet";
 import { myPosts } from "../lib/community-v2/publish-client";
@@ -279,13 +279,7 @@ export function HomePage() {
             <span className="portal-link__note">{t("Sign in once")}</span>
           </button>
         ) : (
-          <a
-            className="portal-link"
-            href={portal.href}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => openPortalPage(portal.href, "/student/notification", e)}
-          >
+          <a className="portal-link" href={portal.href} target="_blank" rel="noopener noreferrer">
             <img className="portal-link__icon" src="/oasis.png" alt="" width="16" height="16" />
             <span className="portal-link__label">{t("School Portal")}</span>
             {/* In the installed app it says what it does: it enters the portal
