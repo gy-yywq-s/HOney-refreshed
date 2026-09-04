@@ -30,20 +30,18 @@ final class HomeViewModel {
     /// Bumped when this device reads a notice, so the rows re-render.
     private(set) var readVersion = 0
 
-    /// Re-entering Home within the window shows what is already there
-    /// instead of reloading it (Gary 2026-09-04); pull to refresh and any
-    /// explicit reload ignore the gate.
-    private let gate = LoadGate(maxAge: 90)
-
     init(env: AppEnvironment) {
         self.env = env
     }
 
     var name: NameResolver { names.resolver }
 
+    /// Every call reloads, and every reload is silent: each region keeps
+    /// what it shows until its fresh answer arrives, and only replaces it on
+    /// success — a placeholder appears only when a region has nothing yet.
+    /// Home has no pull to refresh; returning to the tab is the refresh
+    /// (Gary 2026-09-04: 切 tab 回来自动刷新即可, 做成无感的).
     func load(reload: Bool = false) async {
-        if !reload, gate.isFresh, nextLesson != nil { return }
-        gate.markLoaded()
         async let lesson: Void = loadLesson(reload: reload)
         async let voices: Void = loadPreviews(reload: reload)
         async let school: Void = loadNotices()

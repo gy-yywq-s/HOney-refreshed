@@ -18,10 +18,22 @@ struct HomeView: View {
     @State private var model: HomeViewModel?
     @State private var showPortal = false
     @State private var openNotice: SchoolNotice?
+    /// The page's own height before it is stretched to the screen, so Home
+    /// only scrolls when it has more than a screen of content.
+    @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { geo in
             let compact = geo.size.height <= 700
+            // Home does not pull to refresh and does not stretch (Gary
+            // 2026-09-04: 让首页无法向上滑动). The shared refresher needs the
+            // scroll view to bounce at both ends — iOS has no one-ended bounce
+            // — so Home leaves it out: scrolling is off entirely while the
+            // page fits the screen, and a page that outgrows it scrolls as an
+            // ordinary long page does. Fresh data comes silently on every
+            // return to the tab (`.task` below); nothing on screen is ever
+            // cleared to make room for a spinner.
+            let fits = contentHeight > 0 && contentHeight <= geo.size.height
             ScrollView {
                 VStack(alignment: .leading, spacing: HSpace.x4) {
                     if let me = env.me {
@@ -80,15 +92,25 @@ struct HomeView: View {
                     }
                     .pageInset()
                 }
-                .frame(minHeight: geo.size.height, alignment: .top)
                 .padding(.bottom, HSpace.x4)
+                .background(
+                    GeometryReader { content in
+                        Color.clear
+                            .onAppear { contentHeight = content.size.height }
+                            .onChange(of: content.size.height) { _, h in contentHeight = h }
+                    }
+                )
+                .frame(minHeight: geo.size.height, alignment: .top)
             }
-            .honeyRefreshable { await model?.load(reload: true) }
+            .scrollDisabled(fits)
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
         }
         .surfaceBackground()
         .toolbar(.hidden, for: .navigationBar)
         .navigationTitle("Home")
         .task {
+            // Runs on every return to the tab: a silent reload behind what
+            // is already showing.
             if model == nil { model = HomeViewModel(env: env) }
             await model?.load()
         }
