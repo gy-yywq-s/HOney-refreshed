@@ -31,7 +31,12 @@ jobs:
       - name: Contract fixtures are checked in
         run: test "$(ls packages/shared/fixtures/api/*.json | wc -l)" -ge 30
       - name: swift test
-        run: swift test --parallel
+        # Linux 6.1.x: libswiftObservation.so leaves `swift::threading::fatal`
+        # to the runtime, and once swift-crypto's C targets are in the link
+        # the executable link checks shared-library undefineds and refuses it
+        # (L10n is @Observable since 2026-09-04). The symbol is bound lazily
+        # and never reached; let the link proceed the way the loader does.
+        run: swift test --parallel -Xlinker --allow-shlib-undefined
         working-directory: ios-web-port/HOneyCore
   app:
     name: HOneyNative (macOS runner)
