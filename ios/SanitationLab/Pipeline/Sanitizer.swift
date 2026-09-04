@@ -38,7 +38,7 @@ enum Sanitizer {
                         maskColor.setFill()
                         ctx.fill(rect)
                     }
-                case .number, .code:
+                case .number, .code, .personalText, .signature:
                     maskColor.setFill()
                     ctx.fill(rect)
                 }
@@ -67,7 +67,7 @@ enum Sanitizer {
         let decodable = await codes.count
         let read = await lines.map { normalise($0.string) }
         let values = regions.compactMap { region -> String? in
-            guard region.kind == .number, let value = region.value else { return nil }
+            guard region.kind != .portrait, region.kind != .code, let value = region.value else { return nil }
             let key = normalise(value)
             guard key.count >= 4 else { return nil }
             return read.contains { $0.contains(key) } ? value : nil

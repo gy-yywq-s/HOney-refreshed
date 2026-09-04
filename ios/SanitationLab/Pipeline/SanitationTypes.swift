@@ -44,13 +44,15 @@ enum RegionKind: String, Codable, CaseIterable {
     case portrait
     case number
     case code
+    case personalText
+    case signature
 }
 
 /// A region to hide, in pixel coordinates of the working image (top-left origin).
 struct SensitiveRegion: Codable, Equatable {
     var kind: RegionKind
     var rect: CGRect
-    /// For numbers: the exact string that was masked, so verification can look for it again.
+    /// For text-bearing regions: the exact string that was hidden, so verification can look for it again.
     var value: String?
     /// For codes: the symbology Vision reported, for the record.
     var detail: String?

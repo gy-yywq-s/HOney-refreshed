@@ -48,6 +48,47 @@ final class RegionFinderTests: XCTestCase {
         XCTAssertTrue(result.labelsSeen.isEmpty)
     }
 
+    func testLabelledPersonalDetailsAreHiddenButNameAndSchoolStay() {
+        let lines = [
+            line("Name: Zhang Wei", x: 100, y: 20),
+            line("HUAYAO PUDONG SCHOOL", x: 100, y: 55),
+            line("Address: 221B Baker Street", x: 100, y: 100, w: 500),
+            line("Date of birth: 2008-04-03", x: 100, y: 140, w: 500),
+            line("Sex: F", x: 100, y: 180),
+            line("Nationality: Chinese", x: 100, y: 220),
+            line("Phone: 138 0013 8000", x: 100, y: 260),
+            line("Email: student@example.com", x: 100, y: 300, w: 500),
+            line("Blood type: O+", x: 100, y: 340),
+        ]
+        let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
+        XCTAssertEqual(result.regions.filter { $0.kind == .personalText }.count, 7)
+        XCTAssertFalse(result.regions.contains { $0.value?.contains("Zhang Wei") == true })
+        XCTAssertFalse(result.regions.contains { $0.value?.contains("HUAYAO") == true })
+        XCTAssertFalse(result.labelWithoutValue)
+    }
+
+    func testAddressOnFollowingLinesIsHidden() {
+        let lines = [
+            line("Residential address:", x: 100, y: 100, w: 220),
+            line("221B Baker Street", x: 340, y: 102, w: 260),
+            line("London NW1 6XE", x: 340, y: 136, w: 230),
+            line("Valid until: 2030-04", x: 100, y: 180),
+        ]
+        let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
+        XCTAssertEqual(result.regions.filter { $0.kind == .personalText }.map(\.value), ["221B Baker Street", "London NW1 6XE"])
+        XCTAssertFalse(result.labelWithoutValue)
+    }
+
+    func testSignatureAndMRZAreHidden() {
+        let lines = [
+            line("Holder's signature", x: 80, y: 280, w: 180),
+            line("P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<", x: 60, y: 420, w: 820),
+        ]
+        let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
+        XCTAssertEqual(Set(result.regions.map(\.kind)), Set([.signature, .personalText]))
+        XCTAssertTrue(result.regions.contains { $0.detail == "mrz" })
+    }
+
     func testStandaloneLongIdsOnlyWhenCredentialLike() {
         let lines = [line("LIB-0048821", x: 100, y: 50), line("ISBN 978-7-5320-1234-5", x: 100, y: 90)]
         let onCard = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
