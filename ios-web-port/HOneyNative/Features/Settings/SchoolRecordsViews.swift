@@ -133,7 +133,7 @@ struct CampusCardView: View {
                             Text(L10n.t("Nothing on this card yet.")).hfont(.caption).foregroundStyle(theme.muted).padding(.vertical, HSpace.x2)
                         } else {
                             ForEach(data.purchases) { p in
-                                ValueRow(title: p.where, sub: "\(Formatters.shortDate(p.at)) · \(Formatters.time(p.at))", value: "−\(SchoolCopy.yuan(p.amount))", valueNote: SchoolCopy.yuan(p.balanceAfter))
+                                ValueRow(title: p.place, sub: "\(Formatters.shortDate(p.at)) · \(Formatters.time(p.at))", value: "−\(SchoolCopy.yuan(p.amount))", valueNote: SchoolCopy.yuan(p.balanceAfter))
                             }
                         }
                     }

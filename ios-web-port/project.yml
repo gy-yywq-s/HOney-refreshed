@@ -16,7 +16,11 @@ packages:
     path: HOneyCore
   Refresher:
     url: https://github.com/gh123man/SwiftUI-Refresher.git
-    exactVersion: 1.1.12
+    # 1.1.11, not 1.1.12: the two differ only by an `.iOS(.v27)` entry in the
+    # introspect list, but 1.1.12 pulls SwiftUI-Introspect 27 whose manifest
+    # needs swift-tools 6.2 (Xcode 26) — the macos-15 runner cannot resolve
+    # it and the app never compiles there. Same `system2` behaviour on iOS 26.
+    exactVersion: 1.1.11
 
 settings:
   base:

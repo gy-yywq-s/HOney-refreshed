@@ -4,6 +4,7 @@
 // grouped card unless the Web draws one.
 
 import SwiftUI
+import UIKit
 import HOneyCore
 
 /// The HOney wordmark — the Infinite-colour pack (Gary 2026-09-04): two

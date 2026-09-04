@@ -62,10 +62,15 @@ public struct CampusCard: Codable, Sendable, Equatable {
 
 public struct CardPurchase: Codable, Sendable, Equatable, Identifiable {
     public var id: String
-    public var `where`: String
+    /// The canteen or shop the school names on the record (wire: `where`).
+    public var place: String
     public var amount: Double
     public var balanceAfter: Double
     public var at: Int64
+
+    private enum CodingKeys: String, CodingKey {
+        case id, place = "where", amount, balanceAfter, at
+    }
 }
 
 public struct CardTopUp: Codable, Sendable, Equatable, Identifiable {
