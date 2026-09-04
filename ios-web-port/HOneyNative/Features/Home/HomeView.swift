@@ -61,6 +61,13 @@ struct HomeView: View {
                         LoadingPlaceholder(lines: 2).pageInset()
                     }
 
+                    // The foot sits at the bottom of the page, not after the
+                    // last zone (Gary 2026-09-04: 贴 homepage 的底放): on a page
+                    // shorter than the screen this spacer takes the slack so
+                    // the portal link rests on the bottom edge; on a longer one
+                    // it collapses and the link simply ends the page.
+                    Spacer(minLength: 0)
+
                     // `.home-foot.home-zone`: the portal entry is marginal by design
                     // (Gary 2026-09-03: 很小的边缘非胶囊) — a small link at the right.
                     VStack(alignment: .leading, spacing: 0) {
