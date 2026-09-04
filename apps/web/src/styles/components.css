@@ -565,17 +565,22 @@ body.has-sheet .main {
   position: relative;
 }
 .wordmark img {
-  display: block;
   width: 100%;
   height: 100%;
 }
-.wordmark__night {
+/* The night surface has its OWN artwork (the coloured joints must keep their
+   hues), so exactly one of the two is ever displayed. Typed past `.wordmark
+   img`, which would otherwise out-specify a bare variant class. */
+.wordmark .wordmark__light {
+  display: block;
+}
+.wordmark .wordmark__night {
   display: none;
 }
-:root[data-surface="night"] .wordmark__light {
+:root[data-surface="night"] .wordmark .wordmark__light {
   display: none;
 }
-:root[data-surface="night"] .wordmark__night {
+:root[data-surface="night"] .wordmark .wordmark__night {
   display: block;
 }
 .rail-nav {
