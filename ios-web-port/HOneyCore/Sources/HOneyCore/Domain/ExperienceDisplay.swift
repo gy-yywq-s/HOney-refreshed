@@ -177,6 +177,8 @@ public enum AppRoute: Sendable, Equatable, Hashable {
 }
 
 public enum TimetableViewMode: String, Sendable, Equatable, Hashable, Codable {
+    /// Settings › Admin › Dash — the Web console shown in-app (admins only).
+    case settingsDash
     case day, week
 }
 

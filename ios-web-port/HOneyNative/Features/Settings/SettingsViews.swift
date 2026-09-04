@@ -81,9 +81,10 @@ struct SettingsRootView: View {
                         }
                         if env.me?.isAdmin == true {
                             RowList(label: L10n.t("Admin")) {
-                                Link(destination: env.config.dashURL) {
-                                    SettingsRow(title: L10n.t("Open Dash"), sub: "\(L10n.t("The operational console for admins.")) Opens the Web Dash in Safari.")
+                                Button { nav.push(.settingsDash) } label: {
+                                    SettingsRow(title: L10n.t("Open Dash"), sub: "\(L10n.t("The operational console for admins.")) \(L10n.t("Opens here, already signed in."))")
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
                 }

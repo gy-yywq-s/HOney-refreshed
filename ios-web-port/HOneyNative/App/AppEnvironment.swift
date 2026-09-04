@@ -92,6 +92,9 @@ struct DeletionReport: Equatable {
 final class AppEnvironment {
     let config: AppConfig
     let api: APIClient
+    /// Read-only for the app: only Settings › Dash uses it, to hand the Web
+    /// console the session it already holds instead of a second sign-in.
+    let sessionStore: SessionStoring
     let portalAPI: PortalAPI
     let portalCoordinator: PortalSessionCoordinator
     let portalVault: SecretPortalVault
@@ -143,6 +146,7 @@ final class AppEnvironment {
         self.portalVault = portalVault
         self.portalAPI = portalAPI
         self.portalCoordinator = portalCoordinator
+        self.sessionStore = sessionStore
         self.feedStore = FeedStore()
         self.timetable = TimetableRepository(provider: api)
         self.notes = PrivateNoteStore(directory: storageDirectory, writeOptions: writeOptions)

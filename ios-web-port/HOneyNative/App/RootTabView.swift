@@ -97,6 +97,8 @@ struct RouteView: View {
             SchoolRecordView()
         case .settingsLessonFeedback:
             LessonFeedbackView()
+        case .settingsDash:
+            DashWebScreen()
         }
     }
 }
