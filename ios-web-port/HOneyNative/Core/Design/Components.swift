@@ -308,11 +308,34 @@ extension View {
     /// principal item keeps it out of the bar itself), the page title in
     /// content, no system large title.
     func webScreen(title: String) -> some View {
-        self.navigationTitle(title)
+        modifier(WebScreenChrome(title: title))
+    }
+}
+
+/// The pushed-screen chrome. iOS 26 floats the back button over the page
+/// instead of drawing a bar behind it, so a plain `.toolbarBackground(.visible)`
+/// left the status-bar strip see-through and rows scrolling past showed through
+/// it (Gary 2026-09-04, History). The bar is painted in the page surface and the
+/// strip above it is painted too, so nothing ever reads through the top edge.
+private struct WebScreenChrome: ViewModifier {
+    @Environment(\.theme) private var theme
+    let title: String
+
+    func body(content: Content) -> some View {
+        content
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1) } }
+            .toolbarBackground(theme.surface, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .surfaceBackground()
+            .overlay(alignment: .top) {
+                // A zero-height view whose ground reaches into the top safe
+                // area: it covers the status bar without taking any layout.
+                Color.clear
+                    .frame(height: 0)
+                    .background(theme.surface.ignoresSafeArea(edges: .top))
+            }
     }
 }
 
