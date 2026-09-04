@@ -582,8 +582,9 @@ export function ExperiencesComposePage() {
           {/* Some things belong to the school, not here: its own feedback
               channel, in one line, without moving anything (Gary 2026-09-04). */}
           <p className="text-4 compose-toschool">
+            {t("Doesn't belong here?")}{" "}
             <button type="button" className="linklike" onClick={() => setTellSchool(true)}>
-              {t("Doesn't belong here? Tell the school")}
+              {t("Send it to the school")}
             </button>
           </p>
         </section>
