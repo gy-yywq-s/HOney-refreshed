@@ -50,10 +50,36 @@ final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegat
     private static let openDeadline: TimeInterval = 25
     private static let loginPaths: Set<String> = ["/login", "/student/login", "/auth/login"]
 
+    /// A path the portal uses for signing in. This is a route, not a verdict:
+    /// the signed-in hand-off HOney issues (`/student/login?token=…`, routes/
+    /// data.ts) lives on the same path as the form a student has to fill in.
     static func isLoginRoute(_ url: URL) -> Bool {
         var path = url.path.lowercased()
         if path.count > 1, path.hasSuffix("/") { path.removeLast() }
         return loginPaths.contains(path)
+    }
+
+    /// The portal has actually put the student in front of its login form.
+    ///
+    /// Root cause of the banner that showed while signed in (Gary 2026-09-04):
+    /// the portal is a Next.js app, so the token hand-off finishes loading AT
+    /// `/student/login?token=…` and routes to home client-side, with no further
+    /// navigation callback. Judged by path alone, that finish "landed on the
+    /// login page": recovery renewed the token, loaded another hand-off on
+    /// the same path, and the second finish — recovery already spent — became
+    /// `.actionRequired`, which then stuck while the student browsed signed in.
+    ///
+    /// The hand-off is not evidence of anything: HOney verifies the token
+    /// against the school (`userInfo`) before it hands the entry out, and
+    /// `signedInEntry` keeps a margin on its expiry, so a hand-off with a dead
+    /// token is prevented upstream, not detected here. What this surface CAN
+    /// know is that the portal answered with a login route carrying no
+    /// hand-off — a bounce to the form — and that is the only login page.
+    static func isLoginPage(_ url: URL) -> Bool {
+        guard isLoginRoute(url) else { return false }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        let handOff = items.contains { $0.name.lowercased() == "token" && !($0.value ?? "").isEmpty }
+        return !handOff
     }
 
     /// A URL that carries credentials or a sign-in hand-off: never kept as
@@ -148,8 +174,8 @@ final class PortalWebController: NSObject, ObservableObject, WKNavigationDelegat
         deadline?.cancel()
         canGoBack = webView.canGoBack
         guard let url = webView.url else { phase = .loaded; return }
-        if Self.isLoginRoute(url) {
-            // The entry was spent or the portal session ended: renew once.
+        if Self.isLoginPage(url) {
+            // The portal bounced to its form: the session ended. Renew once.
             guard !recoveryAttempted, let recover else {
                 phase = .actionRequired
                 return

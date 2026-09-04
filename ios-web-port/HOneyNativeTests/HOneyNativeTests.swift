@@ -93,6 +93,19 @@ final class PortalWebControllerTests: XCTestCase {
         XCTAssertEqual(controller.policy(for: URL(string: "about:blank")!), .allow)
     }
 
+    /// The hand-off HOney issues lives on a login path; it is never the
+    /// login page. Only a login route without the token is (the fix for the
+    /// "sign in on its own page" banner that showed while signed in).
+    func testTokenHandOffIsNotTheLoginPage() {
+        XCTAssertFalse(PortalWebController.isLoginPage(URL(string: "https://p.example.edu/student/login?token=abc")!))
+        XCTAssertFalse(PortalWebController.isLoginPage(URL(string: "https://p.example.edu/student/login/?TOKEN=abc")!))
+        XCTAssertTrue(PortalWebController.isLoginPage(URL(string: "https://p.example.edu/student/login")!))
+        XCTAssertTrue(PortalWebController.isLoginPage(URL(string: "https://p.example.edu/login?token=")!), "an empty token is no hand-off")
+        XCTAssertTrue(PortalWebController.isLoginPage(URL(string: "https://p.example.edu/auth/login?next=%2Fhome")!))
+        XCTAssertFalse(PortalWebController.isLoginPage(URL(string: "https://p.example.edu/student/home")!))
+        XCTAssertTrue(PortalWebController.isSensitive(URL(string: "https://p.example.edu/student/login?token=abc")!), "the hand-off is still never remembered")
+    }
+
     func testSensitiveURLsAreNeverKept() {
         XCTAssertTrue(PortalWebController.isSensitive(URL(string: "https://p.example.edu/student/login")!))
         XCTAssertTrue(PortalWebController.isSensitive(URL(string: "https://p.example.edu/entry?token=abc")!))
