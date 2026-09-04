@@ -4,6 +4,13 @@
 // hairline hour grid, "P3 Free" ghosts on a solid ground, the danger
 // now-line, and lesson blocks framed in ink at 28 % — the lesson in
 // progress is the one ink-filled block. Geometry comes from HOneyCore.DayLayout.
+//
+// The canvas is geometry, not prose (Gary 2026-09-04). The hour gutter, the
+// period ghosts and the break labels are drawn at the Web's exact px through
+// HOneyFont.fixedFont: neither Settings › Text size nor system Dynamic Type
+// moves them, so a label can never outgrow the band or the 44 pt gutter it
+// sits in. The lesson blocks are the one thing on the canvas that still
+// scales, because they carry the reading.
 
 import SwiftUI
 import HOneyCore
@@ -60,7 +67,7 @@ struct DayTimelineView: View {
             Color.clear
             ForEach(layout.range.hourMarks, id: \.self) { minute in
                 Text(PeriodCatalog.minuteLabel(minute))
-                    .font(ramp.font(.microSemibold))
+                    .font(HOneyFont.fixedFont(role: .microSemibold))
                     .monospacedDigit()
                     .foregroundStyle(theme.muted)
                     .offset(y: y(minute, layout, height) - 6)
@@ -90,8 +97,8 @@ struct DayTimelineView: View {
                 if !layout.lessons.isEmpty {
                     ForEach(layout.freePeriods) { slot in
                         HStack(spacing: HSpace.x2) {
-                            ghostLabel(Text("P\(slot.periodNumber ?? 0)").font(ramp.font(.microBold)).foregroundStyle(theme.accent))
-                            ghostLabel(Text(L10n.t("Free")).font(ramp.font(TypeRole(size: 12, weight: 500, textStyle: .caption2, tracking: 0.03, lineHeight: 1))).foregroundStyle(theme.muted))
+                            ghostLabel(Text("P\(slot.periodNumber ?? 0)").font(HOneyFont.fixedFont(role: .microBold)).foregroundStyle(theme.accent))
+                            ghostLabel(Text(L10n.t("Free")).font(HOneyFont.fixedFont(role: TypeRole(size: 12, weight: 500, textStyle: .caption2, tracking: 0.03, lineHeight: 1))).foregroundStyle(theme.muted))
                         }
                         .padding(.leading, HSpace.x3)
                         .offset(y: y(slot.start, layout, height) + 7)
@@ -104,7 +111,7 @@ struct DayTimelineView: View {
                         Image(systemName: "leaf.fill")
                             .font(.system(size: 10))
                             .foregroundStyle(theme.accent)
-                        ghostLabel(Text(band.breakLabel ?? "").font(ramp.font(.microSemibold)).foregroundStyle(theme.muted))
+                        ghostLabel(Text(band.breakLabel ?? "").font(HOneyFont.fixedFont(role: .microSemibold)).foregroundStyle(theme.muted))
                     }
                     .padding(.leading, HSpace.x3)
                     .offset(y: y(band.start, layout, height) + 7)

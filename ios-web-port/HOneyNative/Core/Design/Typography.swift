@@ -98,6 +98,24 @@ enum HOneyFont {
         Font(uiFont(role: role, scale: scale))
     }
 
+    /// The role at the Web's exact px: no Text size multiplier and no
+    /// UIFontMetrics pass, so the glyphs never move (Gary 2026-09-04). Only
+    /// for type that is part of a fixed geometry — the Day canvas's hour
+    /// gutter, its period ghosts and its break labels — where the Web itself
+    /// uses fixed px against a fixed grid. Prose never uses this.
+    static func fixedUIFont(role: TypeRole) -> UIFont {
+        let variation: [NSNumber: NSNumber] = [NSNumber(value: weightAxis): NSNumber(value: Double(role.weight))]
+        let descriptor = UIFontDescriptor(fontAttributes: [
+            .name: role.italic ? italicName : uprightName,
+            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): variation,
+        ])
+        return isAvailable ? UIFont(descriptor: descriptor, size: role.size) : fallback(role: role, size: role.size)
+    }
+
+    static func fixedFont(role: TypeRole) -> Font {
+        Font(fixedUIFont(role: role))
+    }
+
     /// Extra leading so the line box matches the Web's `line-height`.
     static func lineSpacing(role: TypeRole, scale: CGFloat) -> CGFloat {
         let font = uiFont(role: role, scale: scale)
