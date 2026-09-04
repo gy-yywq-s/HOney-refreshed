@@ -59,9 +59,10 @@ final class RegionFinderTests: XCTestCase {
             line("Phone: 138 0013 8000", x: 100, y: 260),
             line("Email: student@example.com", x: 100, y: 300, w: 500),
             line("Blood type: O+", x: 100, y: 340),
+            line("出生：86.01.08", x: 100, y: 380),
         ]
         let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
-        XCTAssertEqual(result.regions.filter { $0.kind == .personalText }.count, 7)
+        XCTAssertEqual(result.regions.filter { $0.kind == .personalText }.count, 8)
         XCTAssertFalse(result.regions.contains { $0.value?.contains("Zhang Wei") == true })
         XCTAssertFalse(result.regions.contains { $0.value?.contains("HUAYAO") == true })
         XCTAssertFalse(result.labelWithoutValue)
@@ -87,6 +88,15 @@ final class RegionFinderTests: XCTestCase {
         let result = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: size), credentialLike: true)
         XCTAssertEqual(Set(result.regions.map(\.kind)), Set([.signature, .personalText]))
         XCTAssertTrue(result.regions.contains { $0.detail == "mrz" })
+    }
+
+    func testVerificationIgnoresTheSameValueOutsideItsBlurRegion() {
+        let region = SensitiveRegion(kind: .personalText, rect: CGRect(x: 100, y: 100, width: 200, height: 40), value: "Nederlandse", detail: nil)
+        let heading = line("NEDERLANDSE IDENTITEITSKAART", x: 100, y: 20, w: 500)
+        XCTAssertEqual(Sanitizer.valuesStillReadable(in: [heading], regions: [region]), [])
+
+        let leakedField = line("Nederlandse", x: 120, y: 105, w: 150)
+        XCTAssertEqual(Sanitizer.valuesStillReadable(in: [heading, leakedField], regions: [region]), ["Nederlandse"])
     }
 
     func testStandaloneLongIdsOnlyWhenCredentialLike() {

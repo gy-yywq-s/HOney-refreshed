@@ -38,7 +38,7 @@ enum SensitiveRegionFinder {
     private static let digitRun = try! NSRegularExpression(pattern: #"\d{5,}"#)
     private static let tokenRegex = try! NSRegularExpression(pattern: #"[A-Za-z0-9][A-Za-z0-9\-]*"#)
     private static let personalLabelPattern =
-        #"(residential\s+address|home\s+address|mailing\s+address|address|residence|domicile|place\s+of\s+birth|date\s+of\s+birth|birth\s+date|d\.?o\.?b\.?|nationality|citizenship|sex|gender|phone|mobile|telephone|tel\.?|e-?mail|guardian|parent|emergency\s+contact|blood\s*(type|group)|住址|地址|住所|居住地址|户籍地址|戶籍地址|通讯地址|通訊地址|出生日期|出生年月日|出生地|出生地点|出生地點|国籍|國籍|性别|性別|电话|電話|手机|手機|邮箱|郵箱|电邮|電郵|监护人|監護人|家长|家長|紧急联系人|緊急聯絡人|血型)"#
+        #"(residential\s+address|home\s+address|mailing\s+address|address|residence|domicile|place\s+of\s+birth|date\s+of\s+birth|birth\s+date|d\.?o\.?b\.?|nationality|citizenship|sex|gender|phone|mobile|telephone|tel\.?|e-?mail|guardian|parent|emergency\s+contact|blood\s*(type|group)|住址|地址|住所|居住地址|户籍地址|戶籍地址|通讯地址|通訊地址|出生地点|出生地點|出生地|出生日期|出生年月日|出生|国籍|國籍|性别|性別|电话|電話|手机|手機|邮箱|郵箱|电邮|電郵|监护人|監護人|家长|家長|紧急联系人|緊急聯絡人|血型)"#
     private static let personalLabelRegex = try! NSRegularExpression(pattern: personalLabelPattern, options: [.caseInsensitive])
     private static let addressLabelRegex = try! NSRegularExpression(
         pattern: #"(residential\s+address|home\s+address|mailing\s+address|address|residence|domicile|住址|地址|住所|居住地址|户籍地址|戶籍地址|通讯地址|通訊地址)"#,

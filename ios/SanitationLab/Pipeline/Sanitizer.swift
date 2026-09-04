@@ -48,7 +48,7 @@ enum Sanitizer {
     private static func blurredCrop(of cg: CGImage, rect: CGRect) -> CGImage? {
         guard let crop = cg.cropping(to: rect) else { return nil }
         let input = CIImage(cgImage: crop)
-        let radius = max(16, min(64, min(rect.width, rect.height) * 0.30))
+        let radius = max(28, min(72, min(rect.width, rect.height) * 0.38))
         let filter = CIFilter.gaussianBlur()
         filter.inputImage = input.clampedToExtent()
         filter.radius = Float(radius)
@@ -65,14 +65,24 @@ enum Sanitizer {
         async let codes = LocalDetectors.codes(in: output)
         async let lines = LocalDetectors.text(in: output, languages: languages)
         let decodable = await codes.count
-        let read = await lines.map { normalise($0.string) }
+        let recognised = await lines
+        let values = valuesStillReadable(in: recognised, regions: regions)
+        return SanitationRecord.Verification(codesStillDecodable: decodable, valuesStillReadable: values, retriedWider: false)
+    }
+
+    /// A repeated word elsewhere on a credential is not evidence that the
+    /// blurred field leaked. Count it only when the recognised text overlaps
+    /// that field's own region.
+    static func valuesStillReadable(in lines: [TextLine], regions: [SensitiveRegion]) -> [String] {
         let values = regions.compactMap { region -> String? in
             guard region.kind != .portrait, region.kind != .code, let value = region.value else { return nil }
             let key = normalise(value)
             guard key.count >= 4 else { return nil }
-            return read.contains { $0.contains(key) } ? value : nil
+            return lines.contains { line in
+                line.rect.intersects(region.rect) && normalise(line.string).contains(key)
+            } ? value : nil
         }
-        return SanitationRecord.Verification(codesStillDecodable: decodable, valuesStillReadable: values, retriedWider: false)
+        return values
     }
 
     /// Digits and letters only, lowercased — OCR spacing/dash differences must not hide a leak.
