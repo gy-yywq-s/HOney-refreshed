@@ -46,6 +46,8 @@ Local evidence directory: `/Users/GaryS/Documents/HOney-labs/credential-sanitati
 - `device-attachments.zip`: exported physical-device before/after images, records, and summaries.
 - `live-classifier.xcresult.zip` and `live-classifier.txt`: passing live test bundle and human-readable verdict/latency report.
 - `synthetic-credentials.txt`, `edge-and-real.txt`, `device-synthetic-credentials.txt`, and `device-edge-and-real.txt`: compact per-fixture outcomes and timings.
+- `final-regression.xcresult.zip`: updated 23/23 stable regression result.
+- `dual-portrait-after.png`: visually reviewed output with both the main and pale secondary portraits blurred.
 
 ## Follow-up implementation
 
