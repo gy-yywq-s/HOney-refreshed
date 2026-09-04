@@ -17,10 +17,17 @@ struct WeekTimetableView: View {
 
     private let columnWidth: CGFloat = 66
     private let gutterWidth: CGFloat = 32
-    private let cellHeight: CGFloat = 66
+    /// The matrix fills the visible height (Gary 2026-09-03: 周课表稍微填满一点
+    /// 屏幕): the period rows share what the region leaves below the day
+    /// header, clamped so a small phone keeps readable cells and a tall one
+    /// does not balloon. Measured on this device, never a per-model guess.
+    private static let cellMin: CGFloat = 56
+    private static let cellMax: CGFloat = 104
+    @State private var cellHeight: CGFloat = 66
 
     var body: some View {
         let matrix = WeekMatrix(monday: model.monday, days: model.weekDays)
+        GeometryReader { geo in
         ScrollView {
             VStack(alignment: .leading, spacing: HSpace.x4) {
                 if let error = model.weekError, model.weekDays == nil {
@@ -59,6 +66,19 @@ struct WeekTimetableView: View {
             .padding(.bottom, HSpace.x4)
         }
         .honeyRefreshable { await model.load(reload: true) }
+        .onAppear { fit(geo.size.height) }
+        .onChange(of: geo.size.height) { _, height in fit(height) }
+        }
+    }
+
+    /// (available − day header − break rows − 4 pt rounding margin) / periods.
+    private func fit(_ available: CGFloat) {
+        let header: CGFloat = HSize.control + HSpace.x1
+        let breaks = CGFloat(PeriodCatalog.bands.filter { !$0.isPeriod }.count) * 26
+        let periods = CGFloat(max(1, PeriodCatalog.bands.filter(\.isPeriod).count))
+        let next = floor((available - header - breaks - HSpace.x4 - 4) / periods)
+        let clamped = min(Self.cellMax, max(Self.cellMin, next))
+        if clamped != cellHeight { cellHeight = clamped }
     }
 
     /// `.week__table`: 2 pt column spacing, no row spacing; the gutter stays.

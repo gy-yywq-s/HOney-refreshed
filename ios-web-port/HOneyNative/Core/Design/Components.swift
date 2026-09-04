@@ -6,19 +6,26 @@
 import SwiftUI
 import HOneyCore
 
-/// The HOney wordmark: the Web's own PNG (solid ink glyphs on alpha),
-/// rendered as a template so Night inverts it like the Web.
+/// The HOney wordmark — the Infinite-colour pack (Gary 2026-09-04): two
+/// artworks, not one inverted. The night surface has its own, so the
+/// coloured joints keep their hues; exactly one of the two is ever shown.
 struct WordmarkView: View {
     @Environment(\.theme) private var theme
     var height: CGFloat = 30
 
+    private var name: String { theme.isNight ? "WordmarkNight" : "Wordmark" }
+
+    private var aspect: CGFloat {
+        guard let size = UIImage(named: name)?.size, size.height > 0 else { return 570.0 / 253.0 }
+        return size.width / size.height
+    }
+
     var body: some View {
-        Image("Wordmark")
-            .renderingMode(.template)
+        Image(name)
+            .renderingMode(.original)
             .resizable()
-            .aspectRatio(570.0 / 191.0, contentMode: .fit)
+            .aspectRatio(aspect, contentMode: .fit)
             .frame(height: height)
-            .foregroundStyle(theme.ink)
             .accessibilityLabel("HOney")
     }
 }
@@ -70,7 +77,8 @@ struct InlineStatusBanner: View {
         switch tone {
         case .info: return theme.inkSoft
         case .success: return theme.ok
-        case .warning: return theme.accent
+        // Warnings are orange — never the accent (Gary 2026-09-03: "declined is blue, not orange").
+        case .warning: return theme.warn
         case .danger: return theme.danger
         }
     }
@@ -79,7 +87,7 @@ struct InlineStatusBanner: View {
         switch tone {
         case .info: return theme.soft
         case .success: return theme.tint(theme.palette.ok, 0.08)
-        case .warning: return theme.tint(theme.palette.accent, 0.08)
+        case .warning: return theme.tint(theme.palette.warn, 0.08)
         case .danger: return theme.tint(theme.palette.danger, 0.08)
         }
     }
@@ -88,7 +96,7 @@ struct InlineStatusBanner: View {
         switch tone {
         case .info: return theme.line
         case .success: return theme.tint(theme.palette.ok, 0.38)
-        case .warning: return theme.tint(theme.palette.accent, 0.38)
+        case .warning: return theme.tint(theme.palette.warn, 0.38)
         case .danger: return theme.tint(theme.palette.danger, 0.38)
         }
     }

@@ -57,7 +57,10 @@ struct HOneyTheme: Equatable {
     var ok: Color { palette.ok.color }
     /// `.btn--danger` text: white, except on Night where ink passes AA.
     var onDanger: Color { isNight ? Color(uiColor: UIColor(red: 0x14 / 255, green: 0x17 / 255, blue: 0x1A / 255, alpha: 1)) : .white }
+    var warn: Color { palette.warn.color }
     var shadow: Color { palette.shadow.color }
+    var shadowCard: Color { palette.shadowCard.color }
+    var shadowField: Color { palette.shadowField.color }
     /// `color-mix(in srgb, var(--danger) 8%, transparent)` etc. — banner grounds.
     func tint(_ base: RGBA, _ amount: Double) -> Color { base.withAlpha(amount).color }
 
@@ -66,6 +69,22 @@ struct HOneyTheme: Equatable {
     var uiInk: UIColor { palette.ink.uiColor }
     var uiAccent: UIColor { palette.accent.uiColor }
     var uiMuted: UIColor { palette.muted.uiColor }
+}
+
+extension View {
+    /// `--shadow-field`: the very small edge shadow an unfilled field or pill
+    /// carries so it sits ON the surface (Gary 2026-09-04). A disabled
+    /// control is flat — there is nothing to press.
+    func fieldShadow(_ theme: HOneyTheme, enabled: Bool = true) -> some View {
+        shadow(color: enabled ? theme.shadowField : .clear, radius: 1.5, y: 1)
+    }
+
+    /// `--shadow-card`: a card that sits on the surface — the soft edge
+    /// (0 8px 22px) over the hairline lift.
+    func cardShadow(_ theme: HOneyTheme) -> some View {
+        shadow(color: theme.shadowField, radius: 1.5, y: 1)
+            .shadow(color: theme.shadowCard, radius: 11, y: 8)
+    }
 }
 
 private struct ThemeKey: EnvironmentKey {

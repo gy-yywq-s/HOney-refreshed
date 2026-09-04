@@ -15,6 +15,9 @@ struct SettingsRootView: View {
     @Environment(\.theme) private var theme
     @State private var stayConnected = true
     @State private var showSaveLogin = false
+    /// What the app shows, as Dash set it (Web: lib/useFeatures.ts).
+    @State private var features = FeatureFlags.defaults
+    @State private var tellSchool = false
 
     private var connectionLine: String {
         guard let c = env.me?.connection else { return "" }
@@ -45,6 +48,19 @@ struct SettingsRootView: View {
                             }
                             .buttonStyle(.plain)
                             StayConnectedRow(stayConnected: $stayConnected, showSaveLogin: $showSaveLogin)
+                        }
+                        // The student's own records at the school (Gary 2026-09-03):
+                        // read live from the portal when opened, never stored by HOney.
+                        RowList(label: L10n.t("At school")) {
+                            Button { nav.push(.settingsCard) } label: { SettingsRow(title: L10n.t("Campus card"), sub: L10n.t("Balance, spending")) }.buttonStyle(.plain)
+                            Button { nav.push(.settingsWeekend) } label: { SettingsRow(title: L10n.t("Weekend stay"), sub: L10n.t("Days on record")) }.buttonStyle(.plain)
+                            if features.lessonFeedback {
+                                Button { nav.push(.settingsLessonFeedback) } label: { SettingsRow(title: L10n.t("Lesson feedback"), sub: L10n.t("Lessons waiting for yours")) }.buttonStyle(.plain)
+                            }
+                            if features.schoolFeedback {
+                                Button { tellSchool = true } label: { SettingsRow(title: L10n.t("Feedback to the school"), sub: L10n.t("Sent from your school account")) }.buttonStyle(.plain)
+                            }
+                            Button { nav.push(.settingsRecord) } label: { SettingsRow(title: L10n.t("School record"), sub: L10n.t("What the school has recorded")) }.buttonStyle(.plain)
                         }
                         RowList(label: L10n.t("Experiences & privacy")) {
                             Button { nav.push(.mine) } label: { SettingsRow(title: L10n.t("Your notes & posts")) }.buttonStyle(.plain)
@@ -81,10 +97,14 @@ struct SettingsRootView: View {
         .surfaceBackground()
         .toolbar(.hidden, for: .navigationBar)
         .navigationTitle("Settings")
-        .task { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin }
+        .task {
+            stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin
+            if let flags = try? await env.api.features() { features = flags }
+        }
         .sheet(isPresented: $showSaveLogin) {
             SchoolLoginSheet(purpose: .save) { stayConnected = env.prefs.stayConnectedWanted && env.hasSavedSchoolLogin }
         }
+        .sheet(isPresented: $tellSchool) { SchoolFeedbackSheet { tellSchool = false } }
     }
 }
 

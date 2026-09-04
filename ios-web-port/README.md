@@ -1,7 +1,7 @@
 # HOneyNative — the iPhone port of the current Web
 
 Clean-room SwiftUI reimplementation of HOney's Web product at
-`integration/product-v2 @ 9cbedf6` (port spec v1.0 + *visual fidelity spec v2.0*,
+`integration/product-v2 @ 9cbedf6`, aligned to `cebb399` on 2026-09-04 (`WEB_PORT_DELTA.md`) (port spec v1.0 + *visual fidelity spec v2.0*,
 2026-09-02): the Web's font (Source Sans 3), sentence casing, four Backgrounds, seven
 Accent schemes, four Text sizes and component grammar, reproduced before any native
 reinterpretation (`WEB_VISUAL_FIDELITY.md`). Nothing from the old `ios/` target is compiled,

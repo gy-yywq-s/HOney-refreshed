@@ -24,9 +24,13 @@ struct LessonDetailSheet: View {
     private var isoDate: String { Formatters.toIsoDate(Date(epochMillis: lesson.startsAt)) }
 
     var body: some View {
-        // Canonical school data: the class section is context ("2026 Autumn · Prep Class"), never the title.
-        let extra = lesson.classSectionName.flatMap { $0.isEmpty ? nil : $0 }
-        let topic = lesson.topicName.flatMap { $0.isEmpty || $0 == lesson.subjectName ? nil : $0 }
+        // Canonical school data: the course students mean ("AL ECON U4") is the
+        // title; its Subject ("Economics") and the operational section ("2026
+        // Autumn · Prep Class") are details.
+        let section = lesson.classSectionName.flatMap { $0.isEmpty ? nil : $0 }
+        let subject: String? = (lesson.courseName != nil && lesson.courseName != lesson.subjectName) ? lesson.subjectName : nil
+        let topic = lesson.topicName.flatMap { $0.isEmpty ? nil : $0 }
+        let notStarted = lesson.startsAt > HOneyClock.now().epochMillis
         WebSheet(title: lesson.title, onClose: { dismiss() }) {
             VStack(alignment: .leading, spacing: HSpace.x1) {
                 Text("\(Formatters.shortDate(lesson.startsAt)) · \(Formatters.timeRange(lesson.startsAt, lesson.endsAt))")
@@ -44,8 +48,17 @@ struct LessonDetailSheet: View {
                 if showsOpenDay {
                     Button(L10n.t("Open this day")) { act(.openDay(isoDate)) }.buttonStyle(.webBlockGhost)
                 }
-                Button(L10n.t("Share what this was like")) { act(.compose(.lesson(id: lesson.id, date: isoDate))) }
-                    .buttonStyle(.webBlockPrimary)
+                // An experience is of something that happened: before the lesson
+                // starts there is nothing to share yet (Gary 2026-09-03).
+                if notStarted {
+                    Text(L10n.t("You can share what this was like once the lesson has started."))
+                        .hfont(.caption)
+                        .foregroundStyle(theme.muted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Button(L10n.t("Share what this was like")) { act(.compose(.lesson(id: lesson.id, date: isoDate))) }
+                        .buttonStyle(.webBlockPrimary)
+                }
                 if let teacherId = lesson.teacherId {
                     Button("\(L10n.t("Experiences with")) \(lesson.teacherName ?? "this teacher")") { act(.entity(.teacher, teacherId)) }.buttonStyle(.webBlockGhost)
                 }
@@ -53,7 +66,7 @@ struct LessonDetailSheet: View {
                     Button(L10n.t("Experiences from this course")) { act(.entity(.course, courseId)) }.buttonStyle(.webBlockGhost)
                 }
             }
-            if extra != nil || topic != nil {
+            if section != nil || subject != nil || topic != nil {
                 DisclosureRow(summary: L10n.t("More lesson details")) {
                     Grid(alignment: .leading, horizontalSpacing: HSpace.x4, verticalSpacing: HSpace.x2) {
                         if let topic {
@@ -62,10 +75,16 @@ struct LessonDetailSheet: View {
                                 Text(topic).font(ramp.font(.body)).foregroundStyle(theme.ink)
                             }
                         }
-                        if let extra {
+                        if let subject {
                             GridRow {
-                                Text("Course").font(ramp.font(.caption)).foregroundStyle(theme.muted)
-                                Text(extra).font(ramp.font(.body)).foregroundStyle(theme.ink)
+                                Text("Subject").font(ramp.font(.caption)).foregroundStyle(theme.muted)
+                                Text(subject).font(ramp.font(.body)).foregroundStyle(theme.ink)
+                            }
+                        }
+                        if let section {
+                            GridRow {
+                                Text("Class").font(ramp.font(.caption)).foregroundStyle(theme.muted)
+                                Text(section).font(ramp.font(.body)).foregroundStyle(theme.ink)
                             }
                         }
                     }

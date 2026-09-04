@@ -85,6 +85,18 @@ struct RouteView: View {
             PairDeviceView()
         case .settingsReplaceRoot:
             ReplaceRootView()
+        case .notices:
+            NoticesView()
+        case .notice(let id):
+            NoticeDocView(noticeId: id)
+        case .settingsCard:
+            CampusCardView()
+        case .settingsWeekend:
+            WeekendStayView()
+        case .settingsRecord:
+            SchoolRecordView()
+        case .settingsLessonFeedback:
+            LessonFeedbackView()
         }
     }
 }

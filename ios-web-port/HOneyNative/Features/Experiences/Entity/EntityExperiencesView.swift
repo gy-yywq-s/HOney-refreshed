@@ -181,9 +181,11 @@ struct EntityExperiencesView: View {
                         exp: exp,
                         reaction: feed.reactionState(for: exp),
                         name: feed.name,
+                        mine: feed.isMine(exp),
                         onReact: { value in Task { await feed.react(exp, value: value) } },
                         onReport: { category in await feed.report(exp, category: category) },
-                        openEntity: { route in nav.push(route) }
+                        openEntity: { route in nav.push(route) },
+                        writeOwn: { target in nav.push(.compose(target)) }
                     )
                     .pageInset()
                     .onAppear { Task { await feed.loadMoreIfNeeded(current: exp) } }

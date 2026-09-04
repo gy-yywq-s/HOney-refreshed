@@ -35,12 +35,16 @@ public struct ComposerNotice: Sendable, Equatable {
     public var text: String
     public var reasons: [String]
     public var suggestKeepPrivate: Bool
+    /// Out of scope here may belong to the school's own feedback channel
+    /// (Web 2026-09-04: "Send this to the school instead").
+    public var suggestSchoolReport: Bool
 
-    public init(tone: Tone, text: String, reasons: [String] = [], suggestKeepPrivate: Bool = false) {
+    public init(tone: Tone, text: String, reasons: [String] = [], suggestKeepPrivate: Bool = false, suggestSchoolReport: Bool = false) {
         self.tone = tone
         self.text = text
         self.reasons = reasons
         self.suggestKeepPrivate = suggestKeepPrivate
+        self.suggestSchoolReport = suggestSchoolReport
     }
 }
 
@@ -235,7 +239,7 @@ public actor ComposerController {
             case .editRequired(let reasons):
                 return ComposerOutcome(status: .editing, notice: ComposerNotice(tone: .warn, text: ModerationCopy.editRequired, reasons: reasons), draftPersisted: persisted)
             case .outOfScope(let reasons):
-                return ComposerOutcome(status: .editing, notice: ComposerNotice(tone: .warn, text: ModerationCopy.outOfScope, reasons: reasons, suggestKeepPrivate: true), draftPersisted: persisted)
+                return ComposerOutcome(status: .editing, notice: ComposerNotice(tone: .warn, text: ModerationCopy.outOfScope, reasons: reasons, suggestKeepPrivate: true, suggestSchoolReport: true), draftPersisted: persisted)
             case .blocked:
                 return ComposerOutcome(status: .editing, notice: ComposerNotice(tone: .danger, text: ModerationCopy.blocked), draftPersisted: persisted)
             case .unavailable:

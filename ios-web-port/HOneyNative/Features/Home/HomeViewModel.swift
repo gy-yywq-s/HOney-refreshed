@@ -23,6 +23,13 @@ final class HomeViewModel {
     private(set) var previewsError: String?
     private(set) var names = NameMaps()
 
+    /// What the school published (Web: Home "From school"); a failure here
+    /// simply leaves the zone out — Home never blanks for a notice.
+    private(set) var notices: [SchoolNotice] = []
+    private(set) var portalOrigin = ""
+    /// Bumped when this device reads a notice, so the rows re-render.
+    private(set) var readVersion = 0
+
     init(env: AppEnvironment) {
         self.env = env
     }
@@ -32,8 +39,37 @@ final class HomeViewModel {
     func load(reload: Bool = false) async {
         async let lesson: Void = loadLesson(reload: reload)
         async let voices: Void = loadPreviews(reload: reload)
+        async let school: Void = loadNotices()
         async let portal: Void = prewarmPortal()
-        _ = await (lesson, voices, portal)
+        _ = await (lesson, voices, school, portal)
+    }
+
+    /// The unread ones, newest first — at most two, a glimpse and not a feed.
+    /// With nothing unread the newest notice still shows, quietly, so Home
+    /// never hides that the school has said something.
+    var homeNotices: [SchoolNotice] {
+        _ = readVersion
+        let read = env.prefs.readNotices()
+        let unread = notices.filter { !read.contains($0.id) }
+        return unread.isEmpty ? Array(notices.prefix(1)) : Array(unread.prefix(2))
+    }
+
+    func isUnread(_ notice: SchoolNotice) -> Bool {
+        _ = readVersion
+        return !env.prefs.readNotices().contains(notice.id)
+    }
+
+    func markRead(_ notice: SchoolNotice) {
+        env.prefs.markNoticesRead([notice.id])
+        readVersion += 1
+    }
+
+    func isMine(_ exp: PublicExperienceV2) -> Bool { env.prefs.isMyPost(exp.id) }
+
+    private func loadNotices() async {
+        guard let response = try? await env.api.notices(limit: 20) else { return }
+        notices = response.notices
+        portalOrigin = response.portalOrigin
     }
 
     private func prewarmPortal() async {

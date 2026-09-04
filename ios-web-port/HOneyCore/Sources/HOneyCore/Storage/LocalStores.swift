@@ -229,6 +229,8 @@ extension Preferences: ReactionMemory, DeletionChecklistStore {
         static let reactions = "honey.reactions.mine"
         static let reactors = "honey.reactor.registered"
         static let deletion = "honey.account-deletion"
+        static let myPosts = "honey.posts.mine"
+        static let noticesRead = "honey.notices.read"
     }
 
     private func dict(_ key: String) -> [String: Int] {
@@ -251,6 +253,40 @@ extension Preferences: ReactionMemory, DeletionChecklistStore {
         var all = dict(V2Key.reactions)
         if value == 0 { all.removeValue(forKey: experienceId) } else { all[experienceId] = value }
         setDict(V2Key.reactions, all)
+    }
+
+    // The reader's own posts (Web: lib/community-v2 `myPosts`): the ids are
+    // known on this device from the publish answer and the Mine listing —
+    // never on the server. "Yours" is marked for the reader alone.
+    public func isMyPost(_ experienceId: String) -> Bool { dict(V2Key.myPosts)[experienceId] == 1 }
+
+    public func rememberMyPosts(_ ids: [String]) {
+        guard !ids.isEmpty else { return }
+        var all = dict(V2Key.myPosts)
+        for id in ids { all[id] = 1 }
+        setDict(V2Key.myPosts, all)
+    }
+
+    public func forgetMyPost(_ experienceId: String) {
+        var all = dict(V2Key.myPosts)
+        all.removeValue(forKey: experienceId)
+        setDict(V2Key.myPosts, all)
+    }
+
+    // Which school notices this device has read (Web: lib/noticesRead.ts).
+    // The portal has no per-student read flag; the fact lives here and is
+    // never sent anywhere — nobody at school learns what a student opened.
+    public func readNotices() -> Set<String> { Set(dict(V2Key.noticesRead).keys) }
+
+    public func markNoticesRead(_ ids: [String]) {
+        guard !ids.isEmpty else { return }
+        var all = dict(V2Key.noticesRead)
+        for id in ids { all[id] = 1 }
+        // Bounded: the portal's own list is short and old ids can go.
+        if all.count > 200 {
+            for key in all.keys.sorted().prefix(all.count - 200) { all.removeValue(forKey: key) }
+        }
+        setDict(V2Key.noticesRead, all)
     }
 
     public func reactorRegistered(_ mark: String) -> Bool { dict(V2Key.reactors)[mark] == 1 }

@@ -22,6 +22,8 @@ struct ComposerView: View {
     @State private var pauseRemaining: Int64?
     @State private var showNudge = false
     @State private var showCooldown = false
+    /// The school's own feedback channel, from the composer (Gary 2026-09-04).
+    @State private var tellSchool = false
     @FocusState private var editing: Bool
 
     var body: some View {
@@ -210,12 +212,14 @@ struct ComposerView: View {
 
                 actions(model)
                 privacyLine
+                toSchoolLine
             }
             .pageInset()
             .padding(.top, HSpace.x2)
             .padding(.bottom, HSpace.x4)
         }
         .scrollDismissesKeyboard(.interactively)
+        .sheet(isPresented: $tellSchool) { SchoolFeedbackSheet(draft: model.body) { tellSchool = false } }
         .onChange(of: model.body) { _, _ in Task { pauseRemaining = await model.pauseRemaining() } }
         .onChange(of: model.status) { _, status in
             switch status {
@@ -228,7 +232,10 @@ struct ComposerView: View {
         .sheet(isPresented: $showCooldown) { cooldownSheet(model) }
     }
 
-    /// `.compose-target`: About · Change, the target at 22 pt, its detail, a rule.
+    /// `.compose-about`: About · Change name and swap the card, so they sit
+    /// ABOVE it, not inside it (Gary 2026-09-03); the card itself is an
+    /// object — the target at 22 pt and its detail on a lightly tinted
+    /// ground with the field lift (卡片上点色, 阴影轻一点).
     private func aboutBlock(_ model: ComposerViewModel) -> some View {
         VStack(alignment: .leading, spacing: HSpace.x1) {
             HStack(alignment: .center) {
@@ -242,13 +249,32 @@ struct ComposerView: View {
                     .padding(.trailing, -HSpace.x2)
                 }
             }
-            Text(model.label).hfont(.composeTarget).foregroundStyle(theme.ink)
-            if let detail = model.detail, !detail.isEmpty {
-                Text(detail).hfont(.body).foregroundStyle(theme.muted)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.label).hfont(.composeTarget).foregroundStyle(theme.ink)
+                if let detail = model.detail, !detail.isEmpty {
+                    Text(detail).hfont(.body).foregroundStyle(theme.muted)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, HSpace.x3)
+            .padding(.vertical, HSpace.x2)
+            .background(theme.palette.accent.mixed(with: theme.palette.card, amount: 0.05).color, in: RoundedRectangle(cornerRadius: HRadius.card, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: HRadius.card, style: .continuous).strokeBorder(theme.palette.accent.mixed(with: theme.palette.line, amount: 0.16).color, lineWidth: 1))
+            .fieldShadow(theme)
         }
-        .padding(.vertical, HSpace.x3)
-        .overlay(alignment: .bottom) { HairlineDivider() }
+        .padding(.top, HSpace.x3)
+        .padding(.bottom, HSpace.x4)
+    }
+
+    /// Some things belong to the school, not here: its own feedback channel,
+    /// in one line, without moving anything (Gary 2026-09-04).
+    private var toSchoolLine: some View {
+        HStack(spacing: HSpace.x1) {
+            Text(L10n.t("Doesn't belong here?")).hfont(.caption).foregroundStyle(theme.muted)
+            Button(L10n.t("Send it to the school")) { tellSchool = true }
+                .buttonStyle(WebLinkStyle(role: .caption))
+                .frame(minHeight: 0)
+        }
     }
 
     private func draftFailed(_ model: ComposerViewModel) -> Bool {
@@ -277,13 +303,19 @@ struct ComposerView: View {
             if notice.suggestKeepPrivate {
                 Text("You can keep it as a private note instead.").hfont(.caption).foregroundStyle(theme.muted)
             }
+            if notice.suggestSchoolReport {
+                Button(L10n.t("Send this to the school instead")) { tellSchool = true }
+                    .buttonStyle(WebLinkStyle(role: .caption))
+                    .frame(minHeight: 0)
+            }
         }
-        .foregroundStyle(notice.tone == .danger ? theme.danger : theme.accent)
+        // Warnings are orange, never the accent (Gary 2026-09-03).
+        .foregroundStyle(notice.tone == .danger ? theme.danger : theme.warn)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, HSpace.x4)
         .padding(.vertical, HSpace.x3)
-        .background(theme.tint(notice.tone == .danger ? theme.palette.danger : theme.palette.accent, 0.08), in: RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.tint(notice.tone == .danger ? theme.palette.danger : theme.palette.accent, 0.38), lineWidth: 1))
+        .background(theme.tint(notice.tone == .danger ? theme.palette.danger : theme.palette.warn, 0.08), in: RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.tint(notice.tone == .danger ? theme.palette.danger : theme.palette.warn, 0.38), lineWidth: 1))
     }
 
     /// `.compose-actions` on phones: full-width, primary then ghost.

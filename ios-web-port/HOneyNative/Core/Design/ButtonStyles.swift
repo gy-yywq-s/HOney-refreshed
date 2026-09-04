@@ -7,6 +7,11 @@ import SwiftUI
 
 enum WebButtonKind {
     case primary, ghost, danger, dangerOutline
+    /// `.btn--pill-ok`: a finishing action outlined in the palette's green
+    /// ("Mark all read", the chosen amount — Gary 2026-09-03).
+    case pillOk
+
+    var filled: Bool { self == .primary || self == .danger }
 }
 
 /// `.btn` — 44 min height, control radius, 15/600 label, 1 px line.
@@ -24,16 +29,21 @@ struct WebButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let colors = Self.colors(kind: kind, enabled: isEnabled, theme: theme)
+        let radius = kind == .pillOk ? HRadius.pill : small ? HRadius.field : HRadius.control
         configuration.label
             .font(ramp.font(reading ? .readingSemibold : small ? .captionSemibold : .secondarySemibold))
             .foregroundStyle(colors.text)
             .lineLimit(1)
-            .padding(.horizontal, small ? HSpace.x3 : HSpace.x5)
+            .padding(.horizontal, small || kind == .pillOk ? HSpace.x4 : HSpace.x5)
             .frame(maxWidth: block ? .infinity : nil)
             .frame(minHeight: HSize.control)
-            .background(colors.fill, in: RoundedRectangle(cornerRadius: small ? HRadius.field : HRadius.control, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: small ? HRadius.field : HRadius.control, style: .continuous).strokeBorder(colors.border, lineWidth: 1))
-            .contentShape(RoundedRectangle(cornerRadius: HRadius.control, style: .continuous))
+            .background(colors.fill, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(colors.border, lineWidth: 1))
+            // An unfilled pill still sits ON the surface (Gary 2026-09-04): a
+            // quiet edge shadow; filled buttons carry their weight through the
+            // fill, and a disabled one is flat.
+            .fieldShadow(theme, enabled: isEnabled && !kind.filled)
+            .contentShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
     }
@@ -46,6 +56,8 @@ struct WebButtonStyle: ButtonStyle {
         case .ghost: return (.clear, theme.ink, theme.line)
         case .danger: return (theme.danger, theme.onDanger, theme.danger)
         case .dangerOutline: return (.clear, theme.danger, theme.danger)
+        // `color-mix(in srgb, var(--ok) 55%, var(--line))` on the border.
+        case .pillOk: return (.clear, theme.ok, theme.palette.ok.mixed(with: theme.palette.line, amount: 0.55).color)
         }
     }
 }
@@ -62,6 +74,7 @@ extension ButtonStyle where Self == WebButtonStyle {
     static var webBlockGhost: WebButtonStyle { WebButtonStyle(kind: .ghost, block: true) }
     static var webBlockDanger: WebButtonStyle { WebButtonStyle(kind: .danger, block: true) }
     static var webLoginPrimary: WebButtonStyle { WebButtonStyle(kind: .primary, block: true, reading: true) }
+    static var webPillOk: WebButtonStyle { WebButtonStyle(kind: .pillOk, small: true) }
 }
 
 /// `.iconbtn` — 44 × 44, field radius, line border; `--primary` = ink fill.

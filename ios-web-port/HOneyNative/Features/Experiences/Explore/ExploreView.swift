@@ -276,9 +276,11 @@ struct ExploreView: View {
                         exp: exp,
                         reaction: feed?.reactionState(for: exp) ?? ReactionState(exp, myValue: env.prefs.myReaction(exp.id)),
                         name: feed?.name ?? { _ in nil },
+                        mine: env.prefs.isMyPost(exp.id),
                         onReact: { value in Task { await feedModel().react(exp, value: value) } },
                         onReport: { category in await feedModel().report(exp, category: category) },
-                        openEntity: { route in nav.push(route) }
+                        openEntity: { route in nav.push(route) },
+                        writeOwn: { target in nav.push(.compose(target)) }
                     )
                 }
                 .padding(.top, -HSpace.x2)

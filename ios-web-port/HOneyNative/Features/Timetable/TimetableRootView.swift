@@ -61,7 +61,18 @@ struct TimetableRootView: View {
         @Bindable var model = model
         VStack(spacing: 0) {
             header(model)
-            if let feedback = model.syncFeedback {
+            // Syncing says so WHILE it runs, in one line — not a banner that
+            // arrives seconds later (Gary 2026-09-03). The result line clears
+            // itself; only a problem stays as a banner.
+            if model.syncBusy {
+                syncLine(L10n.t("Syncing with the school…"))
+            } else if case .synced(let n)? = model.syncFeedback {
+                syncLine("\(L10n.t("Synced")) · \(n) \(L10n.t("lessons"))")
+                    .task {
+                        try? await Task.sleep(nanoseconds: 4_000_000_000)
+                        if case .synced? = model.syncFeedback { model.syncFeedback = nil }
+                    }
+            } else if let feedback = model.syncFeedback {
                 syncBanner(feedback, model)
                     .pageInset()
                     .padding(.bottom, HSpace.x2)
@@ -107,8 +118,20 @@ struct TimetableRootView: View {
                     selection: Binding(get: { model.view }, set: { model.setView($0) })
                 )
                 .accessibilityLabel("Timetable view")
-                HStack {
+                HStack(spacing: HSpace.x2) {
                     Spacer()
+                    // `.daynav__history`: History in the empty top-right corner
+                    // beside the pill, the gesture named right there (Gary 2026-09-03).
+                    Button { nav.push(.history(select: false)) } label: {
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("History").font(ramp.font(.captionSemibold)).foregroundStyle(theme.accent)
+                            Text(L10n.t("or pull up at the end")).font(ramp.font(.micro)).foregroundStyle(theme.muted)
+                        }
+                        .frame(minHeight: HSize.control)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("History")
                     Menu {
                         Button(model.view == .week ? L10n.t("This week") : L10n.t("Today"), systemImage: "calendar") { model.goToday() }
                         Button("History", systemImage: "clock.arrow.circlepath") { nav.push(.history(select: false)) }
@@ -122,6 +145,7 @@ struct TimetableRootView: View {
                             .foregroundStyle(theme.ink)
                             .frame(width: HSize.control, height: HSize.control)
                             .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.line, lineWidth: 1))
+                            .fieldShadow(theme)
                             .contentShape(Rectangle())
                     }
                     .accessibilityLabel("More")
@@ -188,6 +212,17 @@ struct TimetableRootView: View {
 
     private func weekEndOffset(_ model: TimetableViewModel) -> Int {
         WeekMatrix(monday: model.monday, days: model.weekDays).endOffset
+    }
+
+    /// `.sync-line`: one muted caption under the frame, clear of the canvas.
+    private func syncLine(_ text: String) -> some View {
+        Text(text)
+            .font(ramp.font(.caption))
+            .foregroundStyle(theme.muted)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .pageInset()
+            .padding(.bottom, HSpace.x3)
+            .accessibilityAddTraits(.updatesFrequently)
     }
 
     @ViewBuilder

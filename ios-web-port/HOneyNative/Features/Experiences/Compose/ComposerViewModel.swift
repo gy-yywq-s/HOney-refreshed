@@ -249,6 +249,10 @@ final class ComposerViewModel {
     private func apply(_ outcome: ComposerOutcome) async {
         status = outcome.status
         notice = outcome.notice
+        if case .published(let experienceId) = outcome.status {
+            // Your own words, marked for you alone from now on (this device only).
+            env.prefs.rememberMyPosts([experienceId])
+        }
         draftUnsavedBeforeCheck = !outcome.draftPersisted
         if !outcome.draftPersisted { saveState = .failed(ModerationCopy.draftNotSaved) }
         if case .cooldown(let retryAt, _) = outcome.status, let controller,

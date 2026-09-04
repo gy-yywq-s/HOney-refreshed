@@ -39,3 +39,6 @@ Every native file names the Web source it was ported from. Reverse map:
 | `packages/shared/src/portal/contract.ts`, `packages/portal-connector/src/api.ts` (server-side policy) | `Portal/PortalWire.swift`, `Portal/PortalAPI.swift`, `Portal/PortalSessionCoordinator.swift`, `Portal/AccessRules.swift`; `HOneyNative/Features/Access/*` | Access: direct-to-school, consumed-permit fix |
 | `Modal.tsx` | `Core/Design/Sheets.swift` (`WebSheet`, `ConfirmSheet`) | Web content in a native sheet |
 | `PullToRefresh.tsx`, `PullToHistory.tsx`, service worker, viewport code | — | not ported (port spec §2.3) |
+| `apps/web/src/pages/NoticesPage.tsx`, `components/NoticeSheet.tsx`, `lib/noticesRead.ts` | `Features/Notices/NoticesView.swift` (`NoticesView`, `NoticeSheet`, `NoticeDocView`, `NoticeBody`); `Storage/LocalStores.swift` (`Preferences.readNotices`) | preserve; the two sheet heights are the native detents |
+| `apps/web/src/pages/settings/SchoolRecordsPages.tsx`, `components/SchoolFeedbackSheet.tsx`, `lib/useFeatures.ts` | `Features/Settings/SchoolRecordsViews.swift`, `Features/Settings/SchoolFeedbackSheet.swift`; `API/DTO/SchoolWire.swift`; `API/APIClient.swift` (`school*`, `features`, `notices`) | preserve; the pay page is `SFSafariViewController` |
+| `packages/shared/src/api/contract.ts` (2026-09-03/04 additions) | `API/DTO/SchoolWire.swift` | mandatory parity |

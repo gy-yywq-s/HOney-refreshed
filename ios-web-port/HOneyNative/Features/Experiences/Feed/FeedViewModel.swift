@@ -42,6 +42,9 @@ final class FeedViewModel {
         reactions[exp.id] ?? ReactionState(exp, myValue: env.prefs.myReaction(exp.id))
     }
 
+    /// The reader's own words — known on this device only.
+    func isMine(_ exp: PublicExperienceV2) -> Bool { env.prefs.isMyPost(exp.id) }
+
     func switchScope(_ scope: FeedScope) async {
         guard scope != key.scope else { return }
         await env.feedStore.rememberAnchor(restoreAnchorId, for: key)

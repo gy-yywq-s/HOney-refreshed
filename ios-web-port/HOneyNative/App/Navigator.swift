@@ -129,6 +129,12 @@ final class Navigator {
             go(.timetable)
         case "history":
             go(.timetable, [.history(select: query["select"] == "1")])
+        case "notices":
+            if let id = segments.first, !id.isEmpty {
+                go(.home, [.notices, .notice(id)])
+            } else {
+                go(.home, [.notices])
+            }
         case "access":
             go(.access)
         case "experiences":
@@ -161,6 +167,10 @@ final class Navigator {
             case "privacy": go(.settings, [.settingsPrivacy])
             case "account": go(.settings, [.settingsAccount])
             case "appearance": go(.settings, [.settingsAppearance])
+            case "card": go(.settings, [.settingsCard])
+            case "weekend": go(.settings, [.settingsWeekend])
+            case "record": go(.settings, [.settingsRecord])
+            case "feedback": go(.settings, [.settingsLessonFeedback])
             case "post-controls":
                 switch segments.dropFirst().first {
                 case "recovery-words": go(.settings, [.settingsPostControls, .settingsRecoveryWords])

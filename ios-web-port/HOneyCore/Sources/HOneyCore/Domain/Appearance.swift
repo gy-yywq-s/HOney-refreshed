@@ -197,8 +197,14 @@ public struct ThemePalette: Sendable, Equatable {
     public var glacier: RGBA
     public var danger: RGBA
     public var ok: RGBA
+    /// `--warn` — warnings are orange, never the accent (Gary 2026-09-03).
+    public var warn: RGBA
     /// The `--shadow` colour (its geometry lives with the component).
     public var shadow: RGBA
+    /// `--shadow-card`'s larger layer (0 8px 22px): a card that sits ON the surface.
+    public var shadowCard: RGBA
+    /// `--shadow-field` (0 1px 2px): an unfilled field or pill lifts off the page (Gary 2026-09-04).
+    public var shadowField: RGBA
 
     /// The Web cascade: base (Stone + Harbour) → surface block → accent block
     /// → the night+accent pair, exactly the order tokens.css declares them.
@@ -224,7 +230,10 @@ public struct ThemePalette: Sendable, Equatable {
             glacier: RGBA(hex: 0xDDE8EC),
             danger: RGBA(hex: 0xB53844),
             ok: RGBA(hex: 0x2B7355),
-            shadow: RGBA(hex: 0x161E22, alpha: 0.1)
+            warn: RGBA(hex: 0xB0611A),
+            shadow: RGBA(hex: 0x161E22, alpha: 0.1),
+            shadowCard: RGBA(hex: 0x161E22, alpha: 0.07),
+            shadowField: RGBA(hex: 0x161E22, alpha: 0.06)
         )
         switch background {
         case .stone:
@@ -259,7 +268,10 @@ public struct ThemePalette: Sendable, Equatable {
             p.glacier = RGBA(hex: 0x8FC2D4, alpha: 0.16)
             p.danger = RGBA(hex: 0xF2919A)
             p.ok = RGBA(hex: 0x83C9A8)
+            p.warn = RGBA(hex: 0xF0B072)
             p.shadow = RGBA(hex: 0x000000, alpha: 0.4)
+            p.shadowCard = RGBA(hex: 0x000000, alpha: 0.35)
+            p.shadowField = RGBA(hex: 0x000000, alpha: 0.35)
         }
         // The accent block is written for light surfaces; the night pair follows.
         if accent != .harbour {

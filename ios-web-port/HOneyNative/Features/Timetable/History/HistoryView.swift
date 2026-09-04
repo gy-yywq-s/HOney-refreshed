@@ -2,8 +2,8 @@
 // `.history-row`): the page title, the search field with the two filter
 // selects on one row beneath, then lessons grouped by day — the day as a
 // ruled heading, each row subject + teacher · room with the start time at
-// the right. Whole rows act: browse opens the lesson sheet, selection mode
-// hands the lesson to the composer.
+// the right. Every row leads to the composer — History IS the picker (Gary
+// 2026-09-03), a chevron says so; `select` only explains why you are here.
 
 import SwiftUI
 import HOneyCore
@@ -59,14 +59,12 @@ struct HistoryView: View {
                                     .accessibilityAddTraits(.isHeader)
                                 ForEach(Array(group.lessons.enumerated()), id: \.element.id) { index, lesson in
                                     if index > 0 { HairlineDivider() }
+                                    // `.history-row__link`: the row itself is the way to
+                                    // the composer; a long press still opens the lesson.
                                     Button {
-                                        if selectMode {
-                                            nav.push(.compose(.lesson(id: lesson.id, date: group.date)))
-                                        } else {
-                                            selected = lesson
-                                        }
+                                        nav.push(.compose(.lesson(id: lesson.id, date: group.date)))
                                     } label: {
-                                        HStack(alignment: .center, spacing: HSpace.x3) {
+                                        HStack(alignment: .center, spacing: HSpace.x4) {
                                             VStack(alignment: .leading, spacing: HSpace.x1) {
                                                 Text(lesson.title).font(ramp.font(.bodySemibold)).foregroundStyle(theme.ink)
                                                 let who = [lesson.teacherName, DisplayNames.roomLabel(lesson.roomName)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
@@ -79,20 +77,17 @@ struct HistoryView: View {
                                                 .font(ramp.font(.secondarySemibold))
                                                 .monospacedDigit()
                                                 .foregroundStyle(theme.ink2)
-                                            if selectMode {
-                                                Text(L10n.t("Select"))
-                                                    .font(ramp.font(.captionSemibold))
-                                                    .foregroundStyle(theme.ink)
-                                                    .padding(.horizontal, HSpace.x3)
-                                                    .frame(minHeight: HSize.control)
-                                                    .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.line, lineWidth: 1))
-                                            }
+                                            ChevronGlyph()
                                         }
                                         .padding(.vertical, HSpace.x3)
                                         .frame(minHeight: HSize.row)
                                         .contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityLabel("\(L10n.t("Share what this was like")) — \(lesson.title)")
+                                    .contextMenu {
+                                        Button(L10n.t("More lesson details")) { selected = lesson }
+                                    }
                                 }
                             }
                             .padding(.bottom, HSpace.x5)

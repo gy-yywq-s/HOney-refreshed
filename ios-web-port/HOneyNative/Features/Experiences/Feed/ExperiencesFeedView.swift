@@ -86,9 +86,11 @@ struct ExperiencesFeedView: View {
                                 exp: exp,
                                 reaction: model.reactionState(for: exp),
                                 name: model.name,
+                                mine: model.isMine(exp),
                                 onReact: { value in Task { await model.react(exp, value: value) } },
                                 onReport: { category in await model.report(exp, category: category) },
-                                openEntity: { route in nav.push(route) }
+                                openEntity: { route in nav.push(route) },
+                                writeOwn: { target in nav.push(.compose(target)) }
                             )
                             .pageInset()
                             .id(exp.id)
@@ -179,7 +181,7 @@ struct ExperiencesFeedView: View {
             }
             cultureLine
             ScopeSwitch(
-                options: [(FeedScope.myClasses, "Your classes"), (FeedScope.school, "Around school")],
+                options: [(FeedScope.myClasses, L10n.t("Related to you")), (FeedScope.school, "Around school")],
                 selection: Binding(
                     get: { scope },
                     set: { next in

@@ -166,6 +166,14 @@ public enum AppRoute: Sendable, Equatable, Hashable {
     case settingsRecoveryWords
     case settingsPairDevice
     case settingsReplaceRoot
+    /// What the school published (Web: /notices, /notices/:id).
+    case notices
+    case notice(String)
+    /// Settings › At school (Web: /settings/card, /weekend, /record, /feedback).
+    case settingsCard
+    case settingsWeekend
+    case settingsRecord
+    case settingsLessonFeedback
 }
 
 public enum TimetableViewMode: String, Sendable, Equatable, Hashable, Codable {

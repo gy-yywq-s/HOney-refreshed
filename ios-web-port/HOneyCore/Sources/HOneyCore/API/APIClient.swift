@@ -118,6 +118,60 @@ public actor APIClient: IssuerAPI, VaultAPI {
         return try await request("GET", "/api/history", query: query)
     }
 
+    // MARK: The school's notices, the student's records, the product switches
+    // (Web: api/client.ts `notices`, `school*`, `features`). Every school
+    // read is live; nothing here is stored by HOney.
+
+    public func notices(limit: Int? = nil) async throws -> NoticesResponse {
+        try await request("GET", "/api/notices", query: limit.map { [QueryItem(name: "limit", value: String($0))] } ?? [])
+    }
+
+    public func features() async throws -> FeatureFlags {
+        try await request("GET", "/api/features")
+    }
+
+    public func schoolCard() async throws -> CardResponse {
+        try await request("GET", "/api/school/card")
+    }
+
+    /// Ask the school to open a top-up order; paying happens on its payment page.
+    public func schoolCardTopUp(amount: Int) async throws -> CardTopUpResponse {
+        struct Body: Encodable { let amount: Int }
+        return try await request("POST", "/api/school/card/topup", body: Body(amount: amount))
+    }
+
+    public func schoolWarnings() async throws -> WarningsResponse {
+        try await request("GET", "/api/school/warnings")
+    }
+
+    public func schoolWeekend() async throws -> WeekendResponse {
+        try await request("GET", "/api/school/weekend")
+    }
+
+    public func schoolWeekendApply(dates: [String]) async throws -> SchoolActionResponse {
+        struct Body: Encodable { let dates: [String] }
+        return try await request("POST", "/api/school/weekend/apply", body: Body(dates: dates))
+    }
+
+    public func schoolWeekendWithdraw(recordId: Int) async throws -> SchoolActionResponse {
+        struct Body: Encodable { let recordId: Int }
+        return try await request("POST", "/api/school/weekend/withdraw", body: Body(recordId: recordId))
+    }
+
+    public func schoolFeedback() async throws -> FeedbackResponse {
+        try await request("GET", "/api/school/feedback")
+    }
+
+    public func schoolSubmitFeedback(_ submission: FeedbackSubmission) async throws -> SchoolActionResponse {
+        try await request("POST", "/api/school/feedback", body: submission)
+    }
+
+    /// The school's own feedback channel — sent from the student's school account, not anonymous.
+    public func schoolComplaint(_ text: String) async throws -> SchoolActionResponse {
+        struct Body: Encodable { let text: String }
+        return try await request("POST", "/api/school/complaint", body: Body(text: text))
+    }
+
     public func directory() async throws -> DirectoryResponse {
         try await request("GET", "/api/directory")
     }
