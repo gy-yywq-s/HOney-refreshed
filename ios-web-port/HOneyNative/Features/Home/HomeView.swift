@@ -56,7 +56,8 @@ struct HomeView: View {
                                 .padding(.top, 3)
                         }
                         .pageInset()
-                        .padding(.top, HSpace.x5)
+                        // `.main` on phones: 16 pt (+ the inset) above the head.
+                        .padding(.top, HSpace.x4)
                     }
 
                     if let model {
@@ -73,22 +74,16 @@ struct HomeView: View {
                         LoadingPlaceholder(lines: 2).pageInset()
                     }
 
-                    // The foot sits at the bottom of the page, not after the
-                    // last zone (Gary 2026-09-04: 贴 homepage 的底放): on a page
-                    // shorter than the screen this spacer takes the slack so
-                    // the portal link rests on the bottom edge; on a longer one
-                    // it collapses and the link simply ends the page.
-                    Spacer(minLength: 0)
-
-                    // `.home-foot.home-zone`: the portal entry is marginal by design
-                    // (Gary 2026-09-03: 很小的边缘非胶囊) — a small link at the right.
+                    // `.home-foot.home-zone`, as the Web lays it: the rule, 16 pt,
+                    // then the portal row — one full-width bordered row, alone in
+                    // its zone, straight after the voices like every other zone
+                    // in `.stack.home` (Gary 2026-09-05: 首页布局完全参照 Web).
+                    // This supersedes the bottom-pinned marginal link of
+                    // 2026-09-04; the Web pins nothing to the foot of the page.
                     VStack(alignment: .leading, spacing: 0) {
                         HairlineDivider()
-                        HStack {
-                            Spacer(minLength: 0)
-                            PortalLink(signedIn: env.portal.signedInEntry != nil) { showPortal = true }
-                        }
-                        .padding(.top, HSpace.x4)
+                        PortalRow(signedIn: env.portal.signedInEntry != nil) { showPortal = true }
+                            .padding(.top, HSpace.x4)
                     }
                     .pageInset()
                 }
@@ -484,11 +479,14 @@ struct ComposerPromptRow: View {
     }
 }
 
-/// `.portal-link`: no box, no fill, no capsule — the portal's mark, "School
-/// Portal" underlined in the accent, and a small note: "Signed in" when the
-/// entry is ready (in the installed app it says what it does — it enters the
-/// portal signed in, here), else the outward arrow. 44 pt tap zone.
-struct PortalLink: View {
+/// `.portal-row`: a full-width row on every size, alone in its zone — the
+/// portal is a different kind of act from anything above it. The portal's
+/// own mark at 22 pt (inverted at night, like the wordmark), "School Portal"
+/// at the body size, and at the right a caption: "Signed in" when the entry
+/// is ready (in the installed app the row enters the portal signed in,
+/// here), else "Open the official site ↗". 12/16 pt in, a 1 pt line, 12 pt
+/// corners, the cell ground.
+struct PortalRow: View {
     @Environment(\.theme) private var theme
     @Environment(\.hType) private var ramp
     let signedIn: Bool
@@ -496,25 +494,29 @@ struct PortalLink: View {
 
     var body: some View {
         Button(action: open) {
-            HStack(spacing: HSpace.x2) {
+            HStack(spacing: HSpace.x3) {
                 Image("OASIS")
                     .resizable()
-                    .frame(width: 16, height: 16)
+                    .frame(width: 22, height: 22)
                     .clipShape(Circle())
-                    .opacity(0.75)
                     .colorInvert(if: theme.isNight)
                     .accessibilityHidden(true)
                 Text("School Portal")
-                    .font(ramp.font(.caption))
-                    .underline(true, pattern: .solid)
-                    .foregroundStyle(theme.accent)
-                Text(signedIn ? L10n.t("Signed in") : "↗")
+                    .font(ramp.font(.body))
+                    .foregroundStyle(theme.ink)
+                    .lineLimit(1)
+                Spacer(minLength: HSpace.x3)
+                Text(signedIn ? L10n.t("Signed in") : "\(L10n.t("Open the official site")) ↗")
                     .font(ramp.font(.caption))
                     .foregroundStyle(theme.muted)
+                    .lineLimit(1)
             }
-            .padding(.vertical, HSpace.x2)
-            .frame(minHeight: HSize.control)
-            .contentShape(Rectangle())
+            .padding(.horizontal, HSpace.x4)
+            .padding(.vertical, HSpace.x3)
+            .frame(maxWidth: .infinity, minHeight: HSize.control)
+            .background(theme.cell, in: RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous).strokeBorder(theme.line, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: HRadius.field, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("School Portal, \(signedIn ? L10n.t("Signed in") : L10n.t("Open the official site"))")
