@@ -40,8 +40,11 @@ What runs:
 
 | test | what it proves | spec criterion |
 |---|---|---|
-| `RegionFinderTests` | label → value masking, label-adjacent value, label-without-value, names/dates never masked, long ids only on credentials, faces only on credentials, codes as a strong signal | §5, §9.4 |
-| `FixturePipelineTests.testCleanImagesAreReturnedUnchanged` | CLEAN = original bytes | §9.1 |
+| `RegionFinderTests` | id and personal-detail labels, address continuation, signatures/MRZ, names/school/validity preserved, multi-face handling, region-aware verification | §5, §9.4 |
+| `FixturePipelineTests.testCleanImagesAreReturnedUnchanged` | no-face CLEAN = original bytes | §9.1 |
+| `…testFacesAreSanitizedEvenWhenClassifierSaysClean` | face privacy does not depend on credential classification | updated privacy rule |
+| `…testMainAndSecondaryCredentialPortraitsAreBothHidden` | main and pale secondary portraits are both detected | updated privacy rule |
+| `…testEveryRegionKindUsesTheSameRoundedBlur` | every sensitive kind uses strong rounded blur, never an opaque mask | updated presentation rule |
 | `…testSyntheticCredentialsAreSanitizedWithTheRightRegions` | every must-hide box ≥60 % covered, every must-keep box pixel-identical (JPEG noise allowed), no code decodes on the output, values don't read back, new encoding | §9.3, §9.7–9.9 |
 | `…testEdgeAndRealCredentialsAreNeverReturnedClean` | the 4 edge + 28 real cards: outcome recorded; an expected credential never comes back CLEAN | §9.6 |
 | `…testClassifierDownFallsBackToLocalSignals` | classifier unavailable → QR decides; nothing local → CLEAN, recorded | fail-closed |
@@ -82,16 +85,18 @@ p50 0.23–0.29 s, p90 0.6 s (Qwen3-VL 8B).
 
 Run the **SanitationLab** app on an iPhone (automatic signing, personal team).
 
-1. Home screen → *Choose a photo* → pick an ordinary photo → **Share**. Expect
-   `Checking…` then `Ready.` — should feel like a normal 2–3 s submit or
-   faster (the timing line under *Continue* says check/detect/hide ms).
+1. Home screen → *Choose a photo* → pick an ordinary photo → **Share**. A photo
+   with no face may become `Ready.` unchanged; every detected face is blurred
+   even when the classifier says clean. The timing line under *Continue* says
+   check/detect/hide ms.
 2. Pick a photo of a real card (your own student card is the best test —
    it never leaves the phone except as the 768 px derivative for the one
    question, and nothing is stored server-side). Expect `Checking…` →
    `Processing your image… / Hiding sensitive parts.` with the dimmed
    preview → the sanitized preview + *Sensitive parts were hidden before
-   sharing.* Check: portrait blurred, number and code masked, name and
-   school still readable.
+   sharing.* Check: all portraits (including pale secondary portraits), number,
+   code, address, birth data, sex/gender, nationality, contacts, signature and
+   MRZ use rounded blur; name and school remain readable.
 3. Something the pipeline cannot do (a card where the number is not labelled
    and is short, or a booklet cover): expect *We couldn't safely hide the
    sensitive parts in this image.* with **Try another photo** / **Remove

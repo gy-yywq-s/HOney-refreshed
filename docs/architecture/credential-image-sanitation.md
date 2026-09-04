@@ -12,9 +12,11 @@ flowchart LR
   P[Photo] --> D[Analysis derivative<br/>≤768 px JPEG ≤200 KB]
   D -->|image/jpeg body| C[Community<br/>POST /community/v2/image/classify]
   C -->|VLM, one boolean| V{credential_like?}
-  D --> L[Vision on device<br/>faces · barcodes · text]
-  V -->|no| CLEAN[CLEAN — original bytes]
-  V -->|yes| R[Sensitive regions<br/>portrait · number · code]
+  D --> L[On-device analysis<br/>multi-pass faces · barcodes · text]
+  V -->|no| F{Any face?}
+  F -->|no| CLEAN[CLEAN — original bytes]
+  F -->|yes| R[Sensitive regions]
+  V -->|yes| R[Sensitive regions<br/>faces · numbers · personal fields<br/>signatures · MRZ · codes]
   L --> R
   R -->|none / label without value| X[COULD_NOT_SANITIZE]
   R --> S[Sanitize a copy<br/>blur portrait · mask number · mask code]
@@ -60,24 +62,32 @@ conservative answer the spec asks for.
 ## On the device (iOS lab)
 
 - Derivative: long edge 768, JPEG quality stepped down until ≤200 KB.
-- Detectors run concurrently with the classifier: `VNDetectFaceRectanglesRequest`,
-  `VNDetectBarcodesRequest`, `VNRecognizeTextRequest` (accurate, zh-Hans /
-  zh-Hant / en, no language correction so numbers survive).
+- Detectors run concurrently with the classifier. Faces use Vision on the
+  original image, a contrast-enhanced monochrome image, and overlapping crops,
+  plus Core Image's independent high-accuracy detector with a small-feature
+  threshold; overlapping results are deduplicated. Barcodes use
+  `VNDetectBarcodesRequest`; text uses `VNRecognizeTextRequest` (accurate,
+  zh-Hans / zh-Hant / en, no language correction so numbers survive).
+- Face privacy is unconditional. When the classifier says clean, any locally
+  detected face is still blurred; only a clean image with no face returns the
+  original bytes. Credential-only text and code rules remain classifier-gated.
 - Number regions: a label (`Student ID`, `Student No.`, `ID No.`, `Card No.`,
   `Staff No.`, `学号`, `學號`, `编号`, `证件号`, `卡号` …) followed by a value on
   the same line → the value's own sub-rectangle; a label alone → the id-like
   line to its right or below; a label with no value anywhere →
   `COULD_NOT_SANITIZE`. On a credential-like image, any standalone token with
   five or more consecutive digits, or eight alphanumerics with four digits, is
-  masked too (the "strongly associated with the layout" rule). Names, school
-  names, class, validity dates are never touched.
-- Sanitize: portraits → Gaussian blur, radius from the face size; numbers and
-  codes → opaque neutral mask with padding. The output is redrawn and encoded
-  afresh (no EXIF carried over).
+  hidden too (the "strongly associated with the layout" rule). Labelled address
+  lines, birth date/place, sex/gender, nationality/citizenship, phone, email,
+  guardian/parent/emergency contact, blood type, signatures and MRZ lines are
+  also hidden. Names, school names, class and validity dates remain visible.
+- Sanitize: every sensitive region uses the same strong Gaussian blur clipped
+  to an adaptive rounded rectangle. There are no opaque number/code masks. The
+  output is redrawn and encoded afresh (no EXIF carried over).
 - Verify: barcodes on the output must not decode and no masked value may be
   recognised again; one retry with 25 % larger masks, then
   `COULD_NOT_SANITIZE`.
-- Classifier unavailable: credential-like if any local signal fires (code,
+- Classifier unavailable: sensitive if any local signal fires (face, code,
   label, long id), else `CLEAN` — recorded as `classifierUnavailable` in the
   run record so the harness can count it.
 

@@ -46,3 +46,15 @@ Local evidence directory: `/Users/GaryS/Documents/HOney-labs/credential-sanitati
 - `device-attachments.zip`: exported physical-device before/after images, records, and summaries.
 - `live-classifier.xcresult.zip` and `live-classifier.txt`: passing live test bundle and human-readable verdict/latency report.
 - `synthetic-credentials.txt`, `edge-and-real.txt`, `device-synthetic-credentials.txt`, and `device-edge-and-real.txt`: compact per-fixture outcomes and timings.
+
+## Follow-up implementation
+
+The prototype was updated after the first run from direct phone feedback:
+
+- Face privacy no longer depends on credential classification. Every locally detected face is blurred; classifier-clean images with no face still return their original bytes.
+- Face detection now combines original, contrast-enhanced, overlapping-crop and small-feature detector passes, then deduplicates overlaps. `real/r22` now detects and blurs both the main portrait and the pale secondary portrait without covering the name.
+- Labelled address and continuation lines, birth date/place, sex/gender, nationality/citizenship, phone, email, guardian/parent/emergency contact, blood type, signature and MRZ are privacy regions. Names, school, class and validity remain visible.
+- All region kinds now use the same strong Gaussian blur with adaptive rounded corners. Opaque grey number/code masks were removed.
+- Post-blur OCR verification is region-aware, so the same word elsewhere on a card does not create a false leak. The short Chinese `出生：` label is covered.
+
+Focused verification: 16/16 unconditional-face and region tests passed; 17/17 personal-detail/real-card regression tests passed; the dedicated main-plus-secondary portrait fixture passed and its output was visually reviewed. The final stable regression suite passed 23/23 tests, excluding only the live network test and the documented legacy synthetic aggregate. The old aggregate still reports legacy failures because its portrait ground truth expects 60% of the entire photo frame while the updated policy intentionally blurs the face, and the simulator still misses fixture barcodes that the physical phone detects. `credential/student_card_angled` also retains its pre-existing rotated number-coordinate failure.
