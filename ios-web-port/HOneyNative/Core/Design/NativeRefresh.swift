@@ -12,6 +12,10 @@
 // tracking phase, and keeps one stable header shim while work is running. It
 // does not mutate contentInset/contentOffset or rebuild the page. The explicit
 // always-bounce setting is also intentional so short pages refresh identically.
+//
+// `refreshAt` is deliberately long (Gary 2026-09-04): a light drag should move
+// the page without arming anything, and the spinner should only fade in once
+// the pull is clearly deliberate — hence the raised opacity clip point too.
 
 import SwiftUI
 import Refresher
@@ -21,9 +25,9 @@ extension ScrollView {
         refresher(
             style: .system2,
             config: Config(
-                refreshAt: 92,
+                refreshAt: 150,
                 headerShimMaxHeight: 56,
-                systemSpinnerOpacityClipPoint: 0.18,
+                systemSpinnerOpacityClipPoint: 0.34,
                 holdTime: .milliseconds(350),
                 cooldown: .milliseconds(500),
                 resetPoint: 5
