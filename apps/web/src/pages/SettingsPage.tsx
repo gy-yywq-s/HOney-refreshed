@@ -220,7 +220,7 @@ export function SettingsPage() {
             <button className="row row--tap" onClick={() => setTellSchool(true)}>
               <span className="row__main">
                 <span className="row__title">{t("Feedback to the school")}</span>
-                <span className="row__sub">{t("Goes to school staff, under your name")}</span>
+                <span className="row__sub">{t("Sent from your school account")}</span>
               </span>
               <ChevronRightIcon size={18} />
             </button>

@@ -1,7 +1,10 @@
 // The school's own feedback channel (its `student_complaints` form). This is
-// NOT the Experiences space: it goes to the school, under the student's name,
-// and staff read it. Both entries — the composer's small link and the
-// standalone Settings row — open this one sheet.
+// NOT the Experiences space: the request carries the student's portal session,
+// so the school knows which account wrote it — the body is only the text.
+// (Its own form says nothing about anonymity, and there is no read-back
+// endpoint, so how staff see it is the school's console, not ours.)
+// Both entries — the composer's small link and the standalone Settings row —
+// open this one sheet.
 
 import { useState } from "react";
 import { api } from "../api/client";
@@ -55,7 +58,7 @@ export function SchoolFeedbackSheet({ draft = "", onClose }: { draft?: string; o
       ) : (
         <>
           <p className="text-4">
-            {L({ en: "Goes to school staff, under your name.", zh: "直接发给学校老师，带你的名字。" })}
+            {L({ en: "Sent from your school account — not anonymous.", zh: "以你的学校账号发送——不是匿名。" })}
           </p>
           <div className="field">
             <textarea
