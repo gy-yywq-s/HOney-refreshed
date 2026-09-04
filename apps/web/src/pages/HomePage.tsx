@@ -279,7 +279,7 @@ export function HomePage() {
             <span className="portal-link__note">{t("Sign in once")}</span>
           </button>
         ) : (
-          <a className="portal-link" href={portal.href} target="_blank" rel="noopener noreferrer">
+          <a className="portal-link" href={portal.deepHref("/student/notification")} target="_blank" rel="noopener noreferrer" onClick={portal.opened}>
             <img className="portal-link__icon" src="/oasis.png" alt="" width="16" height="16" />
             <span className="portal-link__label">{t("School Portal")}</span>
             {/* In the installed app it says what it does: it enters the portal

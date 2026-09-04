@@ -11,7 +11,7 @@ import type { CardResponse, SchoolActionResponse, SchoolReadStatus, WarningsResp
 import { useApi } from "../../lib/useApi";
 import { Skeleton } from "../../lib/motion";
 import { formatShortDate, formatTime } from "../../lib/format";
-import { useLang, useT } from "../../lib/i18n";
+import { getLang, useLang, useT } from "../../lib/i18n";
 import { usePortalEntry } from "../../lib/portalEntry";
 import { ConfirmDialog, Modal } from "../../components/Modal";
 import { CARD_TOP_UP_AMOUNTS } from "@honey/shared/api";
@@ -45,6 +45,20 @@ function StateNote({ status, empty }: { status: SchoolReadStatus; empty: Bi }) {
 
 function yuan(v: number): string {
   return `¥${v.toFixed(2)}`;
+}
+
+/** "Fri" / "周五" for a school day string, in the reader's language. */
+function weekdayOf(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+  return date.toLocaleDateString(getLang() === "zh" ? "zh-CN" : "en-GB", { weekday: "short" });
+}
+
+/** "12 Sep" / "9月12日". */
+function dayOf(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+  return date.toLocaleDateString(getLang() === "zh" ? "zh-CN" : "en-GB", { day: "numeric", month: "short" });
 }
 
 /** Settings › Campus card — balance and what it was spent on. */
@@ -81,8 +95,8 @@ export function CampusCardPage() {
                 {L({ en: "Top up", zh: "充值" })}
               </button>
               {!portal.needsLogin && (
-                <a className="btn btn--ghost" href={portal.href} target="_blank" rel="noopener noreferrer">
-                  {L({ en: "Open the school portal", zh: "打开学校门户" })}
+                <a className="btn btn--ghost" href={portal.deepHref("/student/card")} target="_blank" rel="noopener noreferrer" onClick={portal.opened}>
+                  {L({ en: "In the portal", zh: "在门户里" })}
                 </a>
               )}
             </div>
@@ -257,6 +271,7 @@ export function WeekendStayPage() {
   const L = useL();
   const t = useT();
   const weekend = useApi<WeekendResponse>(() => api.schoolWeekend(), []);
+  const portal = usePortalEntry();
   const data = weekend.data;
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -318,26 +333,34 @@ export function WeekendStayPage() {
       {data && data.status === "ok" ? (
         <>
           {open.length > 0 && (
-            <section className="card">
+            /* Every open day, each one saying which day it is; the block is a
+               tight grid, not a loose row (Gary 2026-09-04). */
+            <section className="card daypick">
               <span className="eyebrow">{L({ en: "Open days", zh: "可选日期" })}</span>
-              {/* Every open day, all of them shown. */}
-              <div className="topup__amounts">
-                {open.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    aria-pressed={picked.includes(d)}
-                    className={picked.includes(d) ? "btn btn--small btn--pill-ok" : "btn btn--small"}
-                    onClick={() => setPicked((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d]))}
-                  >
-                    {d.slice(5)}
-                  </button>
-                ))}
+              <div className="daypick__grid">
+                {open.map((d) => {
+                  const on = picked.includes(d);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      aria-pressed={on}
+                      className={on ? "daypick__day daypick__day--on" : "daypick__day"}
+                      onClick={() => setPicked((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d]))}
+                    >
+                      <span className="daypick__weekday">{weekdayOf(d)}</span>
+                      <span className="daypick__date">{dayOf(d)}</span>
+                    </button>
+                  );
+                })}
               </div>
               <div className="card-actions">
                 <button className="btn btn--primary" disabled={busy || picked.length === 0} onClick={() => void apply()}>
-                  {busy ? t("Saving…") : `${L({ en: "Apply", zh: "申请" })}${picked.length > 1 ? ` · ${picked.length}` : ""}`}
+                  {busy ? t("Saving…") : `${L({ en: "Apply", zh: "申请" })}${picked.length > 0 ? ` · ${picked.length}` : ""}`}
                 </button>
+                <a className="btn btn--ghost" href={portal.deepHref("/student/weekend-plan")} target="_blank" rel="noopener noreferrer" onClick={portal.opened}>
+                  {L({ en: "In the portal", zh: "在门户里" })}
+                </a>
               </div>
             </section>
           )}

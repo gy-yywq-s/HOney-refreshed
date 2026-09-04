@@ -11,8 +11,31 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import { portalCredentials } from "./portalCredentials";
 
-export const PORTAL_HOME = "https://www.huayaopudong.com/student/notification";
+const PORTAL_ORIGIN = "https://www.huayaopudong.com";
+/** Where a portal link lands when nothing more specific is wanted. */
+export const PORTAL_HOME = `${PORTAL_ORIGIN}/student/notification`;
 const MARGIN_MS = 5 * 60_000;
+/** The portal's login hop stores its token in ITS OWN localStorage and then
+ *  redirects where IT decides (a student lands on the notice board). Once that
+ *  has happened in this browser, a deep link works on its own — so remember it
+ *  and send the student straight to the page they asked for (Gary 2026-09-04). */
+const WARM_KEY = "honey.portal.warm";
+
+function warm(): boolean {
+  try {
+    return localStorage.getItem(WARM_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markPortalWarm(): void {
+  try {
+    localStorage.setItem(WARM_KEY, "1");
+  } catch {
+    /* the next tap simply takes the login hop again */
+  }
+}
 
 export interface PortalEntryState {
   /** The signed-in link, or the plain portal address. */
@@ -23,6 +46,14 @@ export interface PortalEntryState {
   needsLogin: boolean;
   /** Ask again (after the login was entered). */
   refresh: () => void;
+  /**
+   * The link for a particular portal page ("/student/card"). Straight there
+   * when this browser has already been handed over once; otherwise the
+   * signed-in hop, which the portal itself routes.
+   */
+  deepHref: (path: string) => string;
+  /** Call when a portal link is actually opened. */
+  opened: () => void;
 }
 
 export function usePortalEntry(): PortalEntryState {
@@ -67,9 +98,12 @@ export function usePortalEntry(): PortalEntryState {
     };
   }, [entry, tick]);
 
+  const href = entry && entry.expiresAt - Date.now() > MARGIN_MS ? entry.url : PORTAL_HOME;
   return {
-    href: entry && entry.expiresAt - Date.now() > MARGIN_MS ? entry.url : PORTAL_HOME,
+    href,
     needsLogin,
     refresh,
+    deepHref: (path: string) => (warm() ? `${PORTAL_ORIGIN}${path}` : href),
+    opened: markPortalWarm,
   };
 }
