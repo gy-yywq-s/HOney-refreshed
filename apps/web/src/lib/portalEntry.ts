@@ -12,37 +12,36 @@ import { api } from "../api/client";
 import { portalCredentials } from "./portalCredentials";
 
 const PORTAL_ORIGIN = "https://www.huayaopudong.com";
-/** Where a portal link lands when nothing more specific is wanted. */
 export const PORTAL_HOME = `${PORTAL_ORIGIN}/student/notification`;
 const MARGIN_MS = 5 * 60_000;
 /**
- * The hop stores HOney's token in the PORTAL's own localStorage and then goes
- * where the portal decides. A deep page only works while that stored token is
- * still alive — a dead one bounces to the portal's login page, which is
- * exactly what this entry exists to avoid — so the hand-over remembers WHICH
- * token it gave and until when, and deep links are used only inside that
- * window. Outside it, the hop runs again and re-stores a fresh token.
+ * The portal's login page takes the token, stores it in its own localStorage
+ * and then goes where IT decides (its notice board for a student); a deep page
+ * carrying the token bounces to that login page, because only the login page
+ * reads the query. So the student is never asked to navigate: HOney opens the
+ * hop, KEEPS the window it opened, and sends that same window on to the page
+ * they asked for once the token is stored — navigating a window you opened is
+ * allowed cross-origin (reading it is not). If the tab is slower than this,
+ * it is still signed in and simply lands on the portal's own page.
  */
-const WARM_KEY = "honey.portal.warmUntil";
+const HOP_SETTLE_MS = 2500;
 
-function warmUntil(): number {
-  try {
-    return Number(localStorage.getItem(WARM_KEY) ?? 0) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-function warm(): boolean {
-  return warmUntil() - Date.now() > MARGIN_MS;
-}
-
-function markPortalWarm(expiresAt: number): void {
-  try {
-    localStorage.setItem(WARM_KEY, String(expiresAt));
-  } catch {
-    /* the next tap simply takes the login hop again */
-  }
+/**
+ * Open a portal page from a tap. `href` is the signed-in hop (the anchor's own
+ * href, so a blocked pop-up still works); `path` is where the student meant to
+ * go.
+ */
+export function openPortalPage(href: string, path: string, event?: { preventDefault: () => void }): void {
+  const win = window.open(href, "_blank");
+  if (!win) return; // the anchor's href takes over
+  event?.preventDefault();
+  window.setTimeout(() => {
+    try {
+      win.location.href = `${PORTAL_ORIGIN}${path}`;
+    } catch {
+      /* the window is gone or refuses: it is signed in either way */
+    }
+  }, HOP_SETTLE_MS);
 }
 
 export interface PortalEntryState {
@@ -54,14 +53,6 @@ export interface PortalEntryState {
   needsLogin: boolean;
   /** Ask again (after the login was entered). */
   refresh: () => void;
-  /**
-   * The link for a particular portal page ("/student/card"). Straight there
-   * when this browser has already been handed over once; otherwise the
-   * signed-in hop, which the portal itself routes.
-   */
-  deepHref: (path: string) => string;
-  /** Call when a portal link is actually opened. */
-  opened: () => void;
 }
 
 export function usePortalEntry(): PortalEntryState {
@@ -106,17 +97,9 @@ export function usePortalEntry(): PortalEntryState {
     };
   }, [entry, tick]);
 
-  const live = entry && entry.expiresAt - Date.now() > MARGIN_MS ? entry : null;
-  const href = live ? live.url : PORTAL_HOME;
   return {
-    href,
+    href: entry && entry.expiresAt - Date.now() > MARGIN_MS ? entry.url : PORTAL_HOME,
     needsLogin,
     refresh,
-    // Straight there while the portal still holds a live token from us;
-    // otherwise the hop, which stores one again.
-    deepHref: (path: string) => (warm() ? `${PORTAL_ORIGIN}${path}` : href),
-    opened: () => {
-      if (!warm() && live) markPortalWarm(live.expiresAt);
-    },
   };
 }
