@@ -4,6 +4,8 @@
 //
 
 import XCTest
+import UIKit
+import ImageIO
 @testable import SanitationLab
 
 final class RegionFinderTests: XCTestCase {
@@ -174,5 +176,133 @@ final class RegionFinderTests: XCTestCase {
         XCTAssertEqual(padded.minX, 0)
         XCTAssertEqual(padded.minY, 0)
         XCTAssertEqual(padded.maxX, 150)
+    }
+}
+
+/// Local-only evaluation. No production behavior is changed; personal inputs
+/// and every output remain in the ignored Fixtures/local directory.
+final class LocalSanitationEvaluationTests: XCTestCase {
+    func testSplitAddressCounterexampleAndVerificationBlindSpot() {
+        // Fictional strings, geometry reproducing a separate short label.
+        let lines = [
+            TextLine(string: "住址", rect: CGRect(x: 100, y: 100, width: 60, height: 30)),
+            TextLine(string: "示例市青山路第一段", rect: CGRect(x: 220, y: 100, width: 320, height: 30)),
+            TextLine(string: "花园小区二栋", rect: CGRect(x: 220, y: 135, width: 220, height: 42)),
+            TextLine(string: "姓名：示例", rect: CGRect(x: 100, y: 40, width: 200, height: 30)),
+        ]
+        let input = RegionFinderInput(faces: [], codes: [], lines: lines, imageSize: CGSize(width: 1000, height: 600))
+        let baseline = SensitiveRegionFinder.find(input, credentialLike: true)
+        XCTAssertFalse(baseline.regions.contains { $0.rect.contains(CGPoint(x: 500, y: 110)) }, "Baseline should reproduce the missed first line")
+        let candidate = Self.addressBlocks(lines, size: input.imageSize)
+        XCTAssertTrue(candidate.contains { $0.rect.contains(CGRect(x: 220, y: 100, width: 320, height: 65)) })
+        let block = SensitiveRegion(kind: .personalText, rect: CGRect(x: 200, y: 100, width: 350, height: 80),
+                                    value: "示例市青山路第一段 花园小区二栋", detail: "address-block")
+        XCTAssertEqual(Sanitizer.valuesStillReadable(in: [lines[1]], regions: [block]), [],
+                       "Existing verifier misses a readable fragment of a multi-line value")
+
+        let bilingual = SensitiveRegionFinder.find(RegionFinderInput(faces: [], codes: [], lines: [
+            TextLine(string: "出生地点/Place of birth", rect: CGRect(x: 100, y: 100, width: 300, height: 30)),
+            TextLine(string: "示例市/EXAMPLE CITY", rect: CGRect(x: 100, y: 140, width: 300, height: 30)),
+        ], imageSize: input.imageSize), credentialLike: true)
+        XCTAssertEqual(bilingual.regions.first?.value, "Place of birth", "Baseline mistakes the translated label for a value")
+        XCTAssertFalse(bilingual.regions.contains { $0.rect.contains(CGPoint(x: 200, y: 155)) })
+
+        let signatureLabel = CGRect(x: 100, y: 100, width: 30, height: 300)
+        let misplaced = SensitiveRegionFinder.signatureFrame(around: signatureLabel,
+            in: CGRect(x: 0, y: 0, width: 1000, height: 1000))
+        XCTAssertFalse(misplaced.contains(CGPoint(x: 70, y: 250)), "A rotated label needs expansion to the left, not screen-down")
+    }
+
+    func testSavedAddressAndSignatureCases() async throws {
+        let local = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("SanitationLab/Fixtures/local")
+        guard FileManager.default.fileExists(atPath: local.appendingPathComponent("20260905-104212/before.jpg").path) else {
+            throw XCTSkip("Optional private evaluation cases are not present")
+        }
+        var summary: [[String: Any]] = []
+        for id in ["20260905-104212", "20260905-104235"] {
+            let dir = local.appendingPathComponent(id)
+            let data = try Data(contentsOf: dir.appendingPathComponent("before.jpg"))
+            let source = try XCTUnwrap(CGImageSourceCreateWithData(data as CFData, nil))
+            // This ablation tests known upright pixels versus camera EXIF
+            // orientation. It does not claim automatic orientation is solved.
+            let upright = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+            let original = try XCTUnwrap(AnalysisDerivative.normalised(try XCTUnwrap(UIImage(data: data))))
+            for (variant, cg) in [("baseline", original), ("upright", upright)] {
+                let start = Date()
+                let d = await LocalDetectors().detect(cg)
+                let input = RegionFinderInput(faces: d.faces, codes: d.codes, lines: d.lines,
+                                             imageSize: CGSize(width: cg.width, height: cg.height))
+                let found = SensitiveRegionFinder.find(input, credentialLike: true)
+                let output = try XCTUnwrap(Sanitizer.sanitize(cg, regions: found.regions))
+                try XCTUnwrap(UIImage(cgImage: output).jpegData(compressionQuality: 0.95))
+                    .write(to: dir.appendingPathComponent("eval-\(variant).jpg"))
+                let verification = await Sanitizer.verify(output, regions: found.regions, languages: LocalDetectors().recognitionLanguages)
+                let elapsed = Int(Date().timeIntervalSince(start) * 1000)
+                let rows: [[String: Any]] = d.lines.map { ["text": $0.string, "x": $0.rect.minX, "y": $0.rect.minY, "w": $0.rect.width, "h": $0.rect.height] }
+                try JSONSerialization.data(withJSONObject: rows, options: [.prettyPrinted, .sortedKeys])
+                    .write(to: dir.appendingPathComponent("eval-\(variant)-ocr.json"))
+                try JSONEncoder().encode(found.regions).write(to: dir.appendingPathComponent("eval-\(variant)-regions.json"))
+                summary.append(["case": id, "variant": variant, "localMs": elapsed, "detectMs": d.elapsedMs,
+                                "regions": found.regions.count, "readable": verification.valuesStillReadable.count])
+
+                if id == "20260905-104212", variant == "upright" {
+                    let candidateStart = Date()
+                    let added = Self.addressBlocks(d.lines, size: input.imageSize)
+                    let candidateMs = Date().timeIntervalSince(candidateStart) * 1000
+                    let regions = found.regions.filter { $0.detail?.hasPrefix("address") != true } + added
+                    let candidate = try XCTUnwrap(Sanitizer.sanitize(cg, regions: regions))
+                    try XCTUnwrap(UIImage(cgImage: candidate).jpegData(compressionQuality: 0.95))
+                        .write(to: dir.appendingPathComponent("eval-candidate.jpg"))
+                    try JSONEncoder().encode(regions).write(to: dir.appendingPathComponent("eval-candidate-regions.json"))
+                    // Independently marked field area, not a box derived from the detector.
+                    let addressInk = CGRect(x: 220, y: 1065, width: 320, height: 71)
+                    XCTAssertTrue(added.contains { $0.rect.contains(addressInk) }, "Both address lines must be covered")
+                    XCTAssertLessThan(added[0].rect.maxY, 1180, "Address block must stop before the separate ID row")
+                    let preservedName = CGRect(x: 220, y: 878, width: 115, height: 34)
+                    XCTAssertFalse(added.contains { $0.rect.intersects(preservedName) })
+                    summary.append(["case": id, "variant": "candidate-address", "groupingMs": candidateMs,
+                                    "regions": added.count])
+                }
+            }
+        }
+        try JSONSerialization.data(withJSONObject: summary, options: [.prettyPrinted, .sortedKeys])
+            .write(to: local.appendingPathComponent("evaluation-summary.json"))
+    }
+
+    /// Evaluation-only hypothesis: prefer every value fragment on the label's
+    /// row before searching below; allow whitespace inside Chinese labels.
+    static func addressBlocks(_ lines: [TextLine], size: CGSize) -> [SensitiveRegion] {
+        let pattern = #"住\s*址|地\s*址|(?i:address)"#
+        let boundary = #"^(姓名|性\s*别|性\s*別|出\s*生|公民身份|有效|Name|Sex|Date|Valid|Signature)"#
+        var result: [SensitiveRegion] = []
+        for label in lines {
+            guard let match = label.string.range(of: pattern, options: .regularExpression) else { continue }
+            var boxes: [CGRect] = []
+            var values: [String] = []
+            let tail = label.string[match.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines)
+            if !tail.isEmpty, let range = label.string.range(of: tail, options: .backwards) {
+                boxes.append(label.subrect(range) ?? label.rect)
+                values.append(tail)
+            }
+            let sameRow = lines.filter {
+                $0.rect.minX > label.rect.maxX - 2 && abs($0.rect.midY - label.rect.midY) < max(label.rect.height, $0.rect.height) * 0.8
+            }.sorted { $0.rect.minX < $1.rect.minX }
+            boxes += sameRow.map(\.rect)
+            values += sameRow.map(\.string)
+            guard var block = boxes.reduce(nil as CGRect?, { $0?.union($1) ?? $1 }) else { continue }
+            for line in lines.sorted(by: { $0.rect.minY < $1.rect.minY }) {
+                guard line.rect.minY >= block.maxY - line.rect.height * 0.2,
+                      line.rect.minY - block.maxY < line.rect.height * 1.4,
+                      line.rect.maxX > block.minX, line.rect.minX < block.maxX else { continue }
+                if line.string.range(of: boundary, options: [.regularExpression, .caseInsensitive]) != nil { break }
+                block = block.union(line.rect)
+                values.append(line.string)
+            }
+            result.append(SensitiveRegion(kind: .personalText,
+                rect: SensitiveRegionFinder.pad(block, by: 0.18, in: CGRect(origin: .zero, size: size)),
+                value: values.joined(separator: " "), detail: "eval-address-block"))
+        }
+        return result
     }
 }
