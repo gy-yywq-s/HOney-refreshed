@@ -182,6 +182,33 @@ final class RegionFinderTests: XCTestCase {
 /// Local-only evaluation. No production behavior is changed; personal inputs
 /// and every output remain in the ignored Fixtures/local directory.
 final class LocalSanitationEvaluationTests: XCTestCase {
+    func testAutomaticPageCropSignatureBoxUsesProductionBlur() throws {
+        let local = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("SanitationLab/Fixtures/local")
+        let folder = local.appendingPathComponent("signature-crops")
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent("results.json")) else {
+            throw XCTSkip("Optional local signature benchmark is absent")
+        }
+        let rows = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [[String: Any]])
+        let row = try XCTUnwrap(rows.first { ($0["model"] as? String) == "sanitation-signature"
+            && ($0["case"] as? String) == "passport-automatic-0" && ($0["letterbox"] as? Bool) == true })
+        let boxRows = try XCTUnwrap(row["boxes"] as? [[String: Any]])
+        let b = try XCTUnwrap(boxRows.first?["box"] as? [Double])
+        let source = try XCTUnwrap(CGImageSourceCreateWithURL(folder.appendingPathComponent("passport-automatic-0-input.png") as CFURL, nil))
+        let input = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        let rawBox = CGRect(x: b[0], y: b[1], width: b[2]-b[0], height: b[3]-b[1])
+        let rect = SensitiveRegionFinder.pad(rawBox, by: 0.18,
+            in: CGRect(x: 0, y: 0, width: input.width, height: input.height))
+        let region = SensitiveRegion(kind: .signature, rect: rect, value: nil, detail: "evaluation-model-signature")
+        // Independently marked signature ink and printed-name areas, in this page crop.
+        XCTAssertTrue(rect.contains(CGRect(x: 1750, y: 1200, width: 415, height: 160)))
+        XCTAssertFalse(rect.intersects(CGRect(x: 840, y: 380, width: 520, height: 160)))
+        let output = try XCTUnwrap(Sanitizer.sanitize(input, regions: [region]))
+        let jpeg = try XCTUnwrap(UIImage(cgImage: output).jpegData(compressionQuality: 0.95))
+        try jpeg.write(to: folder.appendingPathComponent("automatic-signature-production-blur.jpg"))
+        XCTAssertNotEqual(jpeg, UIImage(cgImage: input).jpegData(compressionQuality: 0.95))
+    }
+
     func testSplitAddressCounterexampleAndVerificationBlindSpot() {
         // Fictional strings, geometry reproducing a separate short label.
         let lines = [

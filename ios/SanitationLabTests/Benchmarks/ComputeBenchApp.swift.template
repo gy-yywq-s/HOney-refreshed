@@ -1,0 +1,130 @@
+// Copy this template to a standalone project for an offline benchmark app.
+// Not part of either HOney or SanitationLab.
+import SwiftUI
+import CoreML
+import ImageIO
+import Darwin
+
+@main struct ComputeBenchApp: App {
+    @State private var status = "Preparing local benchmark…"
+    var body: some Scene {
+        WindowGroup {
+            VStack(spacing: 20) {
+                Text("Sanitation compute test").font(.title2)
+                Text(status).font(.body).textSelection(.enabled)
+            }.padding().task {
+                let message = await Task.detached(priority: .userInitiated) {
+                    do { return try ComputeBench.run() }
+                    catch { return "Benchmark failed: \(error)" }
+                }.value
+                status = message
+            }
+        }
+    }
+}
+
+enum ComputeBench {
+    static func ms(_ start: UInt64) -> Double {
+        Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
+    }
+    static func memory() -> UInt64 {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        return result == KERN_SUCCESS ? info.phys_footprint : 0
+    }
+    static func stats(_ values: [Double]) -> [String: Any] {
+        let s = values.sorted()
+        return ["n": s.count, "p50": s[Int(ceil(Double(s.count) * 0.5)) - 1],
+                "p90": s[Int(ceil(Double(s.count) * 0.9)) - 1], "max": s.last!]
+    }
+    static func runMode(_ units: MLComputeUnits, name: String, modelURL: URL,
+                        samples: [(String, CGImage)]) throws -> [String: Any] {
+        let startMemory = memory()
+        let thermalBefore = ProcessInfo.processInfo.thermalState.rawValue
+        let config = MLModelConfiguration()
+        config.computeUnits = units
+        let loadStart = DispatchTime.now().uptimeNanoseconds
+        let model = try MLModel(contentsOf: modelURL, configuration: config)
+        let loadMs = ms(loadStart)
+        var sampledPeak = memory()
+        let afterLoadMemory = sampledPeak
+        var predictions: [[String: Any]] = []
+        var firstPredictionMs: Double = 0
+        var features: MLDictionaryFeatureProvider!
+        for (index, sample) in samples.enumerated() {
+            let preprocessing = DispatchTime.now().uptimeNanoseconds
+            let value = try MLFeatureValue(cgImage: sample.1, pixelsWide: 640, pixelsHigh: 640,
+                                           pixelFormatType: kCVPixelFormatType_32BGRA, options: nil)
+            features = try MLDictionaryFeatureProvider(dictionary: ["image": value])
+            let preprocessMs = ms(preprocessing)
+            let started = DispatchTime.now().uptimeNanoseconds
+            let output = try model.prediction(from: features)
+            let predictMs = ms(started)
+            if index == 0 { firstPredictionMs = predictMs }
+            let array = output.featureValue(for: "var_910")!.multiArrayValue!
+            var confidence: Double = 0
+            var best = 0
+            for i in 0..<8400 {
+                let v = array[[0, 4, NSNumber(value: i)]].doubleValue
+                if v > confidence { confidence = v; best = i }
+            }
+            let box = (0..<4).map { array[[0, NSNumber(value: $0), NSNumber(value: best)]].doubleValue }
+            sampledPeak = max(sampledPeak, memory())
+            predictions.append(["sample": sample.0, "preprocessMs": preprocessMs,
+                                "predictMs": predictMs, "maxConfidence": confidence, "bestXYWH": box])
+        }
+        var warm: [Double] = []
+        var footprintSamples: [UInt64] = []
+        // Serial, single-image throughput. This is not a concurrent pipeline test.
+        for _ in 0..<60 {
+            let elapsed: Double = try autoreleasepool {
+                let start = DispatchTime.now().uptimeNanoseconds
+                _ = try model.prediction(from: features)
+                return ms(start)
+            }
+            warm.append(elapsed)
+            footprintSamples.append(memory())
+        }
+        sampledPeak = max(sampledPeak, footprintSamples.max() ?? 0)
+        return ["mode": name, "loadMs": loadMs, "firstPredictionMs": firstPredictionMs,
+                "warmPredictionMs": stats(warm), "samples": predictions,
+                "footprintBeforeBytes": startMemory, "footprintAfterLoadBytes": afterLoadMemory,
+                "sampledPeakFootprintBytes": sampledPeak,
+                "thermalBefore": thermalBefore, "thermalAfter": ProcessInfo.processInfo.thermalState.rawValue,
+                "lowPowerMode": ProcessInfo.processInfo.isLowPowerModeEnabled]
+    }
+    static func run() throws -> String {
+        let names = ["specimen", "passport-upright", "passport-display", "passport-document", "passport-region"]
+        let samples = try names.map { name -> (String, CGImage) in
+            let url = Bundle.main.url(forResource: name, withExtension: "png")!
+            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                  let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+                throw NSError(domain: "ComputeBench", code: 1)
+            }
+            return (name, image)
+        }
+        let destination = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("compute-results.json")
+        var rows: [[String: Any]] = []
+        for modelName in ["sanitation-signature-nano", "sanitation-signature-small"] {
+          guard let modelURL = Bundle.main.url(forResource: modelName, withExtension: "mlmodelc") else { continue }
+          for (name, units) in [("cpuOnly", MLComputeUnits.cpuOnly), ("cpuAndNeuralEngine", .cpuAndNeuralEngine), ("all", .all)] {
+            var row = try autoreleasepool { try runMode(units, name: name, modelURL: modelURL, samples: samples) }
+            row["model"] = modelName
+            rows.append(row)
+            let result: [String: Any] = ["system": ProcessInfo.processInfo.operatingSystemVersionString,
+                                         "processorCount": ProcessInfo.processInfo.processorCount,
+                                         "physicalMemoryBytes": ProcessInfo.processInfo.physicalMemory,
+                                         "rows": rows]
+            try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys])
+                .write(to: destination, options: .atomic)
+          }
+        }
+        return "Finished: CPU, CPU + Neural Engine, and automatic compute measured. Results saved locally."
+    }
+}

@@ -1,0 +1,31 @@
+import Foundation
+import Vision
+import ImageIO
+
+@main struct DocumentProbe {
+    static func main() throws {
+        let sourceURL = URL(fileURLWithPath: CommandLine.arguments[1])
+        let destinationURL = URL(fileURLWithPath: CommandLine.arguments[2])
+        let source = CGImageSourceCreateWithURL(sourceURL as CFURL, nil)!
+        // Known upright-storage ablation: automatic orientation is a separate gate.
+        let cg = CGImageSourceCreateImageAtIndex(source, 0, nil)!
+        let request = VNDetectRectanglesRequest()
+        request.maximumObservations = 8
+        request.minimumConfidence = 0.4
+        request.minimumSize = 0.15
+        request.minimumAspectRatio = 0.4
+        request.quadratureTolerance = 35
+        let start = DispatchTime.now().uptimeNanoseconds
+        try VNImageRequestHandler(cgImage: cg).perform([request])
+        let elapsed = Double(DispatchTime.now().uptimeNanoseconds-start)/1_000_000
+        let boxes: [[String: Any]] = (request.results ?? []).map { r in
+            let b = r.boundingBox
+            return ["confidence": r.confidence,
+                    "box": [b.minX*Double(cg.width), (1-b.maxY)*Double(cg.height),
+                            b.maxX*Double(cg.width), (1-b.minY)*Double(cg.height)]]
+        }
+        try JSONSerialization.data(withJSONObject: ["elapsedMs": elapsed, "boxes": boxes], options: [.prettyPrinted, .sortedKeys])
+            .write(to: destinationURL)
+        print("Document rectangle probe: \(boxes.count) candidates; \(elapsed) ms")
+    }
+}
